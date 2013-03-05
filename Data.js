@@ -411,29 +411,6 @@ Data.Model = Data.DataComponent.extend( {
 	
 	/**
 	 * @private
-	 * @property {Object} embeddedDataComponentChangeHandlers
-	 * 
-	 * A hashmap of {@link #change} handlers for any embedded DataComponents (which are defined by a {@link Data.attribute.DataComponentAttribute} with
-	 * {@link Data.attribute.DataComponentAttribute#embedded} set to `true`).
-	 * 
-	 * This hashmap is keyed by the Attribute's name, and stores a Function reference as its value, which is the handler for a change
-	 * event in the embedded DataComponent.
-	 */
-	
-	/**
-	 * @private
-	 * @property {Object} embeddedCollectionAddRemoveReorderHandlers
-	 * 
-	 * A hashmap of {@link Data.Collection#event-add}, {@link Data.Collection#event-remove}, and {@link Data.Collection#event-reorder} handlers for any
-	 * embedded {@link Data.Collection Collections}. An "embedded" Collection is defined by a {@link Data.attribute.CollectionAttribute} with
-	 * {@link Data.attribute.CollectionAttribute#embedded} set to `true`.
-	 * 
-	 * This hashmap is keyed by the Attribute's name, and stores a Function reference as its value, which is the handler for the add/remove/reorder
-	 * events in the embedded Collection.
-	 */
-	
-	/**
-	 * @private
 	 * @property {Number} setCallCount
 	 * 
 	 * This variable supports the {@link #changeset} event, by keeping track of the number of calls to {@link #method-set}.
@@ -683,10 +660,6 @@ Data.Model = Data.DataComponent.extend( {
 		
 		// Initialize the data hash for storing attribute names of modified data, and their original values (see property description)
 		me.modifiedData = {};
-		
-		// Initialize the embeddedDataComponentChangeHandlers and embeddedCollectionAddRemoveReorderHandlers hashmaps
-		me.embeddedDataComponentChangeHandlers = {};
-		me.embeddedCollectionAddRemoveReorderHandlers = {};
 		
 		// Set the initial data / defaults, if we have any
 		me.set( data );
@@ -1024,249 +997,7 @@ Data.Model = Data.DataComponent.extend( {
 	 */
 	has : function( attributeName ) {
 		return !!this.attributes[ attributeName ];
-	},
-	
-	
-	// --------------------------------
-	
-	
-	// Embedded Model / Collection related functionality
-	
-	/**
-	 * Used internally by the framework, this method subscribes to the change event of the given child {@link Data.Model}, in order to relay
-	 * its events through this (i.e. its parent) model. This supports a form of "event bubbling" for {@link Data.attribute.ModelAttribute ModelAttributes'} 
-	 * child models, and is called from {@link Data.attribute.ModelAttribute ModelAttribute}.
-	 * 
-	 * @ignore
-	 * @method subscribeNestedModel
-	 * @param {String} attributeName The name of the Attribute that is subscribing a Model.
-	 * @param {Data.Model} embeddedModel
-	 */
-	subscribeNestedModel : function( attributeName, embeddedModel ) {
-		var changeHandler = function( model, attrName, newValue, oldValue, childChangeData ) {  // note: 'childChangeData' arg is needed for the bubbling of deep model/collection events
-			this.onEmbeddedDataComponentChange( attributeName, /* collection */ null, model, attrName, newValue, oldValue, childChangeData );
-		};
-		
-		this.embeddedDataComponentChangeHandlers[ attributeName ] = changeHandler;
-		embeddedModel.on( 'change', changeHandler, this );
 	},	
-	
-	
-	/**
-	 * Used internally by the framework, this method subscribes to the change event of the given child {@link Data.Container}, in order to relay
-	 * its events through this (i.e. its parent) model. This supports a form of "event bubbling" for {@link Data.attribute.CollectionAttribute#embedded embedded} 
-	 * child collections, and is called from {@link Data.attribute.CollectionAttribute CollectionAttribute}. For non-embedded Collections (i.e. simply "related" 
-	 * Collections), this method is not called.
-	 * 
-	 * @ignore
-	 * @method subscribeNestedCollection
-	 * @param {String} attributeName The name of the Attribute that is subscribing a Collection.
-	 * @param {Data.Collection} embeddedCollection
-	 */
-	subscribeNestedCollection : function( attributeName, embeddedCollection ) {
-		var changeHandler = function( collection, model, attrName, newValue, oldValue, childChangeData ) {  // note: 'childChangeData' arg is needed for the bubbling of deep model/collection events
-			this.onEmbeddedDataComponentChange( attributeName, collection, model, attrName, newValue, oldValue, childChangeData );
-		};
-		this.embeddedDataComponentChangeHandlers[ attributeName ] = changeHandler;
-		embeddedCollection.on( 'change', changeHandler, this );
-		
-		
-		var addRemoveReorderHandler = function( collection ) {
-			this.onEmbeddedCollectionAddRemoveReorder( attributeName, collection );
-		};
-		this.embeddedCollectionAddRemoveReorderHandlers[ attributeName ] = addRemoveReorderHandler;
-		embeddedCollection.on( {
-			'addset'    : addRemoveReorderHandler,
-			'removeset' : addRemoveReorderHandler,
-			'reorder'   : addRemoveReorderHandler,
-			scope : this
-		} );
-	},
-	
-	
-	
-	/**
-	 * Used internally by the framework, this method unsubscribes the change event from the given child {@link Data.Model}/{@link Data.Container}. 
-	 * Used in conjunction with {@link #subscribeNestedDataComponent}, when a child model/collection is un-set from its parent model (i.e. this model).
-	 * 
-	 * @ignore
-	 * @method unsubscribeNestedModel
-	 * @param {String} attributeName The name of the Attribute that is unsubscribing a Model/Collection.
-	 * @param {Data.Model} embeddedModel
-	 */
-	unsubscribeNestedModel : function( attributeName, embeddedModel ) {
-		this.unsubscribeNestedDataComponent( attributeName, embeddedModel );
-	},
-	
-	
-	/**
-	 * Used internally by the framework, this method unsubscribes the change event from the given child {@link Data.Model}/{@link Data.Container}. 
-	 * Used in conjunction with {@link #subscribeNestedCollection}, when a child model/collection is un-set from its parent model (i.e. this model).
-	 * 
-	 * @ignore
-	 * @method unsubscribeNestedCollection
-	 * @param {String} attributeName The name of the Attribute that is unsubscribing a Model/Collection.
-	 * @param {Data.Model} embeddedModel
-	 */
-	unsubscribeNestedCollection : function( attributeName, embeddedCollection ) {
-		this.unsubscribeNestedDataComponent( attributeName, embeddedCollection );
-		
-		var addRemoveReorderHandler = this.embeddedCollectionAddRemoveReorderHandlers[ attributeName ];
-		embeddedCollection.un( {
-			'addset'    : addRemoveReorderHandler,
-			'removeset' : addRemoveReorderHandler,
-			'reorder'   : addRemoveReorderHandler,
-			scope : this
-		} );
-	},
-	
-	
-	/**
-	 * Used internally by the framework, this method unsubscribes the change event from the given child {@link Data.Model}/{@link Data.Container}. 
-	 * Used in conjunction with {@link #subscribeNestedModel}/{@link #subscribeNestedCollection}, when a child model/collection is un-set from 
-	 * its parent model (i.e. this model).
-	 * 
-	 * @ignore
-	 * @method unsubscribeNestedDataComponent
-	 * @param {String} attributeName The name of the Attribute that is unsubscribing a Model/Collection.
-	 * @param {Data.DataComponent} dataComponent
-	 */
-	unsubscribeNestedDataComponent : function( attributeName, dataComponent ) {
-		var changeHandler = this.embeddedDataComponentChangeHandlers[ attributeName ];
-		dataComponent.un( 'change', changeHandler, this );
-	},
-	
-	
-	
-	
-	/**
-	 * Handler for a change in an embedded model/collection. Relays the embedded model's/collection's {@link #change} events through this model.
-	 * 
-	 * @private
-	 * @method onEmbeddedDataComponentChange
-	 * @param {String} attributeName The attribute name in *this* model that stores the embedded model.
-	 * @param {Data.Collection} childCollection The embedded child collection, if there is one at this level in the bubbling hierarchy.
-	 *   Should be set to null otherwise.
-	 * @param {Data.Model} childModel The embedded child model.
-	 * @param {String} childModelAttr The attribute name of the changed attribute in the embedded model. When fired "up the chain"
-	 *   from deeply nested models, this will accumulate into a dot-delimited path to the child model. Ex: "parent.intermediate.child".
-	 * @param {Mixed} newValue
-	 * @param {Mixed} oldValue
-	 * 
-	 * @param {Object} [childChangeData] An object which holds information from the 'change' event of child DataComponents. This is a "private"
-	 *   argument, and is only used for the event bubbling feature.
-	 * @param {String} [childChangeData.pathToChangedAttr] A string path to the changed attribute. This is a "private" argument, which is only used for
-	 *   the event bubbling feature. Defaults to the value of `childModelAttr`.
-	 * @param {Mixed} [childChangeData.origNewValue=newValue] The newValue from the original event in the deepest DataComponent.
-	 * @param {Mixed} [childChangeData.origOldValue=oldValue] The oldValue from the original event in the deepest DataComponent.
-	 * @param {Data.Model[]} [childChangeData.embeddedDataComponents] An array of the nested models/collections that have fired a 'change' event below 
-	 *   this Model's event. This is a "private" argument, which is only used for this feature.
-	 */
-	onEmbeddedDataComponentChange : function( attributeName, childCollection, childModel, childModelAttr, newValue, oldValue, childChangeData ) {
-		// Create the childChangeData object for the change event of the first (deepest) DataComponent
-		if( !childChangeData ) {
-			childChangeData = {
-				// Default the pathToChangedAttr to the childModelAttr, so it starts out with the attribute that is changed from the deepest child
-				pathToChangedAttr : childModelAttr,
-				
-				// Default the original newValue/oldValue to the newValue/oldValue provided to this handler. These will be the the newValue/oldValue from the
-				// deepest child, and then passed up.
-				origNewValue : newValue,
-				origOldValue : oldValue,
-				
-				// Default the embeddedDataComponents to the child DataComponent
-				embeddedDataComponents : [ childModel ]
-			};
-		}
-		
-		if( childCollection ) {
-			childChangeData.embeddedDataComponents.unshift( childCollection );
-		}
-		childChangeData.embeddedDataComponents.unshift( this );  // prepend this model/collection to the list
-		childChangeData.pathToChangedAttr = attributeName + '.' + childChangeData.pathToChangedAttr;  // prepend the attribute from this DataComponent
-		
-		var pathToChangedAttr = childChangeData.pathToChangedAttr,
-		    embeddedDataComponents = childChangeData.embeddedDataComponents,
-		    origNewValue = childChangeData.origNewValue,
-		    origOldValue = childChangeData.origOldValue,
-		    pathsToChangedAttr = pathToChangedAttr.split( '.' );   // array of the parts of the full dot-delimited path
-		
-		
-		// First, an event with the full path, and one for the generalized attribute change event. Example:
-		//   - change:parent.intermediate.child.attr  model = child                 newValue = [the new value]  oldValue = [the old value]
-		//   - change:parent.intermediate.child.*     model = child  attr = "attr"  newValue = [the new value]  oldValue = [the old value]
-		var changedDataComponent = embeddedDataComponents[ embeddedDataComponents.length - 1 ],
-		    pathToChangedDataComponent = pathsToChangedAttr.slice( 0, pathsToChangedAttr.length - 1 ).join( '.' ),   // if the path to the attr is 'child.attr', this will be 'child'
-		    changedAttrName = pathsToChangedAttr[ pathsToChangedAttr.length - 1 ],
-		    parentDataComponent = embeddedDataComponents[ embeddedDataComponents.length - 2 ];
-		
-		if( parentDataComponent instanceof Data.Collection ) {
-			this.fireEvent( 'change:' + pathToChangedAttr, parentDataComponent, changedDataComponent, origNewValue, origOldValue );
-			this.fireEvent( 'change:' + pathToChangedDataComponent + '.*', parentDataComponent, changedDataComponent, changedAttrName, origNewValue, origOldValue );
-		} else {
-			this.fireEvent( 'change:' + pathToChangedAttr, changedDataComponent, origNewValue, origOldValue );
-			this.fireEvent( 'change:' + pathToChangedDataComponent + '.*', changedDataComponent, changedAttrName, origNewValue, origOldValue );
-		}
-		
-		
-		// Next, fire an event for each of the "paths" leading up to the changed attribute, but not including the attribute itself (we fired an event for that just above).
-		// This loop will fire them backwards, from longest path, to shortest.
-		// Example of events while looping, if the full path to the changed attr is 'parent.intermediate.child.attr':
-		//   - change:parent.intermediate.child       model = intermediate                             newValue = childModel         oldValue = childModel
-		//   - change:parent.intermediate.*           model = intermediate      attr = "child"         newValue = childModel         oldValue = childModel
-		//   - change:parent.intermediate             model = parent                                   newValue = intermediateModel  oldValue = intermediateModel
-		//   - change:parent.*                        model = parent            attr = "intermediate"  newValue = intermediateModel  oldValue = intermediateModel
-		//   - change:parent                          model = [parent's parent]                        newValue = parentModel        oldValue = parentModel 
-		// Note: The 'model' arg that the event is fired with is always the one that relates to the path
-		for( var i = pathsToChangedAttr.length - 2; i >= 0; i-- ) {
-			var currentPath = pathsToChangedAttr.slice( 0, i + 1 ).join( '.' ),
-			    currentPathParent = pathsToChangedAttr.slice( 0, i ).join( '.' ),
-			    changedAttr = pathsToChangedAttr[ i ],
-			    dataComponentForPathParent = embeddedDataComponents[ i ],
-			    dataComponentForPath = embeddedDataComponents[ i + 1 ];
-			
-			
-			// Now if the event should relate to a Collection, we must fire it like a Collection fires its event.
-			if( dataComponentForPathParent instanceof Data.Collection ) {
-				this.fireEvent( 'change:' + currentPath, dataComponentForPathParent, dataComponentForPath, dataComponentForPath );
-				if( currentPathParent !== '' ) {
-					this.fireEvent( 'change:' + currentPathParent + '.*', dataComponentForPathParent, changedAttr, dataComponentForPath, dataComponentForPath );
-				}
-				
-			} else {
-				this.fireEvent( 'change:' + currentPath, dataComponentForPathParent, dataComponentForPath, dataComponentForPath );
-				if( currentPathParent !== '' ) {
-					this.fireEvent( 'change:' + currentPathParent + '.*', dataComponentForPathParent, changedAttr, dataComponentForPath, dataComponentForPath );
-				}
-			}
-		}
-		
-		// Now fire the general 'change' event from this model
-		if( childCollection ) {
-			this.fireEvent( 'change', this, attributeName, childCollection, childCollection, childChangeData );   // this model, attributeName, newValue, oldValue, the string path to the changed attribute, the original newValue from the deepest child, the original oldValue from the deepest child, the nested models/collections so far for this event from the deepest child
-			
-		} else {
-			this.fireEvent( 'change', this, attributeName, childModel, childModel, childChangeData );   // this model, attributeName, newValue, oldValue, the string path to the changed attribute, the original newValue from the deepest child, the original oldValue from the deepest child, the nested models/collections so far for this event from the deepest child
-		}
-	},
-	
-	
-	/**
-	 * Method that responds to an embedded {@link Data.Collection Collection}, and fires a change event in this model
-	 * when a Collection is {@link Data.Collection#event-add added to}, {@link Data.Collection#event-remove removed from},
-	 * of {@link Data.Collection#event-reorder reordered}.
-	 * 
-	 * @private
-	 * @method onEmbeddedCollectionAddRemoveReorder
-	 * @param {String} attributeName The name of the attribute where the embedded Collection exists.
-	 * @param {Data.Collection} collection The collection that fired the {@link Data.Collection#event-add}, 
-	 *   {@link Data.Collection#event-remove}, or {@link Data.Collection#event-reorder} event. 
-	 */
-	onEmbeddedCollectionAddRemoveReorder : function( attributeName, collection ) {
-		this.fireEvent( 'change:' + attributeName, this, collection, collection );
-		this.fireEvent( 'change', this, attributeName, collection, collection );
-	},
-	
 	
 	
 	// --------------------------------
@@ -3823,11 +3554,6 @@ Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.exten
 	 * @inheritdoc
 	 */
 	beforeSet : function( model, newValue, oldValue ) {
-		// First, if the oldValue was a Model, we need to unsubscribe it from its parent model
-		if( oldValue instanceof Data.Collection ) {
-			model.unsubscribeNestedCollection( this.getName(), oldValue );
-		}
-		
 		// Now, normalize the newValue to an object, or null
 		newValue = this._super( arguments );
 		
@@ -3868,10 +3594,6 @@ Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.exten
 		// Enforce that the value is either null, or a Data.Collection
 		if( value !== null && !( value instanceof Data.Collection ) ) {
 			throw new Error( "A value set to the attribute '" + this.getName() + "' was not a Data.Collection subclass" );
-		}
-		
-		if( value instanceof Data.Collection ) {
-			model.subscribeNestedCollection( this.getName(), value );
 		}
 		
 		return value;
@@ -4104,11 +3826,6 @@ Data.attribute.ModelAttribute = Data.attribute.DataComponentAttribute.extend( {
 	 * @inheritdoc
 	 */
 	beforeSet : function( model, newValue, oldValue ) {
-		// First, if the oldValue was a Model, we need to unsubscribe it from its parent model
-		if( oldValue instanceof Data.Model ) {
-			model.unsubscribeNestedModel( this.getName(), oldValue );
-		}
-		
 		// Now, normalize the newValue to an object, or null
 		newValue = this._super( arguments );
 		
@@ -4149,10 +3866,6 @@ Data.attribute.ModelAttribute = Data.attribute.DataComponentAttribute.extend( {
 		// Enforce that the value is either null, or a Data.Model
 		if( value !== null && !( value instanceof Data.Model ) ) {
 			throw new Error( "A value set to the attribute '" + this.getName() + "' was not a Data.Model subclass" );
-		}
-		
-		if( value instanceof Data.Model ) {
-			model.subscribeNestedModel( this.getName(), value );
 		}
 		
 		return value;

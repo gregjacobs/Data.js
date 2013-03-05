@@ -74,6 +74,15 @@ tests.integration.add( new Ext.test.TestSuite( {
 			 */
 			name : "Test the 'change' event for nested models",
 			
+			// TODO: Ignoring these tests because we removed the event bubbling functionality for now. Was too hacky, and didn't handle cycles in the model/collection graph.
+			_should : {
+				ignore : {
+					"When an attribute has changed in a nested model, its parent model should fire the appropriate 'change' events" : true,
+					"The parent model should no longer fire events from the child model after the child model has been un-set from the parent" : true,
+					"When an attribute has changed in a deeply nested model, its parent model should fire a 'change' event" : true
+				}
+			},
+			
 			
 			
 			"When an attribute has changed in a nested model, its parent model should fire the appropriate 'change' events" : function() {

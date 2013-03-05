@@ -96,11 +96,6 @@ Data.attribute.ModelAttribute = Data.attribute.DataComponentAttribute.extend( {
 	 * @inheritdoc
 	 */
 	beforeSet : function( model, newValue, oldValue ) {
-		// First, if the oldValue was a Model, we need to unsubscribe it from its parent model
-		if( oldValue instanceof Data.Model ) {
-			model.unsubscribeNestedModel( this.getName(), oldValue );
-		}
-		
 		// Now, normalize the newValue to an object, or null
 		newValue = this._super( arguments );
 		
@@ -141,10 +136,6 @@ Data.attribute.ModelAttribute = Data.attribute.DataComponentAttribute.extend( {
 		// Enforce that the value is either null, or a Data.Model
 		if( value !== null && !( value instanceof Data.Model ) ) {
 			throw new Error( "A value set to the attribute '" + this.getName() + "' was not a Data.Model subclass" );
-		}
-		
-		if( value instanceof Data.Model ) {
-			model.subscribeNestedModel( this.getName(), value );
 		}
 		
 		return value;

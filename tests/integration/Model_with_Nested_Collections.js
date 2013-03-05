@@ -99,6 +99,16 @@ tests.integration.add( new Ext.test.TestSuite( {
 			name : "Test the 'change' event for nested collections",
 			
 			
+			// TODO: Ignoring these tests because we removed the event bubbling functionality for now. Was too hacky, and didn't handle cycles in the model/collection graph.
+			_should : {
+				ignore : {
+					"When an attribute has changed in a model of a nested collection, its parent collection should fire the appropriate 'change' events" : true,
+					"The parent model should no longer fire events from the child collection after the child collection has been un-set from the parent" : true,
+					"When a child collection is added to / removed from / reordered, the parent model should fire a 'change' event" : true
+				}
+			},
+			
+			
 			
 			"When an attribute has changed in a model of a nested collection, its parent collection should fire the appropriate 'change' events" : function() {
 				var ChildModel = Data.Model.extend( {
@@ -124,7 +134,7 @@ tests.integration.add( new Ext.test.TestSuite( {
 				
 				
 				// A class to store the results
-				var ChangeEventResults = Class( {
+				var ChangeEventResults = Class.extend( Object, {
 					constructor : function( model, attributeName, newValue, oldValue ) {
 						this.model = model;
 						this.attributeName = attributeName;

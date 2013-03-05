@@ -110,11 +110,6 @@ Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.exten
 	 * @inheritdoc
 	 */
 	beforeSet : function( model, newValue, oldValue ) {
-		// First, if the oldValue was a Model, we need to unsubscribe it from its parent model
-		if( oldValue instanceof Data.Collection ) {
-			model.unsubscribeNestedCollection( this.getName(), oldValue );
-		}
-		
 		// Now, normalize the newValue to an object, or null
 		newValue = this._super( arguments );
 		
@@ -155,10 +150,6 @@ Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.exten
 		// Enforce that the value is either null, or a Data.Collection
 		if( value !== null && !( value instanceof Data.Collection ) ) {
 			throw new Error( "A value set to the attribute '" + this.getName() + "' was not a Data.Collection subclass" );
-		}
-		
-		if( value instanceof Data.Collection ) {
-			model.subscribeNestedCollection( this.getName(), value );
 		}
 		
 		return value;
