@@ -16,11 +16,12 @@
 	
 	
 	<target name="doc">
-		<exec executable="${basedir}/vendor/jsduck/jsduck-4.4.1.exe">
+		<exec executable="${basedir}/vendor/jsduck/jsduck-4.4.1.exe" failonerror="true">
 			<arg value="--output=docs" />
-			<arg value="--external=jQuery,jqXHR" />
+			<arg value="--external=jQuery,jQuery.Promise,jqXHR" />
 			<arg value="--title=Data.js API Docs" />
 			<arg value="src/" />
+			<arg value="vendor/observable/" />
 		</exec>
 	</target>
 	

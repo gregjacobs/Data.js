@@ -181,7 +181,7 @@ Data.Model = Data.DataComponent.extend( {
 			var classPrototype = newModelClass.prototype,
 			    superclassPrototype = newModelClass.superclass,
 			    superclassAttributes = superclassPrototype.attributes || {},    // will be an object (hashmap) of attributeName -> Attribute instances
-			    newAttributes = {}, 
+			    newAttributes = {},
 			    attributeDefs = [],  // will be an array of Attribute configs (definitions) on the new subclass 
 			    attributeObj,   // for holding each of the attributeDefs, one at a time
 			    i, len;

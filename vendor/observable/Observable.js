@@ -175,7 +175,7 @@
 	
 		
 	/**
-	 * @class ui.util.Observable
+	 * @class Observable
 	 * 
 	 * Base class that provides a common interface for publishing events. Subclasses are expected to
 	 * to have a property "events" with all the events defined, and, optionally, a property "listeners"
@@ -324,7 +324,7 @@
 		 * @param {Object} [options.scope] The scope (`this` reference) in which the handler function is executed. **If omitted, defaults to the object which fired the event.**
 		 * @param {Number} [options.delay] The number of milliseconds to delay the invocation of the handler after the event fires.
 		 * @param {Boolean} [options.single] True to add a handler to handle just the next firing of the event, and then remove itself.
-		 * @param {Number} [options.buffer] Causes the handler to be scheduled to run in an {@link UI.util.DelayedTask} delayed by the specified number of milliseconds. 
+		 * @param {Number} [options.buffer] Causes the handler to be scheduled to run in a delayed fashion by the specified number of milliseconds. 
 		 *   If the event fires again within that time, the original handler is *not* invoked, but the new handler is scheduled in its place.
 		 * 
 		 * 

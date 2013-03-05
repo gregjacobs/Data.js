@@ -228,6 +228,7 @@ _.assign( Data.persistence.Proxy, {
  * @private
  * @abstract
  * @class Data.DataComponent
+ * @extends Observable
  * 
  * Base class for data-holding classes ({@link Data.Model} and {@link Data.Collection}), that abstracts out some
  * of the commonalities between them.
@@ -500,7 +501,7 @@ Data.Model = Data.DataComponent.extend( {
 			var classPrototype = newModelClass.prototype,
 			    superclassPrototype = newModelClass.superclass,
 			    superclassAttributes = superclassPrototype.attributes || {},    // will be an object (hashmap) of attributeName -> Attribute instances
-			    newAttributes = {}, 
+			    newAttributes = {},
 			    attributeDefs = [],  // will be an array of Attribute configs (definitions) on the new subclass 
 			    attributeObj,   // for holding each of the attributeDefs, one at a time
 			    i, len;
@@ -1833,7 +1834,7 @@ Data.Collection = Data.DataComponent.extend( {
 	 * @property {Data.Model[]} removedModels
 	 * 
 	 * An array that holds Models removed from the Collection, which haven't yet been {@link #sync synchronized} to the server yet (by 
-	 * {@link Data.Model#destroy destroying} them).
+	 * {@link Data.Model#method-destroy destroying} them).
 	 */
 	
 	/**

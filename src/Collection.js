@@ -135,7 +135,7 @@ Data.Collection = Data.DataComponent.extend( {
 	 * @property {Data.Model[]} removedModels
 	 * 
 	 * An array that holds Models removed from the Collection, which haven't yet been {@link #sync synchronized} to the server yet (by 
-	 * {@link Data.Model#destroy destroying} them).
+	 * {@link Data.Model#method-destroy destroying} them).
 	 */
 	
 	/**

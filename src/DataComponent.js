@@ -2,6 +2,7 @@
  * @private
  * @abstract
  * @class Data.DataComponent
+ * @extends Observable
  * 
  * Base class for data-holding classes ({@link Data.Model} and {@link Data.Collection}), that abstracts out some
  * of the commonalities between them.
