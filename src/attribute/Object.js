@@ -1,11 +1,11 @@
 /**
- * @class Data.attribute.ObjectAttribute
+ * @class Data.attribute.Object
  * @extends Data.attribute.Attribute
  * 
  * Attribute definition class for an Attribute that takes an object value.
  */
 /*global Data */
-Data.attribute.ObjectAttribute = Data.attribute.Attribute.extend( {
+Data.attribute.Object = Data.attribute.Attribute.extend( {
 	
 	/**
 	 * @cfg {Object} defaultValue
@@ -34,4 +34,4 @@ Data.attribute.ObjectAttribute = Data.attribute.Attribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'object', Data.attribute.ObjectAttribute );
+Data.attribute.Attribute.registerType( 'object', Data.attribute.Object );

@@ -1,7 +1,7 @@
 /*global Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'DateAttribute',
+	name: 'Date',
 	
 	
 	items : [
@@ -15,7 +15,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null when provided invalid values" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.DateAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.Date( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -73,7 +73,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return a Date object when provided valid values" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.DateAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.Date( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				

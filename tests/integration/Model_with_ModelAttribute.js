@@ -1,7 +1,7 @@
 /*global window, Ext, Y, JsMockito, tests, Data */
 tests.integration.add( new Ext.test.TestSuite( {
 	
-	name: 'Model with ModelAttribute',
+	name: 'Model with Model Attribute',
 	
 	
 	items : [
@@ -12,7 +12,7 @@ tests.integration.add( new Ext.test.TestSuite( {
 			name : "Test provided set() function",
 			
 			
-			"The set() function provided to a ModelAttribute should be passed the instantiated Model if a 'modelClass' config is provided" : function() {
+			"The set() function provided to a Model Attribute should be passed the instantiated Model if a 'modelClass' config is provided" : function() {
 				var setValue;
 				
 				var InnerModel = Data.Model.extend( {

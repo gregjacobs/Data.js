@@ -1,12 +1,12 @@
 /**
  * @abstract
- * @class Data.attribute.IntegerAttribute
- * @extends Data.attribute.PrimitiveAttribute
+ * @class Data.attribute.Number
+ * @extends Data.attribute.Primitive
  * 
  * Abstract base class for an Attribute that takes a number data value.
  */
 /*global Data */
-Data.attribute.NumberAttribute = Data.attribute.PrimitiveAttribute.extend( {
+Data.attribute.Number = Data.attribute.Primitive.extend( {
 	
 	abstractClass: true,
 	
@@ -14,7 +14,7 @@ Data.attribute.NumberAttribute = Data.attribute.PrimitiveAttribute.extend( {
 	 * @cfg {Mixed/Function} defaultValue
 	 * @inheritdoc
 	 * 
-	 * The NumberAttribute defaults to 0, unless the {@link #useNull} config is 
+	 * The Number Attribute defaults to 0, unless the {@link #useNull} config is 
 	 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
 	 */
 	defaultValue: function( attribute ) {
@@ -40,7 +40,7 @@ Data.attribute.NumberAttribute = Data.attribute.PrimitiveAttribute.extend( {
 	 * A regular expression for stripping non-numeric characters from a numeric value. Defaults to `/[\$,%]/g`.
 	 * This should be overridden for localization. A way to do this globally is, for example:
 	 * 
-	 *     Data.attribute.NumberAttribute.prototype.stripCharsRegex = /newRegexHere/g;
+	 *     Data.attribute.Number.prototype.stripCharsRegex = /newRegexHere/g;
 	 */
 	stripCharsRegex : /[\$,%]/g
 	

@@ -1,7 +1,7 @@
 /*global window, Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'Data.attribute.ObjectAttribute',
+	name: 'Data.attribute.Object',
 	
 	
 	items : [
@@ -12,8 +12,8 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 		{
 			name : "Test the defaultValue",
 			
-			"The default defaultValue for ObjectAttribute should be null" : function() {
-				Y.Assert.isNull( Data.attribute.ObjectAttribute.prototype.defaultValue );
+			"The default defaultValue for Object Attribute should be null" : function() {
+				Y.Assert.isNull( Data.attribute.Object.prototype.defaultValue );
 			}
 		},
 	
@@ -27,7 +27,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null when provided any falsy value, or non-object" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.ObjectAttribute( { name: 'attr' } ),
+				    attribute = new Data.attribute.Object( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -60,7 +60,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return an object unchanged" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.ObjectAttribute( { name: 'attr' } ),
+				    attribute = new Data.attribute.Object( { name: 'attr' } ),
 				    oldValue;  // undefined
 				
 				var data = { attr1: 1, attr2: 2 };

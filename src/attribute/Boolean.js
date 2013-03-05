@@ -1,17 +1,17 @@
 /**
- * @class Data.attribute.BooleanAttribute
- * @extends Data.attribute.PrimitiveAttribute
+ * @class Data.attribute.Boolean
+ * @extends Data.attribute.Primitive
  * 
  * Attribute definition class for an Attribute that takes a boolean (i.e. true/false) data value.
  */
 /*global Data */
-Data.attribute.BooleanAttribute = Data.attribute.PrimitiveAttribute.extend( {
+Data.attribute.Boolean = Data.attribute.Primitive.extend( {
 	
 	/**
 	 * @cfg {Mixed/Function} defaultValue
 	 * @inheritdoc
 	 * 
-	 * The BooleanAttribute defaults to `false`, unless the {@link #useNull} config is set to `true`, 
+	 * The Boolean Attribute defaults to `false`, unless the {@link #useNull} config is set to `true`, 
 	 * in which case it defaults to `null` (to denote the Attribute being "unset").
 	 */
 	defaultValue: function( attribute ) {
@@ -45,12 +45,12 @@ Data.attribute.BooleanAttribute = Data.attribute.PrimitiveAttribute.extend( {
 		if( this.useNull && ( newValue === undefined || newValue === null || newValue === '' ) ) {
 			return null;
 		}
-		return newValue === true || newValue === 'true' || newValue == 1;
+		return newValue === true || newValue === 'true' || newValue === 1 || newValue === "1";
 	}
 	
 } );
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'boolean', Data.attribute.BooleanAttribute );
-Data.attribute.Attribute.registerType( 'bool', Data.attribute.BooleanAttribute );
+Data.attribute.Attribute.registerType( 'boolean', Data.attribute.Boolean );
+Data.attribute.Attribute.registerType( 'bool', Data.attribute.Boolean );

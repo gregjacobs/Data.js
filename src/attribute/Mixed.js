@@ -1,11 +1,11 @@
 /**
- * @class Data.attribute.MixedAttribute
+ * @class Data.attribute.Mixed
  * @extends Data.attribute.Attribute
  * 
  * Attribute definition class for an Attribute that takes any data value.
  */
 /*global Data */
-Data.attribute.MixedAttribute = Data.attribute.Attribute.extend( {
+Data.attribute.Mixed = Data.attribute.Attribute.extend( {
 		
 	// No specific implementation at this time. All handled by the base class Attribute.
 	
@@ -13,4 +13,4 @@ Data.attribute.MixedAttribute = Data.attribute.Attribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'mixed', Data.attribute.MixedAttribute );
+Data.attribute.Attribute.registerType( 'mixed', Data.attribute.Mixed );

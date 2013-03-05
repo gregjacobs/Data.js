@@ -1,11 +1,11 @@
 /**
- * @class Data.attribute.DateAttribute
- * @extends Data.attribute.ObjectAttribute
+ * @class Data.attribute.Date
+ * @extends Data.attribute.Object
  * 
  * Attribute definition class for an Attribute that takes a JavaScript Date object.
  */
-/*global Data */
-Data.attribute.DateAttribute = Data.attribute.ObjectAttribute.extend( {
+/*global _, Data */
+Data.attribute.Date = Data.attribute.Object.extend( {
 		
 	/**
 	 * Converts the provided data value into a Date object. If the value provided is not a Date, or cannot be parsed
@@ -33,4 +33,4 @@ Data.attribute.DateAttribute = Data.attribute.ObjectAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'date', Data.attribute.DateAttribute );
+Data.attribute.Attribute.registerType( 'date', Data.attribute.Date );

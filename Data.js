@@ -1086,7 +1086,7 @@ Data.Model = Data.DataComponent.extend( {
 			// Handle an attributeName being provided to this method
 			var attribute = attributes[ attributeName ];
 			
-			if( attribute instanceof Data.attribute.DataComponentAttribute && attribute.isEmbedded() && data[ attributeName ].isModified( options ) ) {   // DataComponent (Model or Collection) attribute is modified
+			if( attribute instanceof Data.attribute.DataComponent && attribute.isEmbedded() && data[ attributeName ].isModified( options ) ) {   // DataComponent (Model or Collection) attribute is modified
 				return true;
 			} else if( modifiedData.hasOwnProperty( attributeName ) && ( !options.persistedOnly || ( options.persistedOnly && attributes[ attributeName ].isPersisted() ) ) ) {  // primitive (non Model or Collection) attribute is modified
 				return true;
@@ -1402,7 +1402,7 @@ Data.Model = Data.DataComponent.extend( {
 	
 	/**
 	 * Private method that performs the actual save (persistence) of this Model. This method is called from {@link #save} at the appropriate
-	 * time. It is delayed from being called if the Model first has to persist non-{@link Data.attribute.DataComponentAttribute#embedded embedded}) 
+	 * time. It is delayed from being called if the Model first has to persist non-{@link Data.attribute.DataComponent#embedded embedded}) 
 	 * child collections.
 	 * 
 	 * @private
@@ -1549,16 +1549,16 @@ Data.Model = Data.DataComponent.extend( {
 	
 	
 	/**
-	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponentAttribute DataComponentAttributes}.
+	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponent DataComponent Attributes}.
 	 * 
 	 * @protected
 	 * @method getDataComponentAttributes
-	 * @return {Data.attribute.DataComponentAttribute[]}
+	 * @return {Data.attribute.DataComponent[]}
 	 */
 	getDataComponentAttributes : function() {
 		var attributes = this.attributes,
 		    attribute,
-		    DataComponentAttribute = Data.attribute.DataComponentAttribute,  // quick reference to constructor
+		    DataComponentAttribute = Data.attribute.DataComponent,  // quick reference to constructor
 		    dataComponentAttributes = [];
 		
 		for( var attrName in attributes ) {
@@ -1571,13 +1571,13 @@ Data.Model = Data.DataComponent.extend( {
 	
 	
 	/**
-	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponentAttribute DataComponentAttributes} 
-	 * which are also {@link Data.attribute.DataComponentAttribute#embedded}. This is a convenience method that supports the methods which
-	 * use the embedded DataComponentAttributes. 
+	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponent DataComponent Attributes} 
+	 * which are also {@link Data.attribute.DataComponent#embedded}. This is a convenience method that supports the methods which
+	 * use the embedded DataComponent Attributes. 
 	 * 
 	 * @protected
 	 * @method getEmbeddedDataComponentAttributes
-	 * @return {Data.attribute.DataComponentAttribute[]} The array of embedded DataComponentAttributes
+	 * @return {Data.attribute.DataComponent[]} The array of embedded DataComponent Attributes.
 	 */
 	getEmbeddedDataComponentAttributes : function() {
 		var dataComponentAttributes = this.getDataComponentAttributes(),
@@ -1596,16 +1596,16 @@ Data.Model = Data.DataComponent.extend( {
 	
 	
 	/**
-	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.CollectionAttribute CollectionAttributes}.
+	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.Collection Collection Attributes}.
 	 * 
 	 * @protected
 	 * @method getCollectionAttributes
-	 * @return {Data.attribute.CollectionAttribute[]}
+	 * @return {Data.attribute.Collection[]}
 	 */
 	getCollectionAttributes : function() {
 		var dataComponentAttributes = this.getDataComponentAttributes(),
 		    dataComponentAttribute,
-		    CollectionAttribute = Data.attribute.CollectionAttribute,  // quick reference to constructor
+		    CollectionAttribute = Data.attribute.Collection,  // quick reference to constructor
 		    collectionAttributes = [];
 		
 		for( var i = 0, len = dataComponentAttributes.length; i < len; i++ ) {
@@ -1620,12 +1620,12 @@ Data.Model = Data.DataComponent.extend( {
 	
 	
 	/**
-	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.CollectionAttribute CollectionAttributes},
-	 * but are *not* {@link Data.attribute.CollectionAttribute#embedded embedded} attributes (i.e. they are "related" attributes).
+	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.Collection Collection Attributes},
+	 * but are *not* {@link Data.attribute.Collection#embedded embedded} attributes (i.e. they are "related" attributes).
 	 * 
 	 * @protected
 	 * @method getRelatedCollectionAttributes
-	 * @return {Data.attribute.CollectionAttribute[]} 
+	 * @return {Data.attribute.Collection[]} 
 	 */
 	getRelatedCollectionAttributes : function() {
 		var collectionAttributes = this.getCollectionAttributes(),
@@ -2686,14 +2686,14 @@ Data.attribute.Attribute = Class.extend( Object, {
 	 * Specifies the type of the Attribute, in which a conversion of the raw data will be performed.
 	 * This accepts the following general types, but custom types may be added using the {@link Data.attribute.Attribute#registerType} method.
 	 * 
-	 * - {@link Data.attribute.MixedAttribute mixed}: Performs no conversions, and no special processing of given values. This is the default Attribute type (not recommended).
-	 * - {@link Data.attribute.StringAttribute string}
-	 * - {@link Data.attribute.IntegerAttribute int} / {@link Data.attribute.IntegerAttribute integer}
-	 * - {@link Data.attribute.FloatAttribute float} (really a "double")
-	 * - {@link Data.attribute.BooleanAttribute boolean} / {@link Data.attribute.BooleanAttribute bool}
-	 * - {@link Data.attribute.DateAttribute date}
-	 * - {@link Data.attribute.ModelAttribute model}
-	 * - {@link Data.attribute.CollectionAttribute collection}
+	 * - {@link Data.attribute.Mixed mixed}: Performs no conversions, and no special processing of given values. This is the default Attribute type (not recommended).
+	 * - {@link Data.attribute.String string}
+	 * - {@link Data.attribute.Integer int} / {@link Data.attribute.Integer integer}
+	 * - {@link Data.attribute.Float float} (really a "double")
+	 * - {@link Data.attribute.Boolean boolean} / {@link Data.attribute.Boolean bool}
+	 * - {@link Data.attribute.Date date}
+	 * - {@link Data.attribute.Model model}
+	 * - {@link Data.attribute.Collection collection}
 	 */
 	
 	/**
@@ -3198,14 +3198,14 @@ Data.attribute.Attribute = Class.extend( Object, {
 
 /**
  * @abstract
- * @class Data.attribute.PrimitiveAttribute
+ * @class Data.attribute.Primitive
  * @extends Data.attribute.Attribute
  * 
  * Base Attribute definition class for an Attribute that holds a JavaScript primitive value 
  * (i.e. A Boolean, Number, or String).
  */
 /*global Data */
-Data.attribute.PrimitiveAttribute = Data.attribute.Attribute.extend( {
+Data.attribute.Primitive = Data.attribute.Attribute.extend( {
 	
 	abstractClass: true,
 	
@@ -3224,13 +3224,13 @@ Data.attribute.PrimitiveAttribute = Data.attribute.Attribute.extend( {
 
 /**
  * @abstract
- * @class Data.attribute.IntegerAttribute
- * @extends Data.attribute.PrimitiveAttribute
+ * @class Data.attribute.Number
+ * @extends Data.attribute.Primitive
  * 
  * Abstract base class for an Attribute that takes a number data value.
  */
 /*global Data */
-Data.attribute.NumberAttribute = Data.attribute.PrimitiveAttribute.extend( {
+Data.attribute.Number = Data.attribute.Primitive.extend( {
 	
 	abstractClass: true,
 	
@@ -3238,7 +3238,7 @@ Data.attribute.NumberAttribute = Data.attribute.PrimitiveAttribute.extend( {
 	 * @cfg {Mixed/Function} defaultValue
 	 * @inheritdoc
 	 * 
-	 * The NumberAttribute defaults to 0, unless the {@link #useNull} config is 
+	 * The Number Attribute defaults to 0, unless the {@link #useNull} config is 
 	 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
 	 */
 	defaultValue: function( attribute ) {
@@ -3264,20 +3264,20 @@ Data.attribute.NumberAttribute = Data.attribute.PrimitiveAttribute.extend( {
 	 * A regular expression for stripping non-numeric characters from a numeric value. Defaults to `/[\$,%]/g`.
 	 * This should be overridden for localization. A way to do this globally is, for example:
 	 * 
-	 *     Data.attribute.NumberAttribute.prototype.stripCharsRegex = /newRegexHere/g;
+	 *     Data.attribute.Number.prototype.stripCharsRegex = /newRegexHere/g;
 	 */
 	stripCharsRegex : /[\$,%]/g
 	
 } );
 
 /**
- * @class Data.attribute.ObjectAttribute
+ * @class Data.attribute.Object
  * @extends Data.attribute.Attribute
  * 
  * Attribute definition class for an Attribute that takes an object value.
  */
 /*global Data */
-Data.attribute.ObjectAttribute = Data.attribute.Attribute.extend( {
+Data.attribute.Object = Data.attribute.Attribute.extend( {
 	
 	/**
 	 * @cfg {Object} defaultValue
@@ -3306,17 +3306,17 @@ Data.attribute.ObjectAttribute = Data.attribute.Attribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'object', Data.attribute.ObjectAttribute );
+Data.attribute.Attribute.registerType( 'object', Data.attribute.Object );
 
 /**
  * @abstract
- * @class Data.attribute.DataComponentAttribute
- * @extends Data.attribute.ObjectAttribute
+ * @class Data.attribute.DataComponent
+ * @extends Data.attribute.Object
  * 
  * Attribute definition class for an Attribute that allows for a nested {@link Data.DataComponent} value.
  */
 /*global window, Data */
-Data.attribute.DataComponentAttribute = Data.attribute.ObjectAttribute.extend( {
+Data.attribute.DataComponent = Data.attribute.Object.extend( {
 	
 	abstractClass: true,
 	
@@ -3386,19 +3386,19 @@ Data.attribute.DataComponentAttribute = Data.attribute.ObjectAttribute.extend( {
 } );
 
 /**
- * @class Data.attribute.BooleanAttribute
- * @extends Data.attribute.PrimitiveAttribute
+ * @class Data.attribute.Boolean
+ * @extends Data.attribute.Primitive
  * 
  * Attribute definition class for an Attribute that takes a boolean (i.e. true/false) data value.
  */
 /*global Data */
-Data.attribute.BooleanAttribute = Data.attribute.PrimitiveAttribute.extend( {
+Data.attribute.Boolean = Data.attribute.Primitive.extend( {
 	
 	/**
 	 * @cfg {Mixed/Function} defaultValue
 	 * @inheritdoc
 	 * 
-	 * The BooleanAttribute defaults to `false`, unless the {@link #useNull} config is set to `true`, 
+	 * The Boolean Attribute defaults to `false`, unless the {@link #useNull} config is set to `true`, 
 	 * in which case it defaults to `null` (to denote the Attribute being "unset").
 	 */
 	defaultValue: function( attribute ) {
@@ -3432,19 +3432,19 @@ Data.attribute.BooleanAttribute = Data.attribute.PrimitiveAttribute.extend( {
 		if( this.useNull && ( newValue === undefined || newValue === null || newValue === '' ) ) {
 			return null;
 		}
-		return newValue === true || newValue === 'true' || newValue == 1;
+		return newValue === true || newValue === 'true' || newValue === 1 || newValue === "1";
 	}
 	
 } );
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'boolean', Data.attribute.BooleanAttribute );
-Data.attribute.Attribute.registerType( 'bool', Data.attribute.BooleanAttribute );
+Data.attribute.Attribute.registerType( 'boolean', Data.attribute.Boolean );
+Data.attribute.Attribute.registerType( 'bool', Data.attribute.Boolean );
 
 /**
- * @class Data.attribute.CollectionAttribute
- * @extends Data.attribute.DataComponentAttribute
+ * @class Data.attribute.Collection
+ * @extends Data.attribute.DataComponent
  * 
  * Attribute definition class for an Attribute that allows for a nested {@link Data.Collection} value.
  * 
@@ -3458,7 +3458,7 @@ Data.attribute.Attribute.registerType( 'bool', Data.attribute.BooleanAttribute )
  * function to convert any anonymous array to a Collection in the appropriate way. 
  */
 /*global window, Class, Data */
-Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.extend( {
+Data.attribute.Collection = Data.attribute.DataComponent.extend( {
 		
 	/**
 	 * @cfg {Array/Data.Collection} defaultValue
@@ -3470,7 +3470,7 @@ Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.exten
 	
 	/**
 	 * @cfg {Data.Collection/String/Function} collectionClass (required)
-	 * The specific {@link Data.Collection} subclass that will be used in the CollectionAttribute. This config is needed
+	 * The specific {@link Data.Collection} subclass that will be used in the Collection Attribute. This config is needed
 	 * to perform automatic conversion of an array of models / anonymous data objects into the approperiate Collection subclass.
 	 * 
 	 * This config may be provided as:
@@ -3603,16 +3603,16 @@ Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.exten
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'collection', Data.attribute.CollectionAttribute );
+Data.attribute.Attribute.registerType( 'collection', Data.attribute.Collection );
 
 /**
- * @class Data.attribute.DateAttribute
- * @extends Data.attribute.ObjectAttribute
+ * @class Data.attribute.Date
+ * @extends Data.attribute.Object
  * 
  * Attribute definition class for an Attribute that takes a JavaScript Date object.
  */
-/*global Data */
-Data.attribute.DateAttribute = Data.attribute.ObjectAttribute.extend( {
+/*global _, Data */
+Data.attribute.Date = Data.attribute.Object.extend( {
 		
 	/**
 	 * Converts the provided data value into a Date object. If the value provided is not a Date, or cannot be parsed
@@ -3640,16 +3640,16 @@ Data.attribute.DateAttribute = Data.attribute.ObjectAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'date', Data.attribute.DateAttribute );
+Data.attribute.Attribute.registerType( 'date', Data.attribute.Date );
 
 /**
- * @class Data.attribute.FloatAttribute
- * @extends Data.attribute.NumberAttribute
+ * @class Data.attribute.Float
+ * @extends Data.attribute.Number
  * 
  * Attribute definition class for an Attribute that takes a float (i.e. decimal, or "real") number data value.
  */
 /*global Data */
-Data.attribute.FloatAttribute = Data.attribute.NumberAttribute.extend( {
+Data.attribute.Float = Data.attribute.Number.extend( {
 	
 	/**
 	 * Converts the provided data value into a float. If {@link #useNull} is true, undefined/null/empty string 
@@ -3672,18 +3672,18 @@ Data.attribute.FloatAttribute = Data.attribute.NumberAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'float', Data.attribute.FloatAttribute );
-Data.attribute.Attribute.registerType( 'number', Data.attribute.FloatAttribute );
+Data.attribute.Attribute.registerType( 'float', Data.attribute.Float );
+Data.attribute.Attribute.registerType( 'number', Data.attribute.Float );
 
 /**
- * @class Data.attribute.IntegerAttribute
- * @extends Data.attribute.NumberAttribute
+ * @class Data.attribute.Integer
+ * @extends Data.attribute.Number
  * 
  * Attribute definition class for an Attribute that takes an integer data value. If a decimal
  * number is provided (i.e. a "float"), the decimal will be ignored, and only the integer value used.
  */
 /*global Data */
-Data.attribute.IntegerAttribute = Data.attribute.NumberAttribute.extend( {
+Data.attribute.Integer = Data.attribute.Number.extend( {
 	
 	/**
 	 * Converts the provided data value into an integer. If {@link #useNull} is true, undefined/null/empty string 
@@ -3708,17 +3708,17 @@ Data.attribute.IntegerAttribute = Data.attribute.NumberAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'int', Data.attribute.IntegerAttribute );
-Data.attribute.Attribute.registerType( 'integer', Data.attribute.IntegerAttribute );
+Data.attribute.Attribute.registerType( 'int', Data.attribute.Integer );
+Data.attribute.Attribute.registerType( 'integer', Data.attribute.Integer );
 
 /**
- * @class Data.attribute.MixedAttribute
+ * @class Data.attribute.Mixed
  * @extends Data.attribute.Attribute
  * 
  * Attribute definition class for an Attribute that takes any data value.
  */
 /*global Data */
-Data.attribute.MixedAttribute = Data.attribute.Attribute.extend( {
+Data.attribute.Mixed = Data.attribute.Attribute.extend( {
 		
 	// No specific implementation at this time. All handled by the base class Attribute.
 	
@@ -3726,11 +3726,11 @@ Data.attribute.MixedAttribute = Data.attribute.Attribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'mixed', Data.attribute.MixedAttribute );
+Data.attribute.Attribute.registerType( 'mixed', Data.attribute.Mixed );
 
 /**
- * @class Data.attribute.ModelAttribute
- * @extends Data.attribute.DataComponentAttribute
+ * @class Data.attribute.Model
+ * @extends Data.attribute.DataComponent
  * 
  * Attribute definition class for an Attribute that allows for a nested {@link Data.Model} value.
  * 
@@ -3742,18 +3742,18 @@ Data.attribute.Attribute.registerType( 'mixed', Data.attribute.MixedAttribute );
  * function to convert any anonymous object to a Model in the appropriate way. 
  */
 /*global window, Class, Data */
-Data.attribute.ModelAttribute = Data.attribute.DataComponentAttribute.extend( {
+Data.attribute.Model = Data.attribute.DataComponent.extend( {
 	
 	/**
 	 * @cfg {Data.Model/String/Function} modelClass
-	 * The specific {@link Data.Model} subclass that will be used in the ModelAttribute. This config can be provided
+	 * The specific {@link Data.Model} subclass that will be used in the Model. This config can be provided
 	 * to perform automatic conversion of anonymous data objects into the approperiate Model subclass.
 	 * 
 	 * This config may be provided as:
 	 * 
 	 * - A direct reference to a Model (ex: `myApp.models.MyModel`),
 	 * - A String which specifies the object path to the Model (which must be able to be referenced from the global scope, 
-	 * 	 ex: 'myApp.models.MyModel'), 
+	 *   ex: 'myApp.models.MyModel'), 
 	 * - Or a function, which will return a reference to the Model that should be used. 
 	 * 
 	 * The reason that this config may be specified as a String or a Function is to allow for late binding to the Model class 
@@ -3875,22 +3875,22 @@ Data.attribute.ModelAttribute = Data.attribute.DataComponentAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'model', Data.attribute.ModelAttribute );
+Data.attribute.Attribute.registerType( 'model', Data.attribute.Model );
 
 /**
- * @class Data.attribute.StringAttribute
- * @extends Data.attribute.PrimitiveAttribute
+ * @class Data.attribute.String
+ * @extends Data.attribute.Primitive
  * 
  * Attribute definition class for an Attribute that takes a string data value.
  */
 /*global Data */
-Data.attribute.StringAttribute = Data.attribute.PrimitiveAttribute.extend( {
+Data.attribute.String = Data.attribute.Primitive.extend( {
 	
 	/**
 	 * @cfg {Mixed/Function} defaultValue
 	 * @inheritdoc
 	 * 
-	 * The StringAttribute defaults to `""` (empty string), unless the {@link #useNull} config is 
+	 * The String Attribute defaults to `""` (empty string), unless the {@link #useNull} config is 
 	 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
 	 */
 	defaultValue: function( attribute ) {
@@ -3929,7 +3929,7 @@ Data.attribute.StringAttribute = Data.attribute.PrimitiveAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'string', Data.attribute.StringAttribute );
+Data.attribute.Attribute.registerType( 'string', Data.attribute.String );
 
 /**
  * @private
@@ -3939,7 +3939,7 @@ Data.attribute.Attribute.registerType( 'string', Data.attribute.StringAttribute 
  * NativeObjectConverter allows for the conversion of {@link Data.Collection Collection} / {@link Data.Model Models}
  * to their native Array / Object representations, while dealing with circular dependencies.
  */
-/*global Data */
+/*global _, Data */
 Data.data.NativeObjectConverter = {
 	
 	/**
@@ -3960,7 +3960,7 @@ Data.data.NativeObjectConverter = {
 	 *   to a string must take place before persistence (such as for Date objects). 
 	 *   
 	 *   As a hack (unfortunately, due to limited time), if passing the 'raw' option as true, and a nested {@link Data.Collection Collection} is in a 
-	 *   {@link Data.attribute.CollectionAttribute} that is *not* {@link Data.attribute.CollectionAttribute#embedded}, then only an array of the 
+	 *   {@link Data.attribute.Collection} that is *not* {@link Data.attribute.Collection#embedded}, then only an array of the 
 	 *   {@link Data.Model#idAttribute ID attribute} values is returned for that collection. The final data for a related (i.e. non-embedded) nested
 	 *   Collection may look something like this:
 	 *     

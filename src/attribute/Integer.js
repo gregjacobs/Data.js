@@ -1,12 +1,12 @@
 /**
- * @class Data.attribute.IntegerAttribute
- * @extends Data.attribute.NumberAttribute
+ * @class Data.attribute.Integer
+ * @extends Data.attribute.Number
  * 
  * Attribute definition class for an Attribute that takes an integer data value. If a decimal
  * number is provided (i.e. a "float"), the decimal will be ignored, and only the integer value used.
  */
 /*global Data */
-Data.attribute.IntegerAttribute = Data.attribute.NumberAttribute.extend( {
+Data.attribute.Integer = Data.attribute.Number.extend( {
 	
 	/**
 	 * Converts the provided data value into an integer. If {@link #useNull} is true, undefined/null/empty string 
@@ -31,5 +31,5 @@ Data.attribute.IntegerAttribute = Data.attribute.NumberAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'int', Data.attribute.IntegerAttribute );
-Data.attribute.Attribute.registerType( 'integer', Data.attribute.IntegerAttribute );
+Data.attribute.Attribute.registerType( 'int', Data.attribute.Integer );
+Data.attribute.Attribute.registerType( 'integer', Data.attribute.Integer );

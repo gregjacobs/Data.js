@@ -782,7 +782,7 @@ Data.Model = Data.DataComponent.extend( {
 			// Handle an attributeName being provided to this method
 			var attribute = attributes[ attributeName ];
 			
-			if( attribute instanceof Data.attribute.DataComponentAttribute && attribute.isEmbedded() && data[ attributeName ].isModified( options ) ) {   // DataComponent (Model or Collection) attribute is modified
+			if( attribute instanceof Data.attribute.DataComponent && attribute.isEmbedded() && data[ attributeName ].isModified( options ) ) {   // DataComponent (Model or Collection) attribute is modified
 				return true;
 			} else if( modifiedData.hasOwnProperty( attributeName ) && ( !options.persistedOnly || ( options.persistedOnly && attributes[ attributeName ].isPersisted() ) ) ) {  // primitive (non Model or Collection) attribute is modified
 				return true;
@@ -1098,7 +1098,7 @@ Data.Model = Data.DataComponent.extend( {
 	
 	/**
 	 * Private method that performs the actual save (persistence) of this Model. This method is called from {@link #save} at the appropriate
-	 * time. It is delayed from being called if the Model first has to persist non-{@link Data.attribute.DataComponentAttribute#embedded embedded}) 
+	 * time. It is delayed from being called if the Model first has to persist non-{@link Data.attribute.DataComponent#embedded embedded}) 
 	 * child collections.
 	 * 
 	 * @private
@@ -1245,16 +1245,16 @@ Data.Model = Data.DataComponent.extend( {
 	
 	
 	/**
-	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponentAttribute DataComponentAttributes}.
+	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponent DataComponent Attributes}.
 	 * 
 	 * @protected
 	 * @method getDataComponentAttributes
-	 * @return {Data.attribute.DataComponentAttribute[]}
+	 * @return {Data.attribute.DataComponent[]}
 	 */
 	getDataComponentAttributes : function() {
 		var attributes = this.attributes,
 		    attribute,
-		    DataComponentAttribute = Data.attribute.DataComponentAttribute,  // quick reference to constructor
+		    DataComponentAttribute = Data.attribute.DataComponent,  // quick reference to constructor
 		    dataComponentAttributes = [];
 		
 		for( var attrName in attributes ) {
@@ -1267,13 +1267,13 @@ Data.Model = Data.DataComponent.extend( {
 	
 	
 	/**
-	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponentAttribute DataComponentAttributes} 
-	 * which are also {@link Data.attribute.DataComponentAttribute#embedded}. This is a convenience method that supports the methods which
-	 * use the embedded DataComponentAttributes. 
+	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponent DataComponent Attributes} 
+	 * which are also {@link Data.attribute.DataComponent#embedded}. This is a convenience method that supports the methods which
+	 * use the embedded DataComponent Attributes. 
 	 * 
 	 * @protected
 	 * @method getEmbeddedDataComponentAttributes
-	 * @return {Data.attribute.DataComponentAttribute[]} The array of embedded DataComponentAttributes
+	 * @return {Data.attribute.DataComponent[]} The array of embedded DataComponent Attributes.
 	 */
 	getEmbeddedDataComponentAttributes : function() {
 		var dataComponentAttributes = this.getDataComponentAttributes(),
@@ -1292,16 +1292,16 @@ Data.Model = Data.DataComponent.extend( {
 	
 	
 	/**
-	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.CollectionAttribute CollectionAttributes}.
+	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.Collection Collection Attributes}.
 	 * 
 	 * @protected
 	 * @method getCollectionAttributes
-	 * @return {Data.attribute.CollectionAttribute[]}
+	 * @return {Data.attribute.Collection[]}
 	 */
 	getCollectionAttributes : function() {
 		var dataComponentAttributes = this.getDataComponentAttributes(),
 		    dataComponentAttribute,
-		    CollectionAttribute = Data.attribute.CollectionAttribute,  // quick reference to constructor
+		    CollectionAttribute = Data.attribute.Collection,  // quick reference to constructor
 		    collectionAttributes = [];
 		
 		for( var i = 0, len = dataComponentAttributes.length; i < len; i++ ) {
@@ -1316,12 +1316,12 @@ Data.Model = Data.DataComponent.extend( {
 	
 	
 	/**
-	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.CollectionAttribute CollectionAttributes},
-	 * but are *not* {@link Data.attribute.CollectionAttribute#embedded embedded} attributes (i.e. they are "related" attributes).
+	 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.Collection Collection Attributes},
+	 * but are *not* {@link Data.attribute.Collection#embedded embedded} attributes (i.e. they are "related" attributes).
 	 * 
 	 * @protected
 	 * @method getRelatedCollectionAttributes
-	 * @return {Data.attribute.CollectionAttribute[]} 
+	 * @return {Data.attribute.Collection[]} 
 	 */
 	getRelatedCollectionAttributes : function() {
 		var collectionAttributes = this.getCollectionAttributes(),

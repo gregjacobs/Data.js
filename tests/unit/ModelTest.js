@@ -189,8 +189,8 @@ tests.unit.add( new Ext.test.TestSuite( {
 				Y.Assert.areSame( 2, superclassModelAttrKeys.length, "There should have been 2 keys in the array for the superclassModelAttrKeys" );
 				Y.Assert.isTrue( _.contains( superclassModelAttrKeys, 'id' ), "The key 'id' should exist" );
 				Y.Assert.isTrue( _.contains( superclassModelAttrKeys, 'superclassAttr' ), "The key 'superclassAttr' should exist" );
-				Y.Assert.isInstanceOf( Data.attribute.NumberAttribute, superclassModelAttrs.id, "The `id` Attribute should have been an instance of NumberAttribute" );
-				Y.Assert.isInstanceOf( Data.attribute.StringAttribute, superclassModelAttrs.superclassAttr, "The `superclassAttr` Attribute should have been an instance of StringAttribute" );
+				Y.Assert.isInstanceOf( Data.attribute.Number, superclassModelAttrs.id, "The `id` Attribute should have been an instance of Number" );
+				Y.Assert.isInstanceOf( Data.attribute.String, superclassModelAttrs.superclassAttr, "The `superclassAttr` Attribute should have been an instance of String" );
 				
 				var subclassModelAttrs = SubclassModel.getAttributes();    // call the static method on the subclass (which should be statically inherited by the subclass)
 				var subclassModelAttrKeys = _.keys( subclassModelAttrs );
@@ -198,9 +198,9 @@ tests.unit.add( new Ext.test.TestSuite( {
 				Y.Assert.isTrue( _.contains( subclassModelAttrKeys, 'id' ), "The key 'id' should exist" );
 				Y.Assert.isTrue( _.contains( subclassModelAttrKeys, 'superclassAttr' ), "The key 'superclassAttr' should exist" );
 				Y.Assert.isTrue( _.contains( subclassModelAttrKeys, 'subclassAttr' ), "The key 'subclassAttr' should exist" );
-				Y.Assert.isInstanceOf( Data.attribute.NumberAttribute, subclassModelAttrs.id, "The `id` Attribute should have been an instance of NumberAttribute" );
-				Y.Assert.isInstanceOf( Data.attribute.StringAttribute, subclassModelAttrs.superclassAttr, "The `superclassAttr` Attribute should have been an instance of StringAttribute" );
-				Y.Assert.isInstanceOf( Data.attribute.BooleanAttribute, subclassModelAttrs.subclassAttr, "The `subclassAttr` Attribute should have been an instance of BooleanAttribute" );
+				Y.Assert.isInstanceOf( Data.attribute.Number, subclassModelAttrs.id, "The `id` Attribute should have been an instance of Number" );
+				Y.Assert.isInstanceOf( Data.attribute.String, subclassModelAttrs.superclassAttr, "The `superclassAttr` Attribute should have been an instance of String" );
+				Y.Assert.isInstanceOf( Data.attribute.Boolean, subclassModelAttrs.subclassAttr, "The `subclassAttr` Attribute should have been an instance of Boolean" );
 			}
 			
 		},
@@ -1578,7 +1578,7 @@ tests.unit.add( new Ext.test.TestSuite( {
 					]
 				} );
 				
-				this.ConcreteDataComponentAttribute = Data.attribute.DataComponentAttribute.extend( {} );
+				this.ConcreteDataComponentAttribute = Data.attribute.DataComponent.extend( {} );
 				
 				this.ConcreteDataComponent = Data.DataComponent.extend( {
 					// Implementation of abstract interface
@@ -1822,7 +1822,7 @@ tests.unit.add( new Ext.test.TestSuite( {
 				};
 				
 				
-				this.ConcreteDataComponentAttribute = Data.attribute.DataComponentAttribute.extend( {} );
+				this.ConcreteDataComponentAttribute = Data.attribute.DataComponent.extend( {} );
 				this.ConcreteDataComponent = Data.DataComponent.extend( { 
 					// Implementation of abstract interface
 					getData : Data.emptyFn,
@@ -1956,7 +1956,7 @@ tests.unit.add( new Ext.test.TestSuite( {
 			
 			"committing a parent model should also commit any embedded child DataComponent that the model holds" : function() {
 				// A concrete subclass for testing
-				var ConcreteDataComponentAttribute = Data.attribute.DataComponentAttribute.extend( {
+				var ConcreteDataComponentAttribute = Data.attribute.DataComponent.extend( {
 					// Implementation of abstract interface
 					getData : Data.emptyFn,
 					isModified : Data.emptyFn,

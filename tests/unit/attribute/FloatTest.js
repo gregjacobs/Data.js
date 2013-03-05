@@ -1,7 +1,7 @@
 /*global Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'FloatAttribute',
+	name: 'Float',
 	
 	
 	items : [
@@ -13,13 +13,13 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test getDefaultValue()",
 			
 			"getDefaultValue() should return 0 in the default case (i.e. when the `useNull` config is false)" : function() {
-				var attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: false } );
+				var attribute = new Data.attribute.Float( { name: 'attr', useNull: false } );
 				
 				Y.Assert.areSame( 0, attribute.getDefaultValue() );
 			},
 			
 			"getDefaultValue() should return null when the `useNull` config is true" : function() {
-				var attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: true } );
+				var attribute = new Data.attribute.Float( { name: 'attr', useNull: true } );
 				
 				Y.Assert.isNull( attribute.getDefaultValue() );
 			}
@@ -35,7 +35,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.Float( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -92,7 +92,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: true } ),
+				    attribute = new Data.attribute.Float( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -149,7 +149,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should strip off $, %, and comma (',') characters from an input string, to make a float" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: true } ),
+				    attribute = new Data.attribute.Float( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				

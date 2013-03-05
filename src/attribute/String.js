@@ -1,17 +1,17 @@
 /**
- * @class Data.attribute.StringAttribute
- * @extends Data.attribute.PrimitiveAttribute
+ * @class Data.attribute.String
+ * @extends Data.attribute.Primitive
  * 
  * Attribute definition class for an Attribute that takes a string data value.
  */
 /*global Data */
-Data.attribute.StringAttribute = Data.attribute.PrimitiveAttribute.extend( {
+Data.attribute.String = Data.attribute.Primitive.extend( {
 	
 	/**
 	 * @cfg {Mixed/Function} defaultValue
 	 * @inheritdoc
 	 * 
-	 * The StringAttribute defaults to `""` (empty string), unless the {@link #useNull} config is 
+	 * The String Attribute defaults to `""` (empty string), unless the {@link #useNull} config is 
 	 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
 	 */
 	defaultValue: function( attribute ) {
@@ -50,4 +50,4 @@ Data.attribute.StringAttribute = Data.attribute.PrimitiveAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'string', Data.attribute.StringAttribute );
+Data.attribute.Attribute.registerType( 'string', Data.attribute.String );

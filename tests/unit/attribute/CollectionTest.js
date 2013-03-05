@@ -1,7 +1,7 @@
 /*global window, Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'Data.attribute.CollectionAttribute',
+	name: 'Data.attribute.Collection',
 	
 	
 	items : [
@@ -23,7 +23,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			
 			"the constructor should throw an error if the undefined value is provided for the collectionClass config, which helps determine when late binding is needed for the collectionClass config" : function() {
-				var attr = new Data.attribute.CollectionAttribute( {
+				var attr = new Data.attribute.Collection( {
 					name : 'attr',
 					collectionClass: undefined
 				} );
@@ -40,7 +40,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test valuesAreEqual()",
 			
 			setUp : function() {
-				this.attribute = new Data.attribute.CollectionAttribute( { name: 'attr' } );
+				this.attribute = new Data.attribute.Collection( { name: 'attr' } );
 			},
 			
 			
@@ -97,7 +97,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 					model : this.Model
 				} );
 				
-				this.attribute = new Data.attribute.CollectionAttribute( { 
+				this.attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: this.Collection
 				} );
@@ -119,7 +119,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null when provided any falsy value, or non-object" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.CollectionAttribute( { name: 'attr' } ),
+				    attribute = new Data.attribute.Collection( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -157,7 +157,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: 'somethingThatIsNotDefined'
 				} );
@@ -173,7 +173,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: function() {
 						return;  // undefined
@@ -221,7 +221,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: '__Data_CollectionAttributeTest.ns1.ns2.MyCollection'
 				} );
@@ -249,7 +249,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: function() {
 						return TestCollection;   // for late binding
@@ -291,7 +291,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr'
 				} );
 				
@@ -314,7 +314,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    mockCollection = JsMockito.mock( Data.Collection );
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr'
 				} );
 				

@@ -397,7 +397,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 /*global Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'BooleanAttribute',
+	name: 'Boolean',
 	
 	
 	items : [
@@ -409,13 +409,13 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test getDefaultValue()",
 			
 			"getDefaultValue() should return false in the default case (i.e. when the `useNull` config is false)" : function() {
-				var attribute = new Data.attribute.BooleanAttribute( { name: 'attr', useNull: false } );
+				var attribute = new Data.attribute.Boolean( { name: 'attr', useNull: false } );
 				
 				Y.Assert.isFalse( attribute.getDefaultValue() );
 			},
 			
 			"getDefaultValue() should return null when the `useNull` config is true" : function() {
-				var attribute = new Data.attribute.BooleanAttribute( { name: 'attr', useNull: true } );
+				var attribute = new Data.attribute.Boolean( { name: 'attr', useNull: true } );
 				
 				Y.Assert.isNull( attribute.getDefaultValue() );
 			}
@@ -431,7 +431,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return the appropriate Boolean when provided a range of values and types, when the useNull config is false" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.BooleanAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.Boolean( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -478,7 +478,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.BooleanAttribute( { name: 'attr', useNull: true } ),
+				    attribute = new Data.attribute.Boolean( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -530,7 +530,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 /*global window, Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'Data.attribute.CollectionAttribute',
+	name: 'Data.attribute.Collection',
 	
 	
 	items : [
@@ -552,7 +552,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			
 			"the constructor should throw an error if the undefined value is provided for the collectionClass config, which helps determine when late binding is needed for the collectionClass config" : function() {
-				var attr = new Data.attribute.CollectionAttribute( {
+				var attr = new Data.attribute.Collection( {
 					name : 'attr',
 					collectionClass: undefined
 				} );
@@ -569,7 +569,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test valuesAreEqual()",
 			
 			setUp : function() {
-				this.attribute = new Data.attribute.CollectionAttribute( { name: 'attr' } );
+				this.attribute = new Data.attribute.Collection( { name: 'attr' } );
 			},
 			
 			
@@ -626,7 +626,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 					model : this.Model
 				} );
 				
-				this.attribute = new Data.attribute.CollectionAttribute( { 
+				this.attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: this.Collection
 				} );
@@ -648,7 +648,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null when provided any falsy value, or non-object" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.CollectionAttribute( { name: 'attr' } ),
+				    attribute = new Data.attribute.Collection( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -686,7 +686,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: 'somethingThatIsNotDefined'
 				} );
@@ -702,7 +702,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: function() {
 						return;  // undefined
@@ -750,7 +750,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: '__Data_CollectionAttributeTest.ns1.ns2.MyCollection'
 				} );
@@ -778,7 +778,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr',
 					collectionClass: function() {
 						return TestCollection;   // for late binding
@@ -820,7 +820,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr'
 				} );
 				
@@ -843,7 +843,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    mockCollection = JsMockito.mock( Data.Collection );
 				
-				var attribute = new Data.attribute.CollectionAttribute( { 
+				var attribute = new Data.attribute.Collection( { 
 					name: 'attr'
 				} );
 				
@@ -860,7 +860,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 /*global Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'DateAttribute',
+	name: 'Date',
 	
 	
 	items : [
@@ -874,7 +874,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null when provided invalid values" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.DateAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.Date( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -932,7 +932,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return a Date object when provided valid values" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.DateAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.Date( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -955,7 +955,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 /*global Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'FloatAttribute',
+	name: 'Float',
 	
 	
 	items : [
@@ -967,13 +967,13 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test getDefaultValue()",
 			
 			"getDefaultValue() should return 0 in the default case (i.e. when the `useNull` config is false)" : function() {
-				var attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: false } );
+				var attribute = new Data.attribute.Float( { name: 'attr', useNull: false } );
 				
 				Y.Assert.areSame( 0, attribute.getDefaultValue() );
 			},
 			
 			"getDefaultValue() should return null when the `useNull` config is true" : function() {
-				var attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: true } );
+				var attribute = new Data.attribute.Float( { name: 'attr', useNull: true } );
 				
 				Y.Assert.isNull( attribute.getDefaultValue() );
 			}
@@ -989,7 +989,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.Float( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1046,7 +1046,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: true } ),
+				    attribute = new Data.attribute.Float( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1103,7 +1103,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should strip off $, %, and comma (',') characters from an input string, to make a float" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.FloatAttribute( { name: 'attr', useNull: true } ),
+				    attribute = new Data.attribute.Float( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1119,7 +1119,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 /*global Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'IntegerAttribute',
+	name: 'Integer',
 	
 	
 	items : [
@@ -1131,13 +1131,13 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test getDefaultValue()",
 			
 			"getDefaultValue() should return 0 in the default case (i.e. when the `useNull` config is false)" : function() {
-				var attribute = new Data.attribute.IntegerAttribute( { name: 'attr', useNull: false } );
+				var attribute = new Data.attribute.Integer( { name: 'attr', useNull: false } );
 				
 				Y.Assert.areSame( 0, attribute.getDefaultValue() );
 			},
 			
 			"getDefaultValue() should return null when the `useNull` config is true" : function() {
-				var attribute = new Data.attribute.IntegerAttribute( { name: 'attr', useNull: true } );
+				var attribute = new Data.attribute.Integer( { name: 'attr', useNull: true } );
 				
 				Y.Assert.isNull( attribute.getDefaultValue() );
 			}
@@ -1153,7 +1153,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.IntegerAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.Integer( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1210,7 +1210,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.IntegerAttribute( { name: 'attr', useNull: true } ),
+				    attribute = new Data.attribute.Integer( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1267,7 +1267,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should strip off $, %, and comma (',') characters from an input string, to make an integer" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.IntegerAttribute( { name: 'attr', useNull: true } ),
+				    attribute = new Data.attribute.Integer( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1283,7 +1283,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 /*global window, Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'Data.attribute.ModelAttribute',
+	name: 'Data.attribute.Model',
 	
 	
 	items : [
@@ -1305,7 +1305,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			
 			"the constructor should throw an error if the undefined value is provided for the modelClass config, which helps determine when late binding is needed for the modelClass config" : function() {
-				var attr = new Data.attribute.ModelAttribute( {
+				var attr = new Data.attribute.Model( {
 					name : 'attr',
 					modelClass: undefined
 				} );
@@ -1322,7 +1322,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test valuesAreEqual()",
 			
 			setUp : function() {
-				this.attribute = new Data.attribute.ModelAttribute( { name: 'attr' } );
+				this.attribute = new Data.attribute.Model( { name: 'attr' } );
 			},
 			
 			
@@ -1381,7 +1381,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 					attributes : [ 'attr1', 'attr2' ]
 				} );
 				
-				this.attribute = new Data.attribute.ModelAttribute( { 
+				this.attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: this.Model
 				} );
@@ -1403,7 +1403,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null when provided any falsy value, or non-object" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.ModelAttribute( { name: 'attr' } ),
+				    attribute = new Data.attribute.Model( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1441,7 +1441,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: 'somethingThatIsNotDefined'
 				} );
@@ -1457,7 +1457,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: function() {
 						return;  // undefined
@@ -1500,7 +1500,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: '__Data_CollectionAttributeTest.ns1.ns2.MyModel'
 				} );
@@ -1522,7 +1522,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: function() {
 						return TestModel;   // for late binding
@@ -1557,7 +1557,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr'
 				} );
 				
@@ -1580,7 +1580,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			"afterSet() should return the model (i.e. it doesn't forget the return statement!)" : function() {
 				var mockModel = JsMockito.mock( Data.Model );
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr'
 				} );
 				
@@ -1598,7 +1598,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 /*global window, Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'Data.attribute.ObjectAttribute',
+	name: 'Data.attribute.Object',
 	
 	
 	items : [
@@ -1609,8 +1609,8 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 		{
 			name : "Test the defaultValue",
 			
-			"The default defaultValue for ObjectAttribute should be null" : function() {
-				Y.Assert.isNull( Data.attribute.ObjectAttribute.prototype.defaultValue );
+			"The default defaultValue for Object Attribute should be null" : function() {
+				Y.Assert.isNull( Data.attribute.Object.prototype.defaultValue );
 			}
 		},
 	
@@ -1624,7 +1624,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null when provided any falsy value, or non-object" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.ObjectAttribute( { name: 'attr' } ),
+				    attribute = new Data.attribute.Object( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1657,7 +1657,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return an object unchanged" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.ObjectAttribute( { name: 'attr' } ),
+				    attribute = new Data.attribute.Object( { name: 'attr' } ),
 				    oldValue;  // undefined
 				
 				var data = { attr1: 1, attr2: 2 };
@@ -1674,7 +1674,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 /*global Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'StringAttribute',
+	name: 'String',
 	
 	
 	items : [
@@ -1686,13 +1686,13 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test getDefaultValue()",
 			
 			"getDefaultValue() should return an empty string in the default case (i.e. when the `useNull` config is false)" : function() {
-				var attribute = new Data.attribute.StringAttribute( { name: 'attr', useNull: false } );
+				var attribute = new Data.attribute.String( { name: 'attr', useNull: false } );
 				
 				Y.Assert.areSame( "", attribute.getDefaultValue() );
 			},
 			
 			"getDefaultValue() should return null when the `useNull` config is true" : function() {
-				var attribute = new Data.attribute.StringAttribute( { name: 'attr', useNull: true } );
+				var attribute = new Data.attribute.String( { name: 'attr', useNull: true } );
 				
 				Y.Assert.isNull( attribute.getDefaultValue() );
 			}
@@ -1707,7 +1707,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.StringAttribute( { name: 'attr', useNull: false } ),
+				    attribute = new Data.attribute.String( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -1755,7 +1755,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.StringAttribute( { name: 'attr', useNull: true } ),
+				    attribute = new Data.attribute.String( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -4660,8 +4660,8 @@ tests.unit.add( new Ext.test.TestSuite( {
 				Y.Assert.areSame( 2, superclassModelAttrKeys.length, "There should have been 2 keys in the array for the superclassModelAttrKeys" );
 				Y.Assert.isTrue( _.contains( superclassModelAttrKeys, 'id' ), "The key 'id' should exist" );
 				Y.Assert.isTrue( _.contains( superclassModelAttrKeys, 'superclassAttr' ), "The key 'superclassAttr' should exist" );
-				Y.Assert.isInstanceOf( Data.attribute.NumberAttribute, superclassModelAttrs.id, "The `id` Attribute should have been an instance of NumberAttribute" );
-				Y.Assert.isInstanceOf( Data.attribute.StringAttribute, superclassModelAttrs.superclassAttr, "The `superclassAttr` Attribute should have been an instance of StringAttribute" );
+				Y.Assert.isInstanceOf( Data.attribute.Number, superclassModelAttrs.id, "The `id` Attribute should have been an instance of Number" );
+				Y.Assert.isInstanceOf( Data.attribute.String, superclassModelAttrs.superclassAttr, "The `superclassAttr` Attribute should have been an instance of String" );
 				
 				var subclassModelAttrs = SubclassModel.getAttributes();    // call the static method on the subclass (which should be statically inherited by the subclass)
 				var subclassModelAttrKeys = _.keys( subclassModelAttrs );
@@ -4669,9 +4669,9 @@ tests.unit.add( new Ext.test.TestSuite( {
 				Y.Assert.isTrue( _.contains( subclassModelAttrKeys, 'id' ), "The key 'id' should exist" );
 				Y.Assert.isTrue( _.contains( subclassModelAttrKeys, 'superclassAttr' ), "The key 'superclassAttr' should exist" );
 				Y.Assert.isTrue( _.contains( subclassModelAttrKeys, 'subclassAttr' ), "The key 'subclassAttr' should exist" );
-				Y.Assert.isInstanceOf( Data.attribute.NumberAttribute, subclassModelAttrs.id, "The `id` Attribute should have been an instance of NumberAttribute" );
-				Y.Assert.isInstanceOf( Data.attribute.StringAttribute, subclassModelAttrs.superclassAttr, "The `superclassAttr` Attribute should have been an instance of StringAttribute" );
-				Y.Assert.isInstanceOf( Data.attribute.BooleanAttribute, subclassModelAttrs.subclassAttr, "The `subclassAttr` Attribute should have been an instance of BooleanAttribute" );
+				Y.Assert.isInstanceOf( Data.attribute.Number, subclassModelAttrs.id, "The `id` Attribute should have been an instance of Number" );
+				Y.Assert.isInstanceOf( Data.attribute.String, subclassModelAttrs.superclassAttr, "The `superclassAttr` Attribute should have been an instance of String" );
+				Y.Assert.isInstanceOf( Data.attribute.Boolean, subclassModelAttrs.subclassAttr, "The `subclassAttr` Attribute should have been an instance of Boolean" );
 			}
 			
 		},
@@ -6049,7 +6049,7 @@ tests.unit.add( new Ext.test.TestSuite( {
 					]
 				} );
 				
-				this.ConcreteDataComponentAttribute = Data.attribute.DataComponentAttribute.extend( {} );
+				this.ConcreteDataComponentAttribute = Data.attribute.DataComponent.extend( {} );
 				
 				this.ConcreteDataComponent = Data.DataComponent.extend( {
 					// Implementation of abstract interface
@@ -6293,7 +6293,7 @@ tests.unit.add( new Ext.test.TestSuite( {
 				};
 				
 				
-				this.ConcreteDataComponentAttribute = Data.attribute.DataComponentAttribute.extend( {} );
+				this.ConcreteDataComponentAttribute = Data.attribute.DataComponent.extend( {} );
 				this.ConcreteDataComponent = Data.DataComponent.extend( { 
 					// Implementation of abstract interface
 					getData : Data.emptyFn,
@@ -6427,7 +6427,7 @@ tests.unit.add( new Ext.test.TestSuite( {
 			
 			"committing a parent model should also commit any embedded child DataComponent that the model holds" : function() {
 				// A concrete subclass for testing
-				var ConcreteDataComponentAttribute = Data.attribute.DataComponentAttribute.extend( {
+				var ConcreteDataComponentAttribute = Data.attribute.DataComponent.extend( {
 					// Implementation of abstract interface
 					getData : Data.emptyFn,
 					isModified : Data.emptyFn,
@@ -8429,7 +8429,7 @@ tests.integration.add( new Ext.test.TestSuite( {
 /*global window, Ext, Y, JsMockito, tests, Data */
 tests.integration.add( new Ext.test.TestSuite( {
 	
-	name: 'Model with ModelAttribute',
+	name: 'Model with Model Attribute',
 	
 	
 	items : [
@@ -8440,7 +8440,7 @@ tests.integration.add( new Ext.test.TestSuite( {
 			name : "Test provided set() function",
 			
 			
-			"The set() function provided to a ModelAttribute should be passed the instantiated Model if a 'modelClass' config is provided" : function() {
+			"The set() function provided to a Model Attribute should be passed the instantiated Model if a 'modelClass' config is provided" : function() {
 				var setValue;
 				
 				var InnerModel = Data.Model.extend( {
@@ -9967,18 +9967,18 @@ tests.integration.add( new Ext.test.TestSuite( {
 /*global window, Ext, Y, JsMockito, tests, Data */
 tests.integration.add( new Ext.test.TestSuite( {
 	
-	name: 'Model with ObjectAttribute',
+	name: 'Model with Object Attribute',
 	
 	
 	items : [
 		{
 			/*
-			 * Test defaultValue of ObjectAttribute
+			 * Test defaultValue of Object Attribute
 			 */
-			name : "Test defaultValue of ObjectAttribute",
+			name : "Test defaultValue of Object Attribute",
 			
 			
-			"The defaultValue for an ObjectAttribute should be null" : function() {
+			"The defaultValue for an Object Attribute should be null" : function() {
 				var Model = Data.Model.extend( {
 					attributes : [
 						{

@@ -27,14 +27,14 @@ Data.attribute.Attribute = Class.extend( Object, {
 	 * Specifies the type of the Attribute, in which a conversion of the raw data will be performed.
 	 * This accepts the following general types, but custom types may be added using the {@link Data.attribute.Attribute#registerType} method.
 	 * 
-	 * - {@link Data.attribute.MixedAttribute mixed}: Performs no conversions, and no special processing of given values. This is the default Attribute type (not recommended).
-	 * - {@link Data.attribute.StringAttribute string}
-	 * - {@link Data.attribute.IntegerAttribute int} / {@link Data.attribute.IntegerAttribute integer}
-	 * - {@link Data.attribute.FloatAttribute float} (really a "double")
-	 * - {@link Data.attribute.BooleanAttribute boolean} / {@link Data.attribute.BooleanAttribute bool}
-	 * - {@link Data.attribute.DateAttribute date}
-	 * - {@link Data.attribute.ModelAttribute model}
-	 * - {@link Data.attribute.CollectionAttribute collection}
+	 * - {@link Data.attribute.Mixed mixed}: Performs no conversions, and no special processing of given values. This is the default Attribute type (not recommended).
+	 * - {@link Data.attribute.String string}
+	 * - {@link Data.attribute.Integer int} / {@link Data.attribute.Integer integer}
+	 * - {@link Data.attribute.Float float} (really a "double")
+	 * - {@link Data.attribute.Boolean boolean} / {@link Data.attribute.Boolean bool}
+	 * - {@link Data.attribute.Date date}
+	 * - {@link Data.attribute.Model model}
+	 * - {@link Data.attribute.Collection collection}
 	 */
 	
 	/**

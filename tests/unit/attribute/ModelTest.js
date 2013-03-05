@@ -1,7 +1,7 @@
 /*global window, Ext, Y, JsMockito, Data, tests */
 tests.unit.attribute.add( new Ext.test.TestSuite( {
 	
-	name: 'Data.attribute.ModelAttribute',
+	name: 'Data.attribute.Model',
 	
 	
 	items : [
@@ -23,7 +23,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			
 			"the constructor should throw an error if the undefined value is provided for the modelClass config, which helps determine when late binding is needed for the modelClass config" : function() {
-				var attr = new Data.attribute.ModelAttribute( {
+				var attr = new Data.attribute.Model( {
 					name : 'attr',
 					modelClass: undefined
 				} );
@@ -40,7 +40,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			name : "Test valuesAreEqual()",
 			
 			setUp : function() {
-				this.attribute = new Data.attribute.ModelAttribute( { name: 'attr' } );
+				this.attribute = new Data.attribute.Model( { name: 'attr' } );
 			},
 			
 			
@@ -99,7 +99,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 					attributes : [ 'attr1', 'attr2' ]
 				} );
 				
-				this.attribute = new Data.attribute.ModelAttribute( { 
+				this.attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: this.Model
 				} );
@@ -121,7 +121,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			
 			"beforeSet() should return null when provided any falsy value, or non-object" : function() {
 				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.ModelAttribute( { name: 'attr' } ),
+				    attribute = new Data.attribute.Model( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
@@ -159,7 +159,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: 'somethingThatIsNotDefined'
 				} );
@@ -175,7 +175,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: function() {
 						return;  // undefined
@@ -218,7 +218,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: '__Data_CollectionAttributeTest.ns1.ns2.MyModel'
 				} );
@@ -240,7 +240,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;  // undefined
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr',
 					modelClass: function() {
 						return TestModel;   // for late binding
@@ -275,7 +275,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 				var mockModel = JsMockito.mock( Data.Model ),
 				    oldValue;
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr'
 				} );
 				
@@ -298,7 +298,7 @@ tests.unit.attribute.add( new Ext.test.TestSuite( {
 			"afterSet() should return the model (i.e. it doesn't forget the return statement!)" : function() {
 				var mockModel = JsMockito.mock( Data.Model );
 				
-				var attribute = new Data.attribute.ModelAttribute( { 
+				var attribute = new Data.attribute.Model( { 
 					name: 'attr'
 				} );
 				

@@ -6,7 +6,7 @@
  * NativeObjectConverter allows for the conversion of {@link Data.Collection Collection} / {@link Data.Model Models}
  * to their native Array / Object representations, while dealing with circular dependencies.
  */
-/*global Data */
+/*global _, Data */
 Data.data.NativeObjectConverter = {
 	
 	/**
@@ -27,7 +27,7 @@ Data.data.NativeObjectConverter = {
 	 *   to a string must take place before persistence (such as for Date objects). 
 	 *   
 	 *   As a hack (unfortunately, due to limited time), if passing the 'raw' option as true, and a nested {@link Data.Collection Collection} is in a 
-	 *   {@link Data.attribute.CollectionAttribute} that is *not* {@link Data.attribute.CollectionAttribute#embedded}, then only an array of the 
+	 *   {@link Data.attribute.Collection} that is *not* {@link Data.attribute.Collection#embedded}, then only an array of the 
 	 *   {@link Data.Model#idAttribute ID attribute} values is returned for that collection. The final data for a related (i.e. non-embedded) nested
 	 *   Collection may look something like this:
 	 *     

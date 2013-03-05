@@ -1,6 +1,6 @@
 /**
- * @class Data.attribute.CollectionAttribute
- * @extends Data.attribute.DataComponentAttribute
+ * @class Data.attribute.Collection
+ * @extends Data.attribute.DataComponent
  * 
  * Attribute definition class for an Attribute that allows for a nested {@link Data.Collection} value.
  * 
@@ -14,7 +14,7 @@
  * function to convert any anonymous array to a Collection in the appropriate way. 
  */
 /*global window, Class, Data */
-Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.extend( {
+Data.attribute.Collection = Data.attribute.DataComponent.extend( {
 		
 	/**
 	 * @cfg {Array/Data.Collection} defaultValue
@@ -26,7 +26,7 @@ Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.exten
 	
 	/**
 	 * @cfg {Data.Collection/String/Function} collectionClass (required)
-	 * The specific {@link Data.Collection} subclass that will be used in the CollectionAttribute. This config is needed
+	 * The specific {@link Data.Collection} subclass that will be used in the Collection Attribute. This config is needed
 	 * to perform automatic conversion of an array of models / anonymous data objects into the approperiate Collection subclass.
 	 * 
 	 * This config may be provided as:
@@ -159,4 +159,4 @@ Data.attribute.CollectionAttribute = Data.attribute.DataComponentAttribute.exten
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'collection', Data.attribute.CollectionAttribute );
+Data.attribute.Attribute.registerType( 'collection', Data.attribute.Collection );

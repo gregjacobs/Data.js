@@ -1,18 +1,18 @@
 /*global window, Ext, Y, JsMockito, tests, Data */
 tests.integration.add( new Ext.test.TestSuite( {
 	
-	name: 'Model with ObjectAttribute',
+	name: 'Model with Object Attribute',
 	
 	
 	items : [
 		{
 			/*
-			 * Test defaultValue of ObjectAttribute
+			 * Test defaultValue of Object Attribute
 			 */
-			name : "Test defaultValue of ObjectAttribute",
+			name : "Test defaultValue of Object Attribute",
 			
 			
-			"The defaultValue for an ObjectAttribute should be null" : function() {
+			"The defaultValue for an Object Attribute should be null" : function() {
 				var Model = Data.Model.extend( {
 					attributes : [
 						{

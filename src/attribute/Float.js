@@ -1,11 +1,11 @@
 /**
- * @class Data.attribute.FloatAttribute
- * @extends Data.attribute.NumberAttribute
+ * @class Data.attribute.Float
+ * @extends Data.attribute.Number
  * 
  * Attribute definition class for an Attribute that takes a float (i.e. decimal, or "real") number data value.
  */
 /*global Data */
-Data.attribute.FloatAttribute = Data.attribute.NumberAttribute.extend( {
+Data.attribute.Float = Data.attribute.Number.extend( {
 	
 	/**
 	 * Converts the provided data value into a float. If {@link #useNull} is true, undefined/null/empty string 
@@ -28,5 +28,5 @@ Data.attribute.FloatAttribute = Data.attribute.NumberAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'float', Data.attribute.FloatAttribute );
-Data.attribute.Attribute.registerType( 'number', Data.attribute.FloatAttribute );
+Data.attribute.Attribute.registerType( 'float', Data.attribute.Float );
+Data.attribute.Attribute.registerType( 'number', Data.attribute.Float );

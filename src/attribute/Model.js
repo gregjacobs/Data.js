@@ -1,6 +1,6 @@
 /**
- * @class Data.attribute.ModelAttribute
- * @extends Data.attribute.DataComponentAttribute
+ * @class Data.attribute.Model
+ * @extends Data.attribute.DataComponent
  * 
  * Attribute definition class for an Attribute that allows for a nested {@link Data.Model} value.
  * 
@@ -12,18 +12,18 @@
  * function to convert any anonymous object to a Model in the appropriate way. 
  */
 /*global window, Class, Data */
-Data.attribute.ModelAttribute = Data.attribute.DataComponentAttribute.extend( {
+Data.attribute.Model = Data.attribute.DataComponent.extend( {
 	
 	/**
 	 * @cfg {Data.Model/String/Function} modelClass
-	 * The specific {@link Data.Model} subclass that will be used in the ModelAttribute. This config can be provided
+	 * The specific {@link Data.Model} subclass that will be used in the Model. This config can be provided
 	 * to perform automatic conversion of anonymous data objects into the approperiate Model subclass.
 	 * 
 	 * This config may be provided as:
 	 * 
 	 * - A direct reference to a Model (ex: `myApp.models.MyModel`),
 	 * - A String which specifies the object path to the Model (which must be able to be referenced from the global scope, 
-	 * 	 ex: 'myApp.models.MyModel'), 
+	 *   ex: 'myApp.models.MyModel'), 
 	 * - Or a function, which will return a reference to the Model that should be used. 
 	 * 
 	 * The reason that this config may be specified as a String or a Function is to allow for late binding to the Model class 
@@ -145,4 +145,4 @@ Data.attribute.ModelAttribute = Data.attribute.DataComponentAttribute.extend( {
 
 
 // Register the Attribute type
-Data.attribute.Attribute.registerType( 'model', Data.attribute.ModelAttribute );
+Data.attribute.Attribute.registerType( 'model', Data.attribute.Model );

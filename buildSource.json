@@ -16,10 +16,10 @@
 				{ file: "src/Collection.js" },
 				
 				{ file: "src/attribute/Attribute.js" },
-				{ file: "src/attribute/PrimitiveAttribute.js" },
-				{ file: "src/attribute/NumberAttribute.js" },
-				{ file: "src/attribute/ObjectAttribute.js" },
-				{ file: "src/attribute/DataComponentAttribute.js" },
+				{ file: "src/attribute/Primitive.js" },
+				{ file: "src/attribute/Number.js" },
+				{ file: "src/attribute/Object.js" },
+				{ file: "src/attribute/DataComponent.js" },
 				
 				{ tree: "src/" }
 			]

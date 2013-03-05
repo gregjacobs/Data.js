@@ -1,12 +1,12 @@
 /**
  * @abstract
- * @class Data.attribute.DataComponentAttribute
- * @extends Data.attribute.ObjectAttribute
+ * @class Data.attribute.DataComponent
+ * @extends Data.attribute.Object
  * 
  * Attribute definition class for an Attribute that allows for a nested {@link Data.DataComponent} value.
  */
 /*global window, Data */
-Data.attribute.DataComponentAttribute = Data.attribute.ObjectAttribute.extend( {
+Data.attribute.DataComponent = Data.attribute.Object.extend( {
 	
 	abstractClass: true,
 	
