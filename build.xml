@@ -1,0 +1,27 @@
+<project name="Data.js" default="build">
+	
+	<target name="build" depends="buildSource,buildTests" description="Builds the source files." />
+
+	<target name="buildSource">
+		<java jar="vendor/webappbuilder/WebAppBuilder.jar" fork="true" failonerror="true">
+			<arg line="--projectFile buildSource.json" />
+		</java>
+	</target>
+	
+	<target name="buildTests">
+		<java jar="vendor/webappbuilder/WebAppBuilder.jar" fork="true" failonerror="true">
+			<arg line="--projectFile buildTests.json" />
+		</java>
+	</target>
+	
+	
+	<target name="doc">
+		<exec executable="${basedir}/vendor/jsduck/jsduck-4.4.1.exe">
+			<arg value="--output=docs" />
+			<arg value="--external=jQuery,jqXHR" />
+			<arg value="--title=Data.js API Docs" />
+			<arg value="src/" />
+		</exec>
+	</target>
+	
+</project>

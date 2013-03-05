@@ -1,0 +1,28 @@
+{
+	projectName: "Data.js",
+	licenseText: "Data.js Library\nVersion 0.1\n\nCopyright(c) 2013 Gregory Jacobs.\nMIT Licensed. http://www.opensource.org/licenses/mit-license.php\n\nhttps://github.com/gregjacobs/Data.js",
+	pkgs: [
+		{
+			name: "Data JS",
+			filename: "Data.js",
+			includes: [
+				{ file: "src/Data.js" },
+				{ file: "src/namespaces.js" },
+				
+				{ file: "src/persistence/Proxy.js" },
+				
+				{ file: "src/DataComponent.js" },
+				{ file: "src/Model.js" },
+				{ file: "src/Collection.js" },
+				
+				{ file: "src/attribute/Attribute.js" },
+				{ file: "src/attribute/PrimitiveAttribute.js" },
+				{ file: "src/attribute/NumberAttribute.js" },
+				{ file: "src/attribute/ObjectAttribute.js" },
+				{ file: "src/attribute/DataComponentAttribute.js" },
+				
+				{ tree: "src/" }
+			]
+		}
+	]
+}
