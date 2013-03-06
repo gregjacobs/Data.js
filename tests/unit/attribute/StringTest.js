@@ -1,132 +1,138 @@
-/*global Ext, Y, JsMockito, Data, tests */
-tests.unit.attribute.add( new Ext.test.TestSuite( {
+/*global define, Ext, Y, JsMockito, tests */
+define( [
+	'data/attribute/String',
+	'data/Model'
+], function( StringAttribute, Model ) {
 	
-	name: 'String',
-	
-	
-	items : [
+	tests.unit.attribute.add( new Ext.test.TestSuite( {
 		
-		/*
-		 * Test getDefaultValue()
-		 */
-		{
-			name : "Test getDefaultValue()",
+		name: 'String',
+		
+		
+		items : [
 			
-			"getDefaultValue() should return an empty string in the default case (i.e. when the `useNull` config is false)" : function() {
-				var attribute = new Data.attribute.String( { name: 'attr', useNull: false } );
+			/*
+			 * Test getDefaultValue()
+			 */
+			{
+				name : "Test getDefaultValue()",
 				
-				Y.Assert.areSame( "", attribute.getDefaultValue() );
+				"getDefaultValue() should return an empty string in the default case (i.e. when the `useNull` config is false)" : function() {
+					var attribute = new StringAttribute( { name: 'attr', useNull: false } );
+					
+					Y.Assert.areSame( "", attribute.getDefaultValue() );
+				},
+				
+				"getDefaultValue() should return null when the `useNull` config is true" : function() {
+					var attribute = new StringAttribute( { name: 'attr', useNull: true } );
+					
+					Y.Assert.isNull( attribute.getDefaultValue() );
+				}
 			},
-			
-			"getDefaultValue() should return null when the `useNull` config is true" : function() {
-				var attribute = new Data.attribute.String( { name: 'attr', useNull: true } );
+		
+			/*
+			 * Test beforeSet()
+			 */
+			{
+				name : "Test beforeSet()",
 				
-				Y.Assert.isNull( attribute.getDefaultValue() );
+				
+				"beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false" : function() {
+					var mockModel = JsMockito.mock( Model ),
+					    attribute = new StringAttribute( { name: 'attr', useNull: false } ),
+					    oldValue,  // undefined
+					    value;
+					
+					// Test with undefined and null
+					value = attribute.beforeSet( mockModel, undefined, oldValue );
+					Y.Assert.areSame( "", value, "Test with value: undefined" );
+					
+					value = attribute.beforeSet( mockModel, null, oldValue );
+					Y.Assert.areSame( "", value, "Test with value: null" );
+					
+					
+					// Test with booleans
+					value = attribute.beforeSet( mockModel, false, oldValue );
+					Y.Assert.areSame( "false", value, "Test with value: false" );
+					
+					value = attribute.beforeSet( mockModel, true, oldValue );
+					Y.Assert.areSame( "true", value, "Test with value: true" );
+					
+					
+					// Test with numbers
+					value = attribute.beforeSet( mockModel, 0, oldValue );
+					Y.Assert.areSame( "0", value, "Test with value: 0" );
+					
+					value = attribute.beforeSet( mockModel, 1, oldValue );
+					Y.Assert.areSame( "1", value, "Test with value: 1" );
+					
+					
+					// Test with actual strings
+					value = attribute.beforeSet( mockModel, "", oldValue );
+					Y.Assert.areSame( "", value, "Test with value: ''" );
+					
+					value = attribute.beforeSet( mockModel, "hi", oldValue );
+					Y.Assert.areSame( "hi", value, "Test with value: 'hi'" );
+					
+					value = attribute.beforeSet( mockModel, "true", oldValue );
+					Y.Assert.areSame( "true", value, "Test with value: 'true'" );				
+					
+					
+					// Test with an object
+					value = attribute.beforeSet( mockModel, {}, oldValue );
+					Y.Assert.areSame( "[object Object]", value, "Test with value: {}" );
+				},
+				
+				
+				
+				"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
+					var mockModel = JsMockito.mock( Model ),
+					    attribute = new StringAttribute( { name: 'attr', useNull: true } ),
+					    oldValue,  // undefined
+					    value;
+					
+					// Test with undefined and null
+					value = attribute.beforeSet( mockModel, undefined, oldValue );
+					Y.Assert.isNull( value, "Test with value: undefined" );
+					
+					value = attribute.beforeSet( mockModel, null, oldValue );
+					Y.Assert.isNull( value, "Test with value: null" );
+					
+					
+					// Test with booleans
+					value = attribute.beforeSet( mockModel, false, oldValue );
+					Y.Assert.areSame( "false", value, "Test with value: false" );
+					
+					value = attribute.beforeSet( mockModel, true, oldValue );
+					Y.Assert.areSame( "true", value, "Test with value: true" );
+					
+					
+					// Test with numbers
+					value = attribute.beforeSet( mockModel, 0, oldValue );
+					Y.Assert.areSame( "0", value, "Test with value: 0" );
+					
+					value = attribute.beforeSet( mockModel, 1, oldValue );
+					Y.Assert.areSame( "1", value, "Test with value: 1" );
+					
+					
+					// Test with actual strings
+					value = attribute.beforeSet( mockModel, "", oldValue );
+					Y.Assert.areSame( "", value, "Test with value: ''" );
+					
+					value = attribute.beforeSet( mockModel, "hi", oldValue );
+					Y.Assert.areSame( "hi", value, "Test with value: 'hi'" );
+					
+					value = attribute.beforeSet( mockModel, "true", oldValue );
+					Y.Assert.areSame( "true", value, "Test with value: 'true'" );				
+					
+					
+					// Test with an object
+					value = attribute.beforeSet( mockModel, {}, oldValue );
+					Y.Assert.areSame( "[object Object]", value, "Test with value: {}" );
+				}
 			}
-		},
+		]
 	
-		/*
-		 * Test beforeSet()
-		 */
-		{
-			name : "Test beforeSet()",
-			
-			
-			"beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false" : function() {
-				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.String( { name: 'attr', useNull: false } ),
-				    oldValue,  // undefined
-				    value;
-				
-				// Test with undefined and null
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
-				Y.Assert.areSame( "", value, "Test with value: undefined" );
-				
-				value = attribute.beforeSet( mockModel, null, oldValue );
-				Y.Assert.areSame( "", value, "Test with value: null" );
-				
-				
-				// Test with booleans
-				value = attribute.beforeSet( mockModel, false, oldValue );
-				Y.Assert.areSame( "false", value, "Test with value: false" );
-				
-				value = attribute.beforeSet( mockModel, true, oldValue );
-				Y.Assert.areSame( "true", value, "Test with value: true" );
-				
-				
-				// Test with numbers
-				value = attribute.beforeSet( mockModel, 0, oldValue );
-				Y.Assert.areSame( "0", value, "Test with value: 0" );
-				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
-				Y.Assert.areSame( "1", value, "Test with value: 1" );
-				
-				
-				// Test with actual strings
-				value = attribute.beforeSet( mockModel, "", oldValue );
-				Y.Assert.areSame( "", value, "Test with value: ''" );
-				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
-				Y.Assert.areSame( "hi", value, "Test with value: 'hi'" );
-				
-				value = attribute.beforeSet( mockModel, "true", oldValue );
-				Y.Assert.areSame( "true", value, "Test with value: 'true'" );				
-				
-				
-				// Test with an object
-				value = attribute.beforeSet( mockModel, {}, oldValue );
-				Y.Assert.areSame( "[object Object]", value, "Test with value: {}" );
-			},
-			
-			
-			
-			"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
-				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.String( { name: 'attr', useNull: true } ),
-				    oldValue,  // undefined
-				    value;
-				
-				// Test with undefined and null
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
-				Y.Assert.isNull( value, "Test with value: undefined" );
-				
-				value = attribute.beforeSet( mockModel, null, oldValue );
-				Y.Assert.isNull( value, "Test with value: null" );
-				
-				
-				// Test with booleans
-				value = attribute.beforeSet( mockModel, false, oldValue );
-				Y.Assert.areSame( "false", value, "Test with value: false" );
-				
-				value = attribute.beforeSet( mockModel, true, oldValue );
-				Y.Assert.areSame( "true", value, "Test with value: true" );
-				
-				
-				// Test with numbers
-				value = attribute.beforeSet( mockModel, 0, oldValue );
-				Y.Assert.areSame( "0", value, "Test with value: 0" );
-				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
-				Y.Assert.areSame( "1", value, "Test with value: 1" );
-				
-				
-				// Test with actual strings
-				value = attribute.beforeSet( mockModel, "", oldValue );
-				Y.Assert.areSame( "", value, "Test with value: ''" );
-				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
-				Y.Assert.areSame( "hi", value, "Test with value: 'hi'" );
-				
-				value = attribute.beforeSet( mockModel, "true", oldValue );
-				Y.Assert.areSame( "true", value, "Test with value: 'true'" );				
-				
-				
-				// Test with an object
-				value = attribute.beforeSet( mockModel, {}, oldValue );
-				Y.Assert.areSame( "[object Object]", value, "Test with value: {}" );
-			}
-		}
-	]
-
-
-} ) );
+	
+	} ) );
+} );

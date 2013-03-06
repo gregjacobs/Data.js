@@ -1,17 +1,16 @@
 <project name="Data.js" default="build">
 	
-	<target name="build" depends="buildSource,buildTests" description="Builds the source files." />
+	<target name="build" description="Builds the source files.">
+		<echo>Not yet implemented.</echo>
+		<!--
+		<java classname="org.mozilla.javascript.tools.shell.Main" fork="true" failonerror="true">
+			<classpath>
+				<pathelement location="${basedir}/vendor/rhino/js.jar" />
+			</classpath>
 
-	<target name="buildSource">
-		<java jar="vendor/webappbuilder/WebAppBuilder.jar" fork="true" failonerror="true">
-			<arg line="--projectFile buildSource.json" />
+			<arg file="${basedir}/vendor/require/r.js" />
 		</java>
-	</target>
-	
-	<target name="buildTests">
-		<java jar="vendor/webappbuilder/WebAppBuilder.jar" fork="true" failonerror="true">
-			<arg line="--projectFile buildTests.json" />
-		</java>
+		-->
 	</target>
 	
 	

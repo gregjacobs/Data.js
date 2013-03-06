@@ -1,163 +1,169 @@
-/*global Ext, Y, JsMockito, Data, tests */
-tests.unit.attribute.add( new Ext.test.TestSuite( {
+/*global define, Ext, Y, JsMockito, tests */
+define( [
+	'data/attribute/Integer',
+	'data/Model'
+], function( IntegerAttribute, Model ) {
 	
-	name: 'Integer',
-	
-	
-	items : [
+	tests.unit.attribute.add( new Ext.test.TestSuite( {
 		
-		/*
-		 * Test getDefaultValue()
-		 */
-		{
-			name : "Test getDefaultValue()",
+		name: 'Integer',
+		
+		
+		items : [
 			
-			"getDefaultValue() should return 0 in the default case (i.e. when the `useNull` config is false)" : function() {
-				var attribute = new Data.attribute.Integer( { name: 'attr', useNull: false } );
+			/*
+			 * Test getDefaultValue()
+			 */
+			{
+				name : "Test getDefaultValue()",
 				
-				Y.Assert.areSame( 0, attribute.getDefaultValue() );
+				"getDefaultValue() should return 0 in the default case (i.e. when the `useNull` config is false)" : function() {
+					var attribute = new IntegerAttribute( { name: 'attr', useNull: false } );
+					
+					Y.Assert.areSame( 0, attribute.getDefaultValue() );
+				},
+				
+				"getDefaultValue() should return null when the `useNull` config is true" : function() {
+					var attribute = new IntegerAttribute( { name: 'attr', useNull: true } );
+					
+					Y.Assert.isNull( attribute.getDefaultValue() );
+				}
 			},
-			
-			"getDefaultValue() should return null when the `useNull` config is true" : function() {
-				var attribute = new Data.attribute.Integer( { name: 'attr', useNull: true } );
+		
+		
+			/*
+			 * Test beforeSet()
+			 */
+			{
+				name : "Test beforeSet()",
 				
-				Y.Assert.isNull( attribute.getDefaultValue() );
+				
+				"beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false" : function() {
+					var mockModel = JsMockito.mock( Model ),
+					    attribute = new IntegerAttribute( { name: 'attr', useNull: false } ),
+					    oldValue,  // undefined
+					    value;
+					
+					// Test with undefined and null
+					value = attribute.beforeSet( mockModel, undefined, oldValue );
+					Y.Assert.areSame( 0, value, "Test with value: undefined" );
+					
+					value = attribute.beforeSet( mockModel, null, oldValue );
+					Y.Assert.areSame( 0, value, "Test with value: null" );
+					
+					
+					// Test with booleans
+					value = attribute.beforeSet( mockModel, false, oldValue );
+					Y.Assert.isNaN( value, "Test with value: false" );
+					
+					value = attribute.beforeSet( mockModel, true, oldValue );
+					Y.Assert.isNaN( value, "Test with value: true" );
+					
+					
+					// Test with numbers
+					value = attribute.beforeSet( mockModel, 0, oldValue );
+					Y.Assert.areSame( 0, value, "Test with value: 0" );
+					
+					value = attribute.beforeSet( mockModel, 1, oldValue );
+					Y.Assert.areSame( 1, value, "Test with value: 1" );
+					
+					value = attribute.beforeSet( mockModel, 1.42, oldValue );
+					Y.Assert.areSame( 1, value, "Test with value: 1.42" );
+					
+					
+					// Test with actual strings
+					value = attribute.beforeSet( mockModel, "", oldValue );
+					Y.Assert.areSame( 0, value, "Test with value: ''" );
+					
+					value = attribute.beforeSet( mockModel, "hi", oldValue );
+					Y.Assert.isNaN( value, "Test with value: 'hi'" );
+					
+					value = attribute.beforeSet( mockModel, "true", oldValue );
+					Y.Assert.isNaN( value, "Test with value: 'true'" );
+					
+					value = attribute.beforeSet( mockModel, "1", oldValue );
+					Y.Assert.areSame( 1, value, "Test with value: '1'" );
+					
+					value = attribute.beforeSet( mockModel, "1.11", oldValue );
+					Y.Assert.areSame( 1, value, "Test with value: '1.11'" );	
+					
+					
+					// Test with an object
+					value = attribute.beforeSet( mockModel, {}, oldValue );
+					Y.Assert.isNaN( value, "Test with value: {}" );
+				},
+				
+				
+				
+				"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
+					var mockModel = JsMockito.mock( Model ),
+					    attribute = new IntegerAttribute( { name: 'attr', useNull: true } ),
+					    oldValue,  // undefined
+					    value;
+					
+					// Test with undefined and null
+					value = attribute.beforeSet( mockModel, undefined, oldValue );
+					Y.Assert.isNull( value, "Test with value: undefined" );
+					
+					value = attribute.beforeSet( mockModel, null, oldValue );
+					Y.Assert.isNull( value, "Test with value: null" );
+					
+					
+					// Test with booleans
+					value = attribute.beforeSet( mockModel, false, oldValue );
+					Y.Assert.isNaN( value, "Test with value: false" );
+					
+					value = attribute.beforeSet( mockModel, true, oldValue );
+					Y.Assert.isNaN( value, "Test with value: true" );
+					
+					
+					// Test with numbers
+					value = attribute.beforeSet( mockModel, 0, oldValue );
+					Y.Assert.areSame( 0, value, "Test with value: 0" );
+					
+					value = attribute.beforeSet( mockModel, 1, oldValue );
+					Y.Assert.areSame( 1, value, "Test with value: 1" );
+					
+					value = attribute.beforeSet( mockModel, 1.42, oldValue );
+					Y.Assert.areSame( 1, value, "Test with value: 1.42" );
+					
+					
+					// Test with actual strings
+					value = attribute.beforeSet( mockModel, "", oldValue );
+					Y.Assert.isNull( value, "Test with value: ''" );
+					
+					value = attribute.beforeSet( mockModel, "hi", oldValue );
+					Y.Assert.isNaN( value, "Test with value: 'hi'" );
+					
+					value = attribute.beforeSet( mockModel, "true", oldValue );
+					Y.Assert.isNaN( value, "Test with value: 'true'" );
+					
+					value = attribute.beforeSet( mockModel, "1", oldValue );
+					Y.Assert.areSame( 1, value, "Test with value: '1'" );
+					
+					value = attribute.beforeSet( mockModel, "1.11", oldValue );
+					Y.Assert.areSame( 1, value, "Test with value: '1.11'" );
+					
+					
+					// Test with an object
+					value = attribute.beforeSet( mockModel, {}, oldValue );
+					Y.Assert.isNaN( value, "Test with value: {}" );
+				},
+				
+				
+				
+				"beforeSet() should strip off $, %, and comma (',') characters from an input string, to make an integer" : function() {
+					var mockModel = JsMockito.mock( Model ),
+					    attribute = new IntegerAttribute( { name: 'attr', useNull: true } ),
+					    oldValue,  // undefined
+					    value;
+					
+					value = attribute.beforeSet( mockModel, "$1,000.32%", oldValue );
+					Y.Assert.areSame( 1000, value, "Test with value: $1,000.32%" );
+				}
 			}
-		},
+		]
 	
 	
-		/*
-		 * Test beforeSet()
-		 */
-		{
-			name : "Test beforeSet()",
-			
-			
-			"beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false" : function() {
-				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.Integer( { name: 'attr', useNull: false } ),
-				    oldValue,  // undefined
-				    value;
-				
-				// Test with undefined and null
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
-				Y.Assert.areSame( 0, value, "Test with value: undefined" );
-				
-				value = attribute.beforeSet( mockModel, null, oldValue );
-				Y.Assert.areSame( 0, value, "Test with value: null" );
-				
-				
-				// Test with booleans
-				value = attribute.beforeSet( mockModel, false, oldValue );
-				Y.Assert.isNaN( value, "Test with value: false" );
-				
-				value = attribute.beforeSet( mockModel, true, oldValue );
-				Y.Assert.isNaN( value, "Test with value: true" );
-				
-				
-				// Test with numbers
-				value = attribute.beforeSet( mockModel, 0, oldValue );
-				Y.Assert.areSame( 0, value, "Test with value: 0" );
-				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
-				Y.Assert.areSame( 1, value, "Test with value: 1" );
-				
-				value = attribute.beforeSet( mockModel, 1.42, oldValue );
-				Y.Assert.areSame( 1, value, "Test with value: 1.42" );
-				
-				
-				// Test with actual strings
-				value = attribute.beforeSet( mockModel, "", oldValue );
-				Y.Assert.areSame( 0, value, "Test with value: ''" );
-				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
-				Y.Assert.isNaN( value, "Test with value: 'hi'" );
-				
-				value = attribute.beforeSet( mockModel, "true", oldValue );
-				Y.Assert.isNaN( value, "Test with value: 'true'" );
-				
-				value = attribute.beforeSet( mockModel, "1", oldValue );
-				Y.Assert.areSame( 1, value, "Test with value: '1'" );
-				
-				value = attribute.beforeSet( mockModel, "1.11", oldValue );
-				Y.Assert.areSame( 1, value, "Test with value: '1.11'" );	
-				
-				
-				// Test with an object
-				value = attribute.beforeSet( mockModel, {}, oldValue );
-				Y.Assert.isNaN( value, "Test with value: {}" );
-			},
-			
-			
-			
-			"beforeSet() should return null for 'unparsable' values/types, when the useNull config is true" : function() {
-				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.Integer( { name: 'attr', useNull: true } ),
-				    oldValue,  // undefined
-				    value;
-				
-				// Test with undefined and null
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
-				Y.Assert.isNull( value, "Test with value: undefined" );
-				
-				value = attribute.beforeSet( mockModel, null, oldValue );
-				Y.Assert.isNull( value, "Test with value: null" );
-				
-				
-				// Test with booleans
-				value = attribute.beforeSet( mockModel, false, oldValue );
-				Y.Assert.isNaN( value, "Test with value: false" );
-				
-				value = attribute.beforeSet( mockModel, true, oldValue );
-				Y.Assert.isNaN( value, "Test with value: true" );
-				
-				
-				// Test with numbers
-				value = attribute.beforeSet( mockModel, 0, oldValue );
-				Y.Assert.areSame( 0, value, "Test with value: 0" );
-				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
-				Y.Assert.areSame( 1, value, "Test with value: 1" );
-				
-				value = attribute.beforeSet( mockModel, 1.42, oldValue );
-				Y.Assert.areSame( 1, value, "Test with value: 1.42" );
-				
-				
-				// Test with actual strings
-				value = attribute.beforeSet( mockModel, "", oldValue );
-				Y.Assert.isNull( value, "Test with value: ''" );
-				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
-				Y.Assert.isNaN( value, "Test with value: 'hi'" );
-				
-				value = attribute.beforeSet( mockModel, "true", oldValue );
-				Y.Assert.isNaN( value, "Test with value: 'true'" );
-				
-				value = attribute.beforeSet( mockModel, "1", oldValue );
-				Y.Assert.areSame( 1, value, "Test with value: '1'" );
-				
-				value = attribute.beforeSet( mockModel, "1.11", oldValue );
-				Y.Assert.areSame( 1, value, "Test with value: '1.11'" );
-				
-				
-				// Test with an object
-				value = attribute.beforeSet( mockModel, {}, oldValue );
-				Y.Assert.isNaN( value, "Test with value: {}" );
-			},
-			
-			
-			
-			"beforeSet() should strip off $, %, and comma (',') characters from an input string, to make an integer" : function() {
-				var mockModel = JsMockito.mock( Data.Model ),
-				    attribute = new Data.attribute.Integer( { name: 'attr', useNull: true } ),
-				    oldValue,  // undefined
-				    value;
-				
-				value = attribute.beforeSet( mockModel, "$1,000.32%", oldValue );
-				Y.Assert.areSame( 1000, value, "Test with value: $1,000.32%" );
-			}
-		}
-	]
-
-
-} ) );
+	} ) );
+} );

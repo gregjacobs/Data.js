@@ -1,16 +1,26 @@
-/**
- * @class Data.attribute.Mixed
- * @extends Data.attribute.Attribute
- * 
- * Attribute definition class for an Attribute that takes any data value.
- */
-/*global Data */
-Data.attribute.Mixed = Data.attribute.Attribute.extend( {
+/*global define */
+define( [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute'
+], function( _, Class, Attribute ) {
+	
+	/**
+	 * @class Data.attribute.Mixed
+	 * @extends Data.attribute.Attribute
+	 * 
+	 * Attribute definition class for an Attribute that takes any data value.
+	 */
+	var MixedAttribute = Class.extend( Attribute, {
+			
+		// No specific implementation at this time. All handled by the base class Attribute.
 		
-	// No specific implementation at this time. All handled by the base class Attribute.
+	} );
+	
+	
+	// Register the Attribute type
+	Attribute.registerType( 'mixed', MixedAttribute );
+	
+	return MixedAttribute;
 	
 } );
-
-
-// Register the Attribute type
-Data.attribute.Attribute.registerType( 'mixed', Data.attribute.Mixed );

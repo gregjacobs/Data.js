@@ -1,37 +1,47 @@
-/**
- * @class Data.attribute.Object
- * @extends Data.attribute.Attribute
- * 
- * Attribute definition class for an Attribute that takes an object value.
- */
-/*global Data */
-Data.attribute.Object = Data.attribute.Attribute.extend( {
+/*global define */
+define( [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute'
+], function( _, Class, Attribute ) {
 	
 	/**
-	 * @cfg {Object} defaultValue
-	 * @inheritdoc
-	 */
-	defaultValue : null,
-	
-	
-	/**
-	 * Overridden `beforeSet` method used to normalize the value provided. All non-object values are converted to null,
-	 * while object values are returned unchanged.
+	 * @class Data.attribute.Object
+	 * @extends Data.attribute.Attribute
 	 * 
-	 * @override
-	 * @method beforeSet
-	 * @inheritdoc
+	 * Attribute definition class for an Attribute that takes an object value.
 	 */
-	beforeSet : function( model, newValue, oldValue ) {
-		if( typeof newValue !== 'object' ) {
-			newValue = null;  // convert all non-object values to null
+	var ObjectAttribute = Class.extend( Attribute, {
+		
+		/**
+		 * @cfg {Object} defaultValue
+		 * @inheritdoc
+		 */
+		defaultValue : null,
+		
+		
+		/**
+		 * Overridden `beforeSet` method used to normalize the value provided. All non-object values are converted to null,
+		 * while object values are returned unchanged.
+		 * 
+		 * @override
+		 * @method beforeSet
+		 * @inheritdoc
+		 */
+		beforeSet : function( model, newValue, oldValue ) {
+			if( typeof newValue !== 'object' ) {
+				newValue = null;  // convert all non-object values to null
+			}
+			
+			return newValue;
 		}
 		
-		return newValue;
-	}
+	} );
+	
+	
+	// Register the Attribute type
+	Attribute.registerType( 'object', ObjectAttribute );
+	
+	return ObjectAttribute;
 	
 } );
-
-
-// Register the Attribute type
-Data.attribute.Attribute.registerType( 'object', Data.attribute.Object );

@@ -1,0 +1,4 @@
+js.jar is Rhino version 1.7R4
+
+For latest:
+https://developer.mozilla.org/en-US/docs/Rhino/Download_Rhino?redirectlocale=en-US&redirectslug=RhinoDownload

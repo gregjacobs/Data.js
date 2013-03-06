@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<title>Data Tests</title>
+		<title>Data.js Tests</title>
 		
 		<link rel="stylesheet" href="http://extjs.cachefly.net/ext-3.2.1/resources/css/ext-all.css" />
 		<link rel="stylesheet" href="http://extjs.cachefly.net/ext-3.2.1/examples/ux/css/ColumnNodeUI.css" />
@@ -17,34 +17,40 @@
 		<link rel="stylesheet" href="../vendor/ext.test/Ext.Test.min.css" />
 		<script type="text/javascript" src="../vendor/ext.test/Ext.Test.min.js"></script>
 		
-		<!-- jQuery -->
-		<script type="text/javascript" src="../vendor/jquery/jquery-1.7.2.js"></script>
-		
 		<!-- JSMockito Mocking Framework -->
 		<script type="text/javascript" src="../vendor/jsmockito/jshamcrest.js"></script>
 		<script type="text/javascript" src="../vendor/jsmockito/jsmockito.js"></script>
 		
 		
-		<!-- Library Dependencies -->
-		<script type="text/javascript" src="../vendor/lodash/lodash.js"></script>
-		<script type="text/javascript" src="../vendor/class/Class.js"></script>
-		<script type="text/javascript" src="../vendor/observable/Observable.js"></script>
-		
-		<!-- Code under test (the entire library) -->
-		<script type="text/javascript" src="../Data.js"></script>
-		
 		<!-- Tests themselves -->
 		<script type="text/javascript">
-			/*global Ext */
-			
 			// The namespace that all tests are under
 			var tests = {};
 		</script>
-		<script type="text/javascript" src="DataTests.js"></script>
+		<script type="text/javascript" src="unit/packageSuites.js"></script>
+		<script type="text/javascript" src="integration/packageSuites.js"></script>
 		
 		
 		<!-- Test Harness Setup -->
+		<script type="text/javascript" src="../vendor/require/require.js"></script>
 		<script type="text/javascript">
+			/*global Ext */
+		
+			require.config( {
+				baseUrl: '../',
+				paths : {
+					'jquery'     : 'vendor/jquery/jquery',
+					'lodash'     : 'vendor/lodash/lodash',
+					'Class'      : 'vendor/class/Class',
+					'Observable' : 'vendor/observable/Observable',
+					
+					'data' : 'src',
+					
+					'unit'        : 'tests/unit',
+					'integration' : 'tests/integration'
+				}
+			} );
+			
 			// Variables for PhantomJS runnner
 			var runnerResults,
 			    testsFailed = [];
@@ -74,29 +80,53 @@
 				} );
 				
 				
-				Ext.onReady( function() {
-					new Ext.Viewport( {
-						layout : 'border',
-						items : [ viewer, logger ]
-					} );
-					
-					// Setup listener for PhantomJS runner
-					Ext.test.Runner.addListener( {
-						'fail' : function( runner, data ) {
-							// global var
-							testsFailed.push( "'" + data.testName + "' : failed.\n" + data.error.toString() );
-						},
+				require( [
+					'unit/CollectionTest',
+					'unit/ModelCacheTest',
+					'unit/ModelTest',
+					'unit/NativeObjectConverterTest',
+					'unit/attribute/AttributeTest',
+					'unit/attribute/BooleanTest',
+					'unit/attribute/CollectionTest',
+					'unit/attribute/DateTest',
+					'unit/attribute/FloatTest',
+					'unit/attribute/IntegerTest',
+					'unit/attribute/ModelTest',
+					'unit/attribute/ObjectTest',
+					'unit/attribute/StringTest',
+					'unit/persistence/RestProxyTest',
+					'integration/Collection_with_Models',
+					'integration/Model_with_ModelAttribute',
+					'integration/Model_with_ModelCache',
+					'integration/Model_with_NativeObjectConverter',
+					'integration/Model_with_Nested_Collections',
+					'integration/Model_with_Nested_Models',
+					'integration/Model_with_ObjectAttribute',
+					'integration/persistence/RestProxy_with_Nested_Models'
+				], function() {
+					Ext.onReady( function() {
+						new Ext.Viewport( {
+							layout : 'border',
+							items : [ viewer, logger ]
+						} );
 						
-						'complete' : function( runner, data ) {
-							// global var
-							runnerResults = data.results;
-						}
+						// Setup listener for PhantomJS runner
+						Ext.test.Runner.addListener( {
+							'fail' : function( runner, data ) {
+								// global var
+								testsFailed.push( "'" + data.testName + "' : failed.\n" + data.error.toString() );
+							},
+							
+							'complete' : function( runner, data ) {
+								// global var
+								runnerResults = data.results;
+							}
+						} );
+						
+						// Begin the tests immediately
+						startButton.runTests();
 					} );
-					
-					// Begin the tests immediately
-					startButton.runTests();
 				} );
-			
 			} )();
 		</script>
 	</head>
