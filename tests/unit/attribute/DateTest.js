@@ -38,19 +38,7 @@ define( [
 					
 					value = attribute.beforeSet( mockModel, true, oldValue );
 					Y.Assert.isNull( value, "Test with value: true" );
-					
-					
-					// Test with numbers
-					value = attribute.beforeSet( mockModel, 0, oldValue );
-					Y.Assert.isNull( value, "Test with value: 0" );
-					
-					/* Apparently chrome will parse this one as Jan 1, 2001...
-					value = attribute.beforeSet( mockModel, 1, oldValue );
-					Y.Assert.isNull( value, "Test with value: 1" );
-					*/
-					value = attribute.beforeSet( mockModel, 1.42, oldValue );
-					Y.Assert.isNull( value, "Test with value: 1.42" );
-					
+										
 					
 					// Test with invalid strings
 					value = attribute.beforeSet( mockModel, "", oldValue );
@@ -61,18 +49,15 @@ define( [
 					
 					value = attribute.beforeSet( mockModel, "true", oldValue );
 					Y.Assert.isNull( value, "Test with value: 'true'" );
-					
-					/* Apparently chrome will parse this one as Jan 1, 2001...
-					value = attribute.beforeSet( mockModel, "1", oldValue );
-					Y.Assert.isNull( value, "Test with value: '1'" );
-					
-					value = attribute.beforeSet( mockModel, "1.11", oldValue );
-					Y.Assert.isNull( value, "Test with value: '1.11'" );	
-					*/
+
 					
 					// Test with an object
 					value = attribute.beforeSet( mockModel, {}, oldValue );
 					Y.Assert.isNull( value, "Test with value: {}" );
+					
+					// Test with an array
+					value = attribute.beforeSet( mockModel, [], oldValue );
+					Y.Assert.isNull( value, "Test with value: []" );
 				},
 				
 				
@@ -85,6 +70,28 @@ define( [
 					// Test with valid date strings
 					value = attribute.beforeSet( mockModel, "2/22/2012", oldValue );
 					Y.Assert.isInstanceOf( Date, value, "Test with value: '2/22/2012'" );
+					
+					// Test with numbers, which are taken to be the number of milliseconds since
+					// the Unix epoch (1/1/1970)
+					value = attribute.beforeSet( mockModel, 0, oldValue );
+					Y.Assert.isInstanceOf( Date, value, "Test with value: 0" );
+
+					value = attribute.beforeSet( mockModel, 1, oldValue );
+					Y.Assert.isInstanceOf( Date, value, "Test with value: 1" );
+
+					value = attribute.beforeSet( mockModel, 1000, oldValue );
+					Y.Assert.isInstanceOf( Date, value, "Test with value: 1000" );
+					
+					// Test with strings that are numbers. These should be converted to a number
+					// and assumed to be the number of milliseconds since the Unix epoch (1/1/1970)
+					value = attribute.beforeSet( mockModel, "0", oldValue );
+					Y.Assert.isInstanceOf( Date, value, "Test with value: '0'" );
+					
+					value = attribute.beforeSet( mockModel, "1000", oldValue );
+					Y.Assert.isInstanceOf( Date, value, "Test with value: '1000'" );
+					
+					value = attribute.beforeSet( mockModel, "1000.00", oldValue );
+					Y.Assert.isInstanceOf( Date, value, "Test with value: '1000.00'" );
 					
 					
 					// Test with a Date object

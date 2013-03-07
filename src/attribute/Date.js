@@ -26,13 +26,14 @@ define( [
 		 * @return {Boolean} The converted value.
 		 */
 		beforeSet : function( model, newValue, oldValue ) {
-			if( !newValue ) {
-				return null;
-			}
 			if( _.isDate( newValue ) ) {
 				return newValue;
 			}
+			if( _.isNumber( newValue ) || ( _.isString( newValue ) && newValue && !isNaN( +newValue ) ) ) {
+				return new Date( +newValue );  // If the date is a number (or a number in a string), assume it's the number of milliseconds since the Unix epoch (1/1/1970)
+			}
 			
+			// All else fails, try to parse the value using Date.parse
 			var parsed = Date.parse( newValue );
 			return ( parsed ) ? new Date( parsed ) : null;
 		}
