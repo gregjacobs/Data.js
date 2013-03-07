@@ -8,12 +8,24 @@ define( [
 	'data/Data',
 	'data/ModelCache',
 	'data/DataComponent',
+	'data/persistence/Proxy',
 	'data/attribute/Attribute',
 	'data/attribute/DataComponent',
 	'data/attribute/Collection',
-	'data/persistence/Proxy',
-	'data/NativeObjectConverter', // circular dependency, not included in args list
-	'data/attribute/Mixed'        // the default attribute type when no explicit `type` is provided
+	
+	// All attributes included so developers don't have to specify these when they declare attributes in their models
+	'data/attribute/Boolean',
+	'data/attribute/Date',
+	'data/attribute/Float',
+	'data/attribute/Integer',
+	'data/attribute/Mixed',
+	'data/attribute/Model',
+	'data/attribute/Number',
+	'data/attribute/Object',
+	'data/attribute/Primitive',
+	'data/attribute/String',
+
+	'data/NativeObjectConverter' // circular dependency, not included in args list
 ], function( 
 	require,
 	jQuery,
@@ -22,10 +34,11 @@ define( [
 	Data,
 	ModelCache,
 	DataComponent,
+	Proxy,
+	
 	Attribute,
 	DataComponentAttribute,
-	CollectionAttribute,
-	Proxy
+	CollectionAttribute
 ) {
 	
 	/**

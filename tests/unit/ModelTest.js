@@ -14,8 +14,7 @@ define( [
 	'data/attribute/String',
 	'data/attribute/DataComponent',
 	'data/persistence/Proxy',
-	'data/persistence/RestProxy',
-	'data/attribute/Float'   // Used by a test (using `type: float`)
+	'data/persistence/RestProxy'
 ], function( 
 	jQuery,
 	_,

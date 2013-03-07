@@ -4,8 +4,7 @@ define( [
 	'lodash',
 	'data/NativeObjectConverter',
 	'data/Model',
-	'data/Collection',
-	'data/attribute/Model'   // Used by a test (using `type: model`)
+	'data/Collection'
 ], function( jQuery, _, NativeObjectConverter, Model, Collection ) {
 
 	tests.unit.data.add( new Ext.test.TestSuite( {

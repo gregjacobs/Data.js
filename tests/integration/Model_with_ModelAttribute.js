@@ -1,7 +1,6 @@
 /*global define, window, Ext, Y, JsMockito, tests */
 define( [
-	'data/Model',
-	'data/attribute/Model'  // used in the tests with type: 'model'
+	'data/Model'
 ], function( Model ) {
 	
 	tests.integration.add( new Ext.test.TestSuite( {
