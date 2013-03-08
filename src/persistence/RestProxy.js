@@ -12,9 +12,6 @@ define( [
 	 * @extends Data.persistence.Proxy
 	 * 
 	 * RestProxy is responsible for performing CRUD operations in a RESTful manner for a given Model on the server.
-	 * 
-	 * @constructor Creates a new RestProxy instance.
-	 * @param {Object} config The configuration options for this class, specified in an object (hash).
 	 */
 	var RestProxy = Class.extend( Proxy, {
 		
@@ -91,17 +88,15 @@ define( [
 		 * then {@link Data.Model#set} to the Model.
 		 * 
 		 * @method create
-		 * @param {Data.Model} The Model instance to create on the server.
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.async=true] True to make the request asynchronous, false to make it synchronous.
-		 * @param {Function} [options.success] Function to call if the delete is successful.
-		 * @param {Function} [options.error] Function to call if the delete fails.
-		 * @param {Function} [options.complete] Function to call regardless of if the delete is successful or fails.
-		 * @param {Object} [options.scope=window] The object to call the `success`, `error`, and `complete` callbacks in.
-		 * @return {jqXHR} The jQuery XMLHttpRequest superset object for the request.
+		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 *   to be created on the REST server.
+		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 *   this method as the first argument.
 		 */
-		create : function( model, options ) {
+		create : function( operation, options ) {
 			options = options || {};
+			var model = operation.getModels()[ 0 ];
 			
 			// Set the data to persist
 			var dataToPersist = model.getData( { persistedOnly: true, raw: true } );
@@ -147,17 +142,15 @@ define( [
 		 * Reads the Model from the server.
 		 * 
 		 * @method read
-		 * @param {Data.Model} The Model instance to read from the server.
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.async=true] True to make the request asynchronous, false to make it synchronous.
-		 * @param {Function} [options.success] Function to call if the delete is successful.
-		 * @param {Function} [options.error] Function to call if the delete fails.
-		 * @param {Function} [options.complete] Function to call regardless of if the delete is successful or fails.
-		 * @param {Object} [options.scope=window] The object to call the `success`, `error`, and `complete` callbacks in.
-		 * @return {jqXHR} The jQuery XMLHttpRequest superset object for the request.
+		 * @param {Data.persistence.ReadOperation} operation The ReadOperation instance that holds the model(s) 
+		 *   to be read from the REST server.
+		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 *   this method as the first argument.
 		 */
-		read : function( model, options ) {
+		read : function( operation, options ) {
 			options = options || {};
+			var model = operation.getModels()[ 0 ];
 			
 			var successCallback = function( data ) {
 				model.set( data );
@@ -189,33 +182,24 @@ define( [
 		 * are persisted.
 		 * 
 		 * @method update
-		 * @param {Data.Model} model The model to persist to the server. 
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.async=true] True to make the request asynchronous, false to make it synchronous.
-		 * @param {Function} [options.success] Function to call if the update is successful.
-		 * @param {Function} [options.error] Function to call if the update fails.
-		 * @param {Function} [options.complete] Function to call regardless of if the update is successful or fails.
-		 * @param {Object} [options.scope=window] The object to call the `success`, `error`, and `complete` callbacks in. 
-		 *   This may also be provided as `context` if you prefer.
-		 * @return {jqXHR} The jQuery XMLHttpRequest superset object for the request, *or `null` if no request is made
-		 *   because the model contained no changes*.
+		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 *   to be updated on the REST server.
+		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 *   this method as the first argument.
 		 */
-		update : function( model, options ) {
+		update : function( operation, options ) {
 			options = options || {};
-			var scope = options.scope || options.context || window;
-			
-			var changedData = model.getChanges( { persistedOnly: true, raw: true } );
+			var scope = options.scope || options.context || window,
+			    model = operation.getModels()[ 0 ],
+			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
+			    deferred = new jQuery.Deferred();
 			
 			// Short Circuit: If there is no changed data in any of the attributes that are to be persisted, there is no need to make a 
-			// request. Run the success callback and return out.
+			// request. Resolves the deferred and return out.
 			if( _.isEmpty( changedData ) ) {
-				if( typeof options.success === 'function' ) {
-					options.success.call( scope );
-				}
-				if( typeof options.complete === 'function' ) {
-					options.complete.call( scope );
-				}
-				return null;
+				deferred.resolve( operation );
+				return deferred.promise();
 			}
 			
 			
@@ -238,20 +222,20 @@ define( [
 			
 			// Finally, persist to the server
 			var emptyFn = Data.emptyFn;
-			return this.ajax( {
+			this.ajax( {
 				async    : ( typeof options.async === 'undefined' ) ? true : options.async,  // async defaults to true.
 				
 				url      : this.buildUrl( model, 'update' ),
 				type     : this.getMethod( 'update' ),
 				dataType : 'json',
 				data     : JSON.stringify( dataToPersist ),
-				contentType : 'application/json',
-				
-				success  : options.success  || emptyFn,
-				error    : options.error    || emptyFn,
-				complete : options.complete || emptyFn,
-				context  : scope
-			} );
+				contentType : 'application/json'
+			} ).then(
+				function( data ) { deferred.resolve( operation ); },
+				function() { deferred.reject( operation ); }
+			);
+			
+			return deferred.promise();
 		},
 		
 		
@@ -261,30 +245,23 @@ define( [
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
 		 * @method destroy
-		 * @param {Data.Model} The Model instance to delete on the server.
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.async=true] True to make the request asynchronous, false to make it synchronous.
-		 * @param {Function} [options.success] Function to call if the delete is successful.
-		 * @param {Function} [options.error] Function to call if the delete fails.
-		 * @param {Function} [options.complete] Function to call regardless of if the delete is successful or fails.
-		 * @param {Object} [options.scope=window] The object to call the `success`, `error`, and `complete` callbacks in.
-		 * @return {jqXHR} The jQuery XMLHttpRequest superset object for the request.
+		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 *   to be destroyed on the REST server.
+		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 *   this method as the first argument.
 		 */
-		destroy : function( model, options ) {
+		destroy : function( operation, options ) {
 			options = options || {};
-
-			var emptyFn = Data.emptyFn;
+			var emptyFn = Data.emptyFn,
+			    model = operation.getModels()[ 0 ];
+			
 			return this.ajax( {
 				async    : ( typeof options.async === 'undefined' ) ? true : options.async,  // async defaults to true.
 				
 				url      : this.buildUrl( model, 'destroy' ),
 				type     : this.getMethod( 'destroy' ),
-				dataType : 'text', // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
-				
-				success  : options.success  || emptyFn,
-				error    : options.error    || emptyFn,
-				complete : options.complete || emptyFn,
-				context  : options.scope    || window
+				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
 			} );
 		},
 		

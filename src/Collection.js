@@ -6,7 +6,9 @@ define( [
 	'data/Data',
 	'data/Model',
 	'data/DataComponent',
-	'data/NativeObjectConverter'
+	'data/NativeObjectConverter',
+	'data/persistence/ReadOperation',
+	'data/persistence/WriteOperation'
 ], function(
 	jQuery,
 	_,
@@ -14,7 +16,9 @@ define( [
 	Data,
 	Model,
 	DataComponent,
-	NativeObjectConverter
+	NativeObjectConverter,
+	ReadOperation,
+	WriteOperation
 ) {
 
 	/**
@@ -905,6 +909,54 @@ define( [
 		
 		
 		/**
+		 * Loads the Collection using its configured {@link #proxy}. The loading is asynchronous, and either
+		 * callbacks must be provided to the method, or handlers must attached to the returned `jQuery.Promise` 
+		 * object to determine when the loading is complete.
+		 * 
+		 * @method load
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Function} [options.success] Function to call if the loading is successful.
+		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
+		 *   of success or failure.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in.
+		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
+		 * @return {jQuery.Promise} A Promise object which may have handlers attached.
+		 */
+		load : function( options ) {
+			options = options || {};
+			var emptyFn   = function() {},
+			    operation = new ReadOperation( { } ),
+			    scope     = options.scope || options.context || this,
+			    success   = _.bind( options.success || emptyFn, scope ),
+			    error     = _.bind( options.error || emptyFn, scope ),
+			    complete  = _.bind( options.complete || emptyFn, scope );
+
+			
+			// No persistence proxy, cannot load. Throw an error
+			if( !this.proxy ) {
+				throw new Error( "Data.Collection::load() error: Cannot load. No `proxy` configured." );
+			}
+			
+			var deferred = new jQuery.Deferred();
+			deferred.done( success ).fail( error ).always( complete );
+			
+			var proxyOptions = {
+				async    : ( typeof options.async === 'undefined' ) ? true : options.async,   // defaults to true
+				success  : options.success  || emptyFn,
+				failure  : options.failure  || emptyFn,
+				complete : options.complete || emptyFn,
+				scope    : options.scope    || window
+			};
+			
+			// Make a request to read the data from the persistent storage
+			this.proxy.read( this, proxyOptions );
+			
+			return deferred.promise();
+		},
+		
+		
+		/**
 		 * Synchronizes the Collection by persisting each of the {@link Data.Model Models} that have changes. New Models are created,
 		 * existing Models are modified, and removed Models are deleted.
 		 * 
@@ -916,7 +968,7 @@ define( [
 		 *   failed if one or more Models does not persist successfully.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope=window] The object to call the `success`, `error`, and `complete` callbacks in. This may also
-		 *   be provided as `context` if you prefer.
+		 *   be provided as the property `context`, if you prefer.
 		 * @return {jQuery.Promise} A Promise object which may have handlers attached. 
 		 */
 		sync : function( options ) {
