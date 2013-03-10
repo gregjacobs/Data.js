@@ -21,7 +21,7 @@ define( [
 	} );
 	
 	// Register the persistence proxy so that it can be created by an object literal with a `type` property
-	Proxy.register( 'ajax', RestProxy );
+	Proxy.register( 'ajax', AjaxProxy );
 	
 	return AjaxProxy;
 	

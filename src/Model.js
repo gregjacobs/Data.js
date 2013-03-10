@@ -8,12 +8,17 @@ define( [
 	'data/Data',
 	'data/ModelCache',
 	'data/DataComponent',
+	
 	'data/persistence/Proxy',
+	'data/persistence/operation/ReadOperation',
+	'data/persistence/operation/WriteOperation',
+	
 	'data/attribute/Attribute',
 	'data/attribute/DataComponent',
 	'data/attribute/Collection',
 	
-	// All attributes included so developers don't have to specify these when they declare attributes in their models
+	// All attribute types included so developers don't have to specify these when they declare attributes in their models.
+	// These are not included in the arguments list though, as they are not needed specifically by the Model implementation.
 	'data/attribute/Boolean',
 	'data/attribute/Date',
 	'data/attribute/Float',
@@ -34,7 +39,10 @@ define( [
 	Data,
 	ModelCache,
 	DataComponent,
+	
 	Proxy,
+	ReadOperation,
+	WriteOperation,
 	
 	Attribute,
 	DataComponentAttribute,
@@ -54,10 +62,10 @@ define( [
 	var Model = Class.extend( DataComponent, {
 		
 		/**
-		 * @cfg {Data.persistence.Proxy} persistenceProxy
+		 * @cfg {Data.persistence.Proxy} proxy
 		 * The persistence proxy to use (if any) to persist the data to the server.
 		 */
-		persistenceProxy : null,
+		proxy : null,
 		
 		/**
 		 * @cfg {String[]/Object[]} attributes
@@ -305,10 +313,10 @@ define( [
 			// Call superclass constructor
 			this._super( arguments );
 			
-			// If this class has a persistenceProxy definition that is an object literal, instantiate it *onto the prototype*
+			// If this class has a proxy definition that is an object literal, instantiate it *onto the prototype*
 			// (so one Proxy instance can be shared for every model)
-			if( me.persistenceProxy && typeof me.persistenceProxy === 'object' && !( me.persistenceProxy instanceof Proxy ) ) {
-				me.constructor.prototype.persistenceProxy = Proxy.create( me.persistenceProxy );
+			if( me.proxy && typeof me.proxy === 'object' && !( me.proxy instanceof Proxy ) ) {
+				me.constructor.prototype.proxy = Proxy.create( me.proxy );
 			}
 			
 			
@@ -751,8 +759,7 @@ define( [
 			if( !this.hasIdAttribute() ) {
 				return true;
 			} else {
-				var id = this.getId();
-				return id == null;  // returns true if id === null or id === undefined
+				return !this.getId();  // Any falsy value makes the model be considered "new". This includes null, 0, and ""
 			}
 		},
 		
@@ -909,7 +916,7 @@ define( [
 		
 		
 		/**
-		 * Commits dirty attributes' data. Data can no longer be reverted after a commit has been performed. Note: When developing with a {@link #persistenceProxy},
+		 * Commits dirty attributes' data. Data can no longer be reverted after a commit has been performed. Note: When developing with a {@link #proxy},
 		 * this method should normally not need to be called explicitly, as it will be called upon the successful persistence of the Model's data
 		 * to the server.
 		 * 
@@ -1005,113 +1012,142 @@ define( [
 		
 		// --------------------------------
 		
+		// Persistence Functionality
+		
 		
 		/**
-		 * Gets the {@link #persistenceProxy} that is currently configured for this Model. Note that
-		 * the same persistenceProxy instance is shared between all instances of the model.
+		 * Gets the {@link #proxy} that is currently configured for this Model. Note that
+		 * the same proxy instance is shared between all instances of the model.
 		 * 
-		 * @method getPersistenceProxy
-		 * @return {Data.persistence.Proxy} The persistenceProxy, or null if there is no persistenceProxy currently set.
+		 * @method getProxy
+		 * @return {Data.persistence.Proxy} The configured persistence proxy, or `null` if there is no proxy currently set.
 		 */
-		getPersistenceProxy : function() {
-			return this.persistenceProxy;
+		getProxy : function() {
+			return this.proxy;
 		},
 		
 		
 		/**
-		 * Reloads the Model data from the server (discarding any changed data), using the configured {@link #persistenceProxy}.
+		 * Reloads the Model data from the server (discarding any changed data), using the configured {@link #proxy}.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `model` : {@link Data.Model} This Model instance.
+		 * - `operation` : {@link Data.persistence.operation.ReadOperation} The ReadOperation that was executed.
 		 * 
 		 * @method reload
 		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.async=true] True to make the request asynchronous, false to make it synchronous.
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.failure] Function to call if the save fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
-		 * @param {Object} [options.scope=window] The object to call the `success`, `failure`, and `complete` callbacks in.
+		 * @param {Object} [options.scope] The object to call the `success`, `failure`, and `complete` callbacks in. This may also
+		 *   be provided as `context` if you prefer. Defaults to this Model.
+		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the reload completes. The Promise is both 
+		 *   resolved or rejected with the arguments listed above in the method description.
 		 */
 		reload : function( options ) {
 			options = options || {};
+			var emptyFn    = Data.emptyFn,
+			    scope      = options.scope    || options.context || this,
+			    successCb  = options.success  || emptyFn,
+			    errorCb    = options.error    || emptyFn,
+			    completeCb = options.complete || emptyFn,
+			    deferred   = new jQuery.Deferred();
 			
-			// No persistenceProxy, cannot load. Throw an error
-			if( !this.persistenceProxy ) {
-				throw new Error( "Data.Model::reload() error: Cannot load. No persistenceProxy." );
+			// <debug>
+			if( !this.proxy ) {
+				throw new Error( "Data.Model::reload() error: Cannot load. No proxy configured." );
 			}
+			if( this.isNew() ) {
+				throw new Error( "Data.Model::reload() error: Cannot load. Model does not have an idAttribute that relates to a valid attribute, or does not yet have a valid id (i.e. an id that is not null)." );
+			}
+			// </debug>
 			
-			var emptyFn = Data.emptyFn;
-			var proxyOptions = {
-				async    : ( typeof options.async === 'undefined' ) ? true : options.async,   // defaults to true
-				success  : options.success  || emptyFn,
-				failure  : options.failure  || emptyFn,
-				complete : options.complete || emptyFn,
-				scope    : options.scope    || window
-			};
+			// Attach any user-provided callbacks to the deferred.
+			// This model is always provided as the first argument to the callbacks, and the ReadOperation
+			// object will be provided as the second.
+			deferred
+				.done( _.bind( successCb, scope ) )
+				.fail( _.bind( errorCb, scope ) )
+				.always( _.bind( completeCb, scope ) );
 			
-			// Make a request to update the data on the server
-			this.persistenceProxy.read( this, proxyOptions );
+			// Make a request to load the data from the proxy
+			var me = this,
+			    operation  = new ReadOperation( { modelId: this.getId() } );
+			this.proxy.read( operation ).then(
+				function( operation ) { me.set( operation.getData() ); me.commit(); deferred.resolve( me, operation ); },
+				function( operation ) { deferred.reject( me, operation ); }
+			);
+			
+			return deferred.promise();
 		},
 		
 		
 		/**
-		 * Persists the Model data to the backend, using the configured {@link #persistenceProxy}. If the request to persist the Model's data is successful,
-		 * the Model's data will be {@link #method-commit committed} upon completion.
+		 * Persists the Model data to persistent storage, using the configured {@link #proxy}. If the request to persist the Model's 
+		 * data is successful, the Model's data will be {@link #method-commit committed} upon completion.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `model` : {@link Data.Model} This Model instance.
+		 * - `operation` : {@link Data.persistence.operation.WriteOperation} The WriteOperation that was executed.
 		 * 
 		 * @method save
 		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.async=true] True to make the request asynchronous, false to make it synchronous.
-		 * 
 		 * @param {Function} [options.success] Function to call if the save is successful.
-		 * @param {Data.Model} options.success.model This Model instance.
-		 * @param {Object} options.success.data The data returned from the server, or if there was none, the data of the Model.
-		 * 
 		 * @param {Function} [options.error] Function to call if the save fails.
-		 * @param {Data.Model} options.error.model This Model instance.
-		 * 
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
-		 * @param {Data.Model} options.complete.model This Model instance.
-		 * 
-		 * @param {Object} [options.scope=window] The object to call the `success`, `error`, and `complete` callbacks in. This may also
-		 *   be provided as `context` if you prefer.
-		 * 
-		 * @return {jQuery.Promise} A Promise object which may have handlers attached. This Model is provided as the first argument to
-		 *   `done`, `fail`, and `always` handlers.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
+		 *   be provided as `context` if you prefer. Defaults to the Model.
+		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the save completes. The Promise is both 
+		 *   resolved or rejected with the arguments listed above in the method description.
 		 */
 		save : function( options ) {
 			options = options || {};
-			var scope = options.scope || options.context || window;
+			var emptyFn     = Data.emptyFn,
+			    scope       = options.scope    || options.context || this,
+			    successCb   = options.success  || emptyFn,
+			    errorCb     = options.error    || emptyFn,
+			    completeCb  = options.complete || emptyFn;
 			
-			
-			// No persistenceProxy, cannot save. Throw an error
-			if( !this.persistenceProxy ) {
-				throw new Error( "Data.Model::save() error: Cannot save. No persistenceProxy." );
+			// <debug>
+			if( !this.proxy ) {
+				// No proxy, cannot save. Throw an error
+				throw new Error( "Data.Model::save() error: Cannot save. No proxy." );
 			}
-			
-			// No id attribute, throw an error
-			if( !this.hasIdAttribute ) {
+			if( !this.hasIdAttribute() ) {
+				// No id attribute, throw an error
 				throw new Error( "Data.Model::save() error: Cannot save. Model does not have an idAttribute that relates to a valid attribute." );
 			}
-			
-			
-			// Callbacks for the options
-			var completeCallback = function() {
-				if( options.complete ) {
-					options.complete.call( scope, this );
-				}
-			};
-			var successCallback = function( data ) {
-				if( options.success ) {
-					options.success.call( scope, this, data );
-				}
-				completeCallback();
-			};
-			var errorCallback = function() {
-				if( options.error ) {
-					options.error.call( scope, this );
-				}
-				completeCallback();
-			};
-			
+			// </debug>
 			
 			// First, synchronize any nested related (i.e. non-embedded) Collections of the model.
+			// Chain the synchronization of collections to the synchronization of this Model itself to create
+			// the `modelSavePromise`.
+			var doSave = _.bind( this.doSave, this ),  // so the next line reads cleaner, as if it were a sentence
+			    modelSavePromise = this.syncRelatedCollections().then( doSave );
+			
+			// Set up any callbacks provided in the options
+			modelSavePromise
+				.done( _.bind( successCb, scope ) )
+				.fail( _.bind( errorCb, scope ) )
+				.always( _.bind( completeCb, scope ) );
+			
+			return modelSavePromise;
+		},
+		
+		
+		/**
+		 * Private utility method which is used to synchronize all of the nested related (i.e. not 'embedded') 
+		 * collections for this Model. Returns a Promise object which is resolved when all collections have been 
+		 * successfully synchronized.
+		 * 
+		 * @private
+		 * @return {jQuery.Promise} A Promise object which is resolved when all collections have been successfully
+		 *   synchronized. If any of the requests to synchronize collections should fail, the Promise will be rejected.
+		 *   If there are no nested related collections, the promise is resolved immediately.
+		 */
+		syncRelatedCollections : function() {
 			var collectionSyncPromises = [],
 			    relatedCollectionAttributes = this.getRelatedCollectionAttributes();
 			for( var i = 0, len = relatedCollectionAttributes.length; i < len; i++ ) {
@@ -1121,20 +1157,8 @@ define( [
 				}
 			}
 			
-			var collectionsSyncPromise = jQuery.when.apply( null, collectionSyncPromises );  // create a single Promise object out of all the Collection synchronization promises
-			
-			// Use the pipe() method to do the actual save of this Model, after all related collections have been 
-			// synchronized to the server
-			var me = this;
-			var modelSavePromise = collectionsSyncPromise.pipe( 
-				function() { return me.doSave( options ); }   // New `done` handler, which waits for the save of this Model to complete before considering itself resolved
-			);
-			
-			modelSavePromise
-				.done( jQuery.proxy( successCallback, this ) )
-				.fail( jQuery.proxy( errorCallback, this ) );
-			
-			return modelSavePromise;
+			// create and return single Promise object out of all the Collection synchronization promises
+			return jQuery.when.apply( null, collectionSyncPromises );
 		},
 		
 		
@@ -1145,13 +1169,13 @@ define( [
 		 * 
 		 * @private
 		 * @method doSave
-		 * @param {Object} options The original `options` object provided to {@link #save}.
 		 * @return {jQuery.Promise} The observable Promise object which can be used to determine if the save call has completed
 		 *   successfully (`done` callback) or errored (`fail` callback), and to perform any actions that need to be taken in either
 		 *   case with the `always` callback.
 		 */
-		doSave : function( options ) {
-			var deferred = new jQuery.Deferred();
+		doSave : function() {
+			var me = this,   // for closures
+			    deferred = new jQuery.Deferred();
 			
 			// Store a "snapshot" of the data that is being persisted. This is used to compare against the Model's current data at the time of when the persistence operation 
 			// completes. Anything that does not match this persisted snapshot data must have been updated while the persistence operation was in progress, and the Model must 
@@ -1161,38 +1185,32 @@ define( [
 			// while the persistence operation was being attempted.
 			var persistedData = _.cloneDeep( this.getData() );
 			
-			var successCallback = function( data ) {
-				data = data || this.getData();
+			var handleServerUpdate = function( data ) {
+				data = data || me.getData();
 	
 				// The request to persist the data was successful, commit the Model
-				this.commit();
+				me.commit();
 				
 				// Loop over the persisted snapshot data, and see if any Model attributes were updated while the persistence request was taking place.
 				// If so, those attributes should be marked as modified, with the snapshot data used as the "originals". See the note above where persistedData was set. 
-				var currentData = this.getData();
+				var currentData = me.getData();
 				for( var attributeName in persistedData ) {
 					if( persistedData.hasOwnProperty( attributeName ) && !_.isEqual( persistedData[ attributeName ], currentData[ attributeName ] ) ) {
-						this.modifiedData[ attributeName ] = persistedData[ attributeName ];   // set the last persisted value on to the "modifiedData" object. Note: "modifiedData" holds *original* values, so that the "data" object can hold the latest values. It is how we know an attribute is modified as well.
-						this.dirty = true;
+						me.modifiedData[ attributeName ] = persistedData[ attributeName ];   // set the last persisted value on to the "modifiedData" object. Note: "modifiedData" holds *original* values, so that the "data" object can hold the latest values. It is how we know an attribute is modified as well.
+						me.dirty = true;
 					}
 				}
-				
-				deferred.resolve( data );  // calls `done` handlers on the Deferred with the data as the first argument
 			};
 			
-			var errorCallback = function() {
-				deferred.reject();  // calls `fail` handlers on the Deferred
-			};
-			
-			var proxyOptions = {
-				async    : ( typeof options.async === 'undefined' ) ? true : options.async,   // defaults to true
-				success  : successCallback,
-				error    : errorCallback,
-				scope    : this
-			};
 			
 			// Make a request to create or update the data on the server
-			this.persistenceProxy[ this.isNew() ? 'create' : 'update' ]( this, proxyOptions );
+			var writeOperation = new WriteOperation( {
+				models : [ this ]
+			} );
+			this.proxy[ this.isNew() ? 'create' : 'update' ]( writeOperation ).then(
+				function( operation ) { handleServerUpdate( operation.getData() ); deferred.resolve( me, writeOperation ); },
+				function( operation ) { deferred.reject( me, writeOperation ); }
+			);
 			
 			return deferred.promise();  // return only the observable Promise object of the Deferred
 		},
@@ -1200,82 +1218,68 @@ define( [
 		
 		
 		/**
-		 * Destroys the Model on the backend, using the configured {@link #persistenceProxy}.
+		 * Destroys the Model on the backend, using the configured {@link #proxy}.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `model` : {@link Data.Model} This Model instance.
+		 * - `operation` : {@link Data.persistence.operation.WriteOperation} The WriteOperation that was executed.
 		 * 
 		 * @method destroy
 		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.async=true] True to make the request asynchronous, false to make it synchronous.
-		 * 
 		 * @param {Function} [options.success] Function to call if the destroy (deletion) is successful.
-		 * @param {Data.Model} options.success.model This Model instance.
-		 * @param {Object} options.success.data The data returned from the server, or if there was none, the data of the Model.
-		 * 
 		 * @param {Function} [options.error] Function to call if the destroy (deletion) fails.
-		 * @param {Data.Model} options.error.model This Model instance.
-		 * 
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
-		 * @param {Data.Model} options.complete.model This Model instance.
-		 * 
-		 * @param {Object} [options.scope=window] The object to call the `success`, `error`, and `complete` callbacks in. This may also
-		 *   be provided as `context` if you prefer.
-		 * 
-		 * @return {jQuery.Promise} A Promise object which may have handlers attached. This Model is provided as the first argument to
-		 *   `done`, `fail`, and `always` handlers.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
+		 *   be provided as `context` if you prefer. Defaults to the Model.
+		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the destroy (deletion) completes. The 
+		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
 		 */
 		destroy : function( options ) {
 			options = options || {};
-			var scope = options.scope || options.context || window,
-			    deferred = new jQuery.Deferred();  // for the return
+			var me          = this,   // for closures
+			    deferred    = new jQuery.Deferred(),
+			    emptyFn     = Data.emptyFn,
+			    scope       = options.scope    || options.context || this,
+			    successCb   = options.success  || emptyFn,
+			    errorCb     = options.error    || emptyFn,
+			    completeCb  = options.complete || emptyFn;
 			
-			var completeCallback = function() {
-				if( options.complete ) {
-					options.complete.call( scope, this );
-				}
-			};
-			var successCallback = function() {
-				this.destroyed = true;
-				this.fireEvent( 'destroy', this );
-				
-				if( options.success ) {
-					options.success.call( scope, this );
-				}
-				completeCallback();
-				
-				deferred.resolve( this );  // calls `done` handlers on the Deferred with this Model as the first argument
-			};
-			var errorCallback = function() {
-				if( options.error ) {
-					options.error.call( scope, this );
-				}
-				completeCallback();
-				
-				deferred.reject( this );  // calls `fail` handlers on the Deferred with this Model as the first argument
-			};
+			var operation = new WriteOperation( {
+				models : [ this ]
+			} );
+			
+			deferred.done( function() {
+				me.destroyed = true;
+				me.fireEvent( 'destroy', me );
+			} );
 			
 			
 			if( this.isNew() ) {
 				// If it is a new model, there is nothing on the server to destroy. Simply fire the event and call the callback
-				successCallback.call( this );
-				completeCallback.call( this );
+				operation.setSuccess();
+				deferred.resolve( this, operation );
 				
 			} else {
-				// No persistenceProxy, cannot destroy. Throw an error
+				// No proxy, cannot destroy. Throw an error
 				// <debug>
-				if( !this.persistenceProxy ) {
-					throw new Error( "Data.Model::destroy() error: Cannot destroy model on server. No persistenceProxy." );
+				if( !this.proxy ) {
+					throw new Error( "Data.Model::destroy() error: Cannot destroy model on server. No proxy." );
 				}
 				// </debug>
 				
-				var proxyOptions = {
-					async    : ( typeof options.async === 'undefined' ) ? true : options.async,   // defaults to true
-					success  : successCallback,
-					error    : errorCallback,
-					scope    : this
-				};
-				
 				// Make a request to destroy the data on the server
-				this.persistenceProxy.destroy( this, proxyOptions );
+				this.proxy.destroy( operation ).then(
+					function( operation ) { deferred.resolve( me, operation ); },
+					function( operation ) { deferred.reject( me, operation ); }
+				);
 			}
+			
+			// Set up any callbacks provided in the options
+			deferred
+				.done( _.bind( successCb, scope ) )
+				.fail( _.bind( errorCb, scope ) )
+				.always( _.bind( completeCb, scope ) );
 			
 			return deferred.promise();  // return just the observable Promise object of the Deferred
 		},
@@ -1376,46 +1380,6 @@ define( [
 		}
 		
 	} );
-	
-	
-	/**
-	 * Alias of {@link #reload}. See {@link #reload} for description and arguments.
-	 * 
-	 * @method fetch
-	 */
-	Model.prototype.fetch = Model.prototype.reload;
-	
-	/**
-	 * Backward compatibility alias of {@link #reload}. See {@link #reload} for description and arguments.
-	 * 
-	 * @method load
-	 */
-	Model.prototype.load = Model.prototype.reload;
-	
-	
-	/**
-	 * Alias of {@link #getData}, which is currently just for compatibility with 
-	 * Backbone's Collection. Do not use. Use {@link #getData} instead.
-	 * 
-	 * @method toJSON
-	 */
-	Model.prototype.toJSON = Model.prototype.getData;
-	
-	
-	/**
-	 * For compatibility with Backbone's Collection, when it is called from Collection's `_onModelEvent()`
-	 * method. `_onModelEvent()` asks for the previous `id` of the Model when the id attribute changes,
-	 * such as when a Model is created on the server. This method simply returns undefined for this purpose,
-	 * but if more compatibility is needed, it could return the original data for a given attribute (which is
-	 * a little different than Backbone's notion of "previous" data, which is the previous data from before any
-	 * current 'change' event).
-	 * 
-	 * @method previous
-	 * @param {String} attributeName
-	 */
-	Model.prototype.previous = function( attributeName ) {
-		return undefined;
-	};
 	
 	
 	return Model;

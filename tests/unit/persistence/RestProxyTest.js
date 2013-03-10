@@ -3,8 +3,10 @@ define( [
 	'lodash',
 	'Class',
 	'data/Model',
-	'data/persistence/RestProxy'
-], function( _, Class, Model, RestProxy ) {
+	'data/persistence/RestProxy',
+	'data/persistence/operation/ReadOperation',
+	'data/persistence/operation/WriteOperation'
+], function( _, Class, Model, RestProxy, ReadOperation, WriteOperation ) {
 	
 	tests.unit.persistence.add( new Ext.test.TestSuite( {
 		name: 'RestProxy',
@@ -23,22 +25,25 @@ define( [
 					{
 						name: 'General create() tests',
 						
-						"create() should populate the model with any response data upon a successful ajax request" : function() {
+						"create() should populate the provided WriteOperation with any response data upon a successful ajax request" : function() {
 							var testData = { attribute1: 'value1', attribute2: 'value2' };
 							var TestProxy = RestProxy.extend( {
 								ajax : function( options ) { 
-									options.success( testData );
+									return new jQuery.Deferred().resolve( testData ).promise();
 								}
 							} );
 							var proxy = new TestProxy();
 							
-							var mockModel = JsMockito.mock( Model );
-							proxy.create( mockModel );
+							var mockModel = JsMockito.mock( Model ),
+							    operation = JsMockito.mock( WriteOperation );
+							
+							JsMockito.when( operation ).getModels().thenReturn( [ mockModel ] );
+							proxy.create( operation );
 							
 							try {
-								JsMockito.verify( mockModel ).set( testData );
+								JsMockito.verify( operation ).setData( testData );
 							} catch( e ) {
-								Y.Assert.fail( "The model should have had its data set to the testData" );
+								Y.Assert.fail( "The model should have had its data set to the testData. msg = " + ( e.message || e ) );
 							}
 						}
 					},
@@ -46,32 +51,39 @@ define( [
 					{
 						name : "create()'s HTTP method tests",
 						
+						setUp : function() {
+							this.model = JsMockito.mock( Model );
+							
+							this.operation = JsMockito.mock( WriteOperation );
+							JsMockito.when( this.operation ).getModels().thenReturn( [ this.model ] );
+						},
+						
 						
 						"By default, the ajax function should be called with the HTTP method 'POST'" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
 							var httpMethod = "";
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: function( options ) {
 									httpMethod = options.type;
+									return new jQuery.Deferred().promise();
 								}
 							} );
 							var proxy = new TestProxy();
 							
-							proxy.create( model );
+							proxy.create( this.operation );
 							Y.Assert.areSame( 'POST', httpMethod );
 						},
 						
 						
 						"The HTTP method should be overridable via the actionMethods config" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
 							var httpMethod = "";
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: function( options ) {
 									httpMethod = options.type;
+									return new jQuery.Deferred().promise();
 								},
 								
 								actionMethods : {
@@ -80,7 +92,7 @@ define( [
 							} );
 							var proxy = new TestProxy();
 							
-							proxy.create( model );
+							proxy.create( this.operation );
 							Y.Assert.areSame( 'PUT', httpMethod );
 						}
 					}
@@ -99,20 +111,26 @@ define( [
 					{
 						name: 'General read() tests',
 						
-						"read() should populate the model data upon a successful ajax request" : function() {
+						setUp : function() {
+							this.model = JsMockito.mock( Model );
+							
+							this.operation = JsMockito.mock( ReadOperation );
+							JsMockito.when( this.operation ).getModelId().thenReturn( 1 );
+						},
+						
+						"read() should populate the provided ReadOperation with the data upon a successful ajax request" : function() {
 							var testData = { attribute1: 'value1', attribute2: 'value2' };
 							var TestProxy = RestProxy.extend( {
 								ajax : function( options ) { 
-									options.success( testData );
+									return new jQuery.Deferred().resolve( testData ).promise();
 								}
 							} );
-							var proxy = new TestProxy();
 							
-							var mockModel = JsMockito.mock( Model );
-							proxy.read( mockModel );
+							var proxy = new TestProxy();
+							proxy.read( this.operation );
 							
 							try {
-								JsMockito.verify( mockModel ).set( testData );
+								JsMockito.verify( this.operation ).setData( testData );
 							} catch( e ) {
 								Y.Assert.fail( "The model should have had its data set to the testData" );
 							}
@@ -124,40 +142,45 @@ define( [
 						name : "read()'s HTTP method tests",
 						
 						
-						"By default, the ajax function should be called with the HTTP method 'GET'" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+						setUp : function() {
+							this.model = JsMockito.mock( Model );
 							
+							this.operation = JsMockito.mock( ReadOperation );
+							JsMockito.when( this.operation ).getModelId().thenReturn( 1 );
+						},
+						
+						"By default, the ajax function should be called with the HTTP method 'GET'" : function() {
 							var httpMethod = "";
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: function( options ) {
 									httpMethod = options.type;
+									return new jQuery.Deferred().promise();
 								}
 							} );
-							var proxy = new TestProxy();
 							
-							proxy.read( model );
+							var proxy = new TestProxy();
+							proxy.read( this.operation );
+							
 							Y.Assert.areSame( 'GET', httpMethod );
 						},
 						
 						
 						"The HTTP method should be overridable via the actionMethods config" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
-							
 							var httpMethod = "";
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: function( options ) {
 									httpMethod = options.type;
+									return new jQuery.Deferred().promise();
 								},
 								
 								actionMethods : {
 									read : 'POST'  // override
 								}
 							} );
-							var proxy = new TestProxy();
 							
-							proxy.read( model );
+							var proxy = new TestProxy();
+							proxy.read( this.operation );
+							
 							Y.Assert.areSame( 'POST', httpMethod );
 						}
 					}
@@ -178,18 +201,27 @@ define( [
 					{
 						name : "General update() tests",
 						
+						setUp : function() {
+							this.model = JsMockito.mock( Model );
+							
+							this.operation = JsMockito.mock( WriteOperation );
+							JsMockito.when( this.operation ).getModels().thenReturn( [ this.model ] );
+						},
+						
 						
 						"update() should NOT actually call the ajax method when no attributes have been changed" : function() {
 							var ajaxCallCount = 0;
 							var TestProxy = RestProxy.extend( {
-								ajax : function() { ajaxCallCount++; }
+								ajax : function() {
+									ajaxCallCount++;
+									return new jQuery.Deferred().promise();
+								}
 							} );
+							
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( {} );
+							
 							var proxy = new TestProxy();
-							
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( {} );
-							
-							proxy.update( model );
+							proxy.update( this.operation );
 							
 							Y.Assert.areSame( 0, ajaxCallCount, "The proxy's ajax() method should not have not been called, since there are no changes" );
 						},
@@ -198,14 +230,16 @@ define( [
 						"update() should in fact call the ajax method when attributes have been changed" : function() {
 							var ajaxCallCount = 0;
 							var TestProxy = RestProxy.extend( {
-								ajax : function() { ajaxCallCount++; }
+								ajax : function() {
+									ajaxCallCount++;
+									return new jQuery.Deferred().promise();
+								}
 							} );
+							
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							
 							var proxy = new TestProxy();
-							
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
-							
-							proxy.update( model );
+							proxy.update( this.operation );
 							
 							Y.Assert.areSame( 1, ajaxCallCount, "The proxy's ajax() method should have been called, since there are changes to persist" );
 						}
@@ -213,78 +247,79 @@ define( [
 						
 					
 					{
-						name : "Test update() callbacks",
+						name : "Test update() promise resolution/rejection",
 						
 						setUp : function() {
 							this.ajaxCallCount = 0;
+							this.deferred = new jQuery.Deferred();
 							
 							this.TestProxy = RestProxy.extend( {
 								ajax: jQuery.proxy( function( options ) { 
 									this.ajaxCallCount++;
 									
-									if( options.success ) { options.success(); }
-									if( options.error ) { options.error(); }
-									if( options.complete ) { options.complete(); }
+									return this.deferred.promise();
 								}, this )
 							} );
+							
+							this.model = JsMockito.mock( Model );
+							
+							this.operation = JsMockito.mock( WriteOperation );
+							JsMockito.when( this.operation ).getModels().thenReturn( [ this.model ] );
 						},
 						
 							
-						"The 'success' and 'complete' callbacks provided to update() should be called if no attributes have been changed, and it does not need to do its ajax request" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( {} );
-							
-							var proxy = new this.TestProxy();
+						"The promise returned by the proxy should be resolved if no attributes have been changed, and it does not need to do its ajax request" : function() {
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( {} );
 							
 							var successCallCount = 0,
 							    completeCallCount = 0;
 							    
-							proxy.update( model, {
-								success : function() { successCallCount++; },
-								complete : function() { completeCallCount++; }
-							} );
+							var proxy = new this.TestProxy();
+							proxy.update( this.operation )
+								.done( function() { successCallCount++; } )
+								.always( function() { completeCallCount++; } );
 							
 							Y.Assert.areSame( 0, this.ajaxCallCount, "The ajax method should not have been called" );
-							Y.Assert.areSame( 1, successCallCount, "The 'success' callback provided update() should have been called even though there are no changes and the proxy didn't need to persist anything" );
-							Y.Assert.areSame( 1, completeCallCount, "The 'complete' callback provided update() should have been called even though there are no changes and the proxy didn't need to persist anything" );
+							Y.Assert.areSame( 1, successCallCount, "The promise should have been resolved even though there are no changes and the proxy didn't need to persist anything" );
+							Y.Assert.areSame( 1, completeCallCount, "The promise should have been resolved even though there are no changes and the proxy didn't need to persist anything" );
 						},
 						
 						
-						"The 'success' and 'complete' callbacks provided to update() should be called if the ajax request is successful" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
-							
-							var proxy = new this.TestProxy();
+						"The promise returned by the proxy should be resolved if the ajax request is successful" : function() {
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
 							var successCallCount = 0,
 							    completeCallCount = 0;
 							    
-							proxy.update( model, {
-								success  : function() { successCallCount++; },
-								complete : function() { completeCallCount++; }
-							} );
+							var proxy = new this.TestProxy();
+							proxy.update( this.operation )
+								.done( function() { successCallCount++; } )
+								.always( function() { completeCallCount++; } );
 							
-							Y.Assert.areSame( 1, successCallCount, "The 'success' callback provided update() should have been called" );
-							Y.Assert.areSame( 1, completeCallCount, "The 'complete' callback provided update() should have been called" );
+							// Pretend the ajax request is successful
+							this.deferred.resolve( this.operation );
+							
+							Y.Assert.areSame( 1, successCallCount, "The promise should have been resolved" );
+							Y.Assert.areSame( 1, completeCallCount, "The promise should have been resolved" );
 						},
 						
 						
 						"The 'error' and 'complete' callbacks provided to update() should be called if the ajax request fails" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
-								
-							var proxy = new this.TestProxy();
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
 							var errorCallCount = 0,
 							    completeCallCount = 0;
 							
-							proxy.update( model, {
-								error    : function() { errorCallCount++; },
-								complete : function() { completeCallCount++; }
-							} );
+							var proxy = new this.TestProxy();
+							proxy.update( this.operation )
+								.fail( function() { errorCallCount++; } )
+								.always( function() { completeCallCount++; } );
 							
-							Y.Assert.areSame( 1, errorCallCount, "The 'error' callback provided update() should have been called" );
-							Y.Assert.areSame( 1, completeCallCount, "The 'complete' callback provided update() should have been called" );
+							// Pretend the ajax request failed
+							this.deferred.reject( this.operation );
+							
+							Y.Assert.areSame( 1, errorCallCount, "The promise should have been rejected" );
+							Y.Assert.areSame( 1, completeCallCount, "The promise should have been rejected" );
 						}
 					},
 						
@@ -292,41 +327,50 @@ define( [
 					{
 						name : "HTTP method tests",
 						
+						setUp : function() {
+							this.model = JsMockito.mock( Model );
+							
+							this.operation = JsMockito.mock( WriteOperation );
+							JsMockito.when( this.operation ).getModels().thenReturn( [ this.model ] );
+						},
+						
 						
 						"By default, the ajax function should be called with the HTTP method 'PUT'" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
 							var httpMethod = "";
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: function( options ) {
 									httpMethod = options.type;
+									return new jQuery.Deferred().promise();
 								}
 							} );
-							var proxy = new TestProxy();
 							
-							proxy.update( model );
+							var proxy = new TestProxy();
+							proxy.update( this.operation );
+							
 							Y.Assert.areSame( 'PUT', httpMethod );
 						},
 						
 						
 						"The HTTP method should be overridable via the actionMethods config" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
 							var httpMethod = "";
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: function( options ) {
 									httpMethod = options.type;
+									return new jQuery.Deferred().promise();
 								},
 								
 								actionMethods : {
 									update : 'POST'  // override
 								}
 							} );
-							var proxy = new TestProxy();
 							
-							proxy.update( model );
+							var proxy = new TestProxy();
+							proxy.update( this.operation );
+							
 							Y.Assert.areSame( 'POST', httpMethod );
 						}
 					},
@@ -343,6 +387,9 @@ define( [
 							this.mockModel = JsMockito.mock( Model );
 							JsMockito.when( this.mockModel ).getData( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1', attribute2: 'value2' } );
 							JsMockito.when( this.mockModel ).getChanges( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute2: 'value2' } );  // 'attribute2' is the "change"
+							
+							this.operation = JsMockito.mock( WriteOperation );
+							JsMockito.when( this.operation ).getModels().thenReturn( [ this.mockModel ] );
 						},
 						
 						
@@ -350,14 +397,15 @@ define( [
 							var dataPersisted;
 							var ajaxFn = function( options ) {
 								dataPersisted = JSON.parse( options.data );  // the data is fed as a JSON encoded string
+								return new jQuery.Deferred().promise();
 							};
 							var TestProxy = RestProxy.extend( {
 								ajax : ajaxFn,
 								incremental: false
 							} );
-							var proxy = new TestProxy();
 							
-							proxy.update( this.mockModel );
+							var proxy = new TestProxy();
+							proxy.update( this.operation );
 							
 							Y.Assert.areEqual( 2, _.keys( dataPersisted ).length, "The dataPersisted have exactly 2 keys, one for each of the attributes in the model" );
 							Y.ObjectAssert.ownsKeys( [ 'attribute1', 'attribute2' ], dataPersisted );
@@ -370,14 +418,15 @@ define( [
 							var dataPersisted;
 							var ajaxFn = function( options ) {
 								dataPersisted = JSON.parse( options.data );  // the data is fed as a JSON encoded string
+								return new jQuery.Deferred().promise();
 							};
 							var TestProxy = RestProxy.extend( {
 								ajax : ajaxFn,
 								incremental: true
 							} );
-							var proxy = new TestProxy();
 							
-							proxy.update( this.mockModel );
+							var proxy = new TestProxy();
+							proxy.update( this.operation );
 							
 							Y.Assert.areEqual( 1, _.keys( dataPersisted ).length, "The dataPersisted have exactly 1 key, the one that was changed" );
 							Y.ObjectAssert.ownsKeys( [ 'attribute2' ], dataPersisted );
@@ -399,54 +448,59 @@ define( [
 				items : [
 					{
 						name : "Test destroy()'s callbacks", 
+						
+						setUp : function() {
+							this.model = JsMockito.mock( Model );
 							
-						"The 'success' and 'complete' callbacks provided to destroy() should be called if the ajax request is successful" : function() {
+							this.operation = JsMockito.mock( WriteOperation );
+							JsMockito.when( this.operation ).getModels().thenReturn( [ this.model ] );
+						},
+						
+							
+						"The promise returned by the proxy should be resolved if the ajax request is successful" : function() {
+							var operation = this.operation;
 							var ajaxFn = function( options ) { 
-								options.success();
-								options.complete();
+								return new jQuery.Deferred().resolve( operation ).promise();
 							};
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: ajaxFn
 							} );
 							
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
-							var proxy = new TestProxy();
 							
 							var successCallCount = 0,
 							    completeCallCount = 0;
-							proxy.destroy( model, {
-								success  : function() { successCallCount++; },
-								complete : function() { completeCallCount++; }
-							} );
 							
+							var proxy = new TestProxy();
+							proxy.destroy( operation )
+								.done( function() { successCallCount++; } )
+								.always( function() { completeCallCount++; } );
+								
 							Y.Assert.areSame( 1, successCallCount, "The 'success' callback provided destroy() should have been called" );
 							Y.Assert.areSame( 1, completeCallCount, "The 'complete' callback provided destroy() should have been called" );
 						},
 						
 						
-						"The 'error' and 'complete' callbacks provided to destroy() should be called if the ajax request fails" : function() {
+						"The promise returned by the proxy should be rejected if the ajax request fails" : function() {
+							var operation = this.operation;
 							var ajaxFn = function( options ) { 
-								options.error();
-								options.complete();
+								return new jQuery.Deferred().reject( operation ).promise();
 							};
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: ajaxFn
 							} );
 							
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
-							var proxy = new TestProxy();
 							
 							var errorCallCount = 0,
 							    completeCallCount = 0;
 							
-							proxy.destroy( model, {
-								error    : function() { errorCallCount++; },
-								complete : function() { completeCallCount++; }
-							} );
+							var proxy = new TestProxy();
+							proxy.destroy( operation )
+								.fail( function() { errorCallCount++; } )
+								.always( function() { completeCallCount++; } );
 							
 							Y.Assert.areSame( 1, errorCallCount, "The 'error' callback provided destroy() should have been called" );
 							Y.Assert.areSame( 1, completeCallCount, "The 'complete' callback provided destroy() should have been called" );
@@ -457,41 +511,50 @@ define( [
 					{
 						name : "destroy()'s HTTP method tests",
 						
+						setUp : function() {
+							this.model = JsMockito.mock( Model );
+							
+							this.operation = JsMockito.mock( WriteOperation );
+							JsMockito.when( this.operation ).getModels().thenReturn( [ this.model ] );
+						},
+						
 						
 						"By default, the ajax function should be called with the HTTP method 'DELETE'" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
 							var httpMethod = "";
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: function( options ) {
 									httpMethod = options.type;
+									return new jQuery.Deferred().promise();
 								}
 							} );
-							var proxy = new TestProxy();
 							
-							proxy.destroy( model );
+							var proxy = new TestProxy();
+							proxy.destroy( this.operation );
+							
 							Y.Assert.areSame( 'DELETE', httpMethod );
 						},
 						
 						
 						"The HTTP method should be overridable via the actionMethods config" : function() {
-							var model = JsMockito.mock( Model );
-							JsMockito.when( model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
+							JsMockito.when( this.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 							
 							var httpMethod = "";
 							var TestProxy = Class.extend( RestProxy, {
 								ajax: function( options ) {
 									httpMethod = options.type;
+									return new jQuery.Deferred().promise();
 								},
 								
 								actionMethods : {
 									destroy : 'POST'  // override
 								}
 							} );
-							var proxy = new TestProxy();
 							
-							proxy.destroy( model );
+							var proxy = new TestProxy();
+							proxy.destroy( this.operation );
+							
 							Y.Assert.areSame( 'POST', httpMethod );
 						}
 					}
@@ -507,34 +570,30 @@ define( [
 				
 				
 				"buildUrl() should handle a urlRoot without a trailing slash" : function() {
-					var mockModel = JsMockito.mock( Model );
-					JsMockito.when( mockModel ).getId().thenReturn( 42 );
-					
 					var proxy = new RestProxy( {
 						urlRoot : '/testUrl',
 						appendId : false
 					} );
 					
-					Y.Assert.areSame( '/testUrl', proxy.buildUrl( mockModel, 'create' ), "buildUrl() should have returned the urlRoot when doing a 'create'" );
-					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( mockModel, 'read' ), "buildUrl() should have appended the ID when doing a 'read'" );
-					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( mockModel, 'update' ), "buildUrl() should have appended the ID when doing a 'update'" );
-					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( mockModel, 'delete' ), "buildUrl() should have appended the ID when doing a 'delete'" );
+					Y.Assert.areSame( '/testUrl', proxy.buildUrl( 'create', 42 ), "buildUrl() should have returned the urlRoot when doing a 'create'" );
+					Y.Assert.areSame( '/testUrl', proxy.buildUrl( 'read' ), "buildUrl() should have not appended the ID when doing a 'read' of a collection (i.e. no particular ID to read)" );
+					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( 'read', 42 ), "buildUrl() should have appended the ID when doing a 'read'" );
+					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( 'update', 42 ), "buildUrl() should have appended the ID when doing a 'update'" );
+					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( 'delete', 42 ), "buildUrl() should have appended the ID when doing a 'delete'" );
 				},
 	
 	
 				"buildUrl() should handle a urlRoot with a trailing slash" : function() {
-					var mockModel = JsMockito.mock( Model );
-					JsMockito.when( mockModel ).getId().thenReturn( 42 );
-					
 					var proxy = new RestProxy( {
 						urlRoot : '/testUrl/',
 						appendId : false
 					} );
 					
-					Y.Assert.areSame( '/testUrl/', proxy.buildUrl( mockModel, 'create' ), "buildUrl() should have returned the urlRoot when doing a 'create'" );
-					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( mockModel, 'read' ), "buildUrl() should have appended the ID when doing a 'read'" );
-					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( mockModel, 'update' ), "buildUrl() should have appended the ID when doing a 'update'" );
-					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( mockModel, 'delete' ), "buildUrl() should have appended the ID when doing a 'delete'" );
+					Y.Assert.areSame( '/testUrl/', proxy.buildUrl( 'create', 42 ), "buildUrl() should have returned the urlRoot when doing a 'create'" );
+					Y.Assert.areSame( '/testUrl/', proxy.buildUrl( 'read' ), "buildUrl() should have not appended the ID when doing a 'read' of a collection (i.e. no particular ID to read)" );
+					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( 'read', 42 ), "buildUrl() should have appended the ID when doing a 'read'" );
+					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( 'update', 42 ), "buildUrl() should have appended the ID when doing a 'update'" );
+					Y.Assert.areSame( '/testUrl/42', proxy.buildUrl( 'delete', 42 ), "buildUrl() should have appended the ID when doing a 'delete'" );
 				}
 			}
 		]

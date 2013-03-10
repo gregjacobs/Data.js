@@ -1,4 +1,5 @@
 /*global define */
+/*jshint newcap:false */  // For the dynamic constructor: new collectionClass( ... );
 define( [
 	'require',
 	'lodash',

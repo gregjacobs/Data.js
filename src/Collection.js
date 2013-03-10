@@ -7,8 +7,8 @@ define( [
 	'data/Model',
 	'data/DataComponent',
 	'data/NativeObjectConverter',
-	'data/persistence/ReadOperation',
-	'data/persistence/WriteOperation'
+	'data/persistence/operation/ReadOperation',
+	'data/persistence/operation/WriteOperation'
 ], function(
 	jQuery,
 	_,
@@ -882,7 +882,7 @@ define( [
 		 * @param {Number} fn.index The index of the Model in the Collection.
 		 * 
 		 * @param {Object} [options]
-		 * @param {Object} [options.scope] The scope to run the function in.
+		 * @param {Object} [options.scope=window] The scope to run the function in.
 		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
 		 * 
 		 * @return {Data.Model} The model that the function returned `true` for, or `null` if no match was found.
@@ -913,6 +913,11 @@ define( [
 		 * callbacks must be provided to the method, or handlers must attached to the returned `jQuery.Promise` 
 		 * object to determine when the loading is complete.
 		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `collection` : {@link Data.Collection} This Collection instance.
+		 * - `operation` : {@link Data.persistence.operation.ReadOperation} The ReadOperation that was executed.
+		 * 
 		 * @method load
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Function} [options.success] Function to call if the loading is successful.
@@ -921,16 +926,17 @@ define( [
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in.
 		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
-		 * @return {jQuery.Promise} A Promise object which may have handlers attached.
+		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the load completes. The 
+		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
 		 */
 		load : function( options ) {
 			options = options || {};
-			var emptyFn   = function() {},
-			    operation = new ReadOperation( { } ),
-			    scope     = options.scope || options.context || this,
-			    success   = _.bind( options.success || emptyFn, scope ),
-			    error     = _.bind( options.error || emptyFn, scope ),
-			    complete  = _.bind( options.complete || emptyFn, scope );
+			var me          = this,  // for closures
+			    emptyFn     = function() {},
+			    scope       = options.scope    || options.context || this,
+			    successCb   = options.success  || emptyFn,
+			    errorCb     = options.error    || emptyFn,
+			    completeCb  = options.complete || emptyFn;
 
 			
 			// No persistence proxy, cannot load. Throw an error
@@ -938,19 +944,19 @@ define( [
 				throw new Error( "Data.Collection::load() error: Cannot load. No `proxy` configured." );
 			}
 			
+			// Attach any user-provided callbacks to the deferred
 			var deferred = new jQuery.Deferred();
-			deferred.done( success ).fail( error ).always( complete );
-			
-			var proxyOptions = {
-				async    : ( typeof options.async === 'undefined' ) ? true : options.async,   // defaults to true
-				success  : options.success  || emptyFn,
-				failure  : options.failure  || emptyFn,
-				complete : options.complete || emptyFn,
-				scope    : options.scope    || window
-			};
+			deferred
+				.done( _.bind( successCb, scope ) )
+				.fail( _.bind( errorCb, scope ) )
+				.always( _.bind( completeCb, scope ) );
 			
 			// Make a request to read the data from the persistent storage
-			this.proxy.read( this, proxyOptions );
+			var operation = new ReadOperation();
+			this.proxy.read( operation ).then(
+				function( operation ) { me.removeAll(); me.add( operation.getData() ); deferred.resolve( me, operation ); },
+				function( operation ) { deferred.reject( me, operation ); }
+			);
 			
 			return deferred.promise();
 		},
@@ -960,20 +966,23 @@ define( [
 		 * Synchronizes the Collection by persisting each of the {@link Data.Model Models} that have changes. New Models are created,
 		 * existing Models are modified, and removed Models are deleted.
 		 * 
+		 * - `collection` : {@link Data.Collection} This Collection instance.
+		 * - `operation` : {@link Data.persistence.operation.WriteOperation} The WriteOperation that was executed.
+		 * 
 		 * @method sync
 		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.async=true] True to make the request asynchronous, false to make it synchronous.
 		 * @param {Function} [options.success] Function to call if the synchronization is successful.
 		 * @param {Function} [options.error] Function to call if the synchronization fails. The sychronization will be considered
 		 *   failed if one or more Models does not persist successfully.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
-		 * @param {Object} [options.scope=window] The object to call the `success`, `error`, and `complete` callbacks in. This may also
-		 *   be provided as the property `context`, if you prefer.
-		 * @return {jQuery.Promise} A Promise object which may have handlers attached. 
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
+		 *   be provided as the property `context`, if you prefer. Defaults to the Collection.
+		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the sync completes. The 
+		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
 		 */
 		sync : function( options ) {
 			options = options || {};
-			var scope = options.scope || options.context || window;
+			var scope = options.scope || options.context || this;
 			
 					
 			var models = this.getModels(),
@@ -1021,15 +1030,11 @@ define( [
 			    modelsToSave = newModels.concat( modifiedModels );
 			
 			for( i = 0, len = modelsToSave.length; i < len; i++ ) {
-				var savePromise = modelsToSave[ i ].save( {
-					async   : options.async
-				} );
+				var savePromise = modelsToSave[ i ].save();
 				promises.push( savePromise );
 			}
 			for( i = removedModels.length - 1; i >= 0; i-- ) {  // Loop this one backwards, as destroyed models will be removed from the array as they go if they happen synchronously
-				var destroyPromise = removedModels[ i ].destroy( {
-					async   : options.async
-				} );
+				var destroyPromise = removedModels[ i ].destroy();
 				destroyPromise.done( destroySuccess );  // Upon successful destruction, we want to remove the model from the removedModels array, so that we don't try to destroy it again
 				promises.push( destroyPromise );
 			}

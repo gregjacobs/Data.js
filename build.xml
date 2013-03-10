@@ -1,7 +1,7 @@
 <project name="Data.js" default="build">
 	
 	<target name="build" description="Builds the source files.">
-		<echo>Not yet implemented.</echo>
+		<fail message="Build using RequireJS optimizer not yet implemented." />
 		<!--
 		<java classname="org.mozilla.javascript.tools.shell.Main" fork="true" failonerror="true">
 			<classpath>
@@ -14,7 +14,7 @@
 	</target>
 	
 	
-	<target name="doc">
+	<target name="doc" description="Builds the documentation using JSDuck. Will be available in docs/ when built.">
 		<exec executable="${basedir}/vendor/jsduck/jsduck-4.4.1.exe" failonerror="true">
 			<arg value="--output=docs" />
 			<arg value="--external=jQuery,jQuery.Promise,jqXHR" />

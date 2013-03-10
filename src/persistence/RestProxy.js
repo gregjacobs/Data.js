@@ -3,9 +3,8 @@ define( [
 	'jquery',
 	'lodash',
 	'Class',
-	'data/Data',
 	'data/persistence/Proxy'
-], function( jQuery, _, Class, Data, Proxy ) {
+], function( jQuery, _, Class, Proxy ) {
 	
 	/**
 	 * @class Data.persistence.RestProxy
@@ -88,18 +87,16 @@ define( [
 		 * then {@link Data.Model#set} to the Model.
 		 * 
 		 * @method create
-		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance that holds the model(s) 
 		 *   to be created on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
 		 *   this method as the first argument.
 		 */
-		create : function( operation, options ) {
-			options = options || {};
-			var model = operation.getModels()[ 0 ];
-			
-			// Set the data to persist
-			var dataToPersist = model.getData( { persistedOnly: true, raw: true } );
+		create : function( operation ) {
+			var deferred = new jQuery.Deferred(),
+			    model = operation.getModels()[ 0 ],
+			    dataToPersist = model.getData( { persistedOnly: true, raw: true } );
 			
 			// Handle needing a different "root" wrapper object for the data
 			if( this.rootProperty ) {
@@ -108,33 +105,27 @@ define( [
 				dataToPersist = dataWrap;
 			}
 			
-			
-			var successCallback = function( data ) {
-				if( data ) {
-					model.set( data );
-					model.commit();
+			this.ajax( {
+				url         : this.buildUrl( 'create', model.getId() ),
+				type        : this.getMethod( 'create' ),
+				dataType    : 'json',
+				data        : JSON.stringify( dataToPersist ),
+				contentType : 'application/json'
+			} ).then(
+				function( data, textStatus, jqXHR ) {
+					if( data ) {  // data may or may not be returned by a server on a 'create' request
+						operation.setData( data );
+					}
+					operation.setSuccess();
+					deferred.resolve( operation );
+				},
+				function( jqXHR, textStatus, errorThrown ) {
+					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( operation );
 				}
-				
-				if( typeof options.success === 'function' ) {
-					options.success.call( options.scope || window );
-				}
-			};
+			);
 			
-			var emptyFn = Data.emptyFn;
-			return this.ajax( {
-				async    : ( typeof options.async === 'undefined' ) ? true : options.async,  // async defaults to true.
-				
-				url      : this.buildUrl( model, 'create' ),
-				type     : this.getMethod( 'create' ),
-				dataType : 'json',
-				data     : JSON.stringify( dataToPersist ),
-				contentType : 'application/json',
-				
-				success  : successCallback,  // note: currently called in the scope of options.scope
-				error    : options.error    || emptyFn,
-				complete : options.complete || emptyFn,
-				context  : options.scope    || window
-			} );
+			return deferred.promise();
 		},
 		
 		
@@ -142,38 +133,32 @@ define( [
 		 * Reads the Model from the server.
 		 * 
 		 * @method read
-		 * @param {Data.persistence.ReadOperation} operation The ReadOperation instance that holds the model(s) 
+		 * @param {Data.persistence.operation.ReadOperation} operation The ReadOperation instance that holds the model(s) 
 		 *   to be read from the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
 		 *   this method as the first argument.
 		 */
-		read : function( operation, options ) {
-			options = options || {};
-			var model = operation.getModels()[ 0 ];
+		read : function( operation ) {
+			var deferred = new jQuery.Deferred();
 			
-			var successCallback = function( data ) {
-				model.set( data );
-				model.commit();
-				
-				if( typeof options.success === 'function' ) {
-					options.success.call( options.scope || window );
-				}
-			};
-
-			var emptyFn = Data.emptyFn;
-			return this.ajax( {
-				async    : ( typeof options.async === 'undefined' ) ? true : options.async,  // async defaults to true.
-				
-				url      : this.buildUrl( model, 'read' ),
+			this.ajax( {
+				url      : this.buildUrl( 'read', operation.getModelId() ),
 				type     : this.getMethod( 'read' ),
-				dataType : 'json',
-				
-				success  : successCallback,
-				error    : options.error    || emptyFn,
-				complete : options.complete || emptyFn,
-				context  : options.scope    || window
-			} );
+				dataType : 'json'
+			} ).then(
+				function( data, textStatus, jqXHR ) {
+					operation.setData( data );
+					operation.setSuccess();
+					deferred.resolve( operation );
+				},
+				function( jqXHR, textStatus, errorThrown ) {
+					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( operation );
+				}
+			);
+			
+			return deferred.promise();
 		},
 		
 		
@@ -182,7 +167,7 @@ define( [
 		 * are persisted.
 		 * 
 		 * @method update
-		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance that holds the model(s) 
 		 *   to be updated on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -221,18 +206,24 @@ define( [
 			
 			
 			// Finally, persist to the server
-			var emptyFn = Data.emptyFn;
 			this.ajax( {
-				async    : ( typeof options.async === 'undefined' ) ? true : options.async,  // async defaults to true.
-				
-				url      : this.buildUrl( model, 'update' ),
-				type     : this.getMethod( 'update' ),
-				dataType : 'json',
-				data     : JSON.stringify( dataToPersist ),
+				url         : this.buildUrl( 'update', model.getId() ),
+				type        : this.getMethod( 'update' ),
+				dataType    : 'json',
+				data        : JSON.stringify( dataToPersist ),
 				contentType : 'application/json'
 			} ).then(
-				function( data ) { deferred.resolve( operation ); },
-				function() { deferred.reject( operation ); }
+				function( data, textStatus, jqXHR ) {
+					if( data ) {  // data may or may not be returned by a server on an 'update' request
+						operation.setData( data );
+					}
+					operation.setSuccess();
+					deferred.resolve( operation );
+				},
+				function( jqXHR, textStatus, errorThrown ) {
+					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( operation );
+				}
 			);
 			
 			return deferred.promise();
@@ -245,24 +236,32 @@ define( [
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
 		 * @method destroy
-		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
 		 *   this method as the first argument.
 		 */
-		destroy : function( operation, options ) {
-			options = options || {};
-			var emptyFn = Data.emptyFn,
+		destroy : function( operation ) {
+			var deferred = new jQuery.Deferred(),
 			    model = operation.getModels()[ 0 ];
 			
-			return this.ajax( {
-				async    : ( typeof options.async === 'undefined' ) ? true : options.async,  // async defaults to true.
-				
-				url      : this.buildUrl( model, 'destroy' ),
+			this.ajax( {
+				url      : this.buildUrl( 'destroy', model.getId() ),
 				type     : this.getMethod( 'destroy' ),
 				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
-			} );
+			} ).then(
+				function( data, textStatus, jqXHR ) {
+					operation.setSuccess();
+					deferred.resolve( operation );
+				},
+				function( jqXHR, textStatus, errorThrown ) {
+					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( operation );
+				}
+			);
+			
+			return deferred.promise();
 		},
 		
 		
@@ -274,20 +273,23 @@ define( [
 		 * 
 		 * @protected
 		 * @method buildUrl
-		 * @param {Data.Model} model The model that a url is being built for.
-		 * @param {String} [action] The action being taken. This will be one of: 'create', 'read', 'update', or 'destroy'.
+		 * @param {String} action The action being taken. Must be one of: 'create', 'read', 'update', or 'destroy'.
+		 * @param {String} modelId The ID for the model that a url is being built for.
 		 * @return {String} The url to use.
 		 */
-		buildUrl : function( model, action ) {
+		buildUrl : function( action, modelId ) {
 			var url = this.urlRoot;
 			
-			// Use the model's ID to set the url if we're not creating
-			if( action !== 'create' ) {
+			// Use the model's ID to set the url if we're not creating.
+			// In the read case where there is no particular model to load (i.e. loading a collection),
+			// then we skip this as well, as we want to load *all* (or at least a range of) models of the 
+			// particular resource.
+			if( action !== 'create' && modelId ) {
 				if( !url.match( /\/$/ ) ) {
 					url += '/';  // append trailing slash if it's not there
 				}
 				
-				url += encodeURIComponent( model.getId() );
+				url += encodeURIComponent( modelId );
 			}
 			
 			return url;

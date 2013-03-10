@@ -202,7 +202,7 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} persist
-		 * True if the attribute should be persisted by its {@link Data.Model Model} using the Model's {@link Data.Model#persistenceProxy persistenceProxy}.
+		 * True if the attribute should be persisted by its {@link Data.Model Model} using the Model's {@link Data.Model#proxy proxy}.
 		 * Set to false to prevent the attribute from being persisted.
 		 */
 		persist : true,

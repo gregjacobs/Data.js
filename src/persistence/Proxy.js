@@ -78,7 +78,7 @@ define( [
 					
 				} else if( !( 'type' in config ) ) {
 					// No `type` property provided on config object
-					throw new Error( "Data.persistence.Proxy.create(): No `type` property provided on persistenceProxy config object" );
+					throw new Error( "Data.persistence.Proxy.create(): No `type` property provided on proxy config object" );
 					 
 				} else {
 					// No registered Proxy type with the given type, throw an error
@@ -103,7 +103,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method create
-		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance to represent
+		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance to represent
 		 *   the creation on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -117,7 +117,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method read
-		 * @param {Data.persistence.ReadOperation} operation The ReadOperation instance to represent
+		 * @param {Data.persistence.operation.ReadOperation} operation The ReadOperation instance to represent
 		 *   the reading of data from the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -131,7 +131,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method update
-		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance to represent
+		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance to represent
 		 *   the update on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -145,7 +145,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method destroy
-		 * @param {Data.persistence.WriteOperation} operation The WriteOperation instance to represent
+		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance to represent
 		 *   the destruction (deletion) on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 

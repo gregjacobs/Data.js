@@ -1,4 +1,5 @@
 /*global define */
+/*jshint newcap:false */  // For the dynamic constructor: new modelClass( ... );
 define( [
 	'require',
 	'lodash',

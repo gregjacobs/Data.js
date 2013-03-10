@@ -2,8 +2,9 @@
 define( [
 	'lodash',
 	'data/Model',
-	'data/persistence/RestProxy'
-], function( _, Model, RestProxy ) {
+	'data/persistence/RestProxy',
+	'data/persistence/operation/WriteOperation'
+], function( _, Model, RestProxy, WriteOperation ) {
 
 	tests.integration.persistence.add( new Ext.test.TestSuite( {
 		
@@ -45,8 +46,6 @@ define( [
 				
 				
 				"The parent model should *not* be persisted when only a non-persisted attribute of a nested model is changed" : function() {
-					var ajaxCallCount = 0;
-					
 					var childModel = new this.ChildModel();
 					var parentModel = new this.ParentModel( {
 						id: 1,
@@ -55,9 +54,11 @@ define( [
 					childModel.set( 'unpersistedAttr', 'newValue' );
 					
 					var proxy = new this.RestProxy(),
-					    result = proxy.update( parentModel );
+					    operation = new WriteOperation( { models: [ parentModel ] } );
 					
-					Y.Assert.isNull( result, "The update() method should have returned null, because there should have been nothing to persist" );
+					proxy.update( operation );
+					
+					Y.Assert.areSame( this.ajaxCallCount, 0, "The update() method should not have made an ajax request, because there should have been nothing to persist" );
 				}
 				
 			}
