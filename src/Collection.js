@@ -909,9 +909,11 @@ define( [
 		
 		
 		/**
-		 * Loads the Collection using its configured {@link #proxy}. The loading is asynchronous, and either
-		 * callbacks must be provided to the method, or handlers must attached to the returned `jQuery.Promise` 
-		 * object to determine when the loading is complete.
+		 * Loads the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
+		 * {@link #model model's} proxy will be used instead.
+		 * 
+		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must 
+		 * attached to the returned `jQuery.Promise` object to determine when the loading is complete.
 		 * 
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
@@ -932,17 +934,19 @@ define( [
 		load : function( options ) {
 			options = options || {};
 			var me          = this,  // for closures
+			    proxy       = this.proxy || ( this.model ? this.model.getProxy() : null ),
 			    emptyFn     = function() {},
 			    scope       = options.scope    || options.context || this,
 			    successCb   = options.success  || emptyFn,
 			    errorCb     = options.error    || emptyFn,
 			    completeCb  = options.complete || emptyFn;
 
-			
+			// <debug>
 			// No persistence proxy, cannot load. Throw an error
-			if( !this.proxy ) {
-				throw new Error( "Data.Collection::load() error: Cannot load. No `proxy` configured." );
+			if( !proxy ) {
+				throw new Error( "Data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 			}
+			// </debug>
 			
 			// Attach any user-provided callbacks to the deferred
 			var deferred = new jQuery.Deferred();

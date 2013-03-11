@@ -1787,6 +1787,20 @@ define( [
 			// ---------------------------------------------
 			
 			
+			/**
+			 * Test load()
+			 */
+			{
+				name : "Test load()",
+				
+				
+				"load() should throw an error if no proxy is configured" : function() {
+					
+				}
+			},
+			
+			
+			
 			/*
 			 * Test sync()
 			 */
