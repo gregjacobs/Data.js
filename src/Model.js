@@ -63,9 +63,10 @@ define( [
 		
 		/**
 		 * @cfg {Data.persistence.Proxy} proxy
-		 * The persistence proxy to use (if any) to persist the data to the server.
+		 * 
+		 * The persistence proxy to use (if any) to load or persist the Model's data to/from persistent
+		 * storage. If this is not specified, the Model may not {@link #load} or {@link #save} its data. 
 		 */
-		proxy : null,
 		
 		/**
 		 * @cfg {String[]/Object[]} attributes
@@ -274,6 +275,18 @@ define( [
 			getAttributes : function() {
 				// Note: `this` refers to the class (constructor function) that the static method was called on
 				return this.prototype.attributes;
+			},
+			
+			
+			/**
+			 * Retrieves the {@link Data.persistence.Proxy} that is configured for the Model.
+			 * 
+			 * @inheritable
+			 * @static
+			 * @return {Data.persistence.Proxy} The Proxy configured with the Model, or null.
+			 */
+			getProxy : function() {
+				return this.prototype.proxy || null;
 			}
 			
 		},
@@ -1013,18 +1026,6 @@ define( [
 		// --------------------------------
 		
 		// Persistence Functionality
-		
-		
-		/**
-		 * Gets the {@link #proxy} that is currently configured for this Model. Note that
-		 * the same proxy instance is shared between all instances of the model.
-		 * 
-		 * @method getProxy
-		 * @return {Data.persistence.Proxy} The configured persistence proxy, or `null` if there is no proxy currently set.
-		 */
-		getProxy : function() {
-			return this.proxy;
-		},
 		
 		
 		/**

@@ -1,12 +1,15 @@
 /*global define, window, Ext, Y, JsMockito, tests */
 define( [
 	'jquery',
+	'data/Data',
 	'data/Collection',
 	'data/Model',
-	'data/attribute/Attribute'
-], function( jQuery, Collection, Model, Attribute ) {
+	'data/attribute/Attribute',
+	'data/persistence/Proxy',
+	'data/persistence/operation/ReadOperation'
+], function( jQuery, Data, Collection, Model, Attribute, Proxy, ReadOperation ) {
 	tests.unit.add( new Ext.test.TestSuite( {
-		name: 'Collection',
+		name: 'Data.Collection',
 		
 		
 		items : [
@@ -1793,9 +1796,236 @@ define( [
 			{
 				name : "Test load()",
 				
+				setUp : function() {
+					this.proxy = JsMockito.mock( Proxy.extend( {
+						// Implementation of abstract interface
+						create : Data.emptyFn,
+						read : Data.emptyFn,
+						update : Data.emptyFn,
+						destroy : Data.emptyFn
+					} ) );
+					
+					// For the base case for tests. If needing to do something different, override the particular method of interest.
+					var deferred = new jQuery.Deferred();
+					JsMockito.when( this.proxy ).create().then( function( op ) { return deferred.promise(); } );
+					JsMockito.when( this.proxy ).read().then( function( op ) { return deferred.promise(); } );
+					JsMockito.when( this.proxy ).update().then( function( op ) { return deferred.promise(); } );
+					JsMockito.when( this.proxy ).destroy().then( function( op ) { return deferred.promise(); } );
+					
+					this.Model = Model.extend( {
+						attributes : [ 'id', 'name' ],
+						proxy : this.proxy
+					} );
+				},
+				
+				
+				_should : {
+					error : {
+						"load() should throw an error if no proxy is configured" :
+							"Data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`.",
+					
+						"load() should throw an error if it has no proxy but has a Model, but that model has no proxy configured" :
+							"Data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`."
+					}
+				},
+				
 				
 				"load() should throw an error if no proxy is configured" : function() {
+					var MyCollection = Collection.extend( {
+						// note: no proxy, and no model
+					} );
 					
+					new MyCollection().load();
+					
+					Y.Assert.fail( "Test should have thrown an error for not having a proxy configured" );
+				},
+				
+				
+				"load() should throw an error if it has no proxy but has a Model, but that model has no proxy configured" : function() {
+					var MyCollection = Collection.extend( {
+						// note: no proxy, and a model that doesn't have a proxy
+						model : Model.extend( { /* no proxy on model */ } )
+					} );
+					
+					new MyCollection().load();
+					
+					Y.Assert.fail( "Test should have thrown an error for not having a proxy configured" );
+				},
+				
+				
+				"load() should call the proxy's read() method, when the proxy is configured on the Collection" : function() {
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy
+					} );
+					
+					new MyCollection().load();
+					
+					try {
+						JsMockito.verify( this.proxy ).read();
+					} catch( e ) {
+						Y.Assert.fail( e.message || e );
+					}
+				},
+				
+				
+				"load() should call the proxy's read() method, when the proxy is configured on the Collection's Model" : function() {
+					var MyCollection = Collection.extend( {
+						// note: no proxy of its own
+						model : this.Model  // Note: a proxy is defined on the model
+					} );
+					
+					new MyCollection().load();
+					
+					try {
+						JsMockito.verify( this.proxy ).read();
+					} catch( e ) {
+						Y.Assert.fail( e.message || e );
+					}
+				},
+				
+				
+				"load() should load the models returned by the data in the proxy" : function() {
+					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						operation.setData( [ 
+							{ id: 1, name: "John" },
+							{ id: 2, name: "Jane" }
+						] );
+						return new jQuery.Deferred().resolve( operation ).promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						model : this.Model,
+						proxy : this.proxy
+					} );
+					var collection = new MyCollection();
+					collection.load();
+					
+					Y.Assert.areSame( 2, collection.getCount(), "Should be 2 models in the collection now" );
+				},
+				
+				
+				"load() should call its success/complete callbacks, and resolve its deferred with the arguments: collection, operation" : function() {
+					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						return new jQuery.Deferred().resolve( operation ).promise();
+					} );
+					
+					var MyCollection = Collection.extend( {
+						model : this.Model,
+						proxy : this.proxy
+					} );
+					
+					var successCallCount = 0,
+					    errorCallCount = 0,
+					    completeCallCount = 0,
+					    doneCallCount = 0,
+					    failCallCount = 0,
+					    alwaysCallCount = 0;
+					
+					// Instantiate and run the load() method
+					var collectionInstance = new MyCollection(); 
+					var promise = collectionInstance.load( {
+						success : function( collection, operation ) {
+							successCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in success cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in success cb" );
+						},
+						error : function( collection, operation ) {
+							errorCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in error cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in error cb" );
+						},
+						complete : function( collection, operation ) {
+							completeCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in complete cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in complete cb" );
+						}
+					} )
+						.done( function( collection, operation ) {
+							doneCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in done cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in done cb" );
+						} )
+						.fail( function( collection, operation ) {
+							failCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in fail cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in fail cb" );
+						} )
+						.always( function( collection, operation ) {
+							alwaysCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in always cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in always cb" );
+						} );
+					
+					// Make sure the appropriate callbacks executed
+					Y.Assert.areSame( 1, successCallCount, "successCallCount" );
+					Y.Assert.areSame( 0, errorCallCount, "errorCallCount" );
+					Y.Assert.areSame( 1, completeCallCount, "completeCallCount" );
+					Y.Assert.areSame( 1, doneCallCount, "doneCallCount" );
+					Y.Assert.areSame( 0, failCallCount, "failCallCount" );
+					Y.Assert.areSame( 1, alwaysCallCount, "alwaysCallCount" );
+				},
+				
+				
+				"load() should call its error/complete callbacks, and reject its deferred with the arguments: collection, operation" : function() {
+					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						return new jQuery.Deferred().reject( operation ).promise();
+					} );
+					
+					var MyCollection = Collection.extend( {
+						model : this.Model,
+						proxy : this.proxy
+					} );
+					
+					var successCallCount = 0,
+					    errorCallCount = 0,
+					    completeCallCount = 0,
+					    doneCallCount = 0,
+					    failCallCount = 0,
+					    alwaysCallCount = 0;
+					
+					// Instantiate and run the load() method
+					var collectionInstance = new MyCollection(); 
+					var promise = collectionInstance.load( {
+						success : function( collection, operation ) {
+							successCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in success cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in success cb" );
+						},
+						error : function( collection, operation ) {
+							errorCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in error cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in error cb" );
+						},
+						complete : function( collection, operation ) {
+							completeCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in complete cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in complete cb" );
+						}
+					} )
+						.done( function( collection, operation ) {
+							doneCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in done cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in done cb" );
+						} )
+						.fail( function( collection, operation ) {
+							failCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in fail cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in fail cb" );
+						} )
+						.always( function( collection, operation ) {
+							alwaysCallCount++;
+							Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in always cb" );
+							Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in always cb" );
+						} );
+					
+					// Make sure the appropriate callbacks executed
+					Y.Assert.areSame( 0, successCallCount, "successCallCount" );
+					Y.Assert.areSame( 1, errorCallCount, "errorCallCount" );
+					Y.Assert.areSame( 1, completeCallCount, "completeCallCount" );
+					Y.Assert.areSame( 0, doneCallCount, "doneCallCount" );
+					Y.Assert.areSame( 1, failCallCount, "failCallCount" );
+					Y.Assert.areSame( 1, alwaysCallCount, "alwaysCallCount" );
 				}
 			},
 			

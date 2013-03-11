@@ -19,6 +19,16 @@ define( [
 	var DataComponent = Class.extend( Observable, {
 		abstractClass : true,
 		
+		/**
+		 * @cfg {Data.persistence.Proxy} proxy
+		 * 
+		 * The persistence proxy to use (if any) to load or persist the DataComponent's data to/from persistent
+		 * storage. If this is not specified, the DataComponent may not save or load its data to/from an external
+		 * source. (Note that the way that the DataComponent loads/saves its data is dependent on the particular
+		 * implementation.)
+		 */
+		proxy : null,
+		
 		
 		/**
 		 * @protected
@@ -93,7 +103,19 @@ define( [
 		 * @abstract
 		 * @method rollback
 		 */
-		rollback : Class.abstractMethod
+		rollback : Class.abstractMethod,
+		
+		
+		/**
+		 * Gets the {@link #proxy} that is currently configured for this DataComponent. Note that
+		 * the same proxy instance is shared between all instances of the DataComponent.
+		 * 
+		 * @method getProxy
+		 * @return {Data.persistence.Proxy} The configured persistence proxy, or `null` if there is none configured.
+		 */
+		getProxy : function() {
+			return this.proxy;
+		}
 		
 	} );
 	

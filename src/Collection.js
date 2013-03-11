@@ -64,6 +64,14 @@ define( [
 	var Collection = Class.extend( DataComponent, {
 		
 		/**
+		 * @cfg {Data.persistence.Proxy} proxy
+		 * 
+		 * The persistence proxy to use (if any) to load or persist the Collection's data to/from persistent
+		 * storage. If this is not configured, the proxy configured on the {@link #model} will be used instead.
+		 * If neither are specified, the Collection may not {@link #load} or {@link #sync} its models. 
+		 */
+		
+		/**
 		 * @cfg {Function} model
 		 * 
 		 * The Data.Model (sub)class which will be used to convert any anonymous data objects into
@@ -957,7 +965,7 @@ define( [
 			
 			// Make a request to read the data from the persistent storage
 			var operation = new ReadOperation();
-			this.proxy.read( operation ).then(
+			proxy.read( operation ).then(
 				function( operation ) { me.removeAll(); me.add( operation.getData() ); deferred.resolve( me, operation ); },
 				function( operation ) { deferred.reject( me, operation ); }
 			);
