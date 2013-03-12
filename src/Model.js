@@ -97,16 +97,6 @@ define( [
 		 *         }
 		 *     ]
 		 * 
-		 * Note: If using hierarchies of more than one Model subclass deep, consider using the {@link #addAttributes} alias instead of this
-		 * config, which does the same thing (defines attributes), but better conveys that attributes in subclasses are being *added* to the
-		 * attributes of the superclass, rather than *overriding* attributes of the superclass.
-		 */
-		
-		/**
-		 * @cfg {String[]/Object[]} addAttributes
-		 * Alias of {@link #cfg-attributes}, which may make more sense to use in hierarchies of models that go past more than one level of nesting, 
-		 * as it conveys the meaning that the attributes are being *added* to the attributes that are already defined in its superclass, not
-		 * replacing them.
 		 */
 		
 		/**
@@ -236,12 +226,10 @@ define( [
 				    attributeObj,   // for holding each of the attributeDefs, one at a time
 				    i, len;
 				
-				// Grab the 'attributes' or 'addAttributes' property from the new subclass's prototype. If neither of these are present,
+				// Grab the 'attributes' property from the new subclass's prototype. If this is not present,
 				// will use the empty array instead.
 				if( classPrototype.hasOwnProperty( 'attributes' ) ) {
 					attributeDefs = classPrototype.attributes;
-				} else if( classPrototype.hasOwnProperty( 'addAttributes' ) ) {
-					attributeDefs = classPrototype.addAttributes;
 				}
 				
 				// Instantiate each of the new subclass's Attributes, and then merge them with the superclass's attributes

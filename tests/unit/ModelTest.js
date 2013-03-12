@@ -77,7 +77,7 @@ define( [
 					// Reference the base class, and create a subclass
 					var MyModel = Model.extend( {} );
 					var SubClassModel = MyModel.extend( {
-						addAttributes : [ 'a', 'b' ]
+						attributes : [ 'a', 'b' ]
 					} );
 					
 					var attributes = (new SubClassModel()).attributes;
@@ -91,10 +91,10 @@ define( [
 					// Reference the base class, and create two subclasses
 					var MyModel = Model.extend( {} );
 					var SubClassModel = Class.extend( MyModel, {
-						addAttributes : [ 'a', 'b' ]
+						attributes : [ 'a', 'b' ]
 					} );
 					var SubSubClassModel = Class.extend( SubClassModel, {
-						addAttributes : [ 'c', 'd', 'e' ]
+						attributes : [ 'c', 'd', 'e' ]
 					} );
 					
 					var attributes = (new SubSubClassModel()).attributes;
@@ -111,13 +111,13 @@ define( [
 					// Reference the base class, and create two subclasses
 					var MyModel = Model.extend( {} );
 					var SubClassModel = Class.extend( MyModel, {
-						addAttributes : [ 'a', 'b' ]
+						attributes : [ 'a', 'b' ]
 					} );
 					var SubSubClassModel = Class.extend( SubClassModel, {
-						addAttributes : [ 'c', 'd', 'e' ]
+						attributes : [ 'c', 'd', 'e' ]
 					} );
 					var SubSubSubClassModel = Class.extend( SubSubClassModel, {
-						addAttributes : [ 'f' ]
+						attributes : [ 'f' ]
 					} );
 					
 					var attributes = (new SubSubSubClassModel()).attributes;
@@ -134,10 +134,10 @@ define( [
 				"Attribute definitions defined in a subclass should take precedence over attribute definitions in a superclass" : function() {
 					var MyModel = Model.extend( {} );
 					var SubClassModel = Class.extend( MyModel, {
-						addAttributes : [ { name : 'a', defaultValue: 1 } ]
+						attributes : [ { name : 'a', defaultValue: 1 } ]
 					} );
 					var SubSubClassModel = Class.extend( SubClassModel, {
-						addAttributes : [ { name : 'a', defaultValue: 2 }, 'b' ]
+						attributes : [ { name : 'a', defaultValue: 2 }, 'b' ]
 					} );
 					
 					var attributes = (new SubSubClassModel()).attributes;
@@ -154,7 +154,7 @@ define( [
 					// Reference the base class, and create two subclasses
 					var MyModel = Model.extend( {} );
 					var SubClassModel = Class.extend( MyModel, {
-						addAttributes : [ 'a', 'b' ]
+						attributes : [ 'a', 'b' ]
 					} );
 					var SubSubClassModel = Class.extend( SubClassModel, {} );
 					
@@ -170,7 +170,7 @@ define( [
 					var MyModel = Model.extend( {} );
 					var SubClassModel = Class.extend( MyModel, {} );  // one that doesn't define any attributes
 					var SubSubClassModel = Class.extend( SubClassModel, {
-						addAttributes : [ 'a', 'b' ]
+						attributes : [ 'a', 'b' ]
 					} );
 					
 					var attributes = (new SubSubClassModel()).attributes;
@@ -183,7 +183,7 @@ define( [
 				// -------------------------------
 				
 				
-				"One should be able to use `attributes` in place of `addAttributes` on the prototype, if they wish" : function() {
+				"Yet another test for attributes inheritance..." : function() {
 					var MyModel = Model.extend( {
 						attributes : [ 'a', 'b' ]
 					} );
@@ -274,7 +274,7 @@ define( [
 						
 						"Attempting to instantiate a proxy with no 'type' attribute should throw an error" : function() {
 							var TestModel = Class.extend( Model, {
-								addAttributes: [ 'attribute1' ],
+								attributes: [ 'attribute1' ],
 								proxy : {}
 							} );
 							
@@ -283,7 +283,7 @@ define( [
 						
 						"Attempting to instantiate a proxy with an invalid 'type' attribute should throw an error" : function() {
 							var TestModel = Class.extend( Model, {
-								addAttributes: [ 'attribute1' ],
+								attributes: [ 'attribute1' ],
 								proxy : { 
 									type : 'nonExistentProxy'
 								}
@@ -294,7 +294,7 @@ define( [
 						
 						"Providing a valid config object should instantiate the Proxy *on class's the prototype*" : function() {
 							var TestModel = Class.extend( Model, {
-								addAttributes: [ 'attribute1' ],
+								attributes: [ 'attribute1' ],
 								proxy : { 
 									type : 'rest'  // a valid proxy type
 								}
@@ -306,14 +306,14 @@ define( [
 						
 						"Providing a valid config object should instantiate the Proxy *on the correct subclass's prototype*, shadowing superclasses" : function() {
 							var TestModel = Class.extend( Model, {
-								addAttributes: [ 'attribute1' ],
+								attributes: [ 'attribute1' ],
 								proxy : { 
 									type : 'nonExistentProxy'  // an invalid proxy type
 								}
 							} );
 							
 							var TestSubModel = Class.extend( TestModel, {
-								addAttributes: [ 'attribute1' ],
+								attributes: [ 'attribute1' ],
 								proxy : { 
 									type : 'rest'  // a valid proxy type
 								}
@@ -333,7 +333,7 @@ define( [
 						
 						setUp : function() {
 							this.TestModel = Class.extend( Model, {
-								addAttributes: [
+								attributes: [
 									{ name: 'attribute1' },
 									{ name: 'attribute2', defaultValue: "attribute2's default" },
 									{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -376,7 +376,7 @@ define( [
 						
 						setUp : function() {
 							this.TestModel = Class.extend( Model, {
-								addAttributes: [
+								attributes: [
 									{ name: 'attribute1' },
 									{ name: 'attribute2', defaultValue: "attribute2's default" },
 									{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -417,7 +417,7 @@ define( [
 						
 						"Providing initial data to the constructor should not leave the model set as 'dirty' (i.e. it should have no 'changes')" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [ 'attribute1', 'attribute2' ]
+								attributes : [ 'attribute1', 'attribute2' ]
 							} );
 							
 							var model = new MyModel( { attribute1: 'value1', attribute2: 'value2' } );
@@ -438,7 +438,7 @@ define( [
 							var initializeCalled = false;
 							
 							var MyModel = Model.extend( {
-								addAttributes : [ 
+								attributes : [ 
 									'test',
 									{ name: 'test2', defaultValue: 'defaultForTest2' }
 								],
@@ -606,7 +606,7 @@ define( [
 		
 				setUp : function() {
 					this.TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', defaultValue: "attribute2's default" },
 							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -716,7 +716,7 @@ define( [
 				
 				"After the successful set() of an attribute, the Model should be considered 'dirty'" : function() {
 					var TestModel = Model.extend( {
-						addAttributes: [ 'attribute1' ]
+						attributes: [ 'attribute1' ]
 					} );
 					var model = new TestModel();
 					
@@ -729,7 +729,7 @@ define( [
 				
 				"After a set() of an attribute to the same value from a clean state, the Model should NOT be considered 'dirty' (as the value didn't change)" : function() {
 					var TestModel = Model.extend( {
-						addAttributes: [ 'attribute1' ]
+						attributes: [ 'attribute1' ]
 					} );
 					var model = new TestModel( { attribute1: 'value1' } );  // initial data, model not considered dirty
 					
@@ -748,7 +748,7 @@ define( [
 					var changeCount = 0;
 					
 					var TestModel = Model.extend( {
-						addAttributes: [ 'attribute1' ]
+						attributes: [ 'attribute1' ]
 					} );
 					
 					var model = new TestModel( { attribute1: 'value1' } );
@@ -764,7 +764,7 @@ define( [
 					var changeCount = 0;
 					
 					var TestModel = Model.extend( {
-						addAttributes: [ 'attribute1' ]
+						attributes: [ 'attribute1' ]
 					} );
 					
 					var model = new TestModel();
@@ -787,7 +787,7 @@ define( [
 				
 				"set() should run the Attribute's set() method on an attribute that has initial data of its own" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', set : function( newValue ) { return newValue + " " + this.get( 'attribute1' ); } }
 						]
@@ -803,7 +803,7 @@ define( [
 				
 				"set() should convert an attribute with a 'set' function when it is set() again" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', set : function( newValue ) { return newValue + " " + this.get( 'attribute1' ); } }
 						]
@@ -887,7 +887,7 @@ define( [
 				
 				"When an attribute is set, a generalized 'change' event should be fired" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [ 'attribute1', 'attribute2' ]
+						attributes: [ 'attribute1', 'attribute2' ]
 					} );
 					var model = new TestModel(),
 					    changeEventFired = false,
@@ -912,7 +912,7 @@ define( [
 				
 				"When an attribute is set, a 'change:xxx' event should be fired for the changed attribute" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [ 'attribute1', 'attribute2' ]
+						attributes: [ 'attribute1', 'attribute2' ]
 					} );
 					var model = new TestModel(),
 					    changeEventFired = false,
@@ -934,7 +934,7 @@ define( [
 				
 				"When an attribute with a `set()` function of its own is set, the 'change' events should be fired" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [ 
+						attributes: [ 
 							{ 
 								// Attribute with a set() function that returns a new value
 								name : 'attribute1',
@@ -1037,7 +1037,7 @@ define( [
 				
 				"When an attribute with both a `set()` function, and `get()` function of its own is set, the 'change' events should be fired with the value from the `get()` function, not the raw value" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [ 
+						attributes: [ 
 							'baseAttribute',
 							{
 								// Computed Attribute with both a set() function and a get() function, which simply uses 'baseAttribute' for its value
@@ -1082,7 +1082,7 @@ define( [
 				
 				"When multiple attributes are set, a generalized 'changeset' event should be fired exactly once" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							'a',
 							'b',
 							'c',
@@ -1124,7 +1124,7 @@ define( [
 				
 				"When a computed attribute changes other attributes, the generalized 'changeset' event should still be only fired exactly once" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [ 
+						attributes: [ 
 							{ 
 								name : 'a', 
 								set : function( value ) {
@@ -1177,7 +1177,7 @@ define( [
 				
 				"When an attribute changes, and a handler of the change ends up setting other attributes, the generalized 'changeset' event should still be only fired exactly once" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [ 
+						attributes: [ 
 							{ name : 'a' }, 
 							{ name : 'b' },
 							{ name : 'c' },
@@ -1230,7 +1230,7 @@ define( [
 				
 				"When an attribute is changed multiple times within a single 'changeset', its oldValue value should have its *original* value (not any intermediate values)" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [ 
+						attributes: [ 
 							{ name : 'a' }
 						]
 					} );
@@ -1272,7 +1272,7 @@ define( [
 				
 				"multiple 'changeset' events should work correctly, providing the correct newValues and oldValues each time" : function() {
 					var TestModel = Class.extend( Model, {
-						addAttributes: [ 
+						attributes: [ 
 							{ name : 'a' }, 
 							{ name : 'b' },
 							{ name : 'c' },
@@ -1343,7 +1343,7 @@ define( [
 				
 				"for compatibility with Backbone's Collection, set() should set the id property to the Model object itself with the idAttribute is changed" : function() {
 					var TestModel = Model.extend( {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', set : function( value ) { return value + " " + this.get( 'attribute1' ); } }
 						],
@@ -1373,7 +1373,7 @@ define( [
 		
 				setUp : function() {
 					this.TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', defaultValue: "attribute2's default" },
 							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -1429,7 +1429,7 @@ define( [
 		
 				setUp : function() {
 					this.TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', defaultValue: "attribute2's default" },
 							{ 
@@ -1490,7 +1490,7 @@ define( [
 		
 				setUp : function() {
 					this.TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', defaultValue: "attribute2's default" },
 							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -1553,7 +1553,7 @@ define( [
 		
 				setUp : function() {
 					this.TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', defaultValue: "attribute2's default" },
 							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -1607,7 +1607,7 @@ define( [
 		
 				setUp : function() {
 					this.TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', defaultValue: "attribute2's default" },
 							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -1870,7 +1870,7 @@ define( [
 		
 				setUp : function() {
 					this.TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', defaultValue: "attribute2's default" },
 							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -1975,7 +1975,7 @@ define( [
 		
 				setUp : function() {
 					this.TestModel = Class.extend( Model, {
-						addAttributes: [
+						attributes: [
 							{ name: 'attribute1' },
 							{ name: 'attribute2', defaultValue: "attribute2's default" },
 							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
@@ -2302,7 +2302,7 @@ define( [
 						
 						"save() should delegate to its proxy's create() method to persist changes when the Model does not have an id set" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [ 'id' ],
+								attributes : [ 'id' ],
 								idAttribute : 'id',
 								
 								proxy : this.proxy
@@ -2327,7 +2327,7 @@ define( [
 						
 						"save() should delegate to its proxy's update() method to persist changes, when the Model has an id" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [ 'id' ],
+								attributes : [ 'id' ],
 								idAttribute : 'id',
 								
 								proxy : this.proxy
@@ -2369,7 +2369,7 @@ define( [
 							this.deferred = new jQuery.Deferred();
 							
 							this.Model = Model.extend( {
-								addAttributes : [ 'id', 'attribute1' ],
+								attributes : [ 'id', 'attribute1' ],
 								proxy  : this.proxy
 							} );
 						},
@@ -2622,7 +2622,7 @@ define( [
 						
 						setUp : function() {
 							this.Model = Model.extend( {
-								addAttributes : [ 'id', 'attribute1', 'attribute2' ]
+								attributes : [ 'id', 'attribute1', 'attribute2' ]
 							} );
 						},
 						
@@ -2689,7 +2689,7 @@ define( [
 							} );
 							
 							return Model.extend( {
-								addAttributes : [ 'id', 'attribute1', 'attribute2' ],
+								attributes : [ 'id', 'attribute1', 'attribute2' ],
 								proxy : proxy
 							} );
 						},
@@ -3090,7 +3090,7 @@ define( [
 						
 						"destroy() should throw an error if there is no configured proxy when it tries to destroy a model that has been persisted (i.e. has an id)" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [ 'id', 'attribute1', 'attribute2' ]
+								attributes : [ 'id', 'attribute1', 'attribute2' ]
 								// note: no proxy
 							} );
 							

@@ -20,7 +20,7 @@ define( [
 				
 				"convert() should return a key for each of the Attributes in the Model, whether or not any data has been set to them" : function() {
 					var MyModel = Model.extend( {
-						addAttributes : [ 'attribute1', 'attribute2' ]
+						attributes : [ 'attribute1', 'attribute2' ]
 					} );
 					var model = new MyModel( { attribute1: 'value1' } );
 					
@@ -34,7 +34,7 @@ define( [
 				
 				"convert() should return the data by running attributes' `get` functions (not just returning the raw data), when the `raw` option is not provided" : function() {
 					var MyModel = Model.extend( {
-						addAttributes : [ 
+						attributes : [ 
 							'attribute1', 
 							{ name: 'attribute2', get: function( valuel ) { return "42 " + this.get( 'attribute1' ); } }
 						]
@@ -53,7 +53,7 @@ define( [
 				
 				"when the `raw` option is provided as true, convert() should return the data by running attributes' `raw` functions (not using `get`)" : function() {
 					var MyModel = Model.extend( {
-						addAttributes : [ 
+						attributes : [ 
 							'attribute1', 
 							{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } },
 							{ name: 'attribute3', raw: function( value ) { return value + " " + this.get( 'attribute1' ); } }
@@ -74,7 +74,7 @@ define( [
 				
 				"convert() should only retrieve the data for the persisted attributes (i.e. attributes with persist: true) with the `persistedOnly` option set to true" : function() {
 					var MyModel = Model.extend( {
-						addAttributes : [
+						attributes : [
 							{ name : 'attribute1', persist: true },
 							{ name : 'attribute2', persist: false },
 							{ name : 'attribute3', persist: true },
@@ -131,7 +131,7 @@ define( [
 				
 				"convert() should only process the attributes of a Model that are defined by the 'attributeNames' option (if provided)" : function() {
 					var MyModel = Model.extend( {
-						addAttributes : [
+						attributes : [
 							{ name : 'attribute1', persist: true },
 							{ name : 'attribute2', persist: false },
 							{ name : 'attribute3', persist: true },
@@ -180,7 +180,7 @@ define( [
 				
 				"convert() should deep convert nested models, while handing circular references" : function() {
 					var MyModel = Model.extend( {
-						addAttributes : [ 'value', 'relatedModel' ]
+						attributes : [ 'value', 'relatedModel' ]
 					} );
 					
 					var outerModel = new MyModel(),
