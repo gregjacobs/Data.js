@@ -65,7 +65,7 @@ define( [
 		 * @cfg {Data.persistence.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the Model's data to/from persistent
-		 * storage. If this is not specified, the Model may not {@link #load} or {@link #save} its data. 
+		 * storage. If this is not specified, the Model may not {@link #reload load} or {@link #save} its data. 
 		 */
 		
 		/**

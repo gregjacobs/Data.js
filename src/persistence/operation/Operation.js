@@ -35,7 +35,7 @@ define( [
 		 * @protected
 		 * @property {Object[]} data
 		 * 
-		 * Any data read by the Operation. This is set by a {@link data.persistence.Proxy} when
+		 * Any data read by the Operation. This is set by a {@link Data.persistence.Proxy} when
 		 * it finishes its routine, and can be retrieved via {@link #getData}.
 		 * 
 		 * - For cases of read operations, this will be the data that is read by the operation.
@@ -69,7 +69,7 @@ define( [
 		 * @private
 		 * @property {String/Object} exception
 		 * 
-		 * An object or string describing the exception that occurred. Set when {@link #setError}
+		 * An object or string describing the exception that occurred. Set when {@link #setException}
 		 * is called.
 		 */
 		exception : null,
@@ -108,7 +108,7 @@ define( [
 		
 		
 		/**
-		 * Any data read by the Operation. This is set by a {@link data.persistence.Proxy} when
+		 * Any data read by the Operation. This is set by a {@link Data.persistence.Proxy} when
 		 * it finishes its routine.
 		 * 
 		 * - For cases of read operations, this will be the data that is read by the operation.

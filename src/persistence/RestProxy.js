@@ -83,8 +83,7 @@ define( [
 		
 		
 		/**
-		 * Creates the Model on the server. Any response data that is provided from the request is
-		 * then {@link Data.Model#set} to the Model.
+		 * Creates the Model on the server.
 		 * 
 		 * @method create
 		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance that holds the model(s) 

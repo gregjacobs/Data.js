@@ -48,11 +48,11 @@ define( [
 		 * Retrieves the value of the {@link #modelId} config, if it was provided.
 		 * If it was not provided, returns null.
 		 * 
-		 * @return {String} The {@link #id} provided as a config (converted to a string, if the config was provided
+		 * @return {String} The {@link #modelId} provided as a config (converted to a string, if the config was provided
 		 *   as a number), or null if the config was not provided.
 		 */
 		getModelId : function() {
-			return ( this.id !== undefined ) ? this.id + "" : null;
+			return ( this.modelId !== undefined ) ? this.modelId + "" : null;
 		},
 		
 		

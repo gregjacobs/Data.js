@@ -92,9 +92,9 @@ define( [
 		 * @constructor
 		 * @param {Object} config The configuration options for this class, specified in an Object (map).
 		 */
-		constructor : function( config ) {
+		constructor : function( cfg ) {
 			// Apply the config to this instance
-			_.assign( this, config );
+			_.assign( this, cfg );
 		},
 		
 		
