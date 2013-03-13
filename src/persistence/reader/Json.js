@@ -7,7 +7,7 @@ define( [
 ], function( jQuery, _, Class, Reader ) {
 	
 	/**
-	 * @class Data.persistence.reader.JsonReader
+	 * @class Data.persistence.reader.Json
 	 * @extends Data.persistence.reader.Reader
 	 * 
 	 * JSON flavor reader which treats raw text data as JSON, and converts it to a JavaScript
