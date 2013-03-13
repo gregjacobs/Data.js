@@ -18,7 +18,7 @@ define( [
 					{
 						"Model::getData() should return a key for each of the Attributes in the Model, whether or not any data has been set to them" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [ 'attribute1', 'attribute2' ]
+								attributes : [ 'attribute1', 'attribute2' ]
 							} );
 							var model = new MyModel( { attribute1: 'value1' } );
 							
@@ -32,7 +32,7 @@ define( [
 						
 						"Model::getData() should return the data by running attributes' `get` functions (not just returning the raw data), when the `raw` option is not provided" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [ 
+								attributes : [ 
 									'attribute1', 
 									{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } }
 								]
@@ -51,7 +51,7 @@ define( [
 						
 						"when the `raw` option is provided as true, Model::getData() should return the data by running attributes' `raw` functions (not using `get`)" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [ 
+								attributes : [ 
 									'attribute1', 
 									{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } },
 									{ name: 'attribute3', raw: function( value ) { return value + " " + this.get( 'attribute1' ); } }
@@ -72,7 +72,7 @@ define( [
 						
 						"Model::getData() should only retrieve the data for the persisted attributes (i.e. attributes with persist: true) with the `persistedOnly` option set to true" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [
+								attributes : [
 									{ name : 'attribute1', persist: true },
 									{ name : 'attribute2', persist: false },
 									{ name : 'attribute3', persist: true },
@@ -126,7 +126,7 @@ define( [
 						
 						"Model::getChanges() should return the data by running attributes' `get` functions (not just returning the raw data)" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [ 
+								attributes : [ 
 									'attribute1', 
 									{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } },
 									'attribute3'
@@ -149,7 +149,7 @@ define( [
 						
 						"when the `raw` option is provided as true, Model::getChanges() should return the data by running attributes' `raw` functions (not using `get`)" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [
+								attributes : [
 									'attribute1', 
 									{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } },
 									{ name: 'attribute3', raw: function( value ) { return value + " " + this.get( 'attribute1' ); } },
@@ -175,7 +175,7 @@ define( [
 						
 						"Model::getChanges() should only retrieve the data for the persisted attributes (i.e. attributes with persist: true) that have been changed when the `persistedOnly` option is set to true" : function() {
 							var MyModel = Model.extend( {
-								addAttributes : [
+								attributes : [
 									{ name : 'attribute1', persist: true },
 									{ name : 'attribute2', persist: false },
 									{ name : 'attribute3', persist: true },

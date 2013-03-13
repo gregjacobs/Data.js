@@ -97,16 +97,6 @@ define( [
 		 *         }
 		 *     ]
 		 * 
-		 * Note: If using hierarchies of more than one Model subclass deep, consider using the {@link #addAttributes} alias instead of this
-		 * config, which does the same thing (defines attributes), but better conveys that attributes in subclasses are being *added* to the
-		 * attributes of the superclass, rather than *overriding* attributes of the superclass.
-		 */
-		
-		/**
-		 * @cfg {String[]/Object[]} addAttributes
-		 * Alias of {@link #cfg-attributes}, which may make more sense to use in hierarchies of models that go past more than one level of nesting, 
-		 * as it conveys the meaning that the attributes are being *added* to the attributes that are already defined in its superclass, not
-		 * replacing them.
 		 */
 		
 		/**
@@ -131,14 +121,6 @@ define( [
 		 * A hash that holds the current data for the {@link Data.attribute.Attribute Attributes}. The property names in this object match 
 		 * the attribute names.  This hash holds the current data as it is modified by {@link #set}.
 		 */
-		
-		/**
-		 * @private
-		 * @property {Boolean} dirty
-		 * 
-		 * Flag for quick-testing if the Model currently has un-committed data.
-		 */
-		dirty : false,
 		
 		/**
 		 * @private 
@@ -236,12 +218,10 @@ define( [
 				    attributeObj,   // for holding each of the attributeDefs, one at a time
 				    i, len;
 				
-				// Grab the 'attributes' or 'addAttributes' property from the new subclass's prototype. If neither of these are present,
+				// Grab the 'attributes' property from the new subclass's prototype. If this is not present,
 				// will use the empty array instead.
 				if( classPrototype.hasOwnProperty( 'attributes' ) ) {
 					attributeDefs = classPrototype.attributes;
-				} else if( classPrototype.hasOwnProperty( 'addAttributes' ) ) {
-					attributeDefs = classPrototype.addAttributes;
 				}
 				
 				// Instantiate each of the new subclass's Attributes, and then merge them with the superclass's attributes
@@ -421,7 +401,7 @@ define( [
 			
 			// Set the initial data / defaults, if we have any
 			me.set( data );
-			me.commit();  // and because we are initializing, the data is not dirty
+			me.commit();  // and because we are initializing, the data is not considered modified
 			
 			// Call hook method for subclasses
 			me.initialize();
@@ -606,7 +586,7 @@ define( [
 				if( attribute.hasOwnProperty( 'set' ) && newValue === undefined ) {  // the attribute will only have a 'set' property of its own if the 'set' config was provided
 					// This is to make the following block below think that there is already data in for the attribute, and
 					// that it has the same value. If we don't have this, the change event will fire twice, the
-					// the model will be set as 'dirty', and the old value will be put into the `modifiedData` hash.
+					// the model will be considered modified, and the old value will be put into the `modifiedData` hash.
 					if( !( attributeName in this.data ) ) {
 						this.data[ attributeName ] = undefined;
 					}
@@ -637,7 +617,6 @@ define( [
 						this.modifiedData[ attributeName ] = oldValue;
 					}
 					this.data[ attributeName ] = newValue;
-					this.dirty = true;
 					
 					
 					// Now that we have set the new raw value to the internal `data` hash, we want to fire the events with the value
@@ -774,18 +753,6 @@ define( [
 			} else {
 				return !this.getId();  // Any falsy value makes the model be considered "new". This includes null, 0, and ""
 			}
-		},
-		
-		
-		/**
-		 * Determines if this Model itself (excluding child Models and {@link Data.Collection Collections}) currently has un-committed (i.e. changed) data.
-		 * Prefer to use {@link #isModified} instead.
-		 * 
-		 * @method isDirty
-		 * @return {Boolean}
-		 */
-		isDirty : function() {
-			return this.dirty;
 		},
 		
 		
@@ -929,7 +896,7 @@ define( [
 		
 		
 		/**
-		 * Commits dirty attributes' data. Data can no longer be reverted after a commit has been performed. Note: When developing with a {@link #proxy},
+		 * Commits modified attributes' data. Data can no longer be reverted after a commit has been performed. Note: When developing with a {@link #proxy},
 		 * this method should normally not need to be called explicitly, as it will be called upon the successful persistence of the Model's data
 		 * to the server.
 		 * 
@@ -938,7 +905,6 @@ define( [
 		 */
 		commit : function() {
 			this.modifiedData = {};  // reset the modifiedData hash. There is no modified data.
-			this.dirty = false;
 			
 			// Go through all embedded models/collections, and "commit" those as well
 			var embeddedDataComponentAttrs = this.getEmbeddedDataComponentAttributes(),
@@ -985,7 +951,6 @@ define( [
 			}
 			
 			this.modifiedData = {};
-			this.dirty = false;
 			
 			this.fireEvent( 'rollback', this );
 		},
@@ -1180,9 +1145,9 @@ define( [
 			
 			// Store a "snapshot" of the data that is being persisted. This is used to compare against the Model's current data at the time of when the persistence operation 
 			// completes. Anything that does not match this persisted snapshot data must have been updated while the persistence operation was in progress, and the Model must 
-			// be marked as dirty for those attributes after its commit() runs. This is a bit roundabout that a commit() operation runs when the persistence operation is complete
+			// be considered modified for those attributes after its commit() runs. This is a bit roundabout that a commit() operation runs when the persistence operation is complete
 			// and then data is manually modified, but this is also the correct time to run the commit() operation, as we still want to see the changes if the request fails. 
-			// So, if a persistence request fails, we should have all of the data still marked as dirty, both the data that was to be persisted, and any new data that was set 
+			// So, if a persistence request fails, we should have all of the data still marked as modified, both the data that was to be persisted, and any new data that was set 
 			// while the persistence operation was being attempted.
 			var persistedData = _.cloneDeep( this.getData() );
 			
@@ -1198,7 +1163,6 @@ define( [
 				for( var attributeName in persistedData ) {
 					if( persistedData.hasOwnProperty( attributeName ) && !_.isEqual( persistedData[ attributeName ], currentData[ attributeName ] ) ) {
 						me.modifiedData[ attributeName ] = persistedData[ attributeName ];   // set the last persisted value on to the "modifiedData" object. Note: "modifiedData" holds *original* values, so that the "data" object can hold the latest values. It is how we know an attribute is modified as well.
-						me.dirty = true;
 					}
 				}
 			};
