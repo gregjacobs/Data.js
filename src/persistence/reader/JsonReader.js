@@ -30,7 +30,11 @@ define( [
 			var data = rawData;
 			
 			if( typeof rawData === 'string' ) {
-				data = jQuery.globalEval( '(' + rawData + ')' );
+				if( typeof JSON !== 'undefined' && JSON.parse ) { 
+					data = JSON.parse( rawData );
+				} else {
+					data = jQuery.globalEval( '(' + rawData + ')' );
+				}
 			}
 			return data;
 		}
