@@ -190,12 +190,22 @@ define( [
 		 */
 		
 		/**
-		 * @private
+		 * @protected
 		 * @property {Boolean} modified
 		 * 
 		 * Flag that is set to true whenever there is an addition, insertion, or removal of a model in the Collection.
 		 */
 		modified : false,
+		
+		/**
+		 * @protected
+		 * @property {Number} totalCount
+		 * 
+		 * This property is used to keep track of total number of models in a windowed (paged) data 
+		 * set. It will be set as the result of a {@link #load} operation that reads the total count
+		 * from a property provided by the backing data store. If no such property existed in the data,
+		 * this will be set to 0.
+		 */
 		
 		
 		
@@ -684,17 +694,34 @@ define( [
 		getData : function( options ) {
 			return NativeObjectConverter.convert( this, options );
 		},
-		
+
 		
 		
 		/**
 		 * Retrieves the number of models that the Collection currently holds.
 		 * 
-		 * @method getCount
 		 * @return {Number} The number of models that the Collection currently holds.
 		 */
 		getCount : function() {
 			return this.models.length;
+		},
+		
+		
+		/**
+		 * Retrieves the *total* number of models that the {@link #proxy} indicates exists on a backing
+		 * data store. This is used when loading windowed (paged) data sets, and differs from 
+		 * {@link #getCount} in that it loads the number of models that *could* be loaded into the
+		 * Collection if the Collection contained all of the data on the backing store.
+		 * 
+		 * If looking to determine how many models are loaded at the current moment, use {@link #getCount}
+		 * instead.
+		 * 
+		 * @return {Number} The number of models that the {@link #proxy} has indicated exist on the a
+		 *   backing data store. If the {@link #proxy proxy's} {@link Data.persistence.reader.Reader Reader}
+		 *   did not read any metadata about the total number of models, this method returns `undefined`.
+		 */
+		getTotalCount : function() {
+			return this.totalCount;
 		},
 		
 		
@@ -1012,11 +1039,48 @@ define( [
 			// Make a request to read the data from the persistent storage
 			var operation = new ReadOperation();
 			proxy.read( operation ).then(
-				function( operation ) { me.removeAll(); me.add( operation.getResultSet().getRecords() ); deferred.resolve( me, operation ); },
-				function( operation ) { deferred.reject( me, operation ); }
+				function( operation ) { me.onLoadSuccess( deferred, operation ); },
+				function( operation ) { me.onLoadError( deferred, operation ); }
 			);
 			
 			return deferred.promise();
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} successfully loading a set of data as a result of the {@link #load}
+		 * method being called. Resolves the {@link jQuery.Deferred} object created by {@link #load}
+		 * after processing the result of the operation.
+		 * 
+		 * @protected
+		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #load}.
+		 * @param {Data.persistence.operation.Read} operation The operation object.
+		 */
+		onLoadSuccess : function( deferred, operation ) {
+			var resultSet = operation.getResultSet(),
+			    totalCount = resultSet.getTotalCount();
+			
+			if( totalCount !== undefined ) {
+				this.totalCount = totalCount;
+			}
+			
+			this.removeAll();
+			this.add( resultSet.getRecords() );
+			
+			deferred.resolve( this, operation );
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} failing to load a set of data as a result of the {@link #load}
+		 * method being called. Rejects the {@link jQuery.Deferred} object created by {@link #load}.
+		 * 
+		 * @protected
+		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #load}.
+		 * @param {Data.persistence.operation.Read} operation The operation object.
+		 */
+		onLoadError : function( deferred, operation ) {
+			deferred.reject( this, operation );
 		},
 		
 		

@@ -28,12 +28,8 @@ define( [
 		 * 
 		 * Metadata for the total number of records in the data set. This is used for windowed (paged) 
 		 * data sets, and will be the total number of records available on the storage medium (ex: a 
-		 * server database).
-		 * 
-		 * To find the number of records in this particular ResultSet, use {@link #getRecords} method 
-		 * and check the `length` property.
+		 * server database). 
 		 */
-		totalCount : 0,
 		
 		/**
 		 * @cfg {String} message
@@ -70,9 +66,14 @@ define( [
 		
 		
 		/**
-		 * Retrieves the {@link #totalCount}.
+		 * Retrieves the {@link #totalCount}, which is the total number of records in a windowed (paged)
+		 * data set. If the {@link #totalCount} config was not provided, this method will return `undefined`.
 		 * 
-		 * @return {Number}
+		 * To find the number of records in this particular ResultSet, use {@link #getRecords} method 
+		 * and check the `length` property.
+		 * 
+		 * @return {Number} The total count read by a {@link Data.persistence.reader.Reader Reader}, or
+		 *   `undefined` if no such value was read.
 		 */
 		getTotalCount : function() {
 			return this.totalCount;

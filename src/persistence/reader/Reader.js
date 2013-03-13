@@ -96,7 +96,7 @@ define( [
 			
 			return new ResultSet( {
 				records    : records,
-				totalCount : this.extractTotalCount( data ) || records.length,
+				totalCount : this.extractTotalCount( data ),
 				message    : this.extractMessage( data )
 			} );
 		},
@@ -158,7 +158,7 @@ define( [
 					throw new Error( "Reader could not find the total count property '" + totalProperty + "' in the data." );
 				}
 				// </debug>
-				return totalCount;
+				return parseInt( totalCount, 10 );
 			}
 		},
 

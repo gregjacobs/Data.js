@@ -2032,6 +2032,56 @@ define( [
 					Y.Assert.areSame( 0, doneCallCount, "doneCallCount" );
 					Y.Assert.areSame( 1, failCallCount, "failCallCount" );
 					Y.Assert.areSame( 1, alwaysCallCount, "alwaysCallCount" );
+				},
+
+				
+				"load() should set the totalCount property on the Collection if the property is available on the resulting ResultSet" : function() {
+					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						operation.setResultSet( new ResultSet( {
+							records : [ 
+								{ id: 1, name: "John" },
+								{ id: 2, name: "Jane" }
+							],
+							totalCount : 100
+						} ) );
+						return new jQuery.Deferred().resolve( operation ).promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						model : this.Model,
+						proxy : this.proxy
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.isUndefined( collection.getTotalCount(), "Initial Condition: the totalCount should be undefined" );
+					collection.load();  // deferred resolved immediately
+					Y.Assert.areSame( 100, collection.getTotalCount(), "The totalCount should be set to 100 now" );
+				},
+				
+				
+				"load() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet" : function() {
+					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						operation.setResultSet( new ResultSet( {
+							records : [ 
+								{ id: 1, name: "John" },
+								{ id: 2, name: "Jane" }
+							]
+							//totalCount : 100  -- not providing totalCount config
+						} ) );
+						return new jQuery.Deferred().resolve( operation ).promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						model : this.Model,
+						proxy : this.proxy
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.isUndefined( collection.getTotalCount(), "Initial Condition: the totalCount should be undefined" );
+					collection.load();  // deferred resolved immediately
+					Y.Assert.isUndefined( collection.getTotalCount(), "The totalCount should still be undefined" );
 				}
 			},
 			
