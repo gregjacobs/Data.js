@@ -966,7 +966,7 @@ define( [
 			// Make a request to read the data from the persistent storage
 			var operation = new ReadOperation();
 			proxy.read( operation ).then(
-				function( operation ) { me.removeAll(); me.add( operation.getData() ); deferred.resolve( me, operation ); },
+				function( operation ) { me.removeAll(); me.add( operation.getResultSet().getRecords() ); deferred.resolve( me, operation ); },
 				function( operation ) { deferred.reject( me, operation ); }
 			);
 			

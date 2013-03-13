@@ -120,16 +120,17 @@ define( [
 		 *   this method as the first argument.
 		 */
 		read : function( operation ) {
-			var deferred = new jQuery.Deferred(),
+			var me = this,  // for closures
+			    deferred = new jQuery.Deferred(),
 			    url = this.buildUrl( 'read', operation );
 			
 			this.ajax( {
 				url      : url,
 				type     : this.getHttpMethod( 'read' ),
-				dataType : 'json'
+				dataType : 'text'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					operation.setData( data );
+					operation.setResultSet( me.reader.read( data ) );
 					operation.setSuccess();
 					deferred.resolve( operation );
 				},

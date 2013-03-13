@@ -13,6 +13,7 @@ define( [
 	'data/attribute/Number',
 	'data/attribute/String',
 	'data/attribute/DataComponent',
+	'data/persistence/ResultSet',
 	'data/persistence/Proxy',
 	'data/persistence/RestProxy',
 	'data/persistence/operation/ReadOperation',
@@ -31,6 +32,7 @@ define( [
 	NumberAttribute,
 	StringAttribute,
 	DataComponentAttribute,
+	ResultSet,
 	Proxy,
 	RestProxy,
 	ReadOperation,
@@ -2079,6 +2081,9 @@ define( [
 				
 				"reload() should call its success/complete callbacks, and resolve its deferred with the arguments: model, operation" : function() {
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						operation.setResultSet( new ResultSet( {
+							records : [ { id: 1, name: "asdf" } ]
+						} ) );
 						return new jQuery.Deferred().resolve( operation ).promise();
 					} );
 					
@@ -2252,7 +2257,7 @@ define( [
 							} );
 							
 							var writeOperation = JsMockito.mock( WriteOperation );
-							JsMockito.when( writeOperation ).getData().thenReturn( {} );
+							JsMockito.when( writeOperation ).getResultSet().thenReturn( new ResultSet( { records: [] } ) );
 							JsMockito.when( this.proxy ).create().thenReturn( new jQuery.Deferred().resolve( writeOperation ).promise() );
 							
 							var model = new MyModel();  // note: no 'id' set
@@ -2277,7 +2282,7 @@ define( [
 							} );
 							
 							var writeOperation = JsMockito.mock( WriteOperation );
-							JsMockito.when( writeOperation ).getData().thenReturn( {} );
+							JsMockito.when( writeOperation ).getResultSet().thenReturn( new ResultSet( { records: [] } ) );
 							JsMockito.when( this.proxy ).update().thenReturn( new jQuery.Deferred().resolve( writeOperation ).promise() );
 							
 							var model = new MyModel( { id: 1 } );
@@ -2307,7 +2312,7 @@ define( [
 							} ) );
 							
 							this.operation = JsMockito.mock( WriteOperation );
-							JsMockito.when( this.operation ).getData().thenReturn( {} );
+							JsMockito.when( this.operation ).getResultSet().thenReturn( new ResultSet() );
 							
 							this.deferred = new jQuery.Deferred();
 							

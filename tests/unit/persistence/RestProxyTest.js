@@ -3,10 +3,18 @@ define( [
 	'lodash',
 	'Class',
 	'data/Model',
+	'data/persistence/ResultSet',
 	'data/persistence/RestProxy',
+	'data/persistence/reader/Reader',
 	'data/persistence/operation/ReadOperation',
 	'data/persistence/operation/WriteOperation'
-], function( _, Class, Model, RestProxy, ReadOperation, WriteOperation ) {
+], function( _, Class, Model, ResultSet, RestProxy, Reader, ReadOperation, WriteOperation ) {
+	
+	// Used in the tests
+	var ConcreteReader = Reader.extend( {
+		convertRaw : function( rawData ) { return rawData; }
+	} );
+	
 	
 	tests.unit.persistence.add( new Ext.test.TestSuite( {
 		name: 'RestProxy',
@@ -25,23 +33,35 @@ define( [
 					{
 						name: 'General create() tests',
 						
+						setUp : function() {
+							this.model = JsMockito.mock( Model );
+							this.reader = JsMockito.mock( ConcreteReader );
+							this.operation = JsMockito.mock( WriteOperation );
+						},
+						
+						
 						"create() should populate the provided WriteOperation with any response data upon a successful ajax request" : function() {
 							var testData = { attribute1: 'value1', attribute2: 'value2' };
 							var TestProxy = RestProxy.extend( {
 								ajax : function( options ) { 
 									return new jQuery.Deferred().resolve( testData ).promise();
-								}
+								},
+								reader : this.reader
 							} );
 							var proxy = new TestProxy();
 							
-							var mockModel = JsMockito.mock( Model ),
-							    operation = JsMockito.mock( WriteOperation );
+							JsMockito.when( this.operation ).getModels().thenReturn( [ this.model ] );
 							
-							JsMockito.when( operation ).getModels().thenReturn( [ mockModel ] );
-							proxy.create( operation );
+							var resultSet;
+							JsMockito.when( this.reader ).read().then( function( data ) {
+								return ( resultSet = new ResultSet( { records: data } ) );
+							} );
+							proxy.create( this.operation );
+							
+							Y.Assert.areSame( resultSet.getRecords()[ 0 ], testData, "The records provided to the ResultSet should have been the testData" );
 							
 							try {
-								JsMockito.verify( operation ).setData( testData );
+								JsMockito.verify( this.operation ).setResultSet( resultSet );
 							} catch( e ) {
 								Y.Assert.fail( "The model should have had its data set to the testData. msg = " + ( e.message || e ) );
 							}
@@ -113,24 +133,34 @@ define( [
 						
 						setUp : function() {
 							this.model = JsMockito.mock( Model );
+							this.reader = JsMockito.mock( ConcreteReader );
 							
 							this.operation = JsMockito.mock( ReadOperation );
 							JsMockito.when( this.operation ).getModelId().thenReturn( 1 );
 						},
+						
 						
 						"read() should populate the provided ReadOperation with the data upon a successful ajax request" : function() {
 							var testData = { attribute1: 'value1', attribute2: 'value2' };
 							var TestProxy = RestProxy.extend( {
 								ajax : function( options ) { 
 									return new jQuery.Deferred().resolve( testData ).promise();
-								}
+								},
+								reader : this.reader
+							} );
+							
+							var resultSet;
+							JsMockito.when( this.reader ).read().then( function( data ) {
+								return ( resultSet = new ResultSet( { records: data } ) );
 							} );
 							
 							var proxy = new TestProxy();
 							proxy.read( this.operation );
 							
+							Y.Assert.areSame( resultSet.getRecords()[ 0 ], testData, "The records provided to the ResultSet should have been the testData" );
+							
 							try {
-								JsMockito.verify( this.operation ).setData( testData );
+								JsMockito.verify( this.operation ).setResultSet( resultSet );
 							} catch( e ) {
 								Y.Assert.fail( "The model should have had its data set to the testData" );
 							}

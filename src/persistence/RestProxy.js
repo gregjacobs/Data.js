@@ -93,7 +93,8 @@ define( [
 		 *   this method as the first argument.
 		 */
 		create : function( operation ) {
-			var deferred = new jQuery.Deferred(),
+			var me = this,  // for closures
+			    deferred = new jQuery.Deferred(),
 			    model = operation.getModels()[ 0 ],
 			    dataToPersist = model.getData( { persistedOnly: true, raw: true } );
 			
@@ -107,13 +108,13 @@ define( [
 			this.ajax( {
 				url         : this.buildUrl( 'create', model.getId() ),
 				type        : this.getMethod( 'create' ),
-				dataType    : 'json',
+				dataType    : 'text',
 				data        : JSON.stringify( dataToPersist ),
 				contentType : 'application/json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
 					if( data ) {  // data may or may not be returned by a server on a 'create' request
-						operation.setData( data );
+						operation.setResultSet( me.reader.read( data ) );
 					}
 					operation.setSuccess();
 					deferred.resolve( operation );
@@ -139,7 +140,8 @@ define( [
 		 *   this method as the first argument.
 		 */
 		read : function( operation ) {
-			var deferred = new jQuery.Deferred();
+			var me = this,  // for closures
+			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
 				url      : this.buildUrl( 'read', operation.getModelId() ),
@@ -147,7 +149,7 @@ define( [
 				dataType : 'json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					operation.setData( data );
+					operation.setResultSet( me.reader.read( data ) );
 					operation.setSuccess();
 					deferred.resolve( operation );
 				},
@@ -174,7 +176,8 @@ define( [
 		 */
 		update : function( operation, options ) {
 			options = options || {};
-			var scope = options.scope || options.context || window,
+			var me = this,  // for closures
+			    scope = options.scope || options.context || window,
 			    model = operation.getModels()[ 0 ],
 			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
 			    deferred = new jQuery.Deferred();
@@ -208,13 +211,13 @@ define( [
 			this.ajax( {
 				url         : this.buildUrl( 'update', model.getId() ),
 				type        : this.getMethod( 'update' ),
-				dataType    : 'json',
+				dataType    : 'text',
 				data        : JSON.stringify( dataToPersist ),
 				contentType : 'application/json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
 					if( data ) {  // data may or may not be returned by a server on an 'update' request
-						operation.setData( data );
+						operation.setResultSet( me.reader.read( data ) );
 					}
 					operation.setSuccess();
 					deferred.resolve( operation );

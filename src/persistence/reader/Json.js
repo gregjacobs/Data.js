@@ -1,6 +1,6 @@
 /*global define */
 define( [
-	'jQuery',
+	'jquery',
 	'lodash',
 	'Class',
 	'data/persistence/reader/Reader'

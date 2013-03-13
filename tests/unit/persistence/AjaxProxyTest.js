@@ -3,10 +3,18 @@ define( [
 	'lodash',
 	'Class',
 	'data/Model',
+	'data/persistence/ResultSet',
 	'data/persistence/AjaxProxy',
+	'data/persistence/reader/Reader',
 	'data/persistence/operation/ReadOperation',
 	'data/persistence/operation/WriteOperation'
-], function( _, Class, Model, AjaxProxy, ReadOperation, WriteOperation ) {
+], function( _, Class, Model, ResultSet, AjaxProxy, Reader, ReadOperation, WriteOperation ) {
+	
+	// Used in the tests
+	var ConcreteReader = Reader.extend( {
+		convertRaw : function( rawData ) { return rawData; }
+	} );
+	
 	
 	tests.unit.persistence.add( new Ext.test.TestSuite( {
 		name: 'AjaxProxy',
@@ -27,7 +35,7 @@ define( [
 						
 						setUp : function() {
 							this.model = JsMockito.mock( Model );
-							
+							this.reader = JsMockito.mock( ConcreteReader );
 							this.operation = JsMockito.mock( ReadOperation );
 						},
 						
@@ -53,14 +61,21 @@ define( [
 						},
 						
 						
-						"read() should populate the provided ReadOperation with the data upon a successful ajax request" : function() {
+						"read() should populate the provided ReadOperation with a ResultSet upon a successful ajax request" : function() {
+							var resultSet;
+							
 							JsMockito.when( this.operation ).getModelId().thenReturn( 1 );
+							JsMockito.when( this.reader ).read().then( function( data ) {
+								return ( resultSet = new ResultSet( { records: data } ) );
+							} );
 							
 							var testData = { attribute1: 'value1', attribute2: 'value2' };
+							
 							var TestProxy = AjaxProxy.extend( {
 								ajax : function( options ) {
 									return new jQuery.Deferred().resolve( testData ).promise();
-								}
+								},
+								reader : this.reader
 							} );
 							
 							var proxy = new TestProxy( {
@@ -68,10 +83,12 @@ define( [
 							} );
 							proxy.read( this.operation );
 							
+							Y.Assert.areSame( resultSet.getRecords()[ 0 ], testData, "The records provided to the ResultSet should have been the testData" );
+							
 							try {
-								JsMockito.verify( this.operation ).setData( testData );
+								JsMockito.verify( this.operation ).setResultSet( resultSet );
 							} catch( e ) {
-								Y.Assert.fail( "The model should have had its data set to the testData" );
+								Y.Assert.fail( e.message || e );
 							}
 						}
 					}

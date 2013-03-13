@@ -1041,7 +1041,7 @@ define( [
 			var me = this,
 			    operation  = new ReadOperation( { modelId: this.getId() } );
 			this.proxy.read( operation ).then(
-				function( operation ) { me.set( operation.getData() ); me.commit(); deferred.resolve( me, operation ); },
+				function( operation ) { me.set( operation.getResultSet().getRecords()[ 0 ] ); me.commit(); deferred.resolve( me, operation ); },
 				function( operation ) { deferred.reject( me, operation ); }
 			);
 			
@@ -1151,8 +1151,9 @@ define( [
 			// while the persistence operation was being attempted.
 			var persistedData = _.cloneDeep( this.getData() );
 			
-			var handleServerUpdate = function( data ) {
-				data = data || me.getData();
+			var handleServerUpdate = function( resultSet ) {  // accepts a data.persistence.ResultSet object
+				var data = ( resultSet ) ? resultSet.getRecords()[ 0 ] : null;
+				data = data || me.getData();  // no data returned, used the model's data. hack for now...
 	
 				// The request to persist the data was successful, commit the Model
 				me.commit();
@@ -1173,7 +1174,7 @@ define( [
 				models : [ this ]
 			} );
 			this.proxy[ this.isNew() ? 'create' : 'update' ]( writeOperation ).then(
-				function( operation ) { handleServerUpdate( operation.getData() ); deferred.resolve( me, writeOperation ); },
+				function( operation ) { handleServerUpdate( operation.getResultSet() ); deferred.resolve( me, writeOperation ); },
 				function( operation ) { deferred.reject( me, writeOperation ); }
 			);
 			

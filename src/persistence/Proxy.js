@@ -2,8 +2,9 @@
 define( [
 	'lodash',
 	'Class',
-	'Observable'
-], function( _, Class, Observable ) {
+	'Observable',
+	'data/persistence/reader/Json'
+], function( _, Class, Observable, JsonReader ) {
 	
 	/**
 	 * @abstract
@@ -89,12 +90,29 @@ define( [
 		
 		
 		/**
+		 * @cfg {Data.persistence.reader.Reader} reader
+		 * 
+		 * The reader to use to transform the raw data that is read by the proxy into JavaScript object(s),
+		 * so that they can be passed to a {@link Data.Model} or {@link Data.Collection}.
+		 * 
+		 * This defaults to a {@link Data.persistence.reader.Json Json} reader, as this is the most common
+		 * format. However, other implementations may be created and used, which may include method overrides
+		 * to apply transformations to incoming data before that data is handed off to a {@link Data.Model Model}
+		 * or {@link Data.Collection Collection}.
+		 */
+		
+		
+		/**
 		 * @constructor
 		 * @param {Object} config The configuration options for this class, specified in an Object (map).
 		 */
 		constructor : function( cfg ) {
 			// Apply the config to this instance
 			_.assign( this, cfg );
+			
+			if( !this.reader ) {
+				this.reader = new JsonReader();
+			}
 		},
 		
 		

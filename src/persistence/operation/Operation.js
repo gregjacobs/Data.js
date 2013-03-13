@@ -20,7 +20,7 @@ define( [
 	 * 
 	 * This class is used internally by the framework when making requests to {@link Data.persistence.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link Data.Model Model}/{@link Data.Collection Collection} operations 
-	 * complete.
+	 * complete, so information can be obtained about the operation that took place.
 	 */
 	var Operation = Class.extend( Object, {
 		
@@ -33,16 +33,18 @@ define( [
 		
 		/**
 		 * @protected
-		 * @property {Object[]} data
+		 * @property {Data.persistence.ResultSet} resultSet
 		 * 
-		 * Any data read by the Operation. This is set by a {@link Data.persistence.Proxy} when
-		 * it finishes its routine, and can be retrieved via {@link #getData}.
+		 * A ResultSet object which contains any data read by the Operation. This object contains any 
+		 * returned data, as well as any metadata (such as the total number of records in a paged data set).
+		 * This object is set by a {@link Data.persistence.Proxy} when it finishes its routine, and can be 
+		 * retrieved via {@link #getResultSet}. Some notes:
 		 * 
-		 * - For cases of read operations, this will be the data that is read by the operation.
-		 * - For cases of write operations, this will be any "update" data that is returned to the
+		 * - For cases of read operations, this object will contain the data that is read by the operation.
+		 * - For cases of write operations, this object will contain any "update" data that is returned to the
 		 *   Proxy when it completes its routine. For example, if a REST server returns the updated
-		 *   attributes of a model (say, with some computed attributes, or a generated id attribute),
-		 *   then this property will be populated with that data. 
+		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
+		 *   id attribute), then the ResultSet will contain that data.
 		 */
 		
 		
@@ -63,7 +65,6 @@ define( [
 		 * with {@link #hasErrored}.
 		 */
 		error : false,
-		
 		
 		/**
 		 * @private
@@ -96,34 +97,31 @@ define( [
 		
 		
 		/**
-		 * Accessor for a Proxy to set the data that is has read, once the operation completes.
-		 * Calling this marks the Operation as {@link #wasSuccessful successful}.
+		 * Accessor for a Proxy to set a ResultSet which contains the data that is has read, 
+		 * once the operation completes.
 		 * 
-		 * @param {Object/Object[]} The data read by the Proxy. If a single object is provided,
-		 *   it will be normalized to a one element array.
+		 * @param {Data.persistence.ResultSet} A ResultSet which contains the data and any metadata read by 
+		 *   the Proxy.
 		 */
-		setData : function( data ) {
-			this.data = [].concat( data );
+		setResultSet : function( resultSet ) {
+			this.resultSet = resultSet;
 		},
 		
 		
 		/**
-		 * Any data read by the Operation. This is set by a {@link Data.persistence.Proxy} when
-		 * it finishes its routine.
+		 * Retrieves the {@link Data.persistence.ResultSet} containing any data and metadata read by the 
+		 * Operation. This is set by a {@link Data.persistence.Proxy} when it finishes its routine.  
 		 * 
-		 * - For cases of read operations, this will be the data that is read by the operation.
-		 * - For cases of write operations, this will be any "update" data that is returned to the
+		 * - For cases of read operations, this object will contain the data that is read by the operation.
+		 * - For cases of write operations, this object will contain any "update" data that is returned to the
 		 *   Proxy when it completes its routine. For example, if a REST server returns the updated
-		 *   attributes of a model (say, with some computed attributes, or a generated id attribute),
-		 *   then this property will be populated with that data.
+		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
+		 *   id attribute), then the ResultSet will contain that data.
 		 * 
-		 * If a single object is read, it will be normalized to a one element array.
-		 * 
-		 * @return {Object[]} The data read by the Proxy. Will be an empty array if no data
-		 *   has been set.
+		 * @return {Data.persistence.ResultSet} The ResultSet read by the Proxy, or null if one has not been set.
 		 */
-		getData : function() {
-			return this.data || [];
+		getResultSet : function() {
+			return this.resultSet;
 		},
 		
 		

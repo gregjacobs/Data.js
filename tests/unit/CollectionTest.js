@@ -5,9 +5,10 @@ define( [
 	'data/Collection',
 	'data/Model',
 	'data/attribute/Attribute',
+	'data/persistence/ResultSet',
 	'data/persistence/Proxy',
 	'data/persistence/operation/ReadOperation'
-], function( jQuery, Data, Collection, Model, Attribute, Proxy, ReadOperation ) {
+], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, ReadOperation ) {
 	tests.unit.add( new Ext.test.TestSuite( {
 		name: 'Data.Collection',
 		
@@ -1886,10 +1887,12 @@ define( [
 				
 				"load() should load the models returned by the data in the proxy" : function() {
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
-						operation.setData( [ 
-							{ id: 1, name: "John" },
-							{ id: 2, name: "Jane" }
-						] );
+						operation.setResultSet( new ResultSet( {
+							records : [ 
+								{ id: 1, name: "John" },
+								{ id: 2, name: "Jane" }
+							]
+						} ) );
 						return new jQuery.Deferred().resolve( operation ).promise();
 					} );
 					
@@ -1907,6 +1910,9 @@ define( [
 				
 				"load() should call its success/complete callbacks, and resolve its deferred with the arguments: collection, operation" : function() {
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						operation.setResultSet( new ResultSet( {
+							records : []
+						} ) );
 						return new jQuery.Deferred().resolve( operation ).promise();
 					} );
 					
