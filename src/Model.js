@@ -61,11 +61,101 @@ define( [
 	 */
 	var Model = Class.extend( DataComponent, {
 		
+		inheritedStatics : {
+			/**
+			 * A static property that is unique to each Data.Model subclass, which uniquely identifies the subclass.
+			 * This is used as part of the Model cache, where it is determined if a Model instance already exists
+			 * if two models are of the same type (i.e. have the same __Data_modelTypeId), and instance id.
+			 * 
+			 * @private
+			 * @inheritable
+			 * @static
+			 * @property {String} __Data_modelTypeId
+			 */
+			
+			
+			// Subclass-specific setup
+			/**
+			 * @ignore
+			 */
+			onClassExtended : function( newModelClass ) {
+				// Assign a unique id to this class, which is used in hashmaps that hold the class
+				newModelClass.__Data_modelTypeId = _.uniqueId();
+				
+				
+				// Now handle initializing the Attributes, merging this subclass's attributes with the superclass's attributes
+				var classPrototype = newModelClass.prototype,
+				    superclassPrototype = newModelClass.superclass,
+				    superclassAttributes = superclassPrototype.attributes || {},    // will be an object (hashmap) of attributeName -> Attribute instances
+				    newAttributes = {},
+				    attributeDefs = [],  // will be an array of Attribute configs (definitions) on the new subclass 
+				    attributeObj,   // for holding each of the attributeDefs, one at a time
+				    i, len;
+				
+				// Grab the 'attributes' property from the new subclass's prototype. If this is not present,
+				// will use the empty array instead.
+				if( classPrototype.hasOwnProperty( 'attributes' ) ) {
+					attributeDefs = classPrototype.attributes;
+				}
+				
+				// Instantiate each of the new subclass's Attributes, and then merge them with the superclass's attributes
+				for( i = 0, len = attributeDefs.length; i < len; i++ ) {
+					attributeObj = attributeDefs[ i ];
+					
+					// Normalize to a Data.attribute.Attribute configuration object if it is a string
+					if( typeof attributeObj === 'string' ) {
+						attributeObj = { name: attributeObj };
+					}
+					
+					// Create the actual Attribute instance
+					var attribute = Attribute.create( attributeObj );
+					newAttributes[ attribute.getName() ] = attribute;
+				}
+				
+				newModelClass.prototype.attributes = _.defaults( _.clone( newAttributes ), superclassAttributes );  // newAttributes take precedence; superclassAttributes are used in the case that a newAttribute doesn't exist for a given attributeName
+			},
+			
+			
+			/**
+			 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
+			 * are the Attribute names, and the values are the {@link Data.attribute.Attribute} objects themselves.
+			 * 
+			 * @inheritable
+			 * @static
+			 * @method getAttributes
+			 * @return {Object} An Object (hashmap) where the keys are the attribute {@link Data.attribute.Attribute#name names},
+			 *   and the values are the {@link Data.attribute.Attribute Attribute} instances themselves.
+			 */
+			getAttributes : function() {
+				// Note: `this` refers to the class (constructor function) that the static method was called on
+				return this.prototype.attributes;
+			},
+			
+			
+			/**
+			 * Retrieves the {@link Data.persistence.Proxy} that is configured for the Model class. To retrieve
+			 * a proxy that may belong to a particular model, use the instance level {@link #method-getProxy}.
+			 * 
+			 * @inheritable
+			 * @static
+			 * @return {Data.persistence.Proxy} The Proxy configured with the Model, or null.
+			 */
+			getProxy : function() {
+				return this.prototype.proxy || null;
+			}
+			
+		},
+		
+		
+		
 		/**
 		 * @cfg {Data.persistence.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the Model's data to/from persistent
-		 * storage. If this is not specified, the Model may not {@link #reload load} or {@link #save} its data. 
+		 * storage. If this is not specified, the Model may not {@link #reload load} or {@link #save} its data.
+		 * 
+		 * Note that this may be specified as part of a Model subclass (so that all instances of the Model inherit
+		 * the proxy), or on a particular model instance using {@link #setProxy}.
 		 */
 		
 		/**
@@ -185,91 +275,6 @@ define( [
 		 * Flag that is set to true once the Model is successfully destroyed.
 		 */
 		destroyed : false,
-		
-		
-		inheritedStatics : {
-			/**
-			 * A static property that is unique to each Data.Model subclass, which uniquely identifies the subclass.
-			 * This is used as part of the Model cache, where it is determined if a Model instance already exists
-			 * if two models are of the same type (i.e. have the same __Data_modelTypeId), and instance id.
-			 * 
-			 * @private
-			 * @inheritable
-			 * @static
-			 * @property {String} __Data_modelTypeId
-			 */
-			
-			
-			// Subclass-specific setup
-			/**
-			 * @ignore
-			 */
-			onClassExtended : function( newModelClass ) {
-				// Assign a unique id to this class, which is used in hashmaps that hold the class
-				newModelClass.__Data_modelTypeId = _.uniqueId();
-				
-				
-				// Now handle initializing the Attributes, merging this subclass's attributes with the superclass's attributes
-				var classPrototype = newModelClass.prototype,
-				    superclassPrototype = newModelClass.superclass,
-				    superclassAttributes = superclassPrototype.attributes || {},    // will be an object (hashmap) of attributeName -> Attribute instances
-				    newAttributes = {},
-				    attributeDefs = [],  // will be an array of Attribute configs (definitions) on the new subclass 
-				    attributeObj,   // for holding each of the attributeDefs, one at a time
-				    i, len;
-				
-				// Grab the 'attributes' property from the new subclass's prototype. If this is not present,
-				// will use the empty array instead.
-				if( classPrototype.hasOwnProperty( 'attributes' ) ) {
-					attributeDefs = classPrototype.attributes;
-				}
-				
-				// Instantiate each of the new subclass's Attributes, and then merge them with the superclass's attributes
-				for( i = 0, len = attributeDefs.length; i < len; i++ ) {
-					attributeObj = attributeDefs[ i ];
-					
-					// Normalize to a Data.attribute.Attribute configuration object if it is a string
-					if( typeof attributeObj === 'string' ) {
-						attributeObj = { name: attributeObj };
-					}
-					
-					// Create the actual Attribute instance
-					var attribute = Attribute.create( attributeObj );
-					newAttributes[ attribute.getName() ] = attribute;
-				}
-				
-				newModelClass.prototype.attributes = _.defaults( _.clone( newAttributes ), superclassAttributes );  // newAttributes take precedence; superclassAttributes are used in the case that a newAttribute doesn't exist for a given attributeName
-			},
-			
-			
-			/**
-			 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
-			 * are the Attribute names, and the values are the {@link Data.attribute.Attribute} objects themselves.
-			 * 
-			 * @inheritable
-			 * @static
-			 * @method getAttributes
-			 * @return {Object} An Object (hashmap) where the keys are the attribute {@link Data.attribute.Attribute#name names},
-			 *   and the values are the {@link Data.attribute.Attribute Attribute} instances themselves.
-			 */
-			getAttributes : function() {
-				// Note: `this` refers to the class (constructor function) that the static method was called on
-				return this.prototype.attributes;
-			},
-			
-			
-			/**
-			 * Retrieves the {@link Data.persistence.Proxy} that is configured for the Model.
-			 * 
-			 * @inheritable
-			 * @static
-			 * @return {Data.persistence.Proxy} The Proxy configured with the Model, or null.
-			 */
-			getProxy : function() {
-				return this.prototype.proxy || null;
-			}
-			
-		},
 		
 		
 		
@@ -991,6 +996,32 @@ define( [
 		// --------------------------------
 		
 		// Persistence Functionality
+		
+			
+		/**
+		 * Sets the {@link Data.persistence.Proxy} that for this particular model instance. Setting a proxy
+		 * with this method will only affect this particular model instance, not any others.
+		 * 
+		 * To configure a proxy that will be used for all instances of the Model, set one in a Model sublass.
+		 * 
+		 * @param {Data.persistence.Proxy} The Proxy to set to this model instance.
+		 */
+		setProxy : function( proxy ) {
+			this.proxy = proxy;
+		},
+		
+			
+		/**
+		 * Retrieves the {@link Data.persistence.Proxy} that is configured for this model instance. To retrieve
+		 * the proxy that belongs to the Model class itself, use the static {@link #static-method-getProxy getProxy} 
+		 * method. Note that unless the model instance is configured with a different proxy, it will inherit the
+		 * Model's static proxy.
+		 * 
+		 * @return {Data.persistence.Proxy} The Proxy configured for the model, or null.
+		 */
+		getProxy : function() {
+			return this.proxy || null;
+		},
 		
 		
 		/**
