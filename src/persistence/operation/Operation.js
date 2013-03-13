@@ -14,8 +14,8 @@ define( [
 	 * 
 	 * Operation's subclasses are split into two distinct implementations:
 	 * 
-	 * - {@link Data.persistence.operation.ReadOperation}: Represents an Operation to read (load) data from persistence storage.
-	 * - {@link Data.persistence.operation.WriteOperation}: Represents an Operation to write (store) data to persistence storage.
+	 * - {@link Data.persistence.operation.Read}: Represents an Operation to read (load) data from persistence storage.
+	 * - {@link Data.persistence.operation.Write}: Represents an Operation to write (store) data to persistence storage.
 	 *   This includes destroying (deleting) models as well.
 	 * 
 	 * This class is used internally by the framework when making requests to {@link Data.persistence.proxy.Proxy Proxies},

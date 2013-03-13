@@ -16,8 +16,8 @@ define( [
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Proxy',
 	'data/persistence/proxy/Rest',
-	'data/persistence/operation/ReadOperation',
-	'data/persistence/operation/WriteOperation'
+	'data/persistence/operation/Read',
+	'data/persistence/operation/Write'
 ], function( 
 	jQuery,
 	_,

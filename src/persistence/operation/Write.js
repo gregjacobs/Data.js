@@ -6,7 +6,7 @@ define( [
 ], function( _, Class, Operation ) {
 	
 	/**
-	 * @class Data.persistence.operation.WriteOperation
+	 * @class Data.persistence.operation.Write
 	 * @extends Data.persistence.operation.Operation
 	 * 
 	 * Represents a write operation to a persistent storage mechanism. This includes creating, updating, or destroying

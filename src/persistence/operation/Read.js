@@ -6,7 +6,7 @@ define( [
 ], function( _, Class, Operation ) {
 	
 	/**
-	 * @class Data.persistence.operation.ReadOperation
+	 * @class Data.persistence.operation.Read
 	 * @extends Data.persistence.operation.Operation
 	 * 
 	 * Represents a read operation from a persistent storage mechanism. 

@@ -6,8 +6,8 @@ define( [
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Rest',
 	'data/persistence/reader/Reader',
-	'data/persistence/operation/ReadOperation',
-	'data/persistence/operation/WriteOperation'
+	'data/persistence/operation/Read',
+	'data/persistence/operation/Write'
 ], function( _, Class, Model, ResultSet, RestProxy, Reader, ReadOperation, WriteOperation ) {
 	
 	// Used in the tests

@@ -121,7 +121,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method create
-		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance to represent
+		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance to represent
 		 *   the creation on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -135,7 +135,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method read
-		 * @param {Data.persistence.operation.ReadOperation} operation The ReadOperation instance to represent
+		 * @param {Data.persistence.operation.Read} operation The ReadOperation instance to represent
 		 *   the reading of data from the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -149,7 +149,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method update
-		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance to represent
+		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance to represent
 		 *   the update on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -163,7 +163,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method destroy
-		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance to represent
+		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance to represent
 		 *   the destruction (deletion) on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 

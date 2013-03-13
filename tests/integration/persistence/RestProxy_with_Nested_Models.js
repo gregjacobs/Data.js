@@ -3,7 +3,7 @@ define( [
 	'lodash',
 	'data/Model',
 	'data/persistence/proxy/Rest',
-	'data/persistence/operation/WriteOperation'
+	'data/persistence/operation/Write'
 ], function( _, Model, RestProxy, WriteOperation ) {
 
 	tests.integration.persistence.add( new Ext.test.TestSuite( {

@@ -10,8 +10,8 @@ define( [
 	'data/DataComponent',
 	
 	'data/persistence/proxy/Proxy',
-	'data/persistence/operation/ReadOperation',
-	'data/persistence/operation/WriteOperation',
+	'data/persistence/operation/Read',
+	'data/persistence/operation/Write',
 	
 	'data/attribute/Attribute',
 	'data/attribute/DataComponent',
@@ -1030,7 +1030,7 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link Data.Model} This Model instance.
-		 * - `operation` : {@link Data.persistence.operation.ReadOperation} The ReadOperation that was executed.
+		 * - `operation` : {@link Data.persistence.operation.Read} The ReadOperation that was executed.
 		 * 
 		 * @method reload
 		 * @param {Object} [options] An object which may contain the following properties:
@@ -1087,7 +1087,7 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link Data.Model} This Model instance.
-		 * - `operation` : {@link Data.persistence.operation.WriteOperation} The WriteOperation that was executed.
+		 * - `operation` : {@link Data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
 		 * @method save
 		 * @param {Object} [options] An object which may contain the following properties:
@@ -1220,7 +1220,7 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link Data.Model} This Model instance.
-		 * - `operation` : {@link Data.persistence.operation.WriteOperation} The WriteOperation that was executed.
+		 * - `operation` : {@link Data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
 		 * @method destroy
 		 * @param {Object} [options] An object which may contain the following properties:

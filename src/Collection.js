@@ -7,8 +7,8 @@ define( [
 	'data/Model',
 	'data/DataComponent',
 	'data/NativeObjectConverter',
-	'data/persistence/operation/ReadOperation',
-	'data/persistence/operation/WriteOperation'
+	'data/persistence/operation/Read',
+	'data/persistence/operation/Write'
 ], function(
 	jQuery,
 	_,
@@ -972,7 +972,7 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link Data.Collection} This Collection instance.
-		 * - `operation` : {@link Data.persistence.operation.ReadOperation} The ReadOperation that was executed.
+		 * - `operation` : {@link Data.persistence.operation.Read} The ReadOperation that was executed.
 		 * 
 		 * @method load
 		 * @param {Object} [options] An object which may contain the following properties:
@@ -1025,7 +1025,7 @@ define( [
 		 * existing Models are modified, and removed Models are deleted.
 		 * 
 		 * - `collection` : {@link Data.Collection} This Collection instance.
-		 * - `operation` : {@link Data.persistence.operation.WriteOperation} The WriteOperation that was executed.
+		 * - `operation` : {@link Data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
 		 * @method sync
 		 * @param {Object} [options] An object which may contain the following properties:

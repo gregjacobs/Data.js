@@ -99,7 +99,7 @@ define( [
 		/**
 		 * Creates the Model on the server.
 		 * 
-		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
 		 *   to be created on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -113,7 +113,7 @@ define( [
 		/**
 		 * Reads one or more {@link Data.Model Models} from the server.
 		 * 
-		 * @param {Data.persistence.operation.ReadOperation} operation The ReadOperation instance that describes the 
+		 * @param {Data.persistence.operation.Read} operation The ReadOperation instance that describes the 
 		 *   model(s) to be read from the server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -148,7 +148,7 @@ define( [
 		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
 		 * are persisted.
 		 * 
-		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
 		 *   to be updated on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -164,7 +164,7 @@ define( [
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
-		 * @param {Data.persistence.operation.WriteOperation} operation The WriteOperation instance that holds the model(s) 
+		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -185,7 +185,7 @@ define( [
 		 * 
 		 * @protected
 		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {Data.persistence.operation.ReadOperation/Data.persistence.operation.WriteOperation} operation
+		 * @param {Data.persistence.operation.Read/Data.persistence.operation.Write} operation
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {
