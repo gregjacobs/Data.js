@@ -10,7 +10,7 @@ define( [
 	 * @class Data.persistence.reader.Reader
 	 * @extends Object
 	 * 
-	 * The purpose of a Reader is to read raw data pulled in by a {@link Data.persistence.Proxy}, and convert
+	 * The purpose of a Reader is to read raw data pulled in by a {@link Data.persistence.proxy.Proxy}, and convert
 	 * it into a form which can be directly consumed by a {@link Data.Model Model} or {@link Data.Collection Collection}.
 	 * 
 	 * Each Reader subclass must implement the {@link #convertRaw} method, which is provided the raw data,

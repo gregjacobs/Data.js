@@ -11,7 +11,7 @@ define( [
 	 * 
 	 * Represents a read operation from a persistent storage mechanism. 
 	 * 
-	 * This class is used internally by the framework when making requests to {@link Data.persistence.Proxy Proxies},
+	 * This class is used internally by the framework when making requests to {@link Data.persistence.proxy.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link Data.Model Model}/{@link Data.Collection Collection} operations 
 	 * complete.
 	 */

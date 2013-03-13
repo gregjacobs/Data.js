@@ -8,7 +8,7 @@ define( [
 	 * @abstract
 	 * @class Data.persistence.operation.Operation
 	 * 
-	 * Represents an operation for a {@link Data.persistence.Proxy} to carry out. This class basically represents 
+	 * Represents an operation for a {@link Data.persistence.proxy.Proxy} to carry out. This class basically represents 
 	 * any CRUD operation to be performed, passes along any options needed for that operation, and accepts any data/state
 	 * as a result of that operation. 
 	 * 
@@ -18,7 +18,7 @@ define( [
 	 * - {@link Data.persistence.operation.WriteOperation}: Represents an Operation to write (store) data to persistence storage.
 	 *   This includes destroying (deleting) models as well.
 	 * 
-	 * This class is used internally by the framework when making requests to {@link Data.persistence.Proxy Proxies},
+	 * This class is used internally by the framework when making requests to {@link Data.persistence.proxy.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link Data.Model Model}/{@link Data.Collection Collection} operations 
 	 * complete, so information can be obtained about the operation that took place.
 	 */
@@ -37,7 +37,7 @@ define( [
 		 * 
 		 * A ResultSet object which contains any data read by the Operation. This object contains any 
 		 * returned data, as well as any metadata (such as the total number of records in a paged data set).
-		 * This object is set by a {@link Data.persistence.Proxy} when it finishes its routine, and can be 
+		 * This object is set by a {@link Data.persistence.proxy.Proxy} when it finishes its routine, and can be 
 		 * retrieved via {@link #getResultSet}. Some notes:
 		 * 
 		 * - For cases of read operations, this object will contain the data that is read by the operation.
@@ -110,7 +110,7 @@ define( [
 		
 		/**
 		 * Retrieves the {@link Data.persistence.ResultSet} containing any data and metadata read by the 
-		 * Operation. This is set by a {@link Data.persistence.Proxy} when it finishes its routine.  
+		 * Operation. This is set by a {@link Data.persistence.proxy.Proxy} when it finishes its routine.  
 		 * 
 		 * - For cases of read operations, this object will contain the data that is read by the operation.
 		 * - For cases of write operations, this object will contain any "update" data that is returned to the

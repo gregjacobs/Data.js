@@ -4,12 +4,12 @@ define( [
 	'lodash',
 	'Class',
 	'data/Data',
-	'data/persistence/Proxy'
+	'data/persistence/proxy/Proxy'
 ], function( jQuery, _, Class, Data, Proxy ) {
 	
 	/**
-	 * @class Data.persistence.AjaxProxy
-	 * @extends Data.persistence.Proxy
+	 * @class Data.persistence.proxy.Ajax
+	 * @extends Data.persistence.proxy.Proxy
 	 * 
 	 * AjaxProxy is responsible for performing CRUD operations through standard AJAX, using the url(s) configured,
 	 * and providing any parameters and such which are required for the backend service.

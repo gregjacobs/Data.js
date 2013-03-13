@@ -9,7 +9,7 @@ define( [
 	 * @class Data.persistence.ResultSet
 	 * @extends Object
 	 * 
-	 * Simple wrapper which holds the data returned by any {@link Data.persistence.Proxy Proxy} 
+	 * Simple wrapper which holds the data returned by any {@link Data.persistence.proxy.Proxy Proxy} 
 	 * operation, along with any metadata such as the total number of data records in a windowed 
 	 * data set.
 	 */
@@ -18,7 +18,7 @@ define( [
 		/**
 		 * @cfg {Object/Object[]} records
 		 * 
-		 * One or more data records that have been returned by a {@link Data.persistence.Proxy Proxy}, 
+		 * One or more data records that have been returned by a {@link Data.persistence.proxy.Proxy Proxy}, 
 		 * after they have been converted to plain JavaScript objects by a 
 		 * {@link Data.persistence.reader.Reader Reader}.
 		 */

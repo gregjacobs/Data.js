@@ -66,12 +66,12 @@ define( [
 		inheritedStatics : {			
 			
 			/**
-			 * Retrieves the {@link Data.persistence.Proxy} that is configured for the Collection class. To retrieve
+			 * Retrieves the {@link Data.persistence.proxy.Proxy} that is configured for the Collection class. To retrieve
 			 * a proxy that may belong to a particular collection, use the instance level {@link #method-getProxy}.
 			 * 
 			 * @inheritable
 			 * @static
-			 * @return {Data.persistence.Proxy} The Proxy configured with the Model, or null.
+			 * @return {Data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
 			 */
 			getProxy : function() {
 				return this.prototype.proxy || null;
@@ -82,7 +82,7 @@ define( [
 		
 		
 		/**
-		 * @cfg {Data.persistence.Proxy} proxy
+		 * @cfg {Data.persistence.proxy.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the Collection's data to/from persistent
 		 * storage. If this is not configured, the proxy configured on the {@link #model} that this collection uses
@@ -937,12 +937,12 @@ define( [
 		// Persistence functionality
 			
 		/**
-		 * Sets the {@link Data.persistence.Proxy} that for this particular collection instance. Setting a proxy
+		 * Sets the {@link Data.persistence.proxy.Proxy} that for this particular collection instance. Setting a proxy
 		 * with this method will only affect this particular collection instance, not any others.
 		 * 
 		 * To configure a proxy that will be used for all instances of the Collection, set one in a Collection sublass.
 		 * 
-		 * @param {Data.persistence.Proxy} The Proxy to set to this collection instance.
+		 * @param {Data.persistence.proxy.Proxy} The Proxy to set to this collection instance.
 		 */
 		setProxy : function( proxy ) {
 			this.proxy = proxy;
@@ -950,12 +950,12 @@ define( [
 		
 			
 		/**
-		 * Retrieves the {@link Data.persistence.Proxy} that is configured for this collection instance. To retrieve
+		 * Retrieves the {@link Data.persistence.proxy.Proxy} that is configured for this collection instance. To retrieve
 		 * the proxy that belongs to the Collection class itself, use the static {@link #static-method-getProxy getProxy} 
 		 * method. Note that unless the collection instance is configured with a different proxy, it will inherit the
 		 * Collection's static proxy.
 		 * 
-		 * @return {Data.persistence.Proxy} The Proxy configured for the collection, or null.
+		 * @return {Data.persistence.proxy.Proxy} The Proxy configured for the collection, or null.
 		 */
 		getProxy : function() {
 			return this.proxy || null;

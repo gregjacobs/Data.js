@@ -9,7 +9,7 @@ define( [
 	'data/ModelCache',
 	'data/DataComponent',
 	
-	'data/persistence/Proxy',
+	'data/persistence/proxy/Proxy',
 	'data/persistence/operation/ReadOperation',
 	'data/persistence/operation/WriteOperation',
 	
@@ -133,12 +133,12 @@ define( [
 			
 			
 			/**
-			 * Retrieves the {@link Data.persistence.Proxy} that is configured for the Model class. To retrieve
+			 * Retrieves the {@link Data.persistence.proxy.Proxy} that is configured for the Model class. To retrieve
 			 * a proxy that may belong to a particular model, use the instance level {@link #method-getProxy}.
 			 * 
 			 * @inheritable
 			 * @static
-			 * @return {Data.persistence.Proxy} The Proxy configured with the Model, or null.
+			 * @return {Data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
 			 */
 			getProxy : function() {
 				return this.prototype.proxy || null;
@@ -149,7 +149,7 @@ define( [
 		
 		
 		/**
-		 * @cfg {Data.persistence.Proxy} proxy
+		 * @cfg {Data.persistence.proxy.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the Model's data to/from persistent
 		 * storage. If this is not specified, the Model may not {@link #reload load} or {@link #save} its data.
@@ -999,12 +999,12 @@ define( [
 		
 			
 		/**
-		 * Sets the {@link Data.persistence.Proxy} that for this particular model instance. Setting a proxy
+		 * Sets the {@link Data.persistence.proxy.Proxy} that for this particular model instance. Setting a proxy
 		 * with this method will only affect this particular model instance, not any others.
 		 * 
 		 * To configure a proxy that will be used for all instances of the Model, set one in a Model sublass.
 		 * 
-		 * @param {Data.persistence.Proxy} The Proxy to set to this model instance.
+		 * @param {Data.persistence.proxy.Proxy} The Proxy to set to this model instance.
 		 */
 		setProxy : function( proxy ) {
 			this.proxy = proxy;
@@ -1012,12 +1012,12 @@ define( [
 		
 			
 		/**
-		 * Retrieves the {@link Data.persistence.Proxy} that is configured for this model instance. To retrieve
+		 * Retrieves the {@link Data.persistence.proxy.Proxy} that is configured for this model instance. To retrieve
 		 * the proxy that belongs to the Model class itself, use the static {@link #static-method-getProxy getProxy} 
 		 * method. Note that unless the model instance is configured with a different proxy, it will inherit the
 		 * Model's static proxy.
 		 * 
-		 * @return {Data.persistence.Proxy} The Proxy configured for the model, or null.
+		 * @return {Data.persistence.proxy.Proxy} The Proxy configured for the model, or null.
 		 */
 		getProxy : function() {
 			return this.proxy || null;

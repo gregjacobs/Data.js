@@ -14,8 +14,8 @@ define( [
 	'data/attribute/String',
 	'data/attribute/DataComponent',
 	'data/persistence/ResultSet',
-	'data/persistence/Proxy',
-	'data/persistence/RestProxy',
+	'data/persistence/proxy/Proxy',
+	'data/persistence/proxy/Rest',
 	'data/persistence/operation/ReadOperation',
 	'data/persistence/operation/WriteOperation'
 ], function( 
@@ -267,10 +267,10 @@ define( [
 						_should : {
 							error : {
 								"Attempting to instantiate a proxy with no 'type' attribute should throw an error" :
-									"Data.persistence.Proxy.create(): No `type` property provided on proxy config object",
+									"Data.persistence.proxy.Proxy.create(): No `type` property provided on proxy config object",
 									
 								"Attempting to instantiate a proxy with an invalid 'type' attribute should throw an error" :
-									"Data.persistence.Proxy.create(): Unknown Proxy type: 'nonexistentproxy'"
+									"Data.persistence.proxy.Proxy.create(): Unknown Proxy type: 'nonexistentproxy'"
 							}
 						},
 						

@@ -4,7 +4,7 @@ define( [
 	'Class',
 	'data/Model',
 	'data/persistence/ResultSet',
-	'data/persistence/RestProxy',
+	'data/persistence/proxy/Rest',
 	'data/persistence/reader/Reader',
 	'data/persistence/operation/ReadOperation',
 	'data/persistence/operation/WriteOperation'

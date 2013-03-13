@@ -3,12 +3,12 @@ define( [
 	'jquery',
 	'lodash',
 	'Class',
-	'data/persistence/Proxy'
+	'data/persistence/proxy/Proxy'
 ], function( jQuery, _, Class, Proxy ) {
 	
 	/**
-	 * @class Data.persistence.RestProxy
-	 * @extends Data.persistence.Proxy
+	 * @class Data.persistence.proxy.Rest
+	 * @extends Data.persistence.proxy.Proxy
 	 * 
 	 * RestProxy is responsible for performing CRUD operations in a RESTful manner for a given Model on the server.
 	 */

@@ -6,7 +6,7 @@ define( [
 	'data/Model',
 	'data/attribute/Attribute',
 	'data/persistence/ResultSet',
-	'data/persistence/Proxy',
+	'data/persistence/proxy/Proxy',
 	'data/persistence/operation/ReadOperation'
 ], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, ReadOperation ) {
 	tests.unit.add( new Ext.test.TestSuite( {

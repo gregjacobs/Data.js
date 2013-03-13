@@ -20,7 +20,7 @@ define( [
 		abstractClass : true,
 		
 		/**
-		 * @cfg {Data.persistence.Proxy} proxy
+		 * @cfg {Data.persistence.proxy.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the DataComponent's data to/from persistent
 		 * storage. If this is not specified, the DataComponent may not save or load its data to/from an external
@@ -111,7 +111,7 @@ define( [
 		 * the same proxy instance is shared between all instances of the DataComponent.
 		 * 
 		 * @method getProxy
-		 * @return {Data.persistence.Proxy} The configured persistence proxy, or `null` if there is none configured.
+		 * @return {Data.persistence.proxy.Proxy} The configured persistence proxy, or `null` if there is none configured.
 		 */
 		getProxy : function() {
 			return this.proxy;

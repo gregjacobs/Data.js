@@ -2,7 +2,7 @@
 define( [
 	'lodash',
 	'data/Model',
-	'data/persistence/RestProxy',
+	'data/persistence/proxy/Rest',
 	'data/persistence/operation/WriteOperation'
 ], function( _, Model, RestProxy, WriteOperation ) {
 

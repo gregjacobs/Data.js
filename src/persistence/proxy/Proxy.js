@@ -8,7 +8,7 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.persistence.Proxy
+	 * @class Data.persistence.proxy.Proxy
 	 * @extends Observable
 	 * 
 	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) operations on
@@ -55,17 +55,17 @@ define( [
 			
 			
 			/**
-			 * Creates (instantiates) a {@link Data.persistence.Proxy} based on its type name, given
+			 * Creates (instantiates) a {@link Data.persistence.proxy.Proxy} based on its type name, given
 			 * a configuration object that has a `type` property. If an already-instantiated 
-			 * {@link Data.persistence.Proxy Proxy} is provided, it will simply be returned unchanged.
+			 * {@link Data.persistence.proxy.Proxy Proxy} is provided, it will simply be returned unchanged.
 			 * 
 			 * @static
 			 * @method create
 			 * @param {Object} config The configuration object for the Proxy. Config objects should have the property `type`, 
-			 *   which determines which type of {@link Data.persistence.Proxy} will be instantiated. If the object does not
-			 *   have a `type` property, an error will be thrown. Note that already-instantiated {@link Data.persistence.Proxy Proxies} 
+			 *   which determines which type of {@link Data.persistence.proxy.Proxy} will be instantiated. If the object does not
+			 *   have a `type` property, an error will be thrown. Note that already-instantiated {@link Data.persistence.proxy.Proxy Proxies} 
 			 *   will simply be returned unchanged. 
-			 * @return {Data.persistence.Proxy} The instantiated Proxy.
+			 * @return {Data.persistence.proxy.Proxy} The instantiated Proxy.
 			 */
 			create : function( config ) {
 				var type = config.type ? config.type.toLowerCase() : undefined;
@@ -79,11 +79,11 @@ define( [
 					
 				} else if( !( 'type' in config ) ) {
 					// No `type` property provided on config object
-					throw new Error( "Data.persistence.Proxy.create(): No `type` property provided on proxy config object" );
+					throw new Error( "Data.persistence.proxy.Proxy.create(): No `type` property provided on proxy config object" );
 					 
 				} else {
 					// No registered Proxy type with the given type, throw an error
-					throw new Error( "Data.persistence.Proxy.create(): Unknown Proxy type: '" + type + "'" );
+					throw new Error( "Data.persistence.proxy.Proxy.create(): Unknown Proxy type: '" + type + "'" );
 				}
 			}
 		},

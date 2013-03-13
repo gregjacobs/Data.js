@@ -179,7 +179,7 @@ define( [
 		/**
 		 * @cfg {Function} raw
 		 * A function that can be used to convert an Attribute's value to a raw representation, usually for persisting data on a server.
-		 * This function is automatically called (if it exists) when a persistence {@link Data.persistence.Proxy proxy} is collecting
+		 * This function is automatically called (if it exists) when a persistence {@link Data.persistence.proxy.Proxy proxy} is collecting
 		 * the data to send to the server. The function is passed two arguments, and should return the raw value.
 		 * 
 		 * @cfg {Mixed} raw.value The underlying value that the Attribute currently has stored in the {@link Data.Model Model}.

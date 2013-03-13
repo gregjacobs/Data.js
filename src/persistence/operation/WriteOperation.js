@@ -12,7 +12,7 @@ define( [
 	 * Represents a write operation to a persistent storage mechanism. This includes creating, updating, or destroying
 	 * (deleting) models on the persistent storage.
 	 * 
-	 * This class is used internally by the framework when making requests to {@link Data.persistence.Proxy Proxies},
+	 * This class is used internally by the framework when making requests to {@link Data.persistence.proxy.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link Data.Model Model}/{@link Data.Collection Collection} operations 
 	 * complete.
 	 */
