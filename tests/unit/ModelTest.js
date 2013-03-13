@@ -415,13 +415,13 @@ define( [
 						 */
 						name : "Test initial data",
 						
-						"Providing initial data to the constructor should not leave the model set as 'dirty' (i.e. it should have no 'changes')" : function() {
+						"Providing initial data to the constructor should not leave the model set as 'modified' (i.e. it should have no 'changes')" : function() {
 							var MyModel = Model.extend( {
 								attributes : [ 'attribute1', 'attribute2' ]
 							} );
 							
 							var model = new MyModel( { attribute1: 'value1', attribute2: 'value2' } );
-							Y.Assert.isFalse( model.isDirty(), "The model should not be dirty upon initialization" );
+							Y.Assert.isFalse( model.isModified(), "The model should not be modified upon initialization" );
 							Y.Assert.isTrue( _.isEmpty( model.getChanges() ), "There should not be any 'changes' upon initialization" );
 						}
 					},				
@@ -714,30 +714,30 @@ define( [
 				// ------------------------
 				
 				
-				"After the successful set() of an attribute, the Model should be considered 'dirty'" : function() {
+				"After the successful set() of an attribute, the Model should be considered modified" : function() {
 					var TestModel = Model.extend( {
 						attributes: [ 'attribute1' ]
 					} );
 					var model = new TestModel();
 					
-					Y.Assert.isFalse( model.isDirty(), "Initially, the model should not be considered 'dirty'" );
+					Y.Assert.isFalse( model.isModified(), "Initially, the model should not be considered modified" );
 					
 					model.set( 'attribute1', 'value1' );
-					Y.Assert.isTrue( model.isDirty(), "After a set, the model should now be considered 'dirty'" );
+					Y.Assert.isTrue( model.isModified(), "After a set, the model should now be considered modified" );
 				},
 				
 				
-				"After a set() of an attribute to the same value from a clean state, the Model should NOT be considered 'dirty' (as the value didn't change)" : function() {
+				"After a set() of an attribute to the same value from a clean state, the Model should NOT be considered modified (as the value didn't change)" : function() {
 					var TestModel = Model.extend( {
 						attributes: [ 'attribute1' ]
 					} );
-					var model = new TestModel( { attribute1: 'value1' } );  // initial data, model not considered dirty
+					var model = new TestModel( { attribute1: 'value1' } );  // initial data, model not considered modified
 					
-					Y.Assert.isFalse( model.isDirty(), "Initially, the model should not be considered 'dirty'" );
+					Y.Assert.isFalse( model.isModified(), "Initially, the model should not be considered modified" );
 					
 					// Set to the same value
 					model.set( 'attribute1', 'value1' );
-					Y.Assert.isFalse( model.isDirty(), "After a set to the *same value*, the model should not be considered 'dirty' (as the value didn't change)" );
+					Y.Assert.isFalse( model.isModified(), "After a set to the *same value*, the model should not be considered modified (as the value didn't change)" );
 				},
 				
 				
@@ -1541,63 +1541,6 @@ define( [
 			// ------------------------
 			
 			
-			
-			
-			
-			{
-				/*
-				 * Test isDirty()
-				 */
-				name: 'Test isDirty()',
-		
-		
-				setUp : function() {
-					this.TestModel = Class.extend( Model, {
-						attributes: [
-							{ name: 'attribute1' },
-							{ name: 'attribute2', defaultValue: "attribute2's default" },
-							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-							{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-							{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
-						]
-					} );
-				},
-				
-				
-				
-				"isDirty() should return false after instantiating a Model with no data" : function() {
-					var model = new this.TestModel();
-					Y.Assert.isFalse( model.isDirty() );
-				},
-				
-				"isDirty() should return false after instantiating a Model with initial data" : function() {
-					var model = new this.TestModel( { attribute1: 1, attribute2: 2 } );
-					Y.Assert.isFalse( model.isDirty() );
-				},
-				
-				"isDirty() should return true after setting an attribute's data" : function() {
-					var model = new this.TestModel();
-					model.set( 'attribute1', 1 );
-					Y.Assert.isTrue( model.isDirty() );
-				},
-				
-				"isDirty() should return false after setting an attribute's data, and then rolling back the data" : function() {
-					var model = new this.TestModel();
-					model.set( 'attribute1', 1 );
-					model.rollback();
-					Y.Assert.isFalse( model.isDirty() );
-				},
-				
-				"isDirty() should return false after setting an attribute's data, and then committing the data" : function() {
-					var model = new this.TestModel();
-					model.set( 'attribute1', 1 );
-					model.commit();
-					Y.Assert.isFalse( model.isDirty() );
-				}
-			},
-			
-			
-			
 			{
 				/*
 				 * Test isModified()
@@ -1890,7 +1833,7 @@ define( [
 				},
 					
 				
-				"committing changed data should cause the 'dirty' flag to be reset to false, and getChanges() to return an empty object" : function() {
+				"committing changed data should cause the model to no longer be considered modified, and cause getChanges() to return an empty object" : function() {
 					var model = new this.TestModel();
 					model.set( 'attribute1', "new value 1" );
 					model.set( 'attribute2', "new value 2" );
@@ -1899,7 +1842,7 @@ define( [
 					var changes = model.getChanges();
 					Y.Assert.areSame( 0, _.keys( changes ).length, "The changes hash retrieved should have exactly 0 properties" );
 					
-					Y.Assert.isFalse( model.isDirty(), "The model should no longer be marked as 'dirty'" );
+					Y.Assert.isFalse( model.isModified(), "The model should no longer be considered modified" );
 				},
 				
 				
@@ -1995,15 +1938,15 @@ define( [
 					// Set, and then rollback
 					model.set( 'attribute1', "new value 1" );
 					model.set( 'attribute2', "new value 2" );
-					Y.Assert.isTrue( model.isDirty(), "The 'dirty' flag should be true." );
+					Y.Assert.isTrue( model.isModified(), "The model should be considered modified." );
 					model.rollback();
 					
 					// Check that they have the original values
 					Y.Assert.isUndefined( model.get( 'attribute1' ) );
 					Y.Assert.areSame( "attribute2's default", model.get( 'attribute2' ) );
 					
-					// Check that isDirty() returns false
-					Y.Assert.isFalse( model.isDirty(), "The 'dirty' flag should be false after rollback." );
+					// Check that isModified() returns false
+					Y.Assert.isFalse( model.isModified(), "The model should no longer be considered modified after rollback." );
 				},
 				
 				
@@ -2013,18 +1956,18 @@ define( [
 						attribute2 : "original attribute2"
 					} );
 					
-					// Set, check the 'dirty' flag, and then rollback
+					// Set, check if the model is considered modified, and then rollback
 					model.set( 'attribute1', "new value 1" );
 					model.set( 'attribute2', "new value 2" );
-					Y.Assert.isTrue( model.isDirty(), "The 'dirty' flag should be true." );
+					Y.Assert.isTrue( model.isModified(), "The model should be considered modified." );
 					model.rollback();
 					
 					// Check that they have the original values
 					Y.Assert.areSame( "original attribute1", model.get( 'attribute1' ) );
 					Y.Assert.areSame( "original attribute2", model.get( 'attribute2' ) );
 					
-					// Check that isDirty() returns false
-					Y.Assert.isFalse( model.isDirty(), "The 'dirty' flag should be false after rollback." );
+					// Check that isModified() returns false
+					Y.Assert.isFalse( model.isModified(), "The model should no longer be considered modified after rollback." );
 				},
 				
 				
@@ -2039,15 +1982,15 @@ define( [
 					model.set( 'attribute2', "new value 2" );
 					model.set( 'attribute1', "new value 1 - even newer" );
 					model.set( 'attribute2', "new value 2 - even newer" );
-					Y.Assert.isTrue( model.isDirty(), "The 'dirty' flag should be true." );
+					Y.Assert.isTrue( model.isModified(), "The model should be considered modified." );
 					model.rollback();
 					
 					// Check that they have the original values after rollback (that the 2nd set of set() calls didn't overwrite the original values) 
 					Y.Assert.areSame( "original attribute1", model.get( 'attribute1' ) );
 					Y.Assert.areSame( "original attribute2", model.get( 'attribute2' ) );
 					
-					// Check that isDirty() returns false
-					Y.Assert.isFalse( model.isDirty(), "The 'dirty' flag should be false after rollback." );
+					// Check that isModified() returns false
+					Y.Assert.isFalse( model.isModified(), "The model should no longer be considered modified after rollback." );
 				},
 				
 				
@@ -2713,9 +2656,9 @@ define( [
 							model.save( {
 								success : function() {
 									test.resume( function() {
-										Y.Assert.isTrue( model.isDirty(), "The model should still be dirty after the persistence operation. attribute1 was set after the persistence operation began." );
+										Y.Assert.isTrue( model.isModified(), "The model should still be considered modified after the persistence operation. attribute1 was set after the persistence operation began." );
 										
-										Y.Assert.isTrue( model.isModified( 'attribute1' ), "attribute1 should be marked as modified (dirty). It was updated (set) after the persistence operation began." );
+										Y.Assert.isTrue( model.isModified( 'attribute1' ), "attribute1 should be marked as modified. It was updated (set) after the persistence operation began." );
 										Y.Assert.isFalse( model.isModified( 'attribute2' ), "attribute2 should not be marked as modified. It was not updated after the persistence operation began." );
 										
 										Y.Assert.areSame( "newValue1", model.get( 'attribute1' ), "a get() operation on attribute1 should return the new value." );
@@ -2748,9 +2691,9 @@ define( [
 							model.save( {
 								success : function() {
 									test.resume( function() {
-										Y.Assert.isTrue( model.isDirty(), "The model should still be dirty after the persistence operation. attribute1 was set after the persistence operation began." );
+										Y.Assert.isTrue( model.isModified(), "The model should still be considered modified after the persistence operation. attribute1 was set after the persistence operation began." );
 										
-										Y.Assert.isTrue( model.isModified( 'attribute1' ), "attribute1 should be marked as modified (dirty). It was updated (set) after the persistence operation began." );
+										Y.Assert.isTrue( model.isModified( 'attribute1' ), "attribute1 should be marked as modified. It was updated (set) after the persistence operation began." );
 										Y.Assert.isFalse( model.isModified( 'attribute2' ), "attribute2 should not be marked as modified. It was not updated after the persistence operation began." );
 										
 										Y.Assert.areSame( "newValue11", model.get( 'attribute1' ), "a get() operation on attribute1 should return the new value." );
