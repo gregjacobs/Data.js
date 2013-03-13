@@ -48,6 +48,26 @@ define( [
 				expect( records ).toEqual( [ obj1, obj2 ] );
 			} );
 			
+			
+			it( "should convert a single data object into a one-element array, when using the object provided as the data", function() {
+				var reader = new ConcreteReader();
+				
+				var records = reader.extractRecords( obj1 );
+				expect( records ).toEqual( [ obj1 ] );
+			} );
+			
+			
+			it( "should convert a single data object into a one-element array, when using a nested property as the data", function() {
+				var reader = new ConcreteReader( {
+					dataProperty: 'data'
+				} );
+				
+				var records = reader.extractRecords( {
+					data: obj1
+				} );
+				expect( records ).toEqual( [ obj1 ] );
+			} );
+			
 		} );
 		
 		

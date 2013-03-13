@@ -125,9 +125,7 @@ define( [
 		 */
 		extractRecords : function( data ) {
 			var dataProperty = this.dataProperty;
-			if( !dataProperty || dataProperty === '.' ) {
-				return data;
-			} else {
+			if( dataProperty && dataProperty !== '.' ) {
 				data = this.findPropertyValue( data, dataProperty );
 
 				// <debug>
@@ -135,8 +133,9 @@ define( [
 					throw new Error( "Reader could not find the data at property '" + dataProperty + "'" );
 				}
 				// </debug>
-				return data;
 			}
+			
+			return ( _.isArray( data ) ) ? data : [ data ];  // Wrap in an array if it is a single object 
 		},
 		
 		
