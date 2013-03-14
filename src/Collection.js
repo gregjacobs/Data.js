@@ -86,7 +86,7 @@ define( [
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the Collection's data to/from persistent
 		 * storage. If this is not configured, the proxy configured on the {@link #model} that this collection uses
-		 * will be used instead. If neither are specified, the Collection may not {@link #load} or {@link #sync} its models. 
+		 * will be used instead. If neither are specified, the Collection may not {@link #method-load} or {@link #sync} its models. 
 		 * 
 		 * Note that this may be specified as part of a Collectoin subclass (so that all instances of the Collection inherit
 		 * the proxy), or on a particular collection instance as a configuration option, or by using {@link #setProxy}.
@@ -108,6 +108,15 @@ define( [
 		 *         model : myApp.MyModel
 		 *     } );
 		 */
+		
+		/**
+		 * @cfg {Boolean} autoLoad
+		 * 
+		 * If no initial {@link #models} are specified (specifying inline data), and this config is 
+		 * `true`, the Collection's {@link #method-load} method will be called immediately upon 
+		 * instantiation to load the Collection.
+		 */
+		autoLoad : false,
 		
 		/**
 		 * @cfg {Function} sortBy
@@ -202,7 +211,7 @@ define( [
 		 * @property {Number} totalCount
 		 * 
 		 * This property is used to keep track of total number of models in a windowed (paged) data 
-		 * set. It will be set as the result of a {@link #load} operation that reads the total count
+		 * set. It will be set as the result of a {@link #method-load} operation that reads the total count
 		 * from a property provided by the backing data store. If no such property existed in the data,
 		 * this will be set to 0.
 		 */
@@ -329,6 +338,10 @@ define( [
 			if( initialModels ) {
 				this.add( initialModels );
 				this.modified = false;  // initial models should not make the collection "modified". Note: NOT calling commit() here, because we may not want to commit changed model data. Need to figure that out.
+			} else {
+				if( this.autoLoad ) {
+					this.load();
+				}
 			}
 			
 			// Call hook method for subclasses
@@ -1061,12 +1074,12 @@ define( [
 		
 		
 		/**
-		 * Handles the {@link #proxy} successfully loading a set of data as a result of the {@link #load}
-		 * method being called. Resolves the {@link jQuery.Deferred} object created by {@link #load}
+		 * Handles the {@link #proxy} successfully loading a set of data as a result of the {@link #method-load}
+		 * method being called. Resolves the {@link jQuery.Deferred} object created by {@link #method-load}
 		 * after processing the result of the operation.
 		 * 
 		 * @protected
-		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #load}.
+		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #method-load}.
 		 * @param {Data.persistence.operation.Read} operation The operation object.
 		 */
 		onLoadSuccess : function( deferred, operation ) {
@@ -1086,11 +1099,11 @@ define( [
 		
 		
 		/**
-		 * Handles the {@link #proxy} failing to load a set of data as a result of the {@link #load}
-		 * method being called. Rejects the {@link jQuery.Deferred} object created by {@link #load}.
+		 * Handles the {@link #proxy} failing to load a set of data as a result of the {@link #method-load}
+		 * method being called. Rejects the {@link jQuery.Deferred} object created by {@link #method-load}.
 		 * 
 		 * @protected
-		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #load}.
+		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #method-load}.
 		 * @param {Data.persistence.operation.Read} operation The operation object.
 		 */
 		onLoadError : function( deferred, operation ) {

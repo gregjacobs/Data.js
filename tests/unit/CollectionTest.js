@@ -58,6 +58,7 @@ define( [
 					Y.Assert.areSame( model2, models[ 1 ], "The second model should be the second model provided to the constructor" );
 				},
 				
+				
 				"The constructor should attach listeners provided by the `listeners` config" : function() {
 					var addCallCount = 0;  // used for testing if the event was fired
 					
@@ -71,6 +72,57 @@ define( [
 					
 					collection.fireEvent( 'add' );
 					Y.Assert.areSame( 1, addCallCount, "The 'add' event should have been fired, and the handler attached via config should have been called" );
+				},
+				
+				
+				
+				// Test the autoLoad config
+					
+				"The constructor should not call the load() method if `autoLoad` is false" : function() {
+					var loadCallCount = 0;
+					var MyCollection = this.Collection.extend( {
+						load : function() {  // redefine load() method
+							loadCallCount++;
+						}
+					} );
+					
+					var collection = new MyCollection( {
+						autoLoad : false
+					} );
+					Y.Assert.areSame( 0, loadCallCount, "load() shouldn't have been called" );
+				},
+				
+				
+				"The constructor should call the load() method immediately if `autoLoad` is true, and no initial `models` are specified" : function() {
+					var loadCallCount = 0;
+					var MyCollection = this.Collection.extend( {
+						load : function() {  // redefine load() method
+							loadCallCount++;
+						}
+					} );
+					
+					var collection = new MyCollection( {
+						autoLoad : true
+					} );
+					Y.Assert.areSame( 1, loadCallCount, "load() should have been called" );
+				},
+				
+				
+				"The constructor should *not* call the load() method if `autoLoad` is true, but initial `models` have been specified" : function() {
+					var loadCallCount = 0;
+					var MyCollection = this.Collection.extend( {
+						load : function() {  // redefine load() method
+							loadCallCount++;
+						}
+					} );
+					
+					var collection = new MyCollection( {
+						autoLoad : true,
+						models : [ 
+							new this.Model( { attr: 1 } )
+						]
+					} );
+					Y.Assert.areSame( 0, loadCallCount, "load() shouldn't have been called" );
 				}
 			},
 			
