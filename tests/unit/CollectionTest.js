@@ -56,6 +56,21 @@ define( [
 					Y.Assert.areSame( 2, models.length, "There should now be two models in the collection" );
 					Y.Assert.areSame( model1, models[ 0 ], "The first model should be the first model provided to the constructor" );
 					Y.Assert.areSame( model2, models[ 1 ], "The second model should be the second model provided to the constructor" );
+				},
+				
+				"The constructor should attach listeners provided by the `listeners` config" : function() {
+					var addCallCount = 0;  // used for testing if the event was fired
+					
+					var collection = new this.Collection( {
+						listeners : {
+							'add' : function() {
+								addCallCount++;
+							}
+						}
+					} );
+					
+					collection.fireEvent( 'add' );
+					Y.Assert.areSame( 1, addCallCount, "The 'add' event should have been fired, and the handler attached via config should have been called" );
 				}
 			},
 			
@@ -1908,7 +1923,7 @@ define( [
 				},
 				
 				
-				"load() should call its success/complete callbacks, and resolve its deferred with the arguments: collection, operation" : function() {
+				"load() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, operation" : function() {
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
 						operation.setResultSet( new ResultSet( {
 							records : []
@@ -1926,10 +1941,19 @@ define( [
 					    completeCallCount = 0,
 					    doneCallCount = 0,
 					    failCallCount = 0,
-					    alwaysCallCount = 0;
+					    alwaysCallCount = 0,
+					    loadCallCount = 0;
 					
 					// Instantiate and run the load() method
-					var collectionInstance = new MyCollection(); 
+					var collectionInstance = new MyCollection( {
+						listeners : {
+							'load' : function( collection, operation ) {
+								loadCallCount++;
+								Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in success cb" );
+								Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in success cb" );
+							}
+						}
+					} );
 					var promise = collectionInstance.load( {
 						success : function( collection, operation ) {
 							successCallCount++;
@@ -1970,10 +1994,11 @@ define( [
 					Y.Assert.areSame( 1, doneCallCount, "doneCallCount" );
 					Y.Assert.areSame( 0, failCallCount, "failCallCount" );
 					Y.Assert.areSame( 1, alwaysCallCount, "alwaysCallCount" );
+					Y.Assert.areSame( 1, loadCallCount, "loadCallCount" );
 				},
 				
 				
-				"load() should call its error/complete callbacks, and reject its deferred with the arguments: collection, operation" : function() {
+				"load() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, operation" : function() {
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
 						return new jQuery.Deferred().reject( operation ).promise();
 					} );
@@ -1988,10 +2013,19 @@ define( [
 					    completeCallCount = 0,
 					    doneCallCount = 0,
 					    failCallCount = 0,
-					    alwaysCallCount = 0;
+					    alwaysCallCount = 0,
+					    loadCallCount = 0;
 					
 					// Instantiate and run the load() method
-					var collectionInstance = new MyCollection(); 
+				    var collectionInstance = new MyCollection( {
+						listeners : {
+							'load' : function( collection, operation ) {
+								loadCallCount++;
+								Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in success cb" );
+								Y.Assert.isInstanceOf( ReadOperation, operation, "ReadOperation should have been arg 2 in success cb" );
+							}
+						}
+					} );
 					var promise = collectionInstance.load( {
 						success : function( collection, operation ) {
 							successCallCount++;
@@ -2032,6 +2066,7 @@ define( [
 					Y.Assert.areSame( 0, doneCallCount, "doneCallCount" );
 					Y.Assert.areSame( 1, failCallCount, "failCallCount" );
 					Y.Assert.areSame( 1, alwaysCallCount, "alwaysCallCount" );
+					Y.Assert.areSame( 1, loadCallCount, "loadCallCount" );
 				},
 
 				

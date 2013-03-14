@@ -219,8 +219,6 @@ define( [
 		 *   a configuration object with the {@link #cfg-models} config.
 		 */
 		constructor : function( config ) {
-			this._super( arguments );
-			
 			this.addEvents(
 				/**
 				 * Fires when one or more models have been added to the Collection. This event is fired once for each
@@ -283,7 +281,19 @@ define( [
 				 * @param {Data.Model[]} models The array of model instances that were removed. This will be an
 				 *   array of the removed models, even in the case that a single model is removed.
 				 */
-				'removeset'
+				'removeset',
+				
+				/**
+				 * Fires when the Collection is loaded from an external data source, through its {@link #proxy}.
+				 * This event fires for both successful load failed load requests. Success of the load request may 
+				 * be determined using the `operation`'s {@link Data.persistence.operation.Operation#wasSuccessful wasSuccessful} 
+				 * method.
+				 * 
+				 * @event load
+				 * @param {Data.Collection} collection This Collection instance.
+				 * @param {Data.persistence.operation.Read} operation The Read operation instance for the load.
+				 */
+				'load'
 			);
 			
 			
@@ -298,6 +308,9 @@ define( [
 				
 				initialModels = this.models;  // grab any initial models in the config
 			}
+
+			// Call Observable constructor
+			this._super( arguments );
 			
 			
 			// If a 'sortBy' exists, and it is a function, create a bound function to bind it to this Collection instance
@@ -1068,6 +1081,7 @@ define( [
 			this.add( resultSet.getRecords() );
 			
 			deferred.resolve( this, operation );
+			this.fireEvent( 'load', this, operation );
 		},
 		
 		
@@ -1081,6 +1095,7 @@ define( [
 		 */
 		onLoadError : function( deferred, operation ) {
 			deferred.reject( this, operation );
+			this.fireEvent( 'load', this, operation );
 		},
 		
 		
