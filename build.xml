@@ -1,16 +1,45 @@
 <project name="Data.js" default="build">
 	
+	<path id="rhino">
+		<pathelement location="${basedir}/vendor/rhino/js.jar" />
+	</path>
+	
 	<target name="build" description="Builds the source files.">
-		<fail message="Build using RequireJS optimizer not yet implemented." />
-		<!--
+		<!-- Concatenated Build -->
 		<java classname="org.mozilla.javascript.tools.shell.Main" fork="true" failonerror="true">
-			<classpath>
-				<pathelement location="${basedir}/vendor/rhino/js.jar" />
-			</classpath>
+			<classpath refid="rhino" />
 
 			<arg file="${basedir}/vendor/require/r.js" />
+			<arg value="-o" />
+			<arg value="name=data/Data" />
+			<arg value="out=data-all.js" />
+				
+			<arg value="paths.jquery=empty:" />
+			<arg value="paths.lodash=empty:" />
+			<arg value="paths.Class=empty:" />
+			<arg value="paths.Observable=empty:" />
+			<arg value="paths.data=src" />
+			
+			<arg value="optimize=none" />
 		</java>
-		-->
+		
+		<!-- Minified Build -->
+		<java classname="org.mozilla.javascript.tools.shell.Main" fork="true" failonerror="true">
+			<classpath refid="rhino" />
+
+			<arg file="${basedir}/vendor/require/r.js" />
+			<arg value="-o" />
+			<arg value="name=data/Data" />
+			<arg value="out=data-all-min.js" />
+				
+			<arg value="paths.jquery=empty:" />
+			<arg value="paths.lodash=empty:" />
+			<arg value="paths.Class=empty:" />
+			<arg value="paths.Observable=empty:" />
+			<arg value="paths.data=src" />
+			
+			<arg value="optimize=uglify" />
+		</java>
 	</target>
 	
 	
