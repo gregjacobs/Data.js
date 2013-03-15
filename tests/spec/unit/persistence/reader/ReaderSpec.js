@@ -49,6 +49,18 @@ define( [
 			} );
 			
 			
+			it( "should extract the records from the property specified by the `dataProperty` config, when the dataProperty config has a literal dot in the property", function() {
+				var reader = new ConcreteReader( {
+					dataProperty: 'foo\\.bar'
+				} );
+				
+				var records = reader.extractRecords( {
+					'foo.bar' : [ obj1, obj2 ]
+				} );
+				expect( records ).toEqual( [ obj1, obj2 ] );
+			} );
+			
+			
 			it( "should convert a single data object into a one-element array, when using the object provided as the data", function() {
 				var reader = new ConcreteReader();
 				
@@ -101,6 +113,36 @@ define( [
 			} );
 			
 			
+			it( "should extract the total count from the property specified by the `totalProperty` config, when the `totalProperty` is a dot-delimited path to the property", function() {
+				var reader = new ConcreteReader( {
+					totalProperty: 'metaData.total'
+				} );
+				
+				var totalCount = reader.extractTotalCount( {
+					data : [ obj1, obj2 ],
+					
+					metaData : { 
+						total : 2
+					}
+				} );
+				expect( totalCount ).toBe( 2 );
+			} );
+			
+			
+			it( "should extract the total count from the property specified by the `totalProperty` config, when the `totalProperty` has a literal dot in the property name", function() {
+				var reader = new ConcreteReader( {
+					totalProperty: 'metaData\\.total'
+				} );
+				
+				var totalCount = reader.extractTotalCount( {
+					data : [ obj1, obj2 ],
+					
+					'metaData.total' : 2
+				} );
+				expect( totalCount ).toBe( 2 );
+			} );
+			
+			
 			it( "should throw an error if the property specified by the `totalProperty` config is not found in the data", function() {
 				var reader = new ConcreteReader( {
 					totalProperty: 'total'
@@ -141,6 +183,34 @@ define( [
 				var message = reader.extractMessage( {
 					data : [ obj1, obj2 ],
 					message : "Test Message"
+				} );
+				expect( message ).toBe( "Test Message" );
+			} );
+			
+			
+			it( "should extract the message from the property specified by the `messageProperty` config, when the `messageProperty` is a dot-delimited path to the property", function() {
+				var reader = new ConcreteReader( {
+					messageProperty: 'metaData.message'
+				} );
+				
+				var message = reader.extractMessage( {
+					data : [ obj1, obj2 ],
+					metaData : {
+						message : "Test Message"
+					}
+				} );
+				expect( message ).toBe( "Test Message" );
+			} );
+			
+			
+			it( "should extract the message from the property specified by the `messageProperty` config, when the `messageProperty` has a literal dot in the property name", function() {
+				var reader = new ConcreteReader( {
+					messageProperty: 'metaData\\.message'
+				} );
+				
+				var message = reader.extractMessage( {
+					data : [ obj1, obj2 ],
+					'metaData.message' : "Test Message"
 				} );
 				expect( message ).toBe( "Test Message" );
 			} );
@@ -200,6 +270,90 @@ define( [
 		
 		
 		
+		describe( 'applyDataMappings()', function() {
+			
+			it( "should return the provided object with no modifications if no `dataMappings` config has been specified", function() {
+				var reader = new ConcreteReader( {
+					// note: no `dataMappings` config
+				} );
+				
+				var rawData      = { 'propA': 1, 'propB': 2 },
+				    expectedData = { 'propA': 1, 'propB': 2 };
+				expect( reader.applyDataMappings( rawData ) ).toEqual( expectedData );
+			} );
+			
+			
+			it( "should apply the mappings specified in the `dataMappings` config, deleting the 'source' properties as it goes along", function() {
+				var reader = new ConcreteReader( {
+					dataMappings : {
+						'propA' : 'targetPropC'
+					}
+				} );
+				
+				var rawData      = { 'propA'      : 1, 'propB': 2 },
+				    expectedData = { 'targetPropC': 1, 'propB': 2 };
+				expect( reader.applyDataMappings( rawData ) ).toEqual( expectedData );
+			} );
+			
+			
+			it( "should follow dot-delimited paths in the mapping keys to nested objects, and take the dots literally when they are escaped with a backslash", function() {
+				var reader = new ConcreteReader( {
+					dataMappings : {
+						'propA'                               : 'targetPropA',
+						'propB.propC'                         : 'targetPropB',
+						'propD\\.propE.propF\\.propG\\.propH' : 'targetPropC',
+						
+						// Because deleting of used nested mapped properties is not yet implemented, have to
+						// remove them manually
+						'propB'         : '',
+						'propD\\.propE' : ''
+					}
+				} );
+				
+				var rawData = { 
+					'propA' : 1,
+					'propB': {
+						'propC' : 2
+					},
+					'propD.propE' : {
+						'propF.propG.propH' : 3
+					}
+				};
+				var expectedData = {
+					'targetPropA' : 1,
+					'targetPropB' : 2,
+					'targetPropC' : 3
+				};
+				//debugger;
+				expect( reader.applyDataMappings( rawData ) ).toEqual( expectedData );
+			} );
+			
+			
+			it( "should delete the 'source' properties that are mapped to empty string 'target' property names", function() {
+				var reader = new ConcreteReader( {
+					dataMappings : {
+						'propA' : 'targetPropA',
+						
+						'propB' : '',
+						'propC' : ''
+					}
+				} );
+				
+				var rawData = { 
+					'propA' : 1, 
+					'propB': 2, 
+					'propC': 2 
+				};
+				var expectedData = {
+					'targetPropA': 1
+				};
+				expect( reader.applyDataMappings( rawData ) ).toEqual( expectedData );
+			} );
+			
+		} );
+		
+		
+		
 		describe( 'findPropertyValue()', function() {
 			var obj = {
 				a: 1,
@@ -210,6 +364,15 @@ define( [
 					f: {
 						g: 5
 					}
+				},
+				
+				'h.k' : 6,
+				'propL.propM' : 7,
+				
+				'propN.propO' : {
+					'propP' : 8,
+					'propQ.propR' : 9,
+					'propS.propT.propU' : 10
 				}
 			};
 			
@@ -244,6 +407,44 @@ define( [
 				expect( reader.findPropertyValue( obj, 'c.f.g.zzz' ) ).toBeUndefined();
 			} );
 			
+			
+			it( "should take dots (periods) prefixed with a backslash as literals (i.e. these don't step into a nested object)", function() {
+				expect( reader.findPropertyValue( obj, 'h\\.k' ) ).toBe( 6 );
+				expect( reader.findPropertyValue( obj, 'propL\\.propM' ) ).toBe( 7 );
+				expect( reader.findPropertyValue( obj, 'propN\\.propO.propP' ) ).toBe( 8 );
+				expect( reader.findPropertyValue( obj, 'propN\\.propO.propQ\\.propR' ) ).toBe( 9 );
+				expect( reader.findPropertyValue( obj, 'propN\\.propO.propS\\.propT\\.propU' ) ).toBe( 10 );
+			} );
+		} );
+		
+		
+		
+		describe( 'parsePathString()', function() {
+			var reader;
+			beforeEach( function() {
+				reader = new ConcreteReader();
+			} );
+			
+			
+			it( "should return a single element array if there are no dots in the string", function() {
+				expect( reader.parsePathString( 'prop' ) ).toEqual( [ 'prop' ] );
+			} );
+			
+			
+			it( "should return an array where each element is the next nested object", function() {
+				expect( reader.parsePathString( 'prop.nested' ) ).toEqual( [ 'prop', 'nested' ] );
+				expect( reader.parsePathString( 'prop.nested.deepNested' ) ).toEqual( [ 'prop', 'nested', 'deepNested' ] );
+			} );
+			
+			
+			it( "should return an array where escaped dots are counted as a single element", function() {
+				expect( reader.parsePathString( 'prop\\.notNested' ) ).toEqual( [ 'prop.notNested' ] );
+				expect( reader.parsePathString( 'prop\\.notNested\\.stillNotNested' ) ).toEqual( [ 'prop.notNested.stillNotNested' ] );
+				
+				expect( reader.parsePathString( 'prop.nested\\.notNested' ) ).toEqual( [ 'prop', 'nested.notNested' ] );
+				expect( reader.parsePathString( 'prop.nested\\.notNested.nested2' ) ).toEqual( [ 'prop', 'nested.notNested', 'nested2' ] );
+				expect( reader.parsePathString( 'prop\\.notNested.nested.nested2' ) ).toEqual( [ 'prop.notNested', 'nested', 'nested2' ] );
+			} );
 		} );
 		
 	} );

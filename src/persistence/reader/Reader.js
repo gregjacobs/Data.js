@@ -1,4 +1,5 @@
 /*global define */
+/*jshint boss:true */
 define( [
 	'lodash',
 	'Class',
@@ -30,7 +31,9 @@ define( [
 		 * @cfg {String} dataProperty
 		 * 
 		 * The name of the property which contains the data record(s) from the raw data. This may be a 
-		 * dot-delimited string to a nested property, if applicable. 
+		 * dot-delimited string to a nested property, if applicable. If the property has a dot (period)
+		 * as part of the name, it may be escaped with a backslash, which should be a double backslash inside
+		 * a string literal (ex: "data\\.property"). 
 		 * 
 		 * This property name references the data when it is in JavaScript object form, *after* it has been 
 		 * converted by the {@link #convertRaw} method.
@@ -49,8 +52,9 @@ define( [
 		 * This property name references the data when it is in JavaScript object form, *after* it has been 
 		 * converted by the {@link #convertRaw} method.
 		 * 
-		 * This may be a dot-delimited string to a nested property, if applicable. If left as an empty string,
-		 * no total count metadata will be read.
+		 * This may be a dot-delimited string to a nested property, if applicable. If the property has a dot (period)
+		 * as part of the name, it may be escaped with a backslash, which should be a double backslash inside
+		 * a string literal (ex: "metadata\\.total"). If left as an empty string, no total count metadata will be read.
 		 */
 		totalProperty : '',
 		
@@ -63,10 +67,110 @@ define( [
 		 * This property name references the data when it is in JavaScript object form, *after* it has been 
 		 * converted by the {@link #convertRaw} method.
 		 * 
-		 * This may be a dot-delimited string to a nested property, if applicable. If left as an empty string,
-		 * no message metadata will be read. 
+		 * This may be a dot-delimited string to a nested property, if applicable. If the property has a dot (period)
+		 * as part of the name, it may be escaped with a backslash, which should be a double backslash inside
+		 * a string literal (ex: "metadata\\.message"). If left as an empty string, no message metadata will be read. 
 		 */
 		messageProperty : '',
+		
+		/**
+		 * @cfg {Object} dataMappings
+		 * 
+		 * An Object which maps raw data property names to the target {@link Data.Model#cfg-attributes attribute} 
+		 * names of the {@link Data.Model} which will be populated as a result of the {@link #read}.
+		 * 
+		 * For example, if we have a model defined as such:
+		 * 
+		 *     var Person = Model.extend( {
+		 *         attributes : [ 'id', 'name' ]
+		 *     } );
+		 * 
+		 * And the raw data that comes from a server (after being transformed by {@link #convertRaw} into a plain
+		 * JavaScript object) looks like this:
+		 * 
+		 *     {
+		 *         personId   : 10,
+		 *         personName : "John Smith"
+		 *     }
+		 * 
+		 * Then we could set the `dataMappings` property to be the following, to automatically map the data to the
+		 * correct target property (attribute) names:
+		 * 
+		 *     dataMappings : {
+		 *         'personId'   : 'id',
+		 *         'personName' : 'name'
+		 *     }
+		 * 
+		 * 
+		 * The key names in this map are the raw data property names, and the values are the target property 
+		 * (attribute) names. Note that all raw properties do not need to be specified; only the ones you want 
+		 * mapped.
+		 * 
+		 * 
+		 * ### Mapping to Nested Objects
+		 * 
+		 * The key names in the map may be a dot-delimited path to a nested object in the data record. Using the above
+		 * `Person` model, say we were reading raw data that looked like this:
+		 * 
+		 *     {
+		 *         personId : 10,
+		 *         personInfo : {
+		 *             name : "John Smith"
+		 *         }
+		 *     }
+		 *     
+		 * The `dataMappings` config to read this raw data would then look like this:
+		 * 
+		 *     dataMappings : {
+		 *         'personId'        : 'id',
+		 *         'personInfo.name' : 'name',
+		 *         
+		 *         'personInfo' : ''  // note, nested objects which have properties mapped to them are not automatically
+		 *                            // removed (yet), so remove it manually by setting this top level key to an empty string. 
+		 *                            // See "Removing Unneeded Source Properties" below.
+		 *     }
+		 * 
+		 * 
+		 * #### Escaping for Dots ('.') in the Raw Property Name
+		 * 
+		 * If there are properties in the raw data that have dots (periods) as part of their names, then the dots in the 
+		 * mappings may be escaped with a backslash. However, in string literals in the map, this must be a double backslash
+		 * to get the actual backslash character. Say we were consuming this raw data:
+		 * 
+		 *     {
+		 *         'person.id'   : 10,
+		 *         'person.name' : "John Smith"
+		 *     }
+		 * 
+		 * Then our `dataMappings` would look like this:
+		 * 
+		 *     dataMappings : {
+		 *         'person\\.id'   : 'id',
+		 *         'person\\.name' : 'name'
+		 *     }
+		 * 
+		 * 
+		 * ### Removing Unneeded Source Properties
+		 * 
+		 * There is a special form for removing source data properties that are unneeded, so that they do not get 
+		 * set to the target {@link Data.Model} (which by default, would throw an error for an unknown attribute). 
+		 * Setting the value in the map to an empty string will remove the particular source data property as part 
+		 * of the mapping process. Ex:
+		 * 
+		 *     dataMappings : {
+		 *         'personId'   : 'id',
+		 *         'personName' : 'name',
+		 *         
+		 *         'lastDentalAppointmentDate' : ''  // we don't need this... remove this property from the raw data
+		 *                                           // so it doesn't attempt to be set to our Person model
+		 *     }
+		 *     
+		 *     
+		 * ### More Advanced Transformations
+		 * 
+		 * If you need more advanced transformations than the `dataMappings` config provides, override the 
+		 * {@link #processRecord} method in a subclass. See {@link #processRecord} for details. 
+		 */
 		
 		
 		
@@ -190,12 +294,13 @@ define( [
 		 * Hook method which may be overridden to process the list of records in the data.
 		 * This method, by default, simply calls {@link #processRecord} with each record in
 		 * the data, but may be overridden to apply transformations to the records list as
-		 * a whole.
+		 * a whole. If your intention is to transform each record (model) one by one, override
+		 * {@link #processRecord} instead.
 		 * 
 		 * @protected
 		 * @template
 		 * @param {Object[]} records
-		 * @return {Object[]} The records with any transformations applied.
+		 * @return {Object[]} The `records` with any transformations applied.
 		 */
 		processRecords : function( records ) {
 			for( var i = 0, len = records.length; i < len; i++ ) {
@@ -207,23 +312,63 @@ define( [
 		
 		/**
 		 * Hook method which may be overridden to process the data of a single record.
-		 * This method, by default, simply returns the object (`recordData`) provided to it,
-		 * but may be overridden to apply transformations to the object before returning it.
+		 * This method, by default, applies any data mappings specified in a {@link #dataMappings}
+		 * config (by calling {@link #applyDataMappings}, and then returns the newly transformed record 
+		 * object. If overriding this method in a subclass, call this superclass method when you want 
+		 * the {@link #dataMappings} to be applied (and any other future config-driven transformations
+		 * that may be implemented).
 		 * 
 		 * This method, by default, is called once for each record in the data. This is unless 
-		 * {@link #processRecords} is overridden, and the records are handled differently.
+		 * {@link #processRecords} has been redefined in a subclass, and the records are handled 
+		 * differently.
 		 * 
 		 * @protected
 		 * @template
 		 * @param {Object} recordData
-		 * @return {Object} The recordData with any transformations applied.
+		 * @return {Object} The `recordData` with any transformations applied.
 		 */
 		processRecord : function( recordData ) {
-			return recordData;
+			return this.applyDataMappings( recordData );
 		},
 		
 		
 		// -----------------------------------
+		
+		
+		/**
+		 * Utility method which applies the {@link #dataMappings} to a given record (i.e. the plain
+		 * object that holds the properties which will be later set to a {@link Data.Model}.
+		 * 
+		 * This method is by default, executed by {@link #processRecord} (unless {@link #processRecord}
+		 * is redefined in a subclass).
+		 * 
+		 * @protected
+		 * @param {Object} recordData
+		 * @return {Object} The `recordData` with the {@link #dataMappings} applied.
+		 */
+		applyDataMappings : function( recordData ) {
+			var me = this,  // for closure
+			    dataMappings = this.dataMappings;
+			
+			if( dataMappings ) {
+				_.forOwn( dataMappings, function( targetPropName, sourcePropPath ) {
+					// Copy value to target property.
+					// Empty string target property can be used to simply delete the source data property (which we'll do next),
+					// so don't create a new target property in this case
+					if( targetPropName !== '' ) {
+						recordData[ targetPropName ] = me.findPropertyValue( recordData, sourcePropPath );
+					}
+					
+					// Delete the source property.
+					// TODO: implement deleting of nested mapped properties. For now, only deletes top level source properties
+					var pathKeys = me.parsePathString( sourcePropPath );
+					if( pathKeys.length === 1 ) {  // a top level property
+						delete recordData[ pathKeys[ 0 ] ];  // use the pathKeys array, as it will have '\.' sequences processed to '.'
+					}
+				} );
+			}
+			return recordData;
+		},
 		
 		
 		/**
@@ -232,21 +377,67 @@ define( [
 		 * deep within the object structure. For example: a `propertyName` of 'foo.bar' will access 
 		 * property 'foo' from the `obj` provided, and then the property 'bar' from 'foo'.
 		 * 
+		 * Dots may be escaped by a backslash (specified as a double backslash in a string literal)
+		 * so that property names which have dots within them may be accessed. For example, a
+		 * `propertyName` of 'foo\\.bar' will access the property "foo.bar" from the `obj` provided. 
+		 * 
 		 * @protected
 		 * @param {Object} obj The object to search.
-		 * @param {String} propertyName A single property name, or dot-delimited property name
-		 *   to access nested properties.
+		 * @param {String} propertyPath A single property name, or dot-delimited path to access nested properties. 
+		 *   Dots escaped with a backslash will be taken as literal dots (i.e. not as nested keys).
 		 * @return {Mixed} The value at the `propertyName`. If the property is not found, returns
 		 *   `undefined`.
 		 */
-		findPropertyValue : function( obj, propertyName ) {
-			if( !obj || !propertyName ) return;
+		findPropertyValue : function( obj, propertyPath ) {
+			if( !obj || !propertyPath ) return;
 			
-			var propertyKeys = propertyName.split( '.' );
-			for( var i = 0, len = propertyKeys.length; obj && i < len; i++ ) {
-				obj = obj[ propertyKeys[ i ] ];
+			// Walk down the nested object structure for the value
+			var pathKeys = this.parsePathString( propertyPath );
+			for( var i = 0, len = pathKeys.length; obj && i < len; i++ ) {
+				obj = obj[ pathKeys[ i ] ];
 			}
 			return obj;
+		},
+		
+		
+		/**
+		 * Utility method to parse a dot-delimited object path string into a list of nested keys. Dots
+		 * in the string which are prefixed by a backslash are taken literally. (Note: for escaped dots,
+		 * need to specify a double backslash in JS string literals.)
+		 * 
+		 * Ex:
+		 * 
+		 *     'prop' -> [ 'prop' ]
+		 *     'prop.nested' -> [ 'prop', 'nested' ]
+		 *     'prop.nested.deepNested' -> [ 'prop', 'nested', 'deepNested' ]
+		 *     'prop\\.value' -> [ 'prop.value' ]
+		 *     'prop.nested.namespace\\.value' -> [ 'prop', 'nested', 'namespace.value' ]
+		 * 
+		 * @protected
+		 * @param {String} pathString The dot-delimited path string.
+		 * @return {String[]} A list (array) of the nested keys. 
+		 */
+		parsePathString : function( pathString ) {
+			var dotRe = /\./g,    // match all periods
+			    dotMatch,
+			    escapedDotRe = /\\\./g,
+			    pathKeys = [],    // list where each element is a nested property key, each one level below the one before it
+			    keyStartIdx = 0;  // for parsing, this is the start of the key that is currently being parsed in the loop
+			
+			while( dotMatch = dotRe.exec( pathString ) ) {
+				var dotMatchIdx = dotMatch.index;
+				
+				if( pathString.charAt( dotMatchIdx - 1 ) !== "\\" ) {  // a non-escaped period was matched
+					var key = pathString.substring( keyStartIdx, dotMatchIdx ).replace( escapedDotRe, '.' );  // replace any '\.' sequences with simply '.' before pushing to the array (i.e. remove the escape sequence)
+					pathKeys.push( key );
+					
+					keyStartIdx = dotMatchIdx + 1;
+				}
+			}
+			var lastKey = pathString.substring( keyStartIdx, pathString.length ).replace( escapedDotRe, '.' );  // replace any \. sequences with simply . before pushing to the array (i.e. remove the escape sequence)
+			pathKeys.push( lastKey );  // push the last (or possibly only) key
+			
+			return pathKeys;
 		}
 		
 	} );
