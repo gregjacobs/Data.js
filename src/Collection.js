@@ -112,7 +112,7 @@ define( [
 		/**
 		 * @cfg {Boolean} autoLoad
 		 * 
-		 * If no initial {@link #models} are specified (specifying inline data), and this config is 
+		 * If no initial {@link #cfg-models} are specified (specifying inline data), and this config is 
 		 * `true`, the Collection's {@link #method-load} method will be called immediately upon 
 		 * instantiation to load the Collection.
 		 */
@@ -1075,7 +1075,7 @@ define( [
 		
 		/**
 		 * Handles the {@link #proxy} successfully loading a set of data as a result of the {@link #method-load}
-		 * method being called. Resolves the {@link jQuery.Deferred} object created by {@link #method-load}
+		 * method being called. Resolves the `jQuery.Deferred` object created by {@link #method-load}
 		 * after processing the result of the operation.
 		 * 
 		 * @protected
@@ -1100,7 +1100,7 @@ define( [
 		
 		/**
 		 * Handles the {@link #proxy} failing to load a set of data as a result of the {@link #method-load}
-		 * method being called. Rejects the {@link jQuery.Deferred} object created by {@link #method-load}.
+		 * method being called. Rejects the `jQuery.Deferred` object created by {@link #method-load}.
 		 * 
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #method-load}.
