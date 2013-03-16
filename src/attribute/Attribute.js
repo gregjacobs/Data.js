@@ -6,14 +6,14 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.attribute.Attribute
+	 * @class data.attribute.Attribute
 	 * @extends Object
 	 * 
-	 * Base attribute definition class for {@link Data.Model Models}. The Attribute itself does not store data, but instead simply
-	 * defines the behavior of a {@link Data.Model Model's} attributes. A {@link Data.Model Model} is made up of Attributes. 
+	 * Base attribute definition class for {@link data.Model Models}. The Attribute itself does not store data, but instead simply
+	 * defines the behavior of a {@link data.Model Model's} attributes. A {@link data.Model Model} is made up of Attributes. 
 	 * 
-	 * Note: You will most likely not instantiate Attribute objects directly. This is used by {@link Data.Model} with its
-	 * {@link Data.Model#cfg-attributes attributes} prototype config. Anonymous config objects provided to {@link Data.Model#cfg-attributes attributes}
+	 * Note: You will most likely not instantiate Attribute objects directly. This is used by {@link data.Model} with its
+	 * {@link data.Model#cfg-attributes attributes} prototype config. Anonymous config objects provided to {@link data.Model#cfg-attributes attributes}
 	 * will be passed to the Attribute constructor.
 	 */
 	var Attribute = Class.extend( Object, {
@@ -29,16 +29,16 @@ define( [
 		/**
 		 * @cfg {String} type
 		 * Specifies the type of the Attribute, in which a conversion of the raw data will be performed.
-		 * This accepts the following general types, but custom types may be added using the {@link Data.attribute.Attribute#registerType} method.
+		 * This accepts the following general types, but custom types may be added using the {@link data.attribute.Attribute#registerType} method.
 		 * 
-		 * - {@link Data.attribute.Mixed mixed}: Performs no conversions, and no special processing of given values. This is the default Attribute type (not recommended).
-		 * - {@link Data.attribute.String string}
-		 * - {@link Data.attribute.Integer int} / {@link Data.attribute.Integer integer}
-		 * - {@link Data.attribute.Float float} (really a "double")
-		 * - {@link Data.attribute.Boolean boolean} / {@link Data.attribute.Boolean bool}
-		 * - {@link Data.attribute.Date date}
-		 * - {@link Data.attribute.Model model}
-		 * - {@link Data.attribute.Collection collection}
+		 * - {@link data.attribute.Mixed mixed}: Performs no conversions, and no special processing of given values. This is the default Attribute type (not recommended).
+		 * - {@link data.attribute.String string}
+		 * - {@link data.attribute.Integer int} / {@link data.attribute.Integer integer}
+		 * - {@link data.attribute.Float float} (really a "double")
+		 * - {@link data.attribute.Boolean boolean} / {@link data.attribute.Boolean bool}
+		 * - {@link data.attribute.Date date}
+		 * - {@link data.attribute.Model model}
+		 * - {@link data.attribute.Collection collection}
 		 */
 		
 		/**
@@ -49,7 +49,7 @@ define( [
 		 * If the defaultValue is a function, the function will be executed each time a Model is created, and its return value used as 
 		 * the defaultValue. This is useful, for example, to assign a new unique number to an attribute of a model. Ex:
 		 * 
-		 *     MyModel = Data.Model.extend( {
+		 *     MyModel = data.Model.extend( {
 		 *         attributes : [
 		 *             {
 		 *                 name: 'uniqueId', 
@@ -70,10 +70,10 @@ define( [
 		/**
 		 * @cfg {Function} set
 		 * A function that can be used to convert the raw value provided to the attribute, to a new value which will be stored
-		 * on the {@link Data.Model Model}. This function is passed the following arguments:
+		 * on the {@link data.Model Model}. This function is passed the following arguments:
 		 * 
 		 * @cfg {Mixed} set.newValue The provided new data value to the attribute. If the attribute has no initial data value, its {@link #defaultValue}
-		 *   will be provided to this argument upon instantiation of the {@link Data.Model Model}.
+		 *   will be provided to this argument upon instantiation of the {@link data.Model Model}.
 		 * @cfg {Mixed} set.oldValue The old value that the attribute held (if any).
 		 * 
 		 * The function should then do any processing that is necessary, and return the value that the Attribute should hold. For example,
@@ -92,7 +92,7 @@ define( [
 		 *         }
 		 *     }
 		 * 
-		 * Just as with {@link #get}, the `set` function is called in the scope of the {@link Data.Model Model} that owns the attribute. 
+		 * Just as with {@link #get}, the `set` function is called in the scope of the {@link data.Model Model} that owns the attribute. 
 		 * This can be used to set other attributes of a "computed" attribute. Ex:
 		 * 
 		 *     {
@@ -114,15 +114,15 @@ define( [
 		 *         }
 		 *     }
 		 * 
-		 * The function is run in the context (the `this` reference) of the {@link Data.Model Model} instance that owns the attribute, in the that case 
-		 * that other Attributes need to be queried, or need to be {@link Data.Model#set set} by the `set` function. However, in the case of querying 
+		 * The function is run in the context (the `this` reference) of the {@link data.Model Model} instance that owns the attribute, in the that case 
+		 * that other Attributes need to be queried, or need to be {@link data.Model#set set} by the `set` function. However, in the case of querying 
 		 * other Attributes for their value, be careful in that they may not be set to the expected value when the `set` function executes. For creating 
 		 * computed Attributes that rely on other Attributes' values, use a {@link #get} function instead.
 		 * 
 		 * Notes:
 		 * 
 		 * - Both a `set` and a {@link #get} function can be used in conjunction.
-		 * - The `set` function is called upon instantiation of the {@link Data.Model Model} if the Model is passed an initial value
+		 * - The `set` function is called upon instantiation of the {@link data.Model Model} if the Model is passed an initial value
 		 *   for the Attribute, or if the Attribute has a {@link #defaultValue}.
 		 * 
 		 * 
@@ -153,15 +153,15 @@ define( [
 		
 		/**
 		 * @cfg {Function} get
-		 * A function that can be used to change the value that is returned when the Model's {@link Data.Model#get get} method is called
+		 * A function that can be used to change the value that is returned when the Model's {@link data.Model#get get} method is called
 		 * on the Attribute. This is useful to create "computed" attributes, which may be created based on other Attributes' values.  The function is 
 		 * passed the argument of the underlying stored value, and should return the computed value.
 		 * 
-		 * @cfg {Mixed} get.value The value that the Attribute currently has stored in the {@link Data.Model Model}.
+		 * @cfg {Mixed} get.value The value that the Attribute currently has stored in the {@link data.Model Model}.
 		 * 
-		 * For example, if we had a {@link Data.Model Model} with `firstName` and `lastName` Attributes, and we wanted to create a `fullName` 
+		 * For example, if we had a {@link data.Model Model} with `firstName` and `lastName` Attributes, and we wanted to create a `fullName` 
 		 * Attribute, this could be done as in the example below. Note that just as with {@link #cfg-set}, the `get` function is called in the 
-		 * scope of the {@link Data.Model Model} that owns the attribute. 
+		 * scope of the {@link data.Model Model} that owns the attribute. 
 		 * 
 		 *     {
 		 *         name : 'fullName',
@@ -170,7 +170,7 @@ define( [
 		 *         }
 		 *     }
 		 * 
-		 * Note: if the intention is to convert a provided value which needs to be stored on the {@link Data.Model Model} in a different way,
+		 * Note: if the intention is to convert a provided value which needs to be stored on the {@link data.Model Model} in a different way,
 		 * use a {@link #cfg-set} function instead. 
 		 * 
 		 * However, also note that both a {@link #cfg-set} and a `get` function can be used in conjunction.
@@ -179,11 +179,11 @@ define( [
 		/**
 		 * @cfg {Function} raw
 		 * A function that can be used to convert an Attribute's value to a raw representation, usually for persisting data on a server.
-		 * This function is automatically called (if it exists) when a persistence {@link Data.persistence.proxy.Proxy proxy} is collecting
+		 * This function is automatically called (if it exists) when a persistence {@link data.persistence.proxy.Proxy proxy} is collecting
 		 * the data to send to the server. The function is passed two arguments, and should return the raw value.
 		 * 
-		 * @cfg {Mixed} raw.value The underlying value that the Attribute currently has stored in the {@link Data.Model Model}.
-		 * @cfg {Data.Model} raw.model The Model instance that this Attribute belongs to.
+		 * @cfg {Mixed} raw.value The underlying value that the Attribute currently has stored in the {@link data.Model Model}.
+		 * @cfg {data.Model} raw.model The Model instance that this Attribute belongs to.
 		 * 
 		 * For example, a Date object is normally converted to JSON with both its date and time components in a serialized string (such
 		 * as "2012-01-26T01:20:54.619Z"). To instead persist the Date in m/d/yyyy format, one could create an Attribute such as this:
@@ -196,13 +196,13 @@ define( [
 		 *         }
 		 *     }
 		 * 
-		 * The value that this function returns is the value that is used when the Model's {@link Data.Model#raw raw} method is called
+		 * The value that this function returns is the value that is used when the Model's {@link data.Model#raw raw} method is called
 		 * on the Attribute.
 		 */
 		
 		/**
 		 * @cfg {Boolean} persist
-		 * True if the attribute should be persisted by its {@link Data.Model Model} using the Model's {@link Data.Model#proxy proxy}.
+		 * True if the attribute should be persisted by its {@link data.Model Model} using the Model's {@link data.Model#proxy proxy}.
 		 * Set to false to prevent the attribute from being persisted.
 		 */
 		persist : true,
@@ -230,7 +230,7 @@ define( [
 			 *   which determines which type of Attribute will be instantiated. If the object does not have a `type` property, it will default 
 			 *   to `mixed`, which accepts any data type, but does not provide any type checking / data consistency. Note that already-instantiated 
 			 *   Attributes will simply be returned unchanged. 
-			 * @return {Data.attribute.Attribute} The instantiated Attribute.
+			 * @return {data.attribute.Attribute} The instantiated Attribute.
 			 */
 			create : function( config ) {
 				var type = config.type ? config.type.toLowerCase() : undefined;
@@ -244,7 +244,7 @@ define( [
 					
 				} else {
 					// No registered type with the given config's `type`, throw an error
-					throw new Error( "Data.attribute.Attribute: Unknown Attribute type: '" + type + "'" );
+					throw new Error( "data.attribute.Attribute: Unknown Attribute type: '" + type + "'" );
 				}
 			},
 			
@@ -310,7 +310,7 @@ define( [
 		
 		/**
 		 * Creates a new Attribute instance. Note: You will normally not be using this constructor function, as this class
-		 * is only used internally by {@link Data.Model}.
+		 * is only used internally by {@link data.Model}.
 		 * 
 		 * @constructor 
 		 * @param {Object/String} config An object (hashmap) of the Attribute object's configuration options, which is its definition. 
@@ -331,7 +331,7 @@ define( [
 			// Each Attribute must have a name.
 			var name = me.name;
 			if( name === undefined || name === null || name === "" ) {
-				throw new Error( "no 'name' property provided to Data.attribute.Attribute constructor" );
+				throw new Error( "no 'name' property provided to data.attribute.Attribute constructor" );
 				
 			} else if( typeof me.name === 'number' ) {  // convert to a string if it is a number
 				me.name = name.toString();
@@ -418,7 +418,7 @@ define( [
 		/**
 		 * Allows the Attribute to determine if two values of its data type are equal, and the model
 		 * should consider itself as "changed". This method is passed the "old" value and the "new" value
-		 * when a value is {@link Data.Model#set set} to the Model, and if this method returns `false`, the
+		 * when a value is {@link data.Model#set set} to the Model, and if this method returns `false`, the
 		 * new value is taken as a "change".
 		 * 
 		 * This may be overridden by subclasses to provide custom comparisons, but the default implementation is
@@ -439,19 +439,19 @@ define( [
 		
 		
 		/**
-		 * Method that allows pre-processing for the value that is to be set to a {@link Data.Model}.
+		 * Method that allows pre-processing for the value that is to be set to a {@link data.Model}.
 		 * After this method has processed the value, it is provided to the {@link #cfg-set} function (if
 		 * one exists) or the {@link #method-set set} method, and then finally, the return value from 
 		 * {@link #cfg-set set} will be provided to {@link #afterSet}, and then set as the data on the 
-		 * {@link Data.Model Model}.
+		 * {@link data.Model Model}.
 		 * 
 		 * Note that the default implementation simply returns the raw value unchanged, but this may be overridden
 		 * in subclasses to provide a conversion.
 		 * 
 		 * @method beforeSet
-		 * @param {Data.Model} model The Model instance that is providing the value. This is normally not used,
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link Data.Model#set} method.
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
 		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
 		 * @return {Mixed} The converted value.
 		 */
@@ -461,12 +461,12 @@ define( [
 		
 		
 		/**
-		 * Indirection method that is called by a {@link Data.Model} when the {@link #method-set} method is to be called. This method provides
+		 * Indirection method that is called by a {@link data.Model} when the {@link #method-set} method is to be called. This method provides
 		 * a wrapping function that allows for `this._super( arguments )` to be called when a {@link #cfg-set} config is provided, to call the 
 		 * original conversion method from a {@link #cfg-set} config function.
 		 * 
 		 * Basically, it allows:
-		 *     var MyModel = Data.Model.extend( {
+		 *     var MyModel = data.Model.extend( {
 		 *         attributes: [
 		 *             {
 		 *                 name: 'myAttr',
@@ -483,9 +483,9 @@ define( [
 		 *     } );
 		 * 
 		 * @method doSet
-		 * @param {Data.Model} model The Model instance that is providing the value. This is normally not used,
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link Data.Model#set} method, after it has been processed
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method, after it has been processed
 		 *   by the {@link #beforeSet} method..
 		 * @param {Mixed} oldValue The old (previous) value that the model held.
 		 */
@@ -503,14 +503,14 @@ define( [
 		
 		
 		/**
-		 * Method that allows processing of the value that is to be set to a {@link Data.Model}. This method is executed after
+		 * Method that allows processing of the value that is to be set to a {@link data.Model}. This method is executed after
 		 * the {@link #beforeSet} method, and before the {@link #afterSet} method, and can be overridden by the {@link #cfg-set set}
 		 * config. 
 		 * 
 		 * @method set
-		 * @param {Data.Model} model The Model instance that is providing the value. This is normally not used,
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link Data.Model#set} method, after it has been processed
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method, after it has been processed
 		 *   by the {@link #beforeSet} method..
 		 * @param {Mixed} oldValue The old (previous) value that the model held.
 		 */
@@ -520,18 +520,18 @@ define( [
 		
 		
 		/**
-		 * Method that allows post-processing for the value that is to be set to a {@link Data.Model}.
+		 * Method that allows post-processing for the value that is to be set to a {@link data.Model}.
 		 * This method is executed after the {@link #beforeSet} method, and the {@link #cfg-set} function (if one is provided), and is given 
 		 * the value that the {@link #cfg-set} function returns. If no {@link #cfg-set} function exists, this will simply be executed 
-		 * immediately after {@link #beforeSet}, after which the return from this method will be set as the data on the {@link Data.Model Model}.
+		 * immediately after {@link #beforeSet}, after which the return from this method will be set as the data on the {@link data.Model Model}.
 		 * 
 		 * Note that the default implementation simply returns the value unchanged, but this may be overridden
 		 * in subclasses to provide a conversion.
 		 * 
 		 * @method afterSet
-		 * @param {Data.Model} model The Model instance that is providing the value. This is normally not used,
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} value The value provided to the {@link Data.Model#set} method, after it has been processed by the
+		 * @param {Mixed} value The value provided to the {@link data.Model#set} method, after it has been processed by the
 		 *   {@link #beforeSet} method, and any provided {@link #cfg-set} function.
 		 * @return {Mixed} The converted value.
 		 */

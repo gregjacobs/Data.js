@@ -6,20 +6,20 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.persistence.operation.Operation
+	 * @class data.persistence.operation.Operation
 	 * 
-	 * Represents an operation for a {@link Data.persistence.proxy.Proxy} to carry out. This class basically represents 
+	 * Represents an operation for a {@link data.persistence.proxy.Proxy} to carry out. This class basically represents 
 	 * any CRUD operation to be performed, passes along any options needed for that operation, and accepts any data/state
 	 * as a result of that operation. 
 	 * 
 	 * Operation's subclasses are split into two distinct implementations:
 	 * 
-	 * - {@link Data.persistence.operation.Read}: Represents an Operation to read (load) data from persistence storage.
-	 * - {@link Data.persistence.operation.Write}: Represents an Operation to write (store) data to persistence storage.
+	 * - {@link data.persistence.operation.Read}: Represents an Operation to read (load) data from persistence storage.
+	 * - {@link data.persistence.operation.Write}: Represents an Operation to write (store) data to persistence storage.
 	 *   This includes destroying (deleting) models as well.
 	 * 
-	 * This class is used internally by the framework when making requests to {@link Data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link Data.Model Model}/{@link Data.Collection Collection} operations 
+	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} operations 
 	 * complete, so information can be obtained about the operation that took place.
 	 */
 	var Operation = Class.extend( Object, {
@@ -33,11 +33,11 @@ define( [
 		
 		/**
 		 * @protected
-		 * @property {Data.persistence.ResultSet} resultSet
+		 * @property {data.persistence.ResultSet} resultSet
 		 * 
 		 * A ResultSet object which contains any data read by the Operation. This object contains any 
 		 * returned data, as well as any metadata (such as the total number of records in a paged data set).
-		 * This object is set by a {@link Data.persistence.proxy.Proxy} when it finishes its routine, and can be 
+		 * This object is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine, and can be 
 		 * retrieved via {@link #getResultSet}. Some notes:
 		 * 
 		 * - For cases of read operations, this object will contain the data that is read by the operation.
@@ -100,7 +100,7 @@ define( [
 		 * Accessor for a Proxy to set a ResultSet which contains the data that is has read, 
 		 * once the operation completes.
 		 * 
-		 * @param {Data.persistence.ResultSet} A ResultSet which contains the data and any metadata read by 
+		 * @param {data.persistence.ResultSet} A ResultSet which contains the data and any metadata read by 
 		 *   the Proxy.
 		 */
 		setResultSet : function( resultSet ) {
@@ -109,8 +109,8 @@ define( [
 		
 		
 		/**
-		 * Retrieves the {@link Data.persistence.ResultSet} containing any data and metadata read by the 
-		 * Operation. This is set by a {@link Data.persistence.proxy.Proxy} when it finishes its routine.  
+		 * Retrieves the {@link data.persistence.ResultSet} containing any data and metadata read by the 
+		 * Operation. This is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine.  
 		 * 
 		 * - For cases of read operations, this object will contain the data that is read by the operation.
 		 * - For cases of write operations, this object will contain any "update" data that is returned to the
@@ -118,7 +118,7 @@ define( [
 		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
 		 *   id attribute), then the ResultSet will contain that data.
 		 * 
-		 * @return {Data.persistence.ResultSet} The ResultSet read by the Proxy, or null if one has not been set.
+		 * @return {data.persistence.ResultSet} The ResultSet read by the Proxy, or null if one has not been set.
 		 */
 		getResultSet : function() {
 			return this.resultSet;

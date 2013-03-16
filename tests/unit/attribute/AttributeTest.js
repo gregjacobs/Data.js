@@ -21,18 +21,18 @@ define( [
 				// --------------------------------
 				_should : {
 					error : {
-						"Instantiating an Attribute without a 'name' should throw an error" : "no 'name' property provided to Data.attribute.Attribute constructor",
-						"Instantiating an Attribute with an undefined 'name' argument should throw an error" : "no 'name' property provided to Data.attribute.Attribute constructor",
-						"Instantiating an Attribute with an undefined 'name' property should throw an error" : "no 'name' property provided to Data.attribute.Attribute constructor",
-						"Instantiating an Attribute with a null 'name' argument should throw an error" : "no 'name' property provided to Data.attribute.Attribute constructor",
-						"Instantiating an Attribute with a null 'name' property should throw an error" : "no 'name' property provided to Data.attribute.Attribute constructor",
-						"Instantiating an Attribute with an empty 'name' argument should throw an error" : "no 'name' property provided to Data.attribute.Attribute constructor",
-						"Instantiating an Attribute with an empty 'name' property should throw an error" : "no 'name' property provided to Data.attribute.Attribute constructor"
+						"Instantiating an Attribute without a 'name' should throw an error" : "no 'name' property provided to data.attribute.Attribute constructor",
+						"Instantiating an Attribute with an undefined 'name' argument should throw an error" : "no 'name' property provided to data.attribute.Attribute constructor",
+						"Instantiating an Attribute with an undefined 'name' property should throw an error" : "no 'name' property provided to data.attribute.Attribute constructor",
+						"Instantiating an Attribute with a null 'name' argument should throw an error" : "no 'name' property provided to data.attribute.Attribute constructor",
+						"Instantiating an Attribute with a null 'name' property should throw an error" : "no 'name' property provided to data.attribute.Attribute constructor",
+						"Instantiating an Attribute with an empty 'name' argument should throw an error" : "no 'name' property provided to data.attribute.Attribute constructor",
+						"Instantiating an Attribute with an empty 'name' property should throw an error" : "no 'name' property provided to data.attribute.Attribute constructor"
 					}
 				},
 				
 				setUp : function() {
-					// A "concrete" subclass of Data.attribute.Attribute(), used for the tests
+					// A "concrete" subclass of data.attribute.Attribute(), used for the tests
 					this.Attribute = Attribute.extend( {} );
 				},
 				
@@ -91,7 +91,7 @@ define( [
 				
 				
 				setUp : function() {
-					// A "concrete" subclass of Data.attribute.Attribute(), used for the tests
+					// A "concrete" subclass of data.attribute.Attribute(), used for the tests
 					this.Attribute = Attribute.extend( {} );
 				},
 				
@@ -131,7 +131,7 @@ define( [
 				name : "Test hasUserDefinedSetter()",
 				
 				setUp : function() {
-					// A "concrete" subclass of Data.attribute.Attribute(), used for the tests
+					// A "concrete" subclass of data.attribute.Attribute(), used for the tests
 					this.Attribute = Attribute.extend( {} );
 				},
 				
@@ -161,7 +161,7 @@ define( [
 				name : "Test hasUserDefinedGetter()",
 				
 				setUp : function() {
-					// A "concrete" subclass of Data.attribute.Attribute(), used for the tests
+					// A "concrete" subclass of data.attribute.Attribute(), used for the tests
 					this.Attribute = Attribute.extend( {} );
 				},
 				
@@ -192,7 +192,7 @@ define( [
 				
 				
 				setUp : function() {
-					// A "concrete" subclass of Data.attribute.Attribute(), used for the tests
+					// A "concrete" subclass of data.attribute.Attribute(), used for the tests
 					this.Attribute = Attribute.extend( {} );
 				},
 				

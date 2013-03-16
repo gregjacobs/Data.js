@@ -6,20 +6,20 @@ define( [
 ], function( _, Class, Operation ) {
 	
 	/**
-	 * @class Data.persistence.operation.Write
-	 * @extends Data.persistence.operation.Operation
+	 * @class data.persistence.operation.Write
+	 * @extends data.persistence.operation.Operation
 	 * 
 	 * Represents a write operation to a persistent storage mechanism. This includes creating, updating, or destroying
 	 * (deleting) models on the persistent storage.
 	 * 
-	 * This class is used internally by the framework when making requests to {@link Data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link Data.Model Model}/{@link Data.Collection Collection} operations 
+	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} operations 
 	 * complete.
 	 */
 	var WriteOperation = Class.extend( Operation, {
 		
 		/**
-		 * @cfg {Data.Model[]} models
+		 * @cfg {data.Model[]} models
 		 * 
 		 * The models to write during the WriteOperation.
 		 */
@@ -28,7 +28,7 @@ define( [
 		/**
 		 * Retrieves the {@link #models} provided for this WriteOperation.
 		 * 
-		 * @return {Data.Model[]}
+		 * @return {data.Model[]}
 		 */
 		getModels : function() {
 			return ( this.models || (this.models = []) );

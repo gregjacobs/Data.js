@@ -6,8 +6,8 @@ define( [
 ], function( _, Class, Attribute ) {
 	
 	/**
-	 * @class Data.attribute.Mixed
-	 * @extends Data.attribute.Attribute
+	 * @class data.attribute.Mixed
+	 * @extends data.attribute.Attribute
 	 * 
 	 * Attribute definition class for an Attribute that takes any data value.
 	 */

@@ -7,7 +7,7 @@ define( [
 	
 	tests.unit.attribute.add( new Ext.test.TestSuite( {
 		
-		name: 'Data.attribute.Collection',
+		name: 'data.attribute.Collection',
 		
 		
 		items : [

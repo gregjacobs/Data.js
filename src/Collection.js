@@ -22,15 +22,15 @@ define( [
 ) {
 
 	/**
-	 * @class Data.Collection
-	 * @extends Data.DataComponent
+	 * @class data.Collection
+	 * @extends data.DataComponent
 	 * 
-	 * Manages an ordered set of {@link Data.Model Models}. This class itself is not meant to be used directly, 
+	 * Manages an ordered set of {@link data.Model Models}. This class itself is not meant to be used directly, 
 	 * but rather extended and configured for the different collections in your application.
 	 * 
 	 * Ex:
 	 *     
-	 *     myApp.Todos = Data.Collection.extend( {
+	 *     myApp.Todos = data.Collection.extend( {
 	 *         model: myApp.Todo
 	 *     } );
 	 * 
@@ -40,14 +40,14 @@ define( [
 	 * 
 	 * ### Model Events
 	 * 
-	 * Collections automatically relay all of their {@link Data.Model Models'} events as if the Collection
+	 * Collections automatically relay all of their {@link data.Model Models'} events as if the Collection
 	 * fired it. The collection instance provides itself in the handler though. For example, Models' 
-	 * {@link Data.Model#event-change change} events:
+	 * {@link data.Model#event-change change} events:
 	 *     
-	 *     var Model = Data.Model.extend( {
+	 *     var Model = data.Model.extend( {
 	 *         attributes: [ 'name' ]
 	 *     } );
-	 *     var Collection = Data.Collection.extend( {
+	 *     var Collection = data.Collection.extend( {
 	 *         model : Model
 	 *     } );
 	 * 
@@ -66,12 +66,12 @@ define( [
 		inheritedStatics : {			
 			
 			/**
-			 * Retrieves the {@link Data.persistence.proxy.Proxy} that is configured for the Collection class. To retrieve
+			 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for the Collection class. To retrieve
 			 * a proxy that may belong to a particular collection, use the instance level {@link #method-getProxy}.
 			 * 
 			 * @inheritable
 			 * @static
-			 * @return {Data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
+			 * @return {data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
 			 */
 			getProxy : function() {
 				return this.prototype.proxy || null;
@@ -82,7 +82,7 @@ define( [
 		
 		
 		/**
-		 * @cfg {Data.persistence.proxy.Proxy} proxy
+		 * @cfg {data.persistence.proxy.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the Collection's data to/from persistent
 		 * storage. If this is not configured, the proxy configured on the {@link #model} that this collection uses
@@ -95,16 +95,16 @@ define( [
 		/**
 		 * @cfg {Function} model
 		 * 
-		 * The Data.Model (sub)class which will be used to convert any anonymous data objects into
+		 * The data.Model (sub)class which will be used to convert any anonymous data objects into
 		 * its appropriate Model instance for the Collection. 
 		 * 
 		 * Note that if a factory method is required for the creation of models, where custom processing may be needed,
 		 * override the {@link #createModel} method in a subclass.
 		 * 
-		 * It is recommended that you subclass Data.Collection, and add this configuration as part of the definition of the 
+		 * It is recommended that you subclass data.Collection, and add this configuration as part of the definition of the 
 		 * subclass. Ex:
 		 * 
-		 *     myApp.MyCollection = Data.Collection.extend( {
+		 *     myApp.MyCollection = data.Collection.extend( {
 		 *         model : myApp.MyModel
 		 *     } );
 		 */
@@ -123,7 +123,7 @@ define( [
 		 * A function that is used to keep the Collection in a sorted ordering. Without one, the Collection will
 		 * simply keep models in insertion order.
 		 * 
-		 * This function takes two arguments: each a {@link Data.Model Model}, and should return `-1` if the 
+		 * This function takes two arguments: each a {@link data.Model Model}, and should return `-1` if the 
 		 * first model should be placed before the second, `0` if the models are equal, and `1` if the 
 		 * first model should come after the second.
 		 * 
@@ -136,9 +136,9 @@ define( [
 		 *         return ( name1 < name2 ) ? -1 : ( name1 > name2 ) ? 1 : 0;
 		 *     }
 		 * 
-		 * It is recommended that you subclass Data.Collection, and add the sortBy function in the definition of the subclass. Ex:
+		 * It is recommended that you subclass data.Collection, and add the sortBy function in the definition of the subclass. Ex:
 		 * 
-		 *     myApp.MyCollection = Data.Collection.extend( {
+		 *     myApp.MyCollection = data.Collection.extend( {
 		 *         sortBy : function( model1, model2 ) {
 		 *             // ...
 		 *         }
@@ -150,15 +150,15 @@ define( [
 		 */
 		
 		/**
-		 * @cfg {Object/Data.Model/Object[]/Data.Model[]} models
-		 * If providing a configuration object to the Data.Collection constructor instead of an array of initial models, the initial 
+		 * @cfg {Object/data.Model/Object[]/data.Model[]} models
+		 * If providing a configuration object to the data.Collection constructor instead of an array of initial models, the initial 
 		 * model(s) may be specified using this configuration option. Can be a single model or an array of models (or object / array of
 		 * objects that will be converted to models).
 		 * 
 		 * Ex:
 		 * 
-		 *     // Assuming you have created a myApp.MyModel subclass of {@link Data.Model},
-		 *     // and a myApp.MyCollection subclass of Data.Collection
+		 *     // Assuming you have created a myApp.MyModel subclass of {@link data.Model},
+		 *     // and a myApp.MyCollection subclass of data.Collection
 		 *     var model1 = new myApp.MyModel(),
 		 *         model2 = new myApp.MyModel();
 		 *     
@@ -171,7 +171,7 @@ define( [
 		
 		/**
 		 * @protected
-		 * @property {Data.Model[]} models
+		 * @property {data.Model[]} models
 		 * 
 		 * The array that holds the Models, in order.
 		 */
@@ -180,22 +180,22 @@ define( [
 		 * @protected
 		 * @property {Object} modelsByClientId
 		 * 
-		 * An object (hashmap) of the models that the Collection is currently holding, keyed by the models' {@link Data.Model#clientId clientId}.
+		 * An object (hashmap) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#clientId clientId}.
 		 */
 		
 		/**
 		 * @protected
 		 * @property {Object} modelsById
 		 * 
-		 * An object (hashmap) of the models that the Collection is currently holding, keyed by the models' {@link Data.Model#id id}, if the model has one.
+		 * An object (hashmap) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#id id}, if the model has one.
 		 */
 		
 		/**
 		 * @protected
-		 * @property {Data.Model[]} removedModels
+		 * @property {data.Model[]} removedModels
 		 * 
 		 * An array that holds Models removed from the Collection, which haven't yet been {@link #sync synchronized} to the server yet (by 
-		 * {@link Data.Model#method-destroy destroying} them).
+		 * {@link data.Model#method-destroy destroying} them).
 		 */
 		
 		/**
@@ -222,7 +222,7 @@ define( [
 		 * Creates a new Collection instance.
 		 * 
 		 * @constructor
-		 * @param {Object/Object[]/Data.Model[]} config This can either be a configuration object (in which the options listed
+		 * @param {Object/Object[]/data.Model[]} config This can either be a configuration object (in which the options listed
 		 *   under "configuration options" can be provided), or an initial set of Models to provide to the Collection. If providing
 		 *   an initial set of models, they must be wrapped in an array. Note that an initial set of models can be provided when using
 		 *   a configuration object with the {@link #cfg-models} config.
@@ -235,8 +235,8 @@ define( [
 				 * event instead. 
 				 * 
 				 * @event add
-				 * @param {Data.Collection} collection This Collection instance.
-				 * @param {Data.Model} model The model instance that was added. 
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model} model The model instance that was added. 
 				 */
 				'add',
 				
@@ -246,8 +246,8 @@ define( [
 				 * once. To respond to each addition individually, use the {@link #event-add} event instead. 
 				 * 
 				 * @event addset
-				 * @param {Data.Collection} collection This Collection instance.
-				 * @param {Data.Model[]} models The array of model instances that were added. This will be an
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model[]} models The array of model instances that were added. This will be an
 				 *   array of the added models, even in the case that a single model is added.
 				 */
 				'addset',
@@ -261,8 +261,8 @@ define( [
 				 * This event is fired once for each model that is reordered.
 				 * 
 				 * @event reorder
-				 * @param {Data.Collection} collection This Collection instance.
-				 * @param {Data.Model} model The model that was reordered.
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model} model The model that was reordered.
 				 * @param {Number} newIndex The new index for the model.
 				 * @param {Number} oldIndex The old index for the model.
 				 */
@@ -274,8 +274,8 @@ define( [
 				 * event instead.
 				 * 
 				 * @event remove
-				 * @param {Data.Collection} collection This Collection instance.
-				 * @param {Data.Model} model The model instances that was removed.
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model} model The model instances that was removed.
 				 * @param {Number} index The index that the model was removed from.
 				 */
 				'remove',
@@ -286,8 +286,8 @@ define( [
 				 * To respond to each removal individually, use the {@link #event-remove} event instead.
 				 * 
 				 * @event removeset
-				 * @param {Data.Collection} collection This Collection instance.
-				 * @param {Data.Model[]} models The array of model instances that were removed. This will be an
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model[]} models The array of model instances that were removed. This will be an
 				 *   array of the removed models, even in the case that a single model is removed.
 				 */
 				'removeset',
@@ -295,12 +295,12 @@ define( [
 				/**
 				 * Fires when the Collection is loaded from an external data source, through its {@link #proxy}.
 				 * This event fires for both successful load failed load requests. Success of the load request may 
-				 * be determined using the `operation`'s {@link Data.persistence.operation.Operation#wasSuccessful wasSuccessful} 
+				 * be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful} 
 				 * method.
 				 * 
 				 * @event load
-				 * @param {Data.Collection} collection This Collection instance.
-				 * @param {Data.persistence.operation.Read} operation The Read operation instance for the load.
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Read} operation The Read operation instance for the load.
 				 */
 				'load'
 			);
@@ -354,12 +354,12 @@ define( [
 		 * provide any model-specific initialization.
 		 * 
 		 * Note that it is good practice to always call the superclass `initialize` method from within yours (even if
-		 * your class simply extends Data.Collection, which has no `initialize` implementation itself). This is to future proof it
+		 * your class simply extends data.Collection, which has no `initialize` implementation itself). This is to future proof it
 		 * from being moved under another superclass, or if there is ever an implementation made in this class.
 		 * 
 		 * Ex:
 		 * 
-		 *     MyCollection = Data.Collection.extend( {
+		 *     MyCollection = data.Collection.extend( {
 		 *         initialize : function() {
 		 *             MyCollection.superclass.initialize.apply( this, arguments );   // or could be MyCollection.__super__.initialize.apply( this, arguments );
 		 *             
@@ -379,14 +379,14 @@ define( [
 		
 		/**
 		 * If a model is provided as an anonymous data object, this method will be called to transform the data into 
-		 * the appropriate {@link Data.Model model} class, using the {@link #model} config.
+		 * the appropriate {@link data.Model model} class, using the {@link #model} config.
 		 * 
 		 * This may be overridden in subclasses to allow for custom processing, or to create a factory method for Model creation.
 		 * 
 		 * @protected
 		 * @method createModel
 		 * @param {Object} modelData
-		 * @return {Data.Model} The instantiated model.
+		 * @return {data.Model} The instantiated model.
 		 */
 		createModel : function( modelData ) {
 			if( !this.model ) {
@@ -402,7 +402,7 @@ define( [
 		 * Adds one or more models to the Collection.
 		 * 
 		 * @method add
-		 * @param {Data.Model/Data.Model[]/Object/Object[]} models One or more models to add to the Collection. This may also
+		 * @param {data.Model/data.Model[]/Object/Object[]} models One or more models to add to the Collection. This may also
 		 *   be one or more anonymous objects, which will be converted into models based on the {@link #model} config.
 		 */
 		add : function( models ) {
@@ -416,7 +416,7 @@ define( [
 		 * and the {@link #event-reorder} event for models that are simply moved within the Collection.
 		 * 
 		 * @method insert
-		 * @param {Data.Model/Data.Model[]} models The model(s) to insert.
+		 * @param {data.Model/data.Model[]} models The model(s) to insert.
 		 * @param {Number} index The index to insert the models at.
 		 */
 		insert : function( models, index ) {
@@ -514,7 +514,7 @@ define( [
 		 * models that were actually removed.
 		 * 
 		 * @method remove
-		 * @param {Data.Model/Data.Model[]} models One or more models to remove from the Collection.
+		 * @param {data.Model/data.Model[]} models One or more models to remove from the Collection.
 		 */
 		remove : function( models ) {
 			var collectionModels = this.models,
@@ -573,14 +573,14 @@ define( [
 		
 		
 		/**
-		 * Handles a change to a model's {@link Data.Model#idAttribute}, so that the Collection's 
+		 * Handles a change to a model's {@link data.Model#idAttribute}, so that the Collection's 
 		 * {@link #modelsById} hashmap can be updated.
 		 * 
 		 * Note that {@link #onModelEvent} is still called even when this method executes.
 		 * 
 		 * @protected
 		 * @method onModelIdChange
-		 * @param {Data.Model} model The model that fired the change event.
+		 * @param {data.Model} model The model that fired the change event.
 		 * @param {Mixed} newValue The new value.
 		 * @param {Mixed} oldValue The old value. 
 		 */
@@ -632,7 +632,7 @@ define( [
 		 * 
 		 * @method getAt
 		 * @param {Number} index The index to to retrieve the model at.
-		 * @return {Data.Model} The Model at the given index, or null if the index was out of range.
+		 * @return {data.Model} The Model at the given index, or null if the index was out of range.
 		 */
 		getAt : function( index ) {
 			return this.models[ index ] || null;
@@ -640,11 +640,11 @@ define( [
 		
 		
 		/**
-		 * Convenience method for retrieving the first {@link Data.Model model} in the Collection.
+		 * Convenience method for retrieving the first {@link data.Model model} in the Collection.
 		 * If the Collection does not have any models, returns null.
 		 * 
 		 * @method getFirst
-		 * @return {Data.Model} The first model in the Collection, or null if the Collection does not have
+		 * @return {data.Model} The first model in the Collection, or null if the Collection does not have
 		 *   any models.
 		 */
 		getFirst : function() {
@@ -653,11 +653,11 @@ define( [
 		
 		
 		/**
-		 * Convenience method for retrieving the last {@link Data.Model model} in the Collection.
+		 * Convenience method for retrieving the last {@link data.Model model} in the Collection.
 		 * If the Collection does not have any models, returns null.
 		 * 
 		 * @method getLast
-		 * @return {Data.Model} The last model in the Collection, or null if the Collection does not have
+		 * @return {data.Model} The last model in the Collection, or null if the Collection does not have
 		 *   any models.
 		 */
 		getLast : function() {
@@ -666,13 +666,13 @@ define( [
 		
 		
 		/**
-		 * Retrieves a range of {@link Data.Model Models}, specified by the `startIndex` and `endIndex`. These values are inclusive.
+		 * Retrieves a range of {@link data.Model Models}, specified by the `startIndex` and `endIndex`. These values are inclusive.
 		 * For example, if the Collection has 4 Models, and `getRange( 1, 3 )` is called, the 2nd, 3rd, and 4th models will be returned.
 		 * 
 		 * @method getRange
 		 * @param {Number} [startIndex=0] The starting index.
 		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
-		 * @return {Data.Model[]} The array of models from the `startIndex` to the `endIndex`, inclusively.
+		 * @return {data.Model[]} The array of models from the `startIndex` to the `endIndex`, inclusively.
 		 */
 		getRange : function( startIndex, endIndex ) {
 			var models = this.models,
@@ -698,7 +698,7 @@ define( [
 		 * Retrieves all of the models that the Collection has, in order.
 		 * 
 		 * @method getModels
-		 * @return {Data.Model[]} An array of the models that this Collection holds.
+		 * @return {data.Model[]} An array of the models that this Collection holds.
 		 */
 		getModels : function() {
 			return this.getRange();  // gets all models
@@ -707,15 +707,15 @@ define( [
 		
 		/**
 		 * Retrieves the Array representation of the Collection, where all models are converted into native JavaScript Objects.  The attribute values
-		 * for each of the models are retrieved via the {@link Data.Model#get} method, to pre-process the data before they are returned in the final 
-		 * array of objects, unless the `raw` option is set to true, in which case the Model attributes are retrieved via {@link Data.Model#raw}. 
+		 * for each of the models are retrieved via the {@link data.Model#get} method, to pre-process the data before they are returned in the final 
+		 * array of objects, unless the `raw` option is set to true, in which case the Model attributes are retrieved via {@link data.Model#raw}. 
 		 * 
 		 * @override
 		 * @method getData
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
-		 *   the {@link Data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
-		 *   that the {@link Data.data.NativeObjectConverter#convert} method does. See that method for details.
-		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link Data.attribute.Attribute Attribute} values.
+		 *   the {@link data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
+		 *   that the {@link data.data.NativeObjectConverter#convert} method does. See that method for details.
+		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
 		getData : function( options ) {
 			return NativeObjectConverter.convert( this, options );
@@ -743,7 +743,7 @@ define( [
 		 * instead.
 		 * 
 		 * @return {Number} The number of models that the {@link #proxy} has indicated exist on the a
-		 *   backing data store. If the {@link #proxy proxy's} {@link Data.persistence.reader.Reader Reader}
+		 *   backing data store. If the {@link #proxy proxy's} {@link data.persistence.reader.Reader Reader}
 		 *   did not read any metadata about the total number of models, this method returns `undefined`.
 		 */
 		getTotalCount : function() {
@@ -752,12 +752,12 @@ define( [
 		
 		
 		/**
-		 * Retrieves a Model by its {@link Data.Model#clientId clientId}.
+		 * Retrieves a Model by its {@link data.Model#clientId clientId}.
 		 * 
 		 * @method getByClientId
 		 * @param {Number} clientId
-		 * @return {Data.Model} The Model with the given {@link Data.Model#clientId clientId}, or null if there is 
-		 *   no Model in the Collection with that {@link Data.Model#clientId clientId}.
+		 * @return {data.Model} The Model with the given {@link data.Model#clientId clientId}, or null if there is 
+		 *   no Model in the Collection with that {@link data.Model#clientId clientId}.
 		 */
 		getByClientId : function( clientId ) {
 			return this.modelsByClientId[ clientId ] || null;
@@ -765,13 +765,13 @@ define( [
 		
 		
 		/**
-		 * Retrieves a Model by its {@link Data.Model#id id}. Note: if the Model does not yet have an id, it will not
+		 * Retrieves a Model by its {@link data.Model#id id}. Note: if the Model does not yet have an id, it will not
 		 * be able to be retrieved by this method.
 		 * 
 		 * @method getById
-		 * @param {Mixed} id The id value for the {@link Data.Model Model}.
-		 * @return {Data.Model} The Model with the given {@link Data.Model#id id}, or `null` if no Model was found 
-		 *   with that {@link Data.Model#id id}.
+		 * @param {Mixed} id The id value for the {@link data.Model Model}.
+		 * @return {data.Model} The Model with the given {@link data.Model#id id}, or `null` if no Model was found 
+		 *   with that {@link data.Model#id id}.
 		 */
 		getById : function( id ) {
 			return this.modelsById[ id ] || null;
@@ -779,10 +779,10 @@ define( [
 		
 		
 		/**
-		 * Determines if the Collection has a given {@link Data.Model model}.
+		 * Determines if the Collection has a given {@link data.Model model}.
 		 * 
 		 * @method has
-		 * @param {Data.Model} model
+		 * @param {data.Model} model
 		 * @return {Boolean} True if the Collection has the given `model`, false otherwise.
 		 */
 		has : function( model ) {
@@ -791,11 +791,11 @@ define( [
 		
 		
 		/**
-		 * Retrieves the index of the given {@link Data.Model model} within the Collection. 
+		 * Retrieves the index of the given {@link data.Model model} within the Collection. 
 		 * Returns -1 if the `model` is not found.
 		 * 
 		 * @method indexOf
-		 * @param {Data.Model} model
+		 * @param {data.Model} model
 		 * @return {Number} The index of the provided `model`, or of -1 if the `model` was not found.
 		 */
 		indexOf : function( model ) {
@@ -817,8 +817,8 @@ define( [
 		
 		
 		/**
-		 * Retrieves the index of a given {@link Data.Model model} within the Collection by its
-		 * {@link Data.Model#idAttribute id}. Returns -1 if the `model` is not found.
+		 * Retrieves the index of a given {@link data.Model model} within the Collection by its
+		 * {@link data.Model#idAttribute id}. Returns -1 if the `model` is not found.
 		 * 
 		 * @method indexOfId
 		 * @param {Mixed} id The id value for the model.
@@ -885,14 +885,14 @@ define( [
 		
 		/**
 		 * Determines if the Collection has been added to, removed from, reordered, or 
-		 * has any {@link Data.Model models} which are modified.
+		 * has any {@link data.Model models} which are modified.
 		 * 
 		 * @method isModified
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This may be provided as the first argument to the
 		 *   method if no `attributeName` is to be provided. Options may include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true only if a Model exists within it that has a 
-		 *   {@link Data.attribute.Attribute#persist persisted} attribute which is modified. However, if the Collection itself has been modified
+		 *   {@link data.attribute.Attribute#persist persisted} attribute which is modified. However, if the Collection itself has been modified
 		 *   (by adding/reordering/removing a Model), this method will still return true.
 		 * @param {Boolean} [options.shallow=false] True to only check if the Collection itself has been added to, remove from, or has had its Models
 		 *   reordered. The method will not check child models if they are modified.
@@ -926,7 +926,7 @@ define( [
 		// Searching methods
 		
 		/**
-		 * Finds the first {@link Data.Model Model} in the Collection by {@link Data.attribute.Attribute Attribute} name, and a given value.
+		 * Finds the first {@link data.Model Model} in the Collection by {@link data.attribute.Attribute Attribute} name, and a given value.
 		 * Uses `===` to compare the value. If a more custom find is required, use {@link #findBy} instead.
 		 * 
 		 * Note that this method is more efficient than using {@link #findBy}, so if it can be used, it should.
@@ -936,7 +936,7 @@ define( [
 		 * @param {Mixed} value The value to look for.
 		 * @param {Object} [options] Optional arguments for this method, provided in an object (hashmap). Accepts the following:
 		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
-		 * @return {Data.Model} The model where the attribute name === the value, or `null` if no matching model was not found.
+		 * @return {data.Model} The model where the attribute name === the value, or `null` if no matching model was not found.
 		 */
 		find : function( attributeName, value, options ) {
 			options = options || {};
@@ -953,21 +953,21 @@ define( [
 		
 		
 		/**
-		 * Finds the first {@link Data.Model Model} in the Collection, using a custom function. When the function returns true,
+		 * Finds the first {@link data.Model Model} in the Collection, using a custom function. When the function returns true,
 		 * the model is returned. If the function does not return true for any models, `null` is returned.
 		 * 
 		 * @method findBy
 		 * 
 		 * @param {Function} fn The function used to find the Model. Should return an explicit boolean `true` when there is a match. 
 		 *   This function is passed the following arguments:
-		 * @param {Data.Model} fn.model The current Model that is being processed in the Collection.
+		 * @param {data.Model} fn.model The current Model that is being processed in the Collection.
 		 * @param {Number} fn.index The index of the Model in the Collection.
 		 * 
 		 * @param {Object} [options]
 		 * @param {Object} [options.scope=window] The scope to run the function in.
 		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
 		 * 
-		 * @return {Data.Model} The model that the function returned `true` for, or `null` if no match was found.
+		 * @return {data.Model} The model that the function returned `true` for, or `null` if no match was found.
 		 */
 		findBy : function( fn, options ) {
 			options = options || {};
@@ -990,12 +990,12 @@ define( [
 		// Persistence functionality
 			
 		/**
-		 * Sets the {@link Data.persistence.proxy.Proxy} that for this particular collection instance. Setting a proxy
+		 * Sets the {@link data.persistence.proxy.Proxy} that for this particular collection instance. Setting a proxy
 		 * with this method will only affect this particular collection instance, not any others.
 		 * 
 		 * To configure a proxy that will be used for all instances of the Collection, set one in a Collection sublass.
 		 * 
-		 * @param {Data.persistence.proxy.Proxy} The Proxy to set to this collection instance.
+		 * @param {data.persistence.proxy.Proxy} The Proxy to set to this collection instance.
 		 */
 		setProxy : function( proxy ) {
 			this.proxy = proxy;
@@ -1003,12 +1003,12 @@ define( [
 		
 			
 		/**
-		 * Retrieves the {@link Data.persistence.proxy.Proxy} that is configured for this collection instance. To retrieve
+		 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for this collection instance. To retrieve
 		 * the proxy that belongs to the Collection class itself, use the static {@link #static-method-getProxy getProxy} 
 		 * method. Note that unless the collection instance is configured with a different proxy, it will inherit the
 		 * Collection's static proxy.
 		 * 
-		 * @return {Data.persistence.proxy.Proxy} The Proxy configured for the collection, or null.
+		 * @return {data.persistence.proxy.Proxy} The Proxy configured for the collection, or null.
 		 */
 		getProxy : function() {
 			return this.proxy || null;
@@ -1024,8 +1024,8 @@ define( [
 		 * 
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
-		 * - `collection` : {@link Data.Collection} This Collection instance.
-		 * - `operation` : {@link Data.persistence.operation.Read} The ReadOperation that was executed.
+		 * - `collection` : {@link data.Collection} This Collection instance.
+		 * - `operation` : {@link data.persistence.operation.Read} The ReadOperation that was executed.
 		 * 
 		 * @method load
 		 * @param {Object} [options] An object which may contain the following properties:
@@ -1051,7 +1051,7 @@ define( [
 			// <debug>
 			// No persistence proxy, cannot load. Throw an error
 			if( !proxy ) {
-				throw new Error( "Data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+				throw new Error( "data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 			}
 			// </debug>
 			
@@ -1080,7 +1080,7 @@ define( [
 		 * 
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #method-load}.
-		 * @param {Data.persistence.operation.Read} operation The operation object.
+		 * @param {data.persistence.operation.Read} operation The operation object.
 		 */
 		onLoadSuccess : function( deferred, operation ) {
 			var resultSet = operation.getResultSet(),
@@ -1104,7 +1104,7 @@ define( [
 		 * 
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in {@link #method-load}.
-		 * @param {Data.persistence.operation.Read} operation The operation object.
+		 * @param {data.persistence.operation.Read} operation The operation object.
 		 */
 		onLoadError : function( deferred, operation ) {
 			deferred.reject( this, operation );
@@ -1113,11 +1113,11 @@ define( [
 		
 		
 		/**
-		 * Synchronizes the Collection by persisting each of the {@link Data.Model Models} that have changes. New Models are created,
+		 * Synchronizes the Collection by persisting each of the {@link data.Model Models} that have changes. New Models are created,
 		 * existing Models are modified, and removed Models are deleted.
 		 * 
-		 * - `collection` : {@link Data.Collection} This Collection instance.
-		 * - `operation` : {@link Data.persistence.operation.Write} The WriteOperation that was executed.
+		 * - `collection` : {@link data.Collection} This Collection instance.
+		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
 		 * @method sync
 		 * @param {Object} [options] An object which may contain the following properties:

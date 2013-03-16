@@ -10,23 +10,23 @@ define( [
 ], function( require, _, Class, Attribute, DataComponentAttribute ) {
 	
 	/**
-	 * @class Data.attribute.Model
-	 * @extends Data.attribute.DataComponent
+	 * @class data.attribute.Model
+	 * @extends data.attribute.DataComponent
 	 * 
-	 * Attribute definition class for an Attribute that allows for a nested {@link Data.Model} value.
+	 * Attribute definition class for an Attribute that allows for a nested {@link data.Model} value.
 	 * 
-	 * This class enforces that the Attribute hold a {@link Data.Model Model} value, or null. However, it will
-	 * automatically convert an anonymous data object into the appropriate {@link Data.Model Model} subclass, using
+	 * This class enforces that the Attribute hold a {@link data.Model Model} value, or null. However, it will
+	 * automatically convert an anonymous data object into the appropriate {@link data.Model Model} subclass, using
 	 * the Model provided to the {@link #modelClass} config. 
 	 * 
-	 * Otherwise, you must either provide a {@link Data.Model} subclass as the value, or use a custom {@link #cfg-set} 
+	 * Otherwise, you must either provide a {@link data.Model} subclass as the value, or use a custom {@link #cfg-set} 
 	 * function to convert any anonymous object to a Model in the appropriate way. 
 	 */
 	var ModelAttribute = Class.extend( DataComponentAttribute, {
 		
 		/**
-		 * @cfg {Data.Model/String/Function} modelClass
-		 * The specific {@link Data.Model} subclass that will be used in the Model. This config can be provided
+		 * @cfg {data.Model/String/Function} modelClass
+		 * The specific {@link data.Model} subclass that will be used in the Model. This config can be provided
 		 * to perform automatic conversion of anonymous data objects into the approperiate Model subclass.
 		 * 
 		 * This config may be provided as:
@@ -43,24 +43,24 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} embedded
-		 * Setting this config to true has the parent {@link Data.Model Model} treat the child {@link Data.Model Model} as if it is a part of itself. 
+		 * Setting this config to true has the parent {@link data.Model Model} treat the child {@link data.Model Model} as if it is a part of itself. 
 		 * Normally, a child Model that is not embedded is treated as a "relation", where it is considered as independent from the parent Model.
 		 * 
 		 * What this means is that, when true:
 		 * 
 		 * - The parent Model is considered as "changed" when an attribute in the child Model is changed. This Attribute (the attribute that holds the child
 		 *   model) is the "change".
-		 * - The parent Model's {@link Data.Model#change change} event is fired when an attribute on the child Model has changed.
+		 * - The parent Model's {@link data.Model#change change} event is fired when an attribute on the child Model has changed.
 		 * - The child Model's data is persisted with the parent Model's data, unless the {@link #persistIdOnly} config is set to true,
-		 *   in which case just the child Model's {@link Data.Model#idAttribute id} is persisted with the parent Model.
+		 *   in which case just the child Model's {@link data.Model#idAttribute id} is persisted with the parent Model.
 		 */
 		embedded : false,
 		
 		/**
 		 * @cfg {Boolean} persistIdOnly
-		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link Data.Model#idAttribute id} of the embedded 
-		 * model be persisted, rather than all of the Model data. Normally, when {@link #embedded} is false (the default), the child {@link Data.Model Model}
-		 * is treated as a relation, and only its {@link Data.Model#idAttribute id} is persisted.
+		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link data.Model#idAttribute id} of the embedded 
+		 * model be persisted, rather than all of the Model data. Normally, when {@link #embedded} is false (the default), the child {@link data.Model Model}
+		 * is treated as a relation, and only its {@link data.Model#idAttribute id} is persisted.
 		 */
 		persistIdOnly : false,
 		
@@ -120,7 +120,7 @@ define( [
 					if( !modelClass ) {
 						throw new Error( "The string value 'modelClass' config did not resolve to a Model class for attribute '" + this.getName() + "'" );
 					}
-				} else if( typeof modelClass === 'function' && !Class.isSubclassOf( modelClass, Model ) ) {  // it's not a Data.Model subclass, so it must be an anonymous function. Run it, so it returns the Model reference we need
+				} else if( typeof modelClass === 'function' && !Class.isSubclassOf( modelClass, Model ) ) {  // it's not a data.Model subclass, so it must be an anonymous function. Run it, so it returns the Model reference we need
 					this.modelClass = modelClass = modelClass();
 					if( !modelClass ) {
 						throw new Error( "The function value 'modelClass' config did not resolve to a Model class for attribute '" + this.getName() + "'" );
@@ -137,7 +137,7 @@ define( [
 		
 		
 		/**
-		 * Overridden `afterSet` method used to subscribe to change events on a set child {@link Data.Model Model}.
+		 * Overridden `afterSet` method used to subscribe to change events on a set child {@link data.Model Model}.
 		 * 
 		 * @override
 		 * @method afterSet
@@ -146,9 +146,9 @@ define( [
 		afterSet : function( model, value ) {
 			var Model = require( 'data/Model' );
 			
-			// Enforce that the value is either null, or a Data.Model
+			// Enforce that the value is either null, or a data.Model
 			if( value !== null && !( value instanceof Model ) ) {
-				throw new Error( "A value set to the attribute '" + this.getName() + "' was not a Data.Model subclass" );
+				throw new Error( "A value set to the attribute '" + this.getName() + "' was not a data.Model subclass" );
 			}
 			
 			return value;

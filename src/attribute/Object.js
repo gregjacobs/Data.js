@@ -6,8 +6,8 @@ define( [
 ], function( _, Class, Attribute ) {
 	
 	/**
-	 * @class Data.attribute.Object
-	 * @extends Data.attribute.Attribute
+	 * @class data.attribute.Object
+	 * @extends data.attribute.Attribute
 	 * 
 	 * Attribute definition class for an Attribute that takes an object value.
 	 */

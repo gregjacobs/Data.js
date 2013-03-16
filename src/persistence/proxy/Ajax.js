@@ -8,8 +8,8 @@ define( [
 ], function( jQuery, _, Class, Data, Proxy ) {
 	
 	/**
-	 * @class Data.persistence.proxy.Ajax
-	 * @extends Data.persistence.proxy.Proxy
+	 * @class data.persistence.proxy.Ajax
+	 * @extends data.persistence.proxy.Proxy
 	 * 
 	 * AjaxProxy is responsible for performing CRUD operations through standard AJAX, using the url(s) configured,
 	 * and providing any parameters and such which are required for the backend service.
@@ -68,7 +68,7 @@ define( [
 		 * @cfg {String} idParam
 		 * 
 		 * The name of the parameter to pass the id of a particular model that is being operated on. For example,
-		 * when loading a single {@link Data.Model Model}, a request may be generated as: `/users/load?id=42`
+		 * when loading a single {@link data.Model Model}, a request may be generated as: `/users/load?id=42`
 		 */
 		idParam : 'id',
 		
@@ -99,7 +99,7 @@ define( [
 		/**
 		 * Creates the Model on the server.
 		 * 
-		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
 		 *   to be created on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -111,9 +111,9 @@ define( [
 		
 		
 		/**
-		 * Reads one or more {@link Data.Model Models} from the server.
+		 * Reads one or more {@link data.Model Models} from the server.
 		 * 
-		 * @param {Data.persistence.operation.Read} operation The ReadOperation instance that describes the 
+		 * @param {data.persistence.operation.Read} operation The ReadOperation instance that describes the 
 		 *   model(s) to be read from the server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -148,7 +148,7 @@ define( [
 		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
 		 * are persisted.
 		 * 
-		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
 		 *   to be updated on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -164,7 +164,7 @@ define( [
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
-		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -185,7 +185,7 @@ define( [
 		 * 
 		 * @protected
 		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {Data.persistence.operation.Read/Data.persistence.operation.Write} operation
+		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {

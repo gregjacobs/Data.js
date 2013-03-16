@@ -10,24 +10,24 @@ define( [
 ], function( require, _, Class, Attribute, DataComponentAttribute ) {
 	
 	/**
-	 * @class Data.attribute.Collection
-	 * @extends Data.attribute.DataComponent
+	 * @class data.attribute.Collection
+	 * @extends data.attribute.DataComponent
 	 * 
-	 * Attribute definition class for an Attribute that allows for a nested {@link Data.Collection} value.
+	 * Attribute definition class for an Attribute that allows for a nested {@link data.Collection} value.
 	 * 
-	 * This class enforces that the Attribute hold a {@link Data.Collection Collection} value, or null. However, it will
-	 * automatically convert an array of {@link Data.Model models} or anonymous data objects into the appropriate 
-	 * {@link Data.Collection Collection} subclass, using the Collection provided to the {@link #collectionClass} config.
+	 * This class enforces that the Attribute hold a {@link data.Collection Collection} value, or null. However, it will
+	 * automatically convert an array of {@link data.Model models} or anonymous data objects into the appropriate 
+	 * {@link data.Collection Collection} subclass, using the Collection provided to the {@link #collectionClass} config.
 	 * Anonymous data objects in this array will be converted to the model type provided to the collection's 
-	 * {@link Data.Collection#model}. 
+	 * {@link data.Collection#model}. 
 	 * 
-	 * Otherwise, you must either provide a {@link Data.Collection} subclass as the value, or use a custom {@link #cfg-set} 
+	 * Otherwise, you must either provide a {@link data.Collection} subclass as the value, or use a custom {@link #cfg-set} 
 	 * function to convert any anonymous array to a Collection in the appropriate way. 
 	 */
 	var CollectionAttribute = Class.extend( DataComponentAttribute, {
 			
 		/**
-		 * @cfg {Array/Data.Collection} defaultValue
+		 * @cfg {Array/data.Collection} defaultValue
 		 * @inheritdoc
 		 * 
 		 * Defaults to an empty array, to create an empty Collection of the given {@link #collectionClass} type.
@@ -35,8 +35,8 @@ define( [
 		//defaultValue : [],  -- Not yet fully implemented on a general level. Can use this in code though.
 		
 		/**
-		 * @cfg {Data.Collection/String/Function} collectionClass (required)
-		 * The specific {@link Data.Collection} subclass that will be used in the Collection Attribute. This config is needed
+		 * @cfg {data.Collection/String/Function} collectionClass (required)
+		 * The specific {@link data.Collection} subclass that will be used in the Collection Attribute. This config is needed
 		 * to perform automatic conversion of an array of models / anonymous data objects into the approperiate Collection subclass.
 		 * 
 		 * This config may be provided as:
@@ -53,7 +53,7 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} embedded
-		 * Setting this config to true has the parent {@link Data.Model Model} treat the child {@link Data.Collection Collection} as if it is 
+		 * Setting this config to true has the parent {@link data.Model Model} treat the child {@link data.Collection Collection} as if it is 
 		 * a part of itself. Normally, a child Collection that is not embedded is treated as a "relation", where it is considered as independent 
 		 * from the parent Model.
 		 * 
@@ -61,18 +61,18 @@ define( [
 		 * 
 		 * - The parent Model is considered as "changed" when a model in the child Collection is changed, or one has been added/removed. This Attribute 
 		 *   (the attribute that holds the child collection) is the "change".
-		 * - The parent Model's {@link Data.Model#change change} event is fired when a model on the child Collection has changed, or one has 
+		 * - The parent Model's {@link data.Model#change change} event is fired when a model on the child Collection has changed, or one has 
 		 *   been added/removed.
 		 * - The child Collection's model data is persisted with the parent Collection's data, unless the {@link #persistIdOnly} config is set to true,
-		 *   in which case just the child Collection's models' {@link Data.Model#idAttribute ids} are persisted with the parent Model.
+		 *   in which case just the child Collection's models' {@link data.Model#idAttribute ids} are persisted with the parent Model.
 		 */
 		embedded : false,
 		
 		/**
 		 * @cfg {Boolean} persistIdOnly
-		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link Data.Model#idAttribute id} of the embedded 
+		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link data.Model#idAttribute id} of the embedded 
 		 * collection's models be persisted, rather than all of the collection's model data. Normally, when {@link #embedded} is false (the default), 
-		 * the child {@link Data.Collection Collection} is treated as a relation, and only its model's {@link Data.Model#idAttribute ids} are persisted.
+		 * the child {@link data.Collection Collection} is treated as a relation, and only its model's {@link data.Model#idAttribute ids} are persisted.
 		 */
 		persistIdOnly : false,
 		
@@ -134,7 +134,7 @@ define( [
 					if( !collectionClass ) {
 						throw new Error( "The string value 'collectionClass' config did not resolve to a Collection class for attribute '" + this.getName() + "'" );
 					}
-				} else if( typeof collectionClass === 'function' && !Class.isSubclassOf( collectionClass, Collection ) ) {  // it's not a Data.Collection subclass, so it must be an anonymous function. Run it, so it returns the Collection reference we need
+				} else if( typeof collectionClass === 'function' && !Class.isSubclassOf( collectionClass, Collection ) ) {  // it's not a data.Collection subclass, so it must be an anonymous function. Run it, so it returns the Collection reference we need
 					this.collectionClass = collectionClass = collectionClass();
 					if( !collectionClass ) {
 						throw new Error( "The function value 'collectionClass' config did not resolve to a Collection class for attribute '" + this.getName() + "'" );
@@ -151,7 +151,7 @@ define( [
 		
 		
 		/**
-		 * Overridden `afterSet` method used to subscribe to add/remove/change events on a set child {@link Data.Collection Collection}.
+		 * Overridden `afterSet` method used to subscribe to add/remove/change events on a set child {@link data.Collection Collection}.
 		 * 
 		 * @override
 		 * @method afterSet
@@ -160,9 +160,9 @@ define( [
 		afterSet : function( model, value ) {
 			var Collection = require( 'data/Collection' );
 			
-			// Enforce that the value is either null, or a Data.Collection
+			// Enforce that the value is either null, or a data.Collection
 			if( value !== null && !( value instanceof Collection ) ) {
-				throw new Error( "A value set to the attribute '" + this.getName() + "' was not a Data.Collection subclass" );
+				throw new Error( "A value set to the attribute '" + this.getName() + "' was not a data.Collection subclass" );
 			}
 			
 			return value;

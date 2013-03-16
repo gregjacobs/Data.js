@@ -8,20 +8,20 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.persistence.reader.Reader
+	 * @class data.persistence.reader.Reader
 	 * @extends Object
 	 * 
-	 * The purpose of a Reader is to read raw data pulled in by a {@link Data.persistence.proxy.Proxy}, and convert
-	 * it into a form which can be directly consumed by a {@link Data.Model Model} or {@link Data.Collection Collection}.
+	 * The purpose of a Reader is to read raw data pulled in by a {@link data.persistence.proxy.Proxy}, and convert
+	 * it into a form which can be directly consumed by a {@link data.Model Model} or {@link data.Collection Collection}.
 	 * 
 	 * Each Reader subclass must implement the {@link #convertRaw} method, which is provided the raw data,
 	 * and is expected to return a JavaScript object with the record(s) data and any metadata that exists in 
 	 * the raw data. A "record" is defined simply as a plain JavaScript object that holds the properties and 
-	 * values for a {@link Data.Model} model on the client-side app.
+	 * values for a {@link data.Model} model on the client-side app.
 	 * 
 	 * Reader subclasses may override certain methods such as {@link #processRecords} or {@link #processRecord}
-	 * to apply transformations from the raw data to a form that will be consumed by a {@link Data.Model Model}
-	 * or {@link Data.Collection Collection}.
+	 * to apply transformations from the raw data to a form that will be consumed by a {@link data.Model Model}
+	 * or {@link data.Collection Collection}.
 	 */
 	var Reader = Class.extend( Object, {
 		abstractClass : true,
@@ -62,7 +62,7 @@ define( [
 		 * @cfg {String} messageProperty
 		 * 
 		 * The name of the property (if there is one) which holds an optional message to be stored with the 
-		 * {@link Data.persistence.ResultSet ResultSet} that is returned from the {@link #read} method.
+		 * {@link data.persistence.ResultSet ResultSet} that is returned from the {@link #read} method.
 		 * 
 		 * This property name references the data when it is in JavaScript object form, *after* it has been 
 		 * converted by the {@link #convertRaw} method.
@@ -76,8 +76,8 @@ define( [
 		/**
 		 * @cfg {Object} dataMappings
 		 * 
-		 * An Object which maps raw data property names to the target {@link Data.Model#cfg-attributes attribute} 
-		 * names of the {@link Data.Model} which will be populated as a result of the {@link #read}.
+		 * An Object which maps raw data property names to the target {@link data.Model#cfg-attributes attribute} 
+		 * names of the {@link data.Model} which will be populated as a result of the {@link #read}.
 		 * 
 		 * For example, if we have a model defined as such:
 		 * 
@@ -153,7 +153,7 @@ define( [
 		 * ### Removing Unneeded Source Properties
 		 * 
 		 * There is a special form for removing source data properties that are unneeded, so that they do not get 
-		 * set to the target {@link Data.Model} (which by default, would throw an error for an unknown attribute). 
+		 * set to the target {@link data.Model} (which by default, would throw an error for an unknown attribute). 
 		 * Setting the value in the map to an empty string will remove the particular source data property as part 
 		 * of the mapping process. Ex:
 		 * 
@@ -185,11 +185,11 @@ define( [
 		
 		
 		/**
-		 * Reads the raw data, and returns a {@link Data.persistence.ResultSet} object which holds the data
+		 * Reads the raw data, and returns a {@link data.persistence.ResultSet} object which holds the data
 		 * in JavaScript object form, along with any metadata present.
 		 * 
 		 * @param {Mixed} rawData The raw data to transform.
-		 * @return {Data.persistence.ResultSet} A ResultSet object which holds the data in JavaScript object form,
+		 * @return {data.persistence.ResultSet} A ResultSet object which holds the data in JavaScript object form,
 		 *   and any associated metadata that was present in the `rawData`.
 		 */
 		read : function( rawData ) {
@@ -337,7 +337,7 @@ define( [
 		
 		/**
 		 * Utility method which applies the {@link #dataMappings} to a given record (i.e. the plain
-		 * object that holds the properties which will be later set to a {@link Data.Model}.
+		 * object that holds the properties which will be later set to a {@link data.Model}.
 		 * 
 		 * This method is by default, executed by {@link #processRecord} (unless {@link #processRecord}
 		 * is redefined in a subclass).

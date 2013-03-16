@@ -8,10 +8,10 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.attribute.DataComponent
-	 * @extends Data.attribute.Object
+	 * @class data.attribute.DataComponent
+	 * @extends data.attribute.Object
 	 * 
-	 * Attribute definition class for an Attribute that allows for a nested {@link Data.DataComponent} value.
+	 * Attribute definition class for an Attribute that allows for a nested {@link data.DataComponent} value.
 	 */
 	var DataComponentAttribute = Class.extend( ObjectAttribute, {
 		abstractClass: true,
@@ -19,25 +19,25 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} embedded
-		 * Setting this config to true has the parent {@link Data.Model Model} treat the child {@link Data.DataComponent DataComponent} as if it is a part of itself. 
+		 * Setting this config to true has the parent {@link data.Model Model} treat the child {@link data.DataComponent DataComponent} as if it is a part of itself. 
 		 * Normally, a child DataComponent that is not embedded is treated as a "relation", where it is considered as independent from the parent Model.
 		 * 
 		 * What this means is that, when true:
 		 * 
 		 * - The parent Model is considered as "changed" when there is a change in the child DataComponent is changed. This Attribute 
 		 *   (the attribute that holds the child DataComponent) is the "change".
-		 * - The parent Model's {@link Data.Model#change change} event is fired when an attribute on the child DataComponent (Model or Collection) has changed.
+		 * - The parent Model's {@link data.Model#change change} event is fired when an attribute on the child DataComponent (Model or Collection) has changed.
 		 * - The child DataComponent's data is persisted with the parent Model's data, unless the {@link #persistIdOnly} config is set to true,
-		 *   in which case just the child DataComponent's {@link Data.Model#idAttribute id} is persisted with the parent Model. In the case of a {@link Data.Collection},
+		 *   in which case just the child DataComponent's {@link data.Model#idAttribute id} is persisted with the parent Model. In the case of a {@link data.Collection},
 		 *   the ID's of the models are only persisted if {@link #persistIdOnly} is true.
 		 */
 		embedded : false,
 		
 		/**
 		 * @cfg {Boolean} persistIdOnly
-		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link Data.Model#idAttribute id} of the embedded 
+		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link data.Model#idAttribute id} of the embedded 
 		 * model(s) be persisted, rather than all of the Model/Collection data. Normally, when {@link #embedded} is false (the default), the child 
-		 * {@link Data.DataComponent DataComponent} is treated as a relation, and only its {@link Data.Model#idAttribute ids} is/are persisted.
+		 * {@link data.DataComponent DataComponent} is treated as a relation, and only its {@link data.Model#idAttribute ids} is/are persisted.
 		 */
 		persistIdOnly : false,
 		

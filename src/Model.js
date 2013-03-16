@@ -50,20 +50,20 @@ define( [
 ) {
 	
 	/**
-	 * @class Data.Model
-	 * @extends Data.DataComponent
+	 * @class data.Model
+	 * @extends data.DataComponent
 	 * 
 	 * Generalized key/value data storage class, which has a number of data-related features, including the ability to persist its data to a backend server.
 	 * Basically, a Model represents some object of data that your application uses. For example, in an online store, one might define two Models: 
 	 * one for Users, and the other for Products. These would be `User` and `Product` models, respectively. Each of these Models would in turn,
-	 * have the {@link Data.attribute.Attribute Attributes} (data values) that each Model is made up of. Ex: A User model may have: `userId`, `firstName`, and 
+	 * have the {@link data.attribute.Attribute Attributes} (data values) that each Model is made up of. Ex: A User model may have: `userId`, `firstName`, and 
 	 * `lastName` Attributes.
 	 */
 	var Model = Class.extend( DataComponent, {
 		
 		inheritedStatics : {
 			/**
-			 * A static property that is unique to each Data.Model subclass, which uniquely identifies the subclass.
+			 * A static property that is unique to each data.Model subclass, which uniquely identifies the subclass.
 			 * This is used as part of the Model cache, where it is determined if a Model instance already exists
 			 * if two models are of the same type (i.e. have the same __Data_modelTypeId), and instance id.
 			 * 
@@ -102,7 +102,7 @@ define( [
 				for( i = 0, len = attributeDefs.length; i < len; i++ ) {
 					attributeObj = attributeDefs[ i ];
 					
-					// Normalize to a Data.attribute.Attribute configuration object if it is a string
+					// Normalize to a data.attribute.Attribute configuration object if it is a string
 					if( typeof attributeObj === 'string' ) {
 						attributeObj = { name: attributeObj };
 					}
@@ -118,13 +118,13 @@ define( [
 			
 			/**
 			 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
-			 * are the Attribute names, and the values are the {@link Data.attribute.Attribute} objects themselves.
+			 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
 			 * 
 			 * @inheritable
 			 * @static
 			 * @method getAttributes
-			 * @return {Object} An Object (hashmap) where the keys are the attribute {@link Data.attribute.Attribute#name names},
-			 *   and the values are the {@link Data.attribute.Attribute Attribute} instances themselves.
+			 * @return {Object} An Object (hashmap) where the keys are the attribute {@link data.attribute.Attribute#name names},
+			 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 			 */
 			getAttributes : function() {
 				// Note: `this` refers to the class (constructor function) that the static method was called on
@@ -133,12 +133,12 @@ define( [
 			
 			
 			/**
-			 * Retrieves the {@link Data.persistence.proxy.Proxy} that is configured for the Model class. To retrieve
+			 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for the Model class. To retrieve
 			 * a proxy that may belong to a particular model, use the instance level {@link #method-getProxy}.
 			 * 
 			 * @inheritable
 			 * @static
-			 * @return {Data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
+			 * @return {data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
 			 */
 			getProxy : function() {
 				return this.prototype.proxy || null;
@@ -149,7 +149,7 @@ define( [
 		
 		
 		/**
-		 * @cfg {Data.persistence.proxy.Proxy} proxy
+		 * @cfg {data.persistence.proxy.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the Model's data to/from persistent
 		 * storage. If this is not specified, the Model may not {@link #reload load} or {@link #save} its data.
@@ -160,15 +160,15 @@ define( [
 		
 		/**
 		 * @cfg {String[]/Object[]} attributes
-		 * Array of {@link Data.attribute.Attribute Attribute} declarations. These are objects with any number of properties, but they
-		 * must have the property 'name'. See the configuration options of {@link Data.attribute.Attribute} for more information. 
+		 * Array of {@link data.attribute.Attribute Attribute} declarations. These are objects with any number of properties, but they
+		 * must have the property 'name'. See the configuration options of {@link data.attribute.Attribute} for more information. 
 		 * 
-		 * Anonymous config objects defined here will become instantiated {@link Data.attribute.Attribute} objects. An item in the array may also simply 
-		 * be a string, which will specify the name of the {@link Data.attribute.Attribute Attribute}, with no other {@link Data.attribute.Attribute Attribute} 
+		 * Anonymous config objects defined here will become instantiated {@link data.attribute.Attribute} objects. An item in the array may also simply 
+		 * be a string, which will specify the name of the {@link data.attribute.Attribute Attribute}, with no other {@link data.attribute.Attribute Attribute} 
 		 * configuration options.
 		 * 
 		 * Attributes defined on the prototype of a Model, and its superclasses, are concatenated together come
-		 * instantiation time. This means that the Data.Model base class can define the 'id' attribute, and then subclasses
+		 * instantiation time. This means that the data.Model base class can define the 'id' attribute, and then subclasses
 		 * can define their own attributes to append to it. So if a subclass defined the attributes `[ 'name', 'phone' ]`, then the
 		 * final concatenated array of attributes for the subclass would be `[ 'id', 'name', 'phone' ]`. This works for however many
 		 * levels of subclasses there are.
@@ -176,7 +176,7 @@ define( [
 		 * Example:
 		 * 
 		 *     attributes : [
-		 *         'id',    // name-only; no other configs for this attribute (not recommended! should declare the {@link Data.attribute.Attribute#type type})
+		 *         'id',    // name-only; no other configs for this attribute (not recommended! should declare the {@link data.attribute.Attribute#type type})
 		 *         { name: 'firstName', type: 'string' },
 		 *         { name: 'lastName', type: 'string' },
 		 *         {
@@ -208,7 +208,7 @@ define( [
 		 * @private
 		 * @property {Object} data
 		 * 
-		 * A hash that holds the current data for the {@link Data.attribute.Attribute Attributes}. The property names in this object match 
+		 * A hash that holds the current data for the {@link data.attribute.Attribute Attributes}. The property names in this object match 
 		 * the attribute names.  This hash holds the current data as it is modified by {@link #set}.
 		 */
 		
@@ -217,7 +217,7 @@ define( [
 		 * @property {Object} modifiedData
 		 * A hash that serves two functions:
 		 * 
-		 * 1) Properties are set to it when an attribute is modified. The property name is the attribute {@link Data.attribute.Attribute#name}. 
+		 * 1) Properties are set to it when an attribute is modified. The property name is the attribute {@link data.attribute.Attribute#name}. 
 		 *    This allows it to be used to determine which attributes have been modified. 
 		 * 2) The *original* (non-committed) data of the attribute (before it was {@link #set}) is stored as the value of the 
 		 *    property. When rolling back changes (via {@link #method-rollback}), these values are copied back onto the {@link #data} object
@@ -235,7 +235,7 @@ define( [
 		 * When {@link #method-set} is called, this variable is incremented by 1. Just before {@link #method-set} returns, this variable is decremented
 		 * by 1. If at the end of the {@link #method-set} method this variable reaches 0 again, the {@link #changeset} event is fired
 		 * with all of the attribute changes since the first call to {@link #method-set}. This handles the recursive nature of the {@link #method-set} method,
-		 * and the fact that {@link #method-set} may be called by Attribute {@link Data.attribute.Attribute#cfg-set set} functions, and handlers of the
+		 * and the fact that {@link #method-set} may be called by Attribute {@link data.attribute.Attribute#cfg-set set} functions, and handlers of the
 		 * {@link #change} event.
 		 */
 		setCallCount : 0,
@@ -320,44 +320,44 @@ define( [
 			
 			me.addEvents(
 				/**
-				 * Fires when a {@link Data.attribute.Attribute} in the Model has changed its value. This is a 
+				 * Fires when a {@link data.attribute.Attribute} in the Model has changed its value. This is a 
 				 * convenience event to respond to just a single attribute's change. Ex: if you want to
 				 * just respond to the `title` attribute's change, you could subscribe to `change:title`. Ex:
 				 * 
 				 *     model.addListener( 'change:title', function( model, newValue ) { ... } );
 				 * 
 				 * @event change:[attributeName]
-				 * @param {Data.Model} model This Model instance.
-				 * @param {Mixed} newValue The new value, processed by the attribute's {@link Data.attribute.Attribute#get get} function if one exists. 
-				 * @param {Mixed} oldValue The old (previous) value, processed by the attribute's {@link Data.attribute.Attribute#get get} function if one exists. 
+				 * @param {data.Model} model This Model instance.
+				 * @param {Mixed} newValue The new value, processed by the attribute's {@link data.attribute.Attribute#get get} function if one exists. 
+				 * @param {Mixed} oldValue The old (previous) value, processed by the attribute's {@link data.attribute.Attribute#get get} function if one exists. 
 				 */
 				
 				/**
-				 * Fires when a {@link Data.attribute.Attribute} in the Model has changed its value.
+				 * Fires when a {@link data.attribute.Attribute} in the Model has changed its value.
 				 * 
 				 * @event change
-				 * @param {Data.Model} model This Model instance.
+				 * @param {data.Model} model This Model instance.
 				 * @param {String} attributeName The name of the attribute that was changed.
-				 * @param {Mixed} newValue The new value, processed by the attribute's {@link Data.attribute.Attribute#get get} function if one exists. 
-				 * @param {Mixed} oldValue The old (previous) value, processed by the attribute's {@link Data.attribute.Attribute#get get} function if one exists. 
+				 * @param {Mixed} newValue The new value, processed by the attribute's {@link data.attribute.Attribute#get get} function if one exists. 
+				 * @param {Mixed} oldValue The old (previous) value, processed by the attribute's {@link data.attribute.Attribute#get get} function if one exists. 
 				 */
 				'change',
 				
 				/**
 				 * Fires once at the end of one of more (i.e. a set) of Attribute changes to the model. Multiple changes may be made to the model in a "set" by
-				 * providing the first argument to {@link #method-set} as an object, and/or may also result from having {@link Data.attribute.Attribute#cfg-set Attribute set} 
+				 * providing the first argument to {@link #method-set} as an object, and/or may also result from having {@link data.attribute.Attribute#cfg-set Attribute set} 
 				 * functions which modify other Attributes. Or, one final way that changes may be counted in a "set" is if handlers of the {@link #change} event end up
 				 * setting Attributes on the Model as well.
 				 * 
-				 * Note: This event isn't quite production-ready, as it doesn't take into account changes from nested {@Link Data.DataComponent DataComponents}
-				 * ({@link Data.Model Models} and {@link Data.Collection Collections}), but can be used for a set of flat changes in the Model.
+				 * Note: This event isn't quite production-ready, as it doesn't take into account changes from nested {@Link data.DataComponent DataComponents}
+				 * ({@link data.Model Models} and {@link data.Collection Collections}), but can be used for a set of flat changes in the Model.
 				 * 
 				 * @event changeset
-				 * @param {Data.Model} model This Model instance.
+				 * @param {data.Model} model This Model instance.
 				 * @param {Object} newValues An object (hashmap) of the new values of the Attributes that changed. The object's keys (property names) are the
-				 *   {@link Data.attribute.Attribute#name Attribute names}, and the object's values are the new values for those Attributes.
+				 *   {@link data.attribute.Attribute#name Attribute names}, and the object's values are the new values for those Attributes.
 				 * @param {Object} oldValues An object (hashmap) of the old values of the Attributes that changed. The object's keys (property names) are the
-				 *   {@link Data.attribute.Attribute#name Attribute names}, and the object's values are the old values that were held for those Attributes.
+				 *   {@link data.attribute.Attribute#name Attribute names}, and the object's values are the old values that were held for those Attributes.
 				 */
 				'changeset',
 				
@@ -366,7 +366,7 @@ define( [
 				 * {@link #method-commit commit} method is called, and after a successful {@link #save}.
 				 * 
 				 * @event commit
-				 * @param {Data.Model} model This Model instance.
+				 * @param {data.Model} model This Model instance.
 				 */
 				'commit',
 				
@@ -375,7 +375,7 @@ define( [
 				 * {@link #method-rollback rollback} method is called.
 				 * 
 				 * @event rollback
-				 * @param {Data.Model} model This Model instance.
+				 * @param {data.Model} model This Model instance.
 				 */
 				'rollback',
 				
@@ -383,7 +383,7 @@ define( [
 				 * Fires when the Model has been destroyed (via {@link #method-destroy}).
 				 * 
 				 * @event destroy
-				 * @param {Data.Model} model This Model instance.
+				 * @param {data.Model} model This Model instance.
 				 */
 				'destroy'
 			);
@@ -418,12 +418,12 @@ define( [
 		 * provide any model-specific initialization.
 		 * 
 		 * Note that it is good practice to always call the superclass `initialize` method from within yours (even if
-		 * your class simply extends Data.Model, which has no `initialize` implementation itself). This is to future proof it
+		 * your class simply extends data.Model, which has no `initialize` implementation itself). This is to future proof it
 		 * from being moved under another superclass, or if there is ever an implementation made in this class.
 		 * 
 		 * Ex:
 		 * 
-		 *     MyModel = Data.Model.extend( {
+		 *     MyModel = data.Model.extend( {
 		 *         initialize : function() {
 		 *             MyModel.superclass.initialize.apply( this, arguments );   // or could be MyModel.__super__.initialize.apply( this, arguments );
 		 *             
@@ -439,11 +439,11 @@ define( [
 		
 		/**
 		 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
-		 * are the Attribute names, and the values are the {@link Data.attribute.Attribute} objects themselves.
+		 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
 		 * 
 		 * @method getAttributes
-		 * @return {Object} An Object (hashmap) where the keys are the attribute {@link Data.attribute.Attribute#name names},
-		 *   and the values are the {@link Data.attribute.Attribute Attribute} instances themselves.
+		 * @return {Object} An Object (hashmap) where the keys are the attribute {@link data.attribute.Attribute#name names},
+		 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 		 */
 		getAttributes : function() {
 			return this.attributes;
@@ -474,7 +474,7 @@ define( [
 		 * an attribute which is referenced by the {@link #idAttribute} config. Otherwise, returns null.
 		 * 
 		 * @method getIdAttribute
-		 * @return {Data.attribute.Attribute} The Attribute that represents the ID attribute, or null if there is no valid ID attribute.
+		 * @return {data.attribute.Attribute} The Attribute that represents the ID attribute, or null if there is no valid ID attribute.
 		 */
 		getIdAttribute : function() {
 			return this.attributes[ this.idAttribute ] || null;
@@ -509,7 +509,7 @@ define( [
 		
 		
 		/**
-		 * Sets the value for a {@link Data.attribute.Attribute Attribute} given its `name`, and a `value`. For example, a call could be made as this:
+		 * Sets the value for a {@link data.attribute.Attribute Attribute} given its `name`, and a `value`. For example, a call could be made as this:
 		 * 
 		 *     model.set( 'attribute1', 'value1' );
 		 * 
@@ -519,7 +519,7 @@ define( [
 		 * 
 		 * Note that in this form, the method will ignore any property in the object (hash) that don't have associated Attributes.
 		 * 
-		 * When attributes are set, their {@link Data.attribute.Attribute#cfg-set} method is run, if they have one defined.
+		 * When attributes are set, their {@link data.attribute.Attribute#cfg-set} method is run, if they have one defined.
 		 * 
 		 * @method set
 		 * @param {String/Object} attributeName The attribute name for the Attribute to set, or an object (hash) of name/value pairs.
@@ -549,7 +549,7 @@ define( [
 					if( values.hasOwnProperty( fldName ) ) {
 						// <debug>
 						if( !attributes[ fldName ] ) {
-							throw new Error( "Data.Model.set(): An attribute with the attributeName '" + fldName + "' was not found." );
+							throw new Error( "data.Model.set(): An attribute with the attributeName '" + fldName + "' was not found." );
 						}
 						// </debug>
 						if( attributes[ fldName ].hasUserDefinedSetter() ) {   // defer setting the values on attributes with user-defined setters until all attributes without user-defined setters have been set
@@ -571,7 +571,7 @@ define( [
 				
 				// <debug>
 				if( !attribute ) {
-					throw new Error( "Data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
+					throw new Error( "data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
 				}
 				// </debug>
 				
@@ -658,20 +658,20 @@ define( [
 		
 		
 		/**
-		 * Retrieves the value for the attribute given by `attributeName`. If the {@link Data.attribute.Attribute Attribute} has a
-		 * {@link Data.attribute.Attribute#get get} function defined, that function will be called, and its return value
+		 * Retrieves the value for the attribute given by `attributeName`. If the {@link data.attribute.Attribute Attribute} has a
+		 * {@link data.attribute.Attribute#get get} function defined, that function will be called, and its return value
 		 * will be used as the return of this method.
 		 * 
 		 * @method get
 		 * @param {String} attributeName The name of the Attribute whose value to retieve.
-		 * @return {Mixed} The value of the attribute returned by the Attribute's {@link Data.attribute.Attribute#get get} function (if
-		 * one exists), or the underlying value of the attribute. Will return undefined if there is no {@link Data.attribute.Attribute#get get}
+		 * @return {Mixed} The value of the attribute returned by the Attribute's {@link data.attribute.Attribute#get get} function (if
+		 * one exists), or the underlying value of the attribute. Will return undefined if there is no {@link data.attribute.Attribute#get get}
 		 * function, and the value has never been set.  
 		 */
 		get : function( attributeName ) {
 			// <debug>
 			if( !( attributeName in this.attributes ) ) {
-				throw new Error( "Data.Model::get() error: attribute '" + attributeName + "' was not found on the Model." );
+				throw new Error( "data.Model::get() error: attribute '" + attributeName + "' was not found on the Model." );
 			}
 			// </debug>
 			
@@ -688,21 +688,21 @@ define( [
 		
 		
 		/**
-		 * Retrieves the *raw* value for the attribute given by `attributeName`. If the {@link Data.attribute.Attribute Attributes} has a
-		 * {@link Data.attribute.Attribute#raw raw} function defined, that function will be called, and its return value will be used
+		 * Retrieves the *raw* value for the attribute given by `attributeName`. If the {@link data.attribute.Attribute Attributes} has a
+		 * {@link data.attribute.Attribute#raw raw} function defined, that function will be called, and its return value will be used
 		 * by the return of this method. If not, the underlying data that is currently stored will be returned, bypassing any
-		 * {@link Data.attribute.Attribute#get get} function defined on the {@link Data.attribute.Attribute Attribute}.
+		 * {@link data.attribute.Attribute#get get} function defined on the {@link data.attribute.Attribute Attribute}.
 		 * 
 		 * @method raw
 		 * @param {String} attributeName The name of the Attribute whose raw value to retieve.
-		 * @return {Mixed} The value of the attribute returned by the Attribute's {@link Data.attribute.Attribute#raw raw} function (if
-		 * one exists), or the underlying value of the attribute. Will return undefined if there is no {@link Data.attribute.Attribute#raw raw}
+		 * @return {Mixed} The value of the attribute returned by the Attribute's {@link data.attribute.Attribute#raw raw} function (if
+		 * one exists), or the underlying value of the attribute. Will return undefined if there is no {@link data.attribute.Attribute#raw raw}
 		 * function, and the value has never been set.
 		 */
 		raw : function( attributeName ) {
 			// <debug>
 			if( !( attributeName in this.attributes ) ) {
-				throw new Error( "Data.Model::raw() error: attribute '" + attributeName + "' was not found on the Model." );
+				throw new Error( "data.Model::raw() error: attribute '" + attributeName + "' was not found on the Model." );
 			}
 			// </debug>
 			
@@ -772,7 +772,7 @@ define( [
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This may be provided as the first argument to the
 		 *   method if no `attributeName` is to be provided. Options may include:
-		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true if a {@link Data.attribute.Attribute#persist persisted} 
+		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true if a {@link data.attribute.Attribute#persist persisted} 
 		 *   attribute is modified. 
 		 * 
 		 * @return {Boolean} True if the attribute has been modified, false otherwise.
@@ -835,9 +835,9 @@ define( [
 		 * @method getData
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
-		 *   the {@link Data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
-		 *   that the {@link Data.data.NativeObjectConverter#convert} method does. See that method for details.
-		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link Data.attribute.Attribute Attribute} values.
+		 *   the {@link data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
+		 *   that the {@link data.data.NativeObjectConverter#convert} method does. See that method for details.
+		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
 		getData : function( options ) {
 			return require( 'data/NativeObjectConverter' ).convert( this, options );
@@ -845,7 +845,7 @@ define( [
 		
 		
 		/**
-		 * Retrieves the values for all of the {@link Data.attribute.Attribute attributes} in the Model whose values have been changed since
+		 * Retrieves the values for all of the {@link data.attribute.Attribute attributes} in the Model whose values have been changed since
 		 * the last {@link #method-commit} or {@link #method-rollback}. 
 		 * 
 		 * The Model attributes are retrieved via the {@link #get} method, to pre-process the data before it is returned in the final hash, 
@@ -854,11 +854,11 @@ define( [
 		 * @method getChanges
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
-		 *   the {@link Data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
-		 *   that the {@link Data.data.NativeObjectConverter#convert} method does. See that method for details. Options specific to this method include:
+		 *   the {@link data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
+		 *   that the {@link data.data.NativeObjectConverter#convert} method does. See that method for details. Options specific to this method include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return only changed attributes that are 
-		 *   {@link Data.attribute.Attribute#persist persisted}. In the case of nested models, a nested model will only be returned in the resulting
-		 *   hashmap if one if its {@link Data.attribute.Attribute#persist persisted} attributes are modified. 
+		 *   {@link data.attribute.Attribute#persist persisted}. In the case of nested models, a nested model will only be returned in the resulting
+		 *   hashmap if one if its {@link data.attribute.Attribute#persist persisted} attributes are modified. 
 		 * 
 		 * @return {Object} A hash of the attributes that have been changed since the last {@link #method-commit} or {@link #method-rollback}.
 		 *   The hash's property names are the attribute names, and the hash's values are the new values.
@@ -975,7 +975,7 @@ define( [
 		 * 
 		 * @method clone
 		 * @param {Mixed} [id] A new id for the Model. Defaults to undefined.
-		 * @return {Data.Model} The new Model instance, which is a clone of the Model this method was called on.
+		 * @return {data.Model} The new Model instance, which is a clone of the Model this method was called on.
 		 */
 		clone : function( id ) {
 			var data = _.cloneDeep( this.getData() );
@@ -999,12 +999,12 @@ define( [
 		
 			
 		/**
-		 * Sets the {@link Data.persistence.proxy.Proxy} that for this particular model instance. Setting a proxy
+		 * Sets the {@link data.persistence.proxy.Proxy} that for this particular model instance. Setting a proxy
 		 * with this method will only affect this particular model instance, not any others.
 		 * 
 		 * To configure a proxy that will be used for all instances of the Model, set one in a Model sublass.
 		 * 
-		 * @param {Data.persistence.proxy.Proxy} The Proxy to set to this model instance.
+		 * @param {data.persistence.proxy.Proxy} The Proxy to set to this model instance.
 		 */
 		setProxy : function( proxy ) {
 			this.proxy = proxy;
@@ -1012,12 +1012,12 @@ define( [
 		
 			
 		/**
-		 * Retrieves the {@link Data.persistence.proxy.Proxy} that is configured for this model instance. To retrieve
+		 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for this model instance. To retrieve
 		 * the proxy that belongs to the Model class itself, use the static {@link #static-method-getProxy getProxy} 
 		 * method. Note that unless the model instance is configured with a different proxy, it will inherit the
 		 * Model's static proxy.
 		 * 
-		 * @return {Data.persistence.proxy.Proxy} The Proxy configured for the model, or null.
+		 * @return {data.persistence.proxy.Proxy} The Proxy configured for the model, or null.
 		 */
 		getProxy : function() {
 			return this.proxy || null;
@@ -1029,8 +1029,8 @@ define( [
 		 * 
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
-		 * - `model` : {@link Data.Model} This Model instance.
-		 * - `operation` : {@link Data.persistence.operation.Read} The ReadOperation that was executed.
+		 * - `model` : {@link data.Model} This Model instance.
+		 * - `operation` : {@link data.persistence.operation.Read} The ReadOperation that was executed.
 		 * 
 		 * @method reload
 		 * @param {Object} [options] An object which may contain the following properties:
@@ -1053,10 +1053,10 @@ define( [
 			
 			// <debug>
 			if( !this.proxy ) {
-				throw new Error( "Data.Model::reload() error: Cannot load. No proxy configured." );
+				throw new Error( "data.Model::reload() error: Cannot load. No proxy configured." );
 			}
 			if( this.isNew() ) {
-				throw new Error( "Data.Model::reload() error: Cannot load. Model does not have an idAttribute that relates to a valid attribute, or does not yet have a valid id (i.e. an id that is not null)." );
+				throw new Error( "data.Model::reload() error: Cannot load. Model does not have an idAttribute that relates to a valid attribute, or does not yet have a valid id (i.e. an id that is not null)." );
 			}
 			// </debug>
 			
@@ -1086,8 +1086,8 @@ define( [
 		 * 
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
-		 * - `model` : {@link Data.Model} This Model instance.
-		 * - `operation` : {@link Data.persistence.operation.Write} The WriteOperation that was executed.
+		 * - `model` : {@link data.Model} This Model instance.
+		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
 		 * @method save
 		 * @param {Object} [options] An object which may contain the following properties:
@@ -1110,11 +1110,11 @@ define( [
 			// <debug>
 			if( !this.proxy ) {
 				// No proxy, cannot save. Throw an error
-				throw new Error( "Data.Model::save() error: Cannot save. No proxy." );
+				throw new Error( "data.Model::save() error: Cannot save. No proxy." );
 			}
 			if( !this.hasIdAttribute() ) {
 				// No id attribute, throw an error
-				throw new Error( "Data.Model::save() error: Cannot save. Model does not have an idAttribute that relates to a valid attribute." );
+				throw new Error( "data.Model::save() error: Cannot save. Model does not have an idAttribute that relates to a valid attribute." );
 			}
 			// </debug>
 			
@@ -1161,7 +1161,7 @@ define( [
 		
 		/**
 		 * Private method that performs the actual save (persistence) of this Model. This method is called from {@link #save} at the appropriate
-		 * time. It is delayed from being called if the Model first has to persist non-{@link Data.attribute.DataComponent#embedded embedded}) 
+		 * time. It is delayed from being called if the Model first has to persist non-{@link data.attribute.DataComponent#embedded embedded}) 
 		 * child collections.
 		 * 
 		 * @private
@@ -1219,8 +1219,8 @@ define( [
 		 * 
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
-		 * - `model` : {@link Data.Model} This Model instance.
-		 * - `operation` : {@link Data.persistence.operation.Write} The WriteOperation that was executed.
+		 * - `model` : {@link data.Model} This Model instance.
+		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
 		 * @method destroy
 		 * @param {Object} [options] An object which may contain the following properties:
@@ -1261,7 +1261,7 @@ define( [
 				// No proxy, cannot destroy. Throw an error
 				// <debug>
 				if( !this.proxy ) {
-					throw new Error( "Data.Model::destroy() error: Cannot destroy model on server. No proxy." );
+					throw new Error( "data.Model::destroy() error: Cannot destroy model on server. No proxy." );
 				}
 				// </debug>
 				
@@ -1288,11 +1288,11 @@ define( [
 		
 		
 		/**
-		 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponent DataComponent Attributes}.
+		 * Retrieves an array of the Attributes configured for this model that are {@link data.attribute.DataComponent DataComponent Attributes}.
 		 * 
 		 * @protected
 		 * @method getDataComponentAttributes
-		 * @return {Data.attribute.DataComponent[]}
+		 * @return {data.attribute.DataComponent[]}
 		 */
 		getDataComponentAttributes : function() {
 			var attributes = this.attributes,
@@ -1309,13 +1309,13 @@ define( [
 		
 		
 		/**
-		 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.DataComponent DataComponent Attributes} 
-		 * which are also {@link Data.attribute.DataComponent#embedded}. This is a convenience method that supports the methods which
+		 * Retrieves an array of the Attributes configured for this model that are {@link data.attribute.DataComponent DataComponent Attributes} 
+		 * which are also {@link data.attribute.DataComponent#embedded}. This is a convenience method that supports the methods which
 		 * use the embedded DataComponent Attributes. 
 		 * 
 		 * @protected
 		 * @method getEmbeddedDataComponentAttributes
-		 * @return {Data.attribute.DataComponent[]} The array of embedded DataComponent Attributes.
+		 * @return {data.attribute.DataComponent[]} The array of embedded DataComponent Attributes.
 		 */
 		getEmbeddedDataComponentAttributes : function() {
 			var dataComponentAttributes = this.getDataComponentAttributes(),
@@ -1334,11 +1334,11 @@ define( [
 		
 		
 		/**
-		 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.Collection Collection Attributes}.
+		 * Retrieves an array of the Attributes configured for this model that are {@link data.attribute.Collection Collection Attributes}.
 		 * 
 		 * @protected
 		 * @method getCollectionAttributes
-		 * @return {Data.attribute.Collection[]}
+		 * @return {data.attribute.Collection[]}
 		 */
 		getCollectionAttributes : function() {
 			var dataComponentAttributes = this.getDataComponentAttributes(),
@@ -1357,12 +1357,12 @@ define( [
 		
 		
 		/**
-		 * Retrieves an array of the Attributes configured for this model that are {@link Data.attribute.Collection Collection Attributes},
-		 * but are *not* {@link Data.attribute.Collection#embedded embedded} attributes (i.e. they are "related" attributes).
+		 * Retrieves an array of the Attributes configured for this model that are {@link data.attribute.Collection Collection Attributes},
+		 * but are *not* {@link data.attribute.Collection#embedded embedded} attributes (i.e. they are "related" attributes).
 		 * 
 		 * @protected
 		 * @method getRelatedCollectionAttributes
-		 * @return {Data.attribute.Collection[]} 
+		 * @return {data.attribute.Collection[]} 
 		 */
 		getRelatedCollectionAttributes : function() {
 			var collectionAttributes = this.getCollectionAttributes(),

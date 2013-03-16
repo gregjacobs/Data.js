@@ -4,7 +4,7 @@ define( [
 ], function( ModelCache ) {
 	
 	tests.unit.add( new Ext.test.TestCase( {
-		name: 'Data.ModelCache',
+		name: 'data.ModelCache',
 		
 		setUp : function() {
 			this.MockModel1 = function() {};

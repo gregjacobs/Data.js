@@ -3,7 +3,7 @@ define( function() {
 
 	/**
 	 * @private
-	 * @class Data.ModelCache
+	 * @class data.ModelCache
 	 * @singleton
 	 * 
 	 * Singleton class which caches models by their type (subclass type), and id. This is used
@@ -16,7 +16,7 @@ define( function() {
 		
 		/**
 		 * The hashmap of model references stored in the cache. This hashmap is a two-level hashmap, first keyed by the
-		 * {@link Data.Model Model's} assigned `__Data_modelTypeId`, and then its instance id.
+		 * {@link data.Model Model's} assigned `__Data_modelTypeId`, and then its instance id.
 		 * 
 		 * @private
 		 * @property {Object} models
@@ -30,9 +30,9 @@ define( function() {
 		 * the provided `model` is simply returned.
 		 * 
 		 * @method get
-		 * @param {Data.Model} model
+		 * @param {data.Model} model
 		 * @param {String} [id] The ID of the model (if it has one).
-		 * @return {Data.Model}
+		 * @return {data.Model}
 		 */
 		get : function( model, id ) {
 			var modelClass = model.constructor,

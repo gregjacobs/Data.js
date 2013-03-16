@@ -9,34 +9,34 @@ define( [
 	
 	/**
 	 * @private
-	 * @class Data.data.NativeObjectConverter
+	 * @class data.data.NativeObjectConverter
 	 * @singleton
 	 * 
-	 * NativeObjectConverter allows for the conversion of {@link Data.Collection Collection} / {@link Data.Model Models}
+	 * NativeObjectConverter allows for the conversion of {@link data.Collection Collection} / {@link data.Model Models}
 	 * to their native Array / Object representations, while dealing with circular dependencies.
 	 */
 	var NativeObjectConverter = {
 		
 		/**
-		 * Converts a {@link Data.Collection Collection} or {@link Data.Model} to its native Array/Object representation,
+		 * Converts a {@link data.Collection Collection} or {@link data.Model} to its native Array/Object representation,
 		 * while dealing with circular dependencies.
 		 * 
 		 * @method convert
 		 * 
-		 * @param {Data.Collection/Data.Model} A Collection or Model to convert to its native Array/Object representation.
+		 * @param {data.Collection/data.Model} A Collection or Model to convert to its native Array/Object representation.
 		 * @param {Object} [options] An object (hashmap) of options to change the behavior of this method. This may include:
-		 * @param {String[]} [options.attributeNames] In the case that a {@link Data.Model Model} is provided to this method, this
+		 * @param {String[]} [options.attributeNames] In the case that a {@link data.Model Model} is provided to this method, this
 		 *   may be an array of the attribute names that should be returned in the output object.  Other attributes will not be processed.
 		 *   (Note: only affects the Model passed to this method, and not nested models.)
 		 * @param {Boolean} [options.persistedOnly] True to have the method only return data for the persisted attributes on
-		 *   Models (i.e. attributes with the {@link Data.attribute.Attribute#persist persist} config set to true, which is the default).
-		 * @param {Boolean} [options.raw] True to have the method only return the raw data for the attributes, by way of the {@link Data.Model#raw} method. 
+		 *   Models (i.e. attributes with the {@link data.attribute.Attribute#persist persist} config set to true, which is the default).
+		 * @param {Boolean} [options.raw] True to have the method only return the raw data for the attributes, by way of the {@link data.Model#raw} method. 
 		 *   This is used for persistence, where the raw data values go to the server rather than higher-level objects, or where some kind of serialization
 		 *   to a string must take place before persistence (such as for Date objects). 
 		 *   
-		 *   As a hack (unfortunately, due to limited time), if passing the 'raw' option as true, and a nested {@link Data.Collection Collection} is in a 
-		 *   {@link Data.attribute.Collection} that is *not* {@link Data.attribute.Collection#embedded}, then only an array of the 
-		 *   {@link Data.Model#idAttribute ID attribute} values is returned for that collection. The final data for a related (i.e. non-embedded) nested
+		 *   As a hack (unfortunately, due to limited time), if passing the 'raw' option as true, and a nested {@link data.Collection Collection} is in a 
+		 *   {@link data.attribute.Collection} that is *not* {@link data.attribute.Collection#embedded}, then only an array of the 
+		 *   {@link data.Model#idAttribute ID attribute} values is returned for that collection. The final data for a related (i.e. non-embedded) nested
 		 *   Collection may look something like this:
 		 *     
 		 *     myRelatedCollection : [
@@ -63,7 +63,7 @@ define( [
 			cache[ dataComponent.getClientId() ] = data;
 			
 			// Recursively goes through the data structure, and convert models to objects, and collections to arrays
-			_.assign( data, (function convert( dataComponent, attribute ) {  // attribute is only used when processing models, and a nested collection is come across, where the Data.attribute.Attribute is passed along for processing when 'raw' is provided as true. See doc for 'raw' option about this hack..
+			_.assign( data, (function convert( dataComponent, attribute ) {  // attribute is only used when processing models, and a nested collection is come across, where the data.attribute.Attribute is passed along for processing when 'raw' is provided as true. See doc for 'raw' option about this hack..
 				var clientId, 
 				    cachedDataComponent,
 				    data,

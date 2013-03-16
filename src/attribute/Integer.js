@@ -7,8 +7,8 @@ define( [
 ], function( _, Class, Attribute, NumberAttribute ) {
 	
 	/**
-	 * @class Data.attribute.Integer
-	 * @extends Data.attribute.Number
+	 * @class data.attribute.Integer
+	 * @extends data.attribute.Number
 	 * 
 	 * Attribute definition class for an Attribute that takes an integer data value. If a decimal
 	 * number is provided (i.e. a "float"), the decimal will be ignored, and only the integer value used.
@@ -23,9 +23,9 @@ define( [
 		 * This method will strip off any decimal value from a provided number.
 		 * 
 		 * @method beforeSet
-		 * @param {Data.Model} model The Model instance that is providing the value. This is normally not used,
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link Data.Model#set} method.
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
 		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
 		 * @return {Boolean} The converted value.
 		 */

@@ -8,7 +8,7 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.persistence.proxy.Proxy
+	 * @class data.persistence.proxy.Proxy
 	 * @extends Observable
 	 * 
 	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) operations on
@@ -33,7 +33,7 @@ define( [
 			
 			/**
 			 * Registers a Proxy subclass by name, so that it may be created by an anonymous object
-			 * with a `type` attribute when set to the prototype of a {@link Data.Model}.
+			 * with a `type` attribute when set to the prototype of a {@link data.Model}.
 			 *
 			 * @static  
 			 * @method register
@@ -55,17 +55,17 @@ define( [
 			
 			
 			/**
-			 * Creates (instantiates) a {@link Data.persistence.proxy.Proxy} based on its type name, given
+			 * Creates (instantiates) a {@link data.persistence.proxy.Proxy} based on its type name, given
 			 * a configuration object that has a `type` property. If an already-instantiated 
-			 * {@link Data.persistence.proxy.Proxy Proxy} is provided, it will simply be returned unchanged.
+			 * {@link data.persistence.proxy.Proxy Proxy} is provided, it will simply be returned unchanged.
 			 * 
 			 * @static
 			 * @method create
 			 * @param {Object} config The configuration object for the Proxy. Config objects should have the property `type`, 
-			 *   which determines which type of {@link Data.persistence.proxy.Proxy} will be instantiated. If the object does not
-			 *   have a `type` property, an error will be thrown. Note that already-instantiated {@link Data.persistence.proxy.Proxy Proxies} 
+			 *   which determines which type of {@link data.persistence.proxy.Proxy} will be instantiated. If the object does not
+			 *   have a `type` property, an error will be thrown. Note that already-instantiated {@link data.persistence.proxy.Proxy Proxies} 
 			 *   will simply be returned unchanged. 
-			 * @return {Data.persistence.proxy.Proxy} The instantiated Proxy.
+			 * @return {data.persistence.proxy.Proxy} The instantiated Proxy.
 			 */
 			create : function( config ) {
 				var type = config.type ? config.type.toLowerCase() : undefined;
@@ -79,26 +79,26 @@ define( [
 					
 				} else if( !( 'type' in config ) ) {
 					// No `type` property provided on config object
-					throw new Error( "Data.persistence.proxy.Proxy.create(): No `type` property provided on proxy config object" );
+					throw new Error( "data.persistence.proxy.Proxy.create(): No `type` property provided on proxy config object" );
 					 
 				} else {
 					// No registered Proxy type with the given type, throw an error
-					throw new Error( "Data.persistence.proxy.Proxy.create(): Unknown Proxy type: '" + type + "'" );
+					throw new Error( "data.persistence.proxy.Proxy.create(): Unknown Proxy type: '" + type + "'" );
 				}
 			}
 		},
 		
 		
 		/**
-		 * @cfg {Data.persistence.reader.Reader} reader
+		 * @cfg {data.persistence.reader.Reader} reader
 		 * 
 		 * The reader to use to transform the raw data that is read by the proxy into JavaScript object(s),
-		 * so that they can be passed to a {@link Data.Model} or {@link Data.Collection}.
+		 * so that they can be passed to a {@link data.Model} or {@link data.Collection}.
 		 * 
-		 * This defaults to a {@link Data.persistence.reader.Json Json} reader, as this is the most common
+		 * This defaults to a {@link data.persistence.reader.Json Json} reader, as this is the most common
 		 * format. However, other implementations may be created and used, which may include method overrides
-		 * to apply transformations to incoming data before that data is handed off to a {@link Data.Model Model}
-		 * or {@link Data.Collection Collection}.
+		 * to apply transformations to incoming data before that data is handed off to a {@link data.Model Model}
+		 * or {@link data.Collection Collection}.
 		 */
 		
 		
@@ -121,7 +121,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method create
-		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
 		 *   the creation on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -135,7 +135,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method read
-		 * @param {Data.persistence.operation.Read} operation The ReadOperation instance to represent
+		 * @param {data.persistence.operation.Read} operation The ReadOperation instance to represent
 		 *   the reading of data from the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -149,7 +149,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method update
-		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
 		 *   the update on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
@@ -163,7 +163,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method destroy
-		 * @param {Data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
 		 *   the destruction (deletion) on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 

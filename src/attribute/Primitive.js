@@ -7,8 +7,8 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.attribute.Primitive
-	 * @extends Data.attribute.Attribute
+	 * @class data.attribute.Primitive
+	 * @extends data.attribute.Attribute
 	 * 
 	 * Base Attribute definition class for an Attribute that holds a JavaScript primitive value 
 	 * (i.e. A Boolean, Number, or String).

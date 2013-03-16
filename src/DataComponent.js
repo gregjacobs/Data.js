@@ -8,10 +8,10 @@ define( [
 	/**
 	 * @private
 	 * @abstract
-	 * @class Data.DataComponent
+	 * @class data.DataComponent
 	 * @extends Observable
 	 * 
-	 * Base class for data-holding classes ({@link Data.Model} and {@link Data.Collection}), that abstracts out some
+	 * Base class for data-holding classes ({@link data.Model} and {@link data.Collection}), that abstracts out some
 	 * of the commonalities between them.
 	 * 
 	 * This class is used internally by the framework, and shouldn't be used directly.
@@ -20,7 +20,7 @@ define( [
 		abstractClass : true,
 		
 		/**
-		 * @cfg {Data.persistence.proxy.Proxy} proxy
+		 * @cfg {data.persistence.proxy.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the DataComponent's data to/from persistent
 		 * storage. If this is not specified, the DataComponent may not save or load its data to/from an external
@@ -65,9 +65,9 @@ define( [
 		 * @abstract
 		 * @method getData
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
-		 *   the {@link Data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
-		 *   that the {@link Data.data.NativeObjectConverter#convert} method does. See that method for details.
-		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link Data.attribute.Attribute Attribute} values.
+		 *   the {@link data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
+		 *   that the {@link data.data.NativeObjectConverter#convert} method does. See that method for details.
+		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
 		getData : Class.abstractMethod,
 		
@@ -79,7 +79,7 @@ define( [
 		 * @method isModified
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method.  Options may include:
-		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true if a {@link Data.attribute.Attribute#persist persisted} 
+		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true if a {@link data.attribute.Attribute#persist persisted} 
 		 *   attribute of a Model is modified within the DataComponent. 
 		 * 
 		 * @return {Boolean}
@@ -111,7 +111,7 @@ define( [
 		 * the same proxy instance is shared between all instances of the DataComponent.
 		 * 
 		 * @method getProxy
-		 * @return {Data.persistence.proxy.Proxy} The configured persistence proxy, or `null` if there is none configured.
+		 * @return {data.persistence.proxy.Proxy} The configured persistence proxy, or `null` if there is none configured.
 		 */
 		getProxy : function() {
 			return this.proxy;

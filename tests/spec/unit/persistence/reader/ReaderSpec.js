@@ -4,7 +4,7 @@ define( [
 	'data/persistence/reader/Reader'
 ], function( Class, Reader ) {
 	
-	describe( 'Data.persistence.reader.Reader', function() {
+	describe( 'data.persistence.reader.Reader', function() {
 		var ConcreteReader = Class.extend( Reader, {
 			convertRaw : function( rawData ) { return rawData; }  // simply returns data provided to it
 		} );

@@ -40,7 +40,7 @@ define( [
 ) {
 
 	tests.unit.add( new Ext.test.TestSuite( {
-		name: 'Data.Model',
+		name: 'data.Model',
 		
 		
 		items : [
@@ -267,10 +267,10 @@ define( [
 						_should : {
 							error : {
 								"Attempting to instantiate a proxy with no 'type' attribute should throw an error" :
-									"Data.persistence.proxy.Proxy.create(): No `type` property provided on proxy config object",
+									"data.persistence.proxy.Proxy.create(): No `type` property provided on proxy config object",
 									
 								"Attempting to instantiate a proxy with an invalid 'type' attribute should throw an error" :
-									"Data.persistence.proxy.Proxy.create(): Unknown Proxy type: 'nonexistentproxy'"
+									"data.persistence.proxy.Proxy.create(): Unknown Proxy type: 'nonexistentproxy'"
 							}
 						},
 						
@@ -623,9 +623,9 @@ define( [
 				_should : {
 					error : {
 						"set() should throw an error when trying to set an attribute that isn't defined (using the attr and value args)" :
-							"Data.Model.set(): An attribute with the attributeName 'nonExistentAttr' was not found.",
+							"data.Model.set(): An attribute with the attributeName 'nonExistentAttr' was not found.",
 						"set() should throw an error when trying to set an attribute that isn't defined (using the attr as an object literal arg)" :
-							"Data.Model.set(): An attribute with the attributeName 'nonExistentAttr' was not found."
+							"data.Model.set(): An attribute with the attributeName 'nonExistentAttr' was not found."
 					}
 				},
 				
@@ -1754,7 +1754,7 @@ define( [
 				
 				setUp : function() {					
 					this.ConcreteDataComponentAttribute = DataComponentAttribute.extend( {} );
-					this.ConcreteDataComponent = Data.DataComponent.extend( { 
+					this.ConcreteDataComponent = data.DataComponent.extend( { 
 						// Implementation of abstract interface
 						getData : Data.emptyFn,
 						isModified : Data.emptyFn,
@@ -2040,7 +2040,7 @@ define( [
 				_should : {
 					error : {
 						"reload() should throw an error if there is no configured proxy" : 
-							"Data.Model::reload() error: Cannot load. No proxy configured."
+							"data.Model::reload() error: Cannot load. No proxy configured."
 					}
 				},
 				
@@ -2233,7 +2233,7 @@ define( [
 						_should : {
 							error : {
 								"save() should throw an error if there is no configured proxy" : 
-									"Data.Model::save() error: Cannot save. No proxy."
+									"data.Model::save() error: Cannot save. No proxy."
 							}
 						},
 						
@@ -3031,7 +3031,7 @@ define( [
 						_should : {
 							error : {
 								"destroy() should throw an error if there is no configured proxy when it tries to destroy a model that has been persisted (i.e. has an id)" : 
-									"Data.Model::destroy() error: Cannot destroy model on server. No proxy."
+									"data.Model::destroy() error: Cannot destroy model on server. No proxy."
 							}
 						},
 						

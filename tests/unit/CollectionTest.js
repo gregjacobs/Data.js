@@ -10,7 +10,7 @@ define( [
 	'data/persistence/operation/Read'
 ], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, ReadOperation ) {
 	tests.unit.add( new Ext.test.TestSuite( {
-		name: 'Data.Collection',
+		name: 'data.Collection',
 		
 		
 		items : [
@@ -1368,11 +1368,11 @@ define( [
 				
 				/*
 				setUp : function() {
-					// Hijack the Data.data.NativeObjectConverter for the tests
-					this.origNativeObjectConverter = Data.data.NativeObjectConverter;
+					// Hijack the data.data.NativeObjectConverter for the tests
+					this.origNativeObjectConverter = data.data.NativeObjectConverter;
 					
 					var args = this.args = {};
-					Data.data.NativeObjectConverter = {
+					data.data.NativeObjectConverter = {
 						convert : function() {
 							args[ 0 ] = arguments[ 0 ];
 							args[ 1 ] = arguments[ 1 ];
@@ -1382,7 +1382,7 @@ define( [
 				
 				tearDown : function() {
 					// Restore the NativeObjectConverter after the tests
-					Data.data.NativeObjectConverter = this.origNativeObjectConverter;
+					data.data.NativeObjectConverter = this.origNativeObjectConverter;
 				},
 				*/
 				
@@ -1890,10 +1890,10 @@ define( [
 				_should : {
 					error : {
 						"load() should throw an error if no proxy is configured" :
-							"Data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`.",
+							"data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`.",
 					
 						"load() should throw an error if it has no proxy but has a Model, but that model has no proxy configured" :
-							"Data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`."
+							"data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`."
 					}
 				},
 				

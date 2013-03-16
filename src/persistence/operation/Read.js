@@ -6,13 +6,13 @@ define( [
 ], function( _, Class, Operation ) {
 	
 	/**
-	 * @class Data.persistence.operation.Read
-	 * @extends Data.persistence.operation.Operation
+	 * @class data.persistence.operation.Read
+	 * @extends data.persistence.operation.Operation
 	 * 
 	 * Represents a read operation from a persistent storage mechanism. 
 	 * 
-	 * This class is used internally by the framework when making requests to {@link Data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link Data.Model Model}/{@link Data.Collection Collection} operations 
+	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} operations 
 	 * complete.
 	 */
 	var ReadOperation = Class.extend( Operation, {
@@ -20,7 +20,7 @@ define( [
 		/**
 		 * @cfg {Number/String} modelId
 		 * 
-		 * A single ID to load. This is used for loading a single {@link Data.Model Model}.
+		 * A single ID to load. This is used for loading a single {@link data.Model Model}.
 		 * This value will be converted to a String when retrieved by {@link #getModelId}.
 		 * If this value is not provided, it will be assumed to load a collection of models.
 		 */
@@ -29,7 +29,7 @@ define( [
 		 * @cfg {Number} start
 		 * 
 		 * The start index of where to load models from. Used for when loading paged sets of data
-		 * in a {@link Data.Collection Collection}.
+		 * in a {@link data.Collection Collection}.
 		 */
 		start : 0,
 		
@@ -37,7 +37,7 @@ define( [
 		 * @cfg {Number} limit
 		 * 
 		 * The number of models to load. Used in conjunction with the {@link #start} config,
-		 * when loading paged sets of data in a {@link Data.Collection Collection}.
+		 * when loading paged sets of data in a {@link data.Collection Collection}.
 		 * 
 		 * Defaults to 0, for "no limit"
 		 */

@@ -8,8 +8,8 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.attribute.Number
-	 * @extends Data.attribute.Primitive
+	 * @class data.attribute.Number
+	 * @extends data.attribute.Primitive
 	 * 
 	 * Abstract base class for an Attribute that takes a number data value.
 	 */
@@ -47,7 +47,7 @@ define( [
 		 * A regular expression for stripping non-numeric characters from a numeric value. Defaults to `/[\$,%]/g`.
 		 * This should be overridden for localization. A way to do this globally is, for example:
 		 * 
-		 *     Data.attribute.Number.prototype.stripCharsRegex = /newRegexHere/g;
+		 *     data.attribute.Number.prototype.stripCharsRegex = /newRegexHere/g;
 		 */
 		stripCharsRegex : /[\$,%]/g
 		

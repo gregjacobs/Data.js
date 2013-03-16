@@ -6,10 +6,10 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class Data.persistence.ResultSet
+	 * @class data.persistence.ResultSet
 	 * @extends Object
 	 * 
-	 * Simple wrapper which holds the data returned by any {@link Data.persistence.proxy.Proxy Proxy} 
+	 * Simple wrapper which holds the data returned by any {@link data.persistence.proxy.Proxy Proxy} 
 	 * operation, along with any metadata such as the total number of data records in a windowed 
 	 * data set.
 	 */
@@ -18,9 +18,9 @@ define( [
 		/**
 		 * @cfg {Object/Object[]} records
 		 * 
-		 * One or more data records that have been returned by a {@link Data.persistence.proxy.Proxy Proxy}, 
+		 * One or more data records that have been returned by a {@link data.persistence.proxy.Proxy Proxy}, 
 		 * after they have been converted to plain JavaScript objects by a 
-		 * {@link Data.persistence.reader.Reader Reader}.
+		 * {@link data.persistence.reader.Reader Reader}.
 		 */
 		
 		/**
@@ -72,7 +72,7 @@ define( [
 		 * To find the number of records in this particular ResultSet, use {@link #getRecords} method 
 		 * and check the `length` property.
 		 * 
-		 * @return {Number} The total count read by a {@link Data.persistence.reader.Reader Reader}, or
+		 * @return {Number} The total count read by a {@link data.persistence.reader.Reader Reader}, or
 		 *   `undefined` if no such value was read.
 		 */
 		getTotalCount : function() {

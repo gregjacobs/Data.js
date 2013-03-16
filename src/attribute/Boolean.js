@@ -7,8 +7,8 @@ define( [
 ], function( _, Class, Attribute, PrimitiveAttribute ) {
 	
 	/**
-	 * @class Data.attribute.Boolean
-	 * @extends Data.attribute.Primitive
+	 * @class data.attribute.Boolean
+	 * @extends data.attribute.Primitive
 	 * 
 	 * Attribute definition class for an Attribute that takes a boolean (i.e. true/false) data value.
 	 */
@@ -42,9 +42,9 @@ define( [
 		 * will return null. 
 		 * 
 		 * @method beforeSet
-		 * @param {Data.Model} model The Model instance that is providing the value. This is normally not used,
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link Data.Model#set} method.
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
 		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
 		 * @return {Boolean} The converted value.
 		 */
