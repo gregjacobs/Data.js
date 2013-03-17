@@ -1029,6 +1029,8 @@ define( [
 		 * 
 		 * @method load
 		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
 		 * @param {Function} [options.error] Function to call if the loading fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
@@ -1063,7 +1065,9 @@ define( [
 				.always( _.bind( completeCb, scope ) );
 			
 			// Make a request to read the data from the persistent storage
-			var operation = new ReadOperation();
+			var operation = new ReadOperation( {
+				params : options.params
+			} );
 			proxy.read( operation ).then(
 				function( operation ) { me.onLoadSuccess( deferred, operation ); },
 				function( operation ) { me.onLoadError( deferred, operation ); }

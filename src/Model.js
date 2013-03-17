@@ -1032,6 +1032,8 @@ define( [
 		 * 
 		 * @method reload
 		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.failure] Function to call if the save fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
@@ -1068,7 +1070,7 @@ define( [
 			
 			// Make a request to load the data from the proxy
 			var me = this,  // for closures
-			    operation  = new ReadOperation( { modelId: this.getId() } );
+			    operation = new ReadOperation( { modelId: this.getId(), params: options.params } );
 			this.proxy.read( operation ).then(
 				function( operation ) { me.set( operation.getResultSet().getRecords()[ 0 ] ); me.commit(); deferred.resolve( me, operation ); },
 				function( operation ) { deferred.reject( me, operation ); }
@@ -1089,6 +1091,8 @@ define( [
 		 * 
 		 * @method save
 		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.error] Function to call if the save fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
@@ -1099,7 +1103,8 @@ define( [
 		 */
 		save : function( options ) {
 			options = options || {};
-			var emptyFn     = Data.emptyFn,
+			var me          = this,  // for closures
+			    emptyFn     = Data.emptyFn,
 			    scope       = options.scope    || options.context || this,
 			    successCb   = options.success  || emptyFn,
 			    errorCb     = options.error    || emptyFn,
@@ -1119,8 +1124,9 @@ define( [
 			// First, synchronize any nested related (i.e. non-embedded) Collections of the model.
 			// Chain the synchronization of collections to the synchronization of this Model itself to create
 			// the `modelSavePromise`.
-			var doSave = _.bind( this.doSave, this ),  // so the next line reads cleaner, as if it were a sentence
-			    modelSavePromise = this.syncRelatedCollections().then( doSave );
+			var modelSavePromise = this.syncRelatedCollections().then( function() { 
+				return me.doSave( options ); 
+		    } );
 			
 			// Set up any callbacks provided in the options
 			modelSavePromise
@@ -1163,12 +1169,12 @@ define( [
 		 * child collections.
 		 * 
 		 * @private
-		 * @method doSave
+		 * @param {Object} options The `options` object provided to the {@link #save} method.
 		 * @return {jQuery.Promise} The observable Promise object which can be used to determine if the save call has completed
 		 *   successfully (`done` callback) or errored (`fail` callback), and to perform any actions that need to be taken in either
 		 *   case with the `always` callback.
 		 */
-		doSave : function() {
+		doSave : function( options ) {
 			var me = this,   // for closures
 			    deferred = new jQuery.Deferred();
 			
@@ -1200,7 +1206,8 @@ define( [
 			
 			// Make a request to create or update the data on the server
 			var writeOperation = new WriteOperation( {
-				models : [ this ]
+				models : [ this ],
+				params : options.params
 			} );
 			this.proxy[ this.isNew() ? 'create' : 'update' ]( writeOperation ).then(
 				function( operation ) { handleServerUpdate( operation.getResultSet() ); deferred.resolve( me, writeOperation ); },
@@ -1222,6 +1229,8 @@ define( [
 		 * 
 		 * @method destroy
 		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
 		 * @param {Function} [options.success] Function to call if the destroy (deletion) is successful.
 		 * @param {Function} [options.error] Function to call if the destroy (deletion) fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
@@ -1241,7 +1250,8 @@ define( [
 			    completeCb  = options.complete || emptyFn;
 			
 			var operation = new WriteOperation( {
-				models : [ this ]
+				models : [ this ],
+				params : options.params
 			} );
 			
 			deferred.done( function() {

@@ -1952,6 +1952,28 @@ define( [
 				},
 				
 				
+				"load() should call the proxy's read() method with any `params` option provided to the method" : function() {
+					var operation;
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						operation = op;
+						return new jQuery.Deferred().promise();
+					} );
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy
+					} );
+					
+					
+					var params = { a : 1 };
+					var collection = new MyCollection();
+					collection.load( {
+						params : params
+					} );
+					
+					Y.Assert.areSame( params, operation.params );
+				},
+				
+				
 				"load() should load the models returned by the data in the proxy" : function() {
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
 						operation.setResultSet( new ResultSet( {

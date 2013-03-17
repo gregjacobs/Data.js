@@ -2079,6 +2079,30 @@ define( [
 				},
 				
 				
+				"reload() should pass any `params` option provided to the method to proxy's read() method, in the Operation object" : function() {
+					var operation;
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						operation = op;
+						return new jQuery.Deferred().promise();
+					} );
+					
+					var MyModel = Model.extend( {
+						attributes : [ 'id', 'name' ],
+						proxy : this.proxy
+					} );
+					
+					
+					// Instantiate and run the reload() method to delegate
+					var model = new MyModel( { id: 1 } ), 
+					    params = { a: 1 };
+					
+					model.reload( {
+						params : params
+					} );
+					Y.Assert.areSame( params, operation.params );
+				},
+				
+				
 				"reload() should call its success/complete callbacks, and resolve its deferred with the arguments: model, operation" : function() {
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
 						operation.setResultSet( new ResultSet( {
@@ -2295,6 +2319,33 @@ define( [
 							} catch( msg ) {
 								Y.Assert.fail( msg );
 							}
+						},
+				
+				
+						"save() should pass any `params` option provided to the method to proxy's create() (or update()) method, in the Operation object" : function() {
+							var operation;
+							JsMockito.when( this.proxy ).create().then( function( op ) {
+								operation = op;
+								return new jQuery.Deferred().promise();
+							} );
+							
+							var MyModel = Model.extend( {
+								attributes : [ 'id' ],
+								idAttribute : 'id',
+								
+								proxy : this.proxy
+							} );
+							
+							
+							// Instantiate and run the reload() method to delegate
+							var model = new MyModel(), 
+							    params = { a: 1 };
+							
+							model.save( {
+								params : params
+							} );
+							
+							Y.Assert.areSame( params, operation.params );
 						}
 					},
 						
@@ -3027,6 +3078,21 @@ define( [
 					{
 						name : "General destroy() tests",
 						
+						setUp : function() {
+							this.proxy = JsMockito.mock( Proxy.extend( {
+								// Implementation of abstract interface
+								create: Data.emptyFn,
+								read: Data.emptyFn,
+								update: Data.emptyFn,
+								destroy: Data.emptyFn
+							} ) );
+							
+							this.Model = Model.extend( {
+								attributes : [ 'id', 'name' ],
+								proxy : this.proxy
+							} );
+						},
+						
 						// Special instructions
 						_should : {
 							error : {
@@ -3049,47 +3115,44 @@ define( [
 						
 						
 						"destroy() should delegate to its proxy's destroy() method to persist the destruction of the model" : function() {
-							var proxy = JsMockito.mock( Proxy.extend( {
-								create  : Data.emptyFn,
-								read    : Data.emptyFn,
-								update  : Data.emptyFn,
-								destroy : Data.emptyFn
-							} ) );
-							JsMockito.when( proxy ).destroy().thenReturn( new jQuery.Deferred().promise() );
+							JsMockito.when( this.proxy ).destroy().thenReturn( new jQuery.Deferred().promise() );
 							
-							var MyModel = Model.extend( {
-								attributes : [ 'id' ],
-								proxy : proxy
-							} );
-							
-							var model = new MyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
+							var model = new this.Model( { id: 1 } );  // the model needs an id to be considered as persisted on the server
 							
 							// Run the destroy() method to delegate 
 							model.destroy();
 							
 							try {
-								JsMockito.verify( proxy ).destroy();
+								JsMockito.verify( this.proxy ).destroy();
 							} catch( e ) {
 								Y.Assert.fail( "The model should have delegated to the destroy method exactly once." );
 							}
 						},
+				
+				
+						"destroy() should pass any `params` option provided to the method to proxy's destroy() method, in the Operation object" : function() {
+							var operation;
+							JsMockito.when( this.proxy ).destroy().then( function( op ) {
+								operation = op;
+								return new jQuery.Deferred().promise();
+							} );							
+							
+							// Instantiate and run the reload() method to delegate
+							var model = new this.Model( { id: 1 } ),  // the model needs an id to be considered as persisted on the server
+							    params = { a: 1 };
+							
+							model.destroy( {
+								params : params
+							} );
+							
+							Y.Assert.areSame( params, operation.params );
+						},
 						
 						
 						"upon successful destruction of the Model, the Model should fire its 'destroy' event" : function() {
-							var proxy = JsMockito.mock( Proxy.extend( {
-								create  : Data.emptyFn,
-								read    : Data.emptyFn,
-								update  : Data.emptyFn,
-								destroy : Data.emptyFn
-							} ) );
-							JsMockito.when( proxy ).destroy().thenReturn( new jQuery.Deferred().resolve().promise() );
-							
-							var MyModel = Model.extend( {
-								attributes : [ 'id' ],
-								proxy : proxy
-							} );
-							
-							var model = new MyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
+							JsMockito.when( this.proxy ).destroy().thenReturn( new jQuery.Deferred().resolve().promise() );
+														
+							var model = new this.Model( { id: 1 } );  // the model needs an id to be considered as persisted on the server
 							
 							var destroyEventFired = false;
 							model.addListener( 'destroy', function() {

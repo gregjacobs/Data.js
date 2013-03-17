@@ -27,7 +27,16 @@ define( [
 		/**
 		 * @cfg {Object} params
 		 * 
-		 * Any parameters to pass along for the Operation.
+		 * A map of any parameters to pass along for the Operation. These parameters will be interpreted by the
+		 * particular {@link data.persistence.proxy.Proxy} that is being used. For example, the 
+		 * {@link data.persistence.proxy.Ajax Ajax} proxy appends them as URL parameters for the request.
+		 * 
+		 * Example:
+		 * 
+		 *     params : {
+		 *         param1: "value1",
+		 *         param2: "value2
+		 *     }
 		 */
 		
 		
