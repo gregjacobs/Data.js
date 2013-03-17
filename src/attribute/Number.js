@@ -47,7 +47,9 @@ define( [
 		 * A regular expression for stripping non-numeric characters from a numeric value. Defaults to `/[\$,%]/g`.
 		 * This should be overridden for localization. A way to do this globally is, for example:
 		 * 
-		 *     data.attribute.Number.prototype.stripCharsRegex = /newRegexHere/g;
+		 *     require( [ 'data/attribute/Number' ], function( NumberAttribute ) {
+		 *         NumberAttribute.prototype.stripCharsRegex = /newRegexHere/g;
+		 *     } );
 		 */
 		stripCharsRegex : /[\$,%]/g
 		
