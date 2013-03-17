@@ -122,6 +122,30 @@ define( [
 					var operation = new ReadOperation( { modelId: 1 } );
 					
 					Y.Assert.areSame( '/testUrl?id=1', proxy.buildUrl( 'read', operation ) );
+				},
+				
+				
+				"buildUrl() should return the base url + any extra params passed on the Operation" : function() {
+					var proxy = new AjaxProxy( {
+						url : '/testUrl'
+					} );
+					
+					var readOperation = new ReadOperation( { 
+						modelId: 1,
+						params : {
+							p1: "value1",
+							p2: 2
+						}
+					} );
+					Y.Assert.areSame( '/testUrl?p1=value1&p2=2&id=1', proxy.buildUrl( 'read', readOperation ) );
+					
+					var writeOperation = new WriteOperation( { 
+						params : {
+							p1: "value1",
+							p2: 2
+						}
+					} );
+					Y.Assert.areSame( '/testUrl?p1=value1&p2=2', proxy.buildUrl( 'update', writeOperation ) );
 				}
 			}
 		]

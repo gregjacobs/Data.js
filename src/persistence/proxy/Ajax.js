@@ -188,7 +188,7 @@ define( [
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {
-			var params = {};
+			var params = operation.getParams() || {};
 			if( action === 'read' ) {
 				var modelId = operation.getModelId();
 				if( modelId !== null ) 
