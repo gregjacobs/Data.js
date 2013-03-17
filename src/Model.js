@@ -285,8 +285,6 @@ define( [
 		 * @param {Object} [data] Any initial data for the {@link #cfg-attributes attributes}, specified in an object (hash map). See {@link #set}.
 		 */
 		constructor : function( data ) {
-			var me = this;
-			
 			// Default the data to an empty object
 			data = data || {};
 			
@@ -298,10 +296,10 @@ define( [
 			// If there already exists a model of the same type, with the same ID, update that instance,
 			// and return that instance from the constructor. We don't create duplicate Model instances
 			// with the same ID.
-			me = ModelCache.get( me, data[ me.idAttribute ] );
-			if( me !== this ) {
-				me.set( data );   // set any provided initial data to the already-existing instance (as to combine them),
-				return me;        // and then return the already-existing instance
+			var existingInstance = ModelCache.get( this, data[ this.idAttribute ] );
+			if( existingInstance !== this ) {
+				existingInstance.set( data );   // set any provided initial data to the already-existing instance (as to combine them),
+				return existingInstance;        // and then return the already-existing instance
 			}
 			
 			
@@ -313,12 +311,12 @@ define( [
 			
 			// If this class has a proxy definition that is an object literal, instantiate it *onto the prototype*
 			// (so one Proxy instance can be shared for every model)
-			if( me.proxy && typeof me.proxy === 'object' && !( me.proxy instanceof Proxy ) ) {
-				me.constructor.prototype.proxy = Proxy.create( me.proxy );
+			if( this.proxy && typeof this.proxy === 'object' && !( this.proxy instanceof Proxy ) ) {
+				this.constructor.prototype.proxy = Proxy.create( this.proxy );
 			}
 			
 			
-			me.addEvents(
+			this.addEvents(
 				/**
 				 * Fires when a {@link data.attribute.Attribute} in the Model has changed its value. This is a 
 				 * convenience event to respond to just a single attribute's change. Ex: if you want to
@@ -390,7 +388,7 @@ define( [
 			
 			
 			// Set the default values for attributes that don't have an initial value.
-			var attributes = me.attributes,  // me.attributes is a hash of the Attribute objects, keyed by their name
+			var attributes = this.attributes,  // this.attributes is a hash of the Attribute objects, keyed by their name
 			    attributeDefaultValue;
 			for( var name in attributes ) {
 				if( data[ name ] === undefined && ( attributeDefaultValue = attributes[ name ].getDefaultValue() ) !== undefined ) {
@@ -399,17 +397,17 @@ define( [
 			}
 			
 			// Initialize the underlying data object, which stores all attribute values
-			me.data = {};
+			this.data = {};
 			
 			// Initialize the data hash for storing attribute names of modified data, and their original values (see property description)
-			me.modifiedData = {};
+			this.modifiedData = {};
 			
 			// Set the initial data / defaults, if we have any
-			me.set( data );
-			me.commit();  // and because we are initializing, the data is not considered modified
+			this.set( data );
+			this.commit();  // and because we are initializing, the data is not considered modified
 			
 			// Call hook method for subclasses
-			me.initialize();
+			this.initialize();
 		},
 		
 		
@@ -1069,7 +1067,7 @@ define( [
 				.always( _.bind( completeCb, scope ) );
 			
 			// Make a request to load the data from the proxy
-			var me = this,
+			var me = this,  // for closures
 			    operation  = new ReadOperation( { modelId: this.getId() } );
 			this.proxy.read( operation ).then(
 				function( operation ) { me.set( operation.getResultSet().getRecords()[ 0 ] ); me.commit(); deferred.resolve( me, operation ); },

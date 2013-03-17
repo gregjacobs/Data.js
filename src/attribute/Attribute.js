@@ -317,30 +317,28 @@ define( [
 		 *   Can also be its Attribute {@link #name} provided directly as a string.
 		 */
 		constructor : function( config ) {
-			var me = this;
-			
 			// If the argument wasn't an object, it must be its attribute name
 			if( typeof config !== 'object' ) {
 				config = { name: config };
 			}
 			
 			// Copy members of the attribute definition (config) provided onto this object
-			_.assign( me, config );
+			_.assign( this, config );
 			
 			
 			// Each Attribute must have a name.
-			var name = me.name;
+			var name = this.name;
 			if( name === undefined || name === null || name === "" ) {
 				throw new Error( "no 'name' property provided to data.attribute.Attribute constructor" );
 				
-			} else if( typeof me.name === 'number' ) {  // convert to a string if it is a number
-				me.name = name.toString();
+			} else if( typeof this.name === 'number' ) {  // convert to a string if it is a number
+				this.name = name.toString();
 			}
 			
 			
 			// Normalize defaultValue
-			if( me[ 'default' ] ) {  // accept the key as simply 'default'
-				me.defaultValue = me[ 'default' ];
+			if( this[ 'default' ] ) {  // accept the key as simply 'default'
+				this.defaultValue = this[ 'default' ];
 			}
 		},
 		
