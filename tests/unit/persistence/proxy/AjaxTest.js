@@ -16,11 +16,11 @@ define( [
 	} );
 	
 	
-	tests.unit.persistence.add( new Ext.test.TestSuite( {
-		name: 'AjaxProxy',
+	tests.unit.persistence.proxy.add( new Ext.test.TestSuite( {
+		name: 'Ajax',
 		
 		
-		items : [					
+		items : [
 		
 			{
 				/*

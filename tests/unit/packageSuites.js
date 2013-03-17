@@ -4,6 +4,7 @@
 	tests.unit.attribute   = new Ext.test.TestSuite( 'attribute' )   .addTo( tests.unit );
 	tests.unit.data        = new Ext.test.TestSuite( 'data' )        .addTo( tests.unit );
 	tests.unit.persistence = new Ext.test.TestSuite( 'persistence' ) .addTo( tests.unit );
+	tests.unit.persistence.proxy = new Ext.test.TestSuite( 'proxy' ) .addTo( tests.unit.persistence );
 	
 	Ext.test.Session.addSuite( tests.unit );
 })();

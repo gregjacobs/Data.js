@@ -121,11 +121,10 @@ define( [
 		 */
 		read : function( operation ) {
 			var me = this,  // for closures
-			    deferred = new jQuery.Deferred(),
-			    url = this.buildUrl( 'read', operation );
+			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
-				url      : url,
+				url      : this.buildUrl( 'read', operation ),
 				type     : this.getHttpMethod( 'read' ),
 				dataType : 'text'
 			} ).then(
