@@ -30,7 +30,7 @@ define( [
 	 * 
 	 * Ex:
 	 *     
-	 *     myApp.Todos = data.Collection.extend( {
+	 *     myApp.Todos = Collection.extend( {
 	 *         model: myApp.Todo
 	 *     } );
 	 * 
@@ -44,10 +44,10 @@ define( [
 	 * fired it. The collection instance provides itself in the handler though. For example, Models' 
 	 * {@link data.Model#event-change change} events:
 	 *     
-	 *     var Model = data.Model.extend( {
+	 *     var Model = Model.extend( {
 	 *         attributes: [ 'name' ]
 	 *     } );
-	 *     var Collection = data.Collection.extend( {
+	 *     var Collection = Collection.extend( {
 	 *         model : Model
 	 *     } );
 	 * 
@@ -104,7 +104,7 @@ define( [
 		 * It is recommended that you subclass data.Collection, and add this configuration as part of the definition of the 
 		 * subclass. Ex:
 		 * 
-		 *     myApp.MyCollection = data.Collection.extend( {
+		 *     myApp.MyCollection = Collection.extend( {
 		 *         model : myApp.MyModel
 		 *     } );
 		 */
@@ -138,7 +138,7 @@ define( [
 		 * 
 		 * It is recommended that you subclass data.Collection, and add the sortBy function in the definition of the subclass. Ex:
 		 * 
-		 *     myApp.MyCollection = data.Collection.extend( {
+		 *     myApp.MyCollection = Collection.extend( {
 		 *         sortBy : function( model1, model2 ) {
 		 *             // ...
 		 *         }
@@ -359,7 +359,7 @@ define( [
 		 * 
 		 * Ex:
 		 * 
-		 *     MyCollection = data.Collection.extend( {
+		 *     MyCollection = Collection.extend( {
 		 *         initialize : function() {
 		 *             MyCollection.superclass.initialize.apply( this, arguments );   // or could be MyCollection.__super__.initialize.apply( this, arguments );
 		 *             

@@ -49,7 +49,7 @@ define( [
 		 * If the defaultValue is a function, the function will be executed each time a Model is created, and its return value used as 
 		 * the defaultValue. This is useful, for example, to assign a new unique number to an attribute of a model. Ex:
 		 * 
-		 *     MyModel = data.Model.extend( {
+		 *     MyModel = Model.extend( {
 		 *         attributes : [
 		 *             {
 		 *                 name: 'uniqueId', 
@@ -466,7 +466,8 @@ define( [
 		 * original conversion method from a {@link #cfg-set} config function.
 		 * 
 		 * Basically, it allows:
-		 *     var MyModel = data.Model.extend( {
+		 * 
+		 *     var MyModel = Model.extend( {
 		 *         attributes: [
 		 *             {
 		 *                 name: 'myAttr',

@@ -1754,7 +1754,7 @@ define( [
 				
 				setUp : function() {					
 					this.ConcreteDataComponentAttribute = DataComponentAttribute.extend( {} );
-					this.ConcreteDataComponent = data.DataComponent.extend( { 
+					this.ConcreteDataComponent = DataComponent.extend( { 
 						// Implementation of abstract interface
 						getData : Data.emptyFn,
 						isModified : Data.emptyFn,

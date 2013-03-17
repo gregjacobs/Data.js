@@ -423,7 +423,7 @@ define( [
 		 * 
 		 * Ex:
 		 * 
-		 *     MyModel = data.Model.extend( {
+		 *     MyModel = Model.extend( {
 		 *         initialize : function() {
 		 *             MyModel.superclass.initialize.apply( this, arguments );   // or could be MyModel.__super__.initialize.apply( this, arguments );
 		 *             
