@@ -835,8 +835,8 @@ define( [
 		 * @method getData
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
-		 *   the {@link data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
-		 *   that the {@link data.data.NativeObjectConverter#convert} method does. See that method for details.
+		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
+		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
 		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
 		getData : function( options ) {
@@ -854,8 +854,8 @@ define( [
 		 * @method getChanges
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
-		 *   the {@link data.data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
-		 *   that the {@link data.data.NativeObjectConverter#convert} method does. See that method for details. Options specific to this method include:
+		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
+		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details. Options specific to this method include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return only changed attributes that are 
 		 *   {@link data.attribute.Attribute#persist persisted}. In the case of nested models, a nested model will only be returned in the resulting
 		 *   hashmap if one if its {@link data.attribute.Attribute#persist persisted} attributes are modified. 

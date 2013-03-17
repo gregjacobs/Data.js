@@ -1368,11 +1368,11 @@ define( [
 				
 				/*
 				setUp : function() {
-					// Hijack the data.data.NativeObjectConverter for the tests
-					this.origNativeObjectConverter = data.data.NativeObjectConverter;
+					// Hijack the data.NativeObjectConverter for the tests
+					this.origNativeObjectConverter = data.NativeObjectConverter;
 					
 					var args = this.args = {};
-					data.data.NativeObjectConverter = {
+					data.NativeObjectConverter = {
 						convert : function() {
 							args[ 0 ] = arguments[ 0 ];
 							args[ 1 ] = arguments[ 1 ];
@@ -1382,7 +1382,7 @@ define( [
 				
 				tearDown : function() {
 					// Restore the NativeObjectConverter after the tests
-					data.data.NativeObjectConverter = this.origNativeObjectConverter;
+					data.NativeObjectConverter = this.origNativeObjectConverter;
 				},
 				*/
 				

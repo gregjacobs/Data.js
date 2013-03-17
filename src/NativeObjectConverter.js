@@ -9,7 +9,7 @@ define( [
 	
 	/**
 	 * @private
-	 * @class data.data.NativeObjectConverter
+	 * @class data.NativeObjectConverter
 	 * @singleton
 	 * 
 	 * NativeObjectConverter allows for the conversion of {@link data.Collection Collection} / {@link data.Model Models}
