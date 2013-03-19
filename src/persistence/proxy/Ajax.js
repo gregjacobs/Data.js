@@ -17,6 +17,13 @@ define( [
 	var AjaxProxy = Class.extend( Proxy, {
 		
 		/**
+		 * @cfg {String} url
+		 * 
+		 * The URL of where to request data from. This URL can be overridden for any particular CRUD (create,
+		 * read, update, destroy) method by using the {@link #api} config.
+		 */
+		
+		/**
 		 * @cfg {Object} api
 		 * 
 		 * Specific URLs to use for each CRUD (create, read, update, destroy) method. Defaults to:
@@ -45,10 +52,18 @@ define( [
 		 */
 		
 		/**
-		 * @cfg {String} url
+		 * @cfg {Object} extraParams
 		 * 
-		 * The URL of where to request data from. This URL can be overridden for any particular CRUD (create,
-		 * read, update, destroy) method by using the {@link #api} config.
+		 * An Object (map) of any extra parameters to include with every request. Params provided to individual
+		 * requests will override these params of the same name.
+		 * 
+		 * Ex:
+		 * 
+		 *     extraParams : {
+		 *         returnType : 'json'
+		 *     }
+		 *     
+		 * Note that the values of these parameters will be URL encoded.
 		 */
 		
 		/**
@@ -92,6 +107,7 @@ define( [
 			this._super( arguments );
 			
 			this.api = this.api || {};
+			this.extraParams = this.extraParams || {};
 		},
 		
 		
@@ -188,7 +204,7 @@ define( [
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {
-			var params = operation.getParams() || {};
+			var params = _.assign( {}, this.extraParams, operation.getParams() || {} );
 			if( action === 'read' ) {
 				var modelId = operation.getModelId();
 				if( modelId !== null ) 
@@ -197,9 +213,9 @@ define( [
 			
 			// Map the params object to an array of query string params
 			params = _.map( params, function( value, prop ) {
-				return prop + '=' + value;
+				return prop + '=' + encodeURIComponent( value );
 			} );
-			return this.urlAppend( this.getUrl( action ), params.join( '&' ) ); 
+			return this.urlAppend( this.getUrl( action ), params.join( '&' ) );
 		},
 		
 		
