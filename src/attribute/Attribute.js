@@ -247,6 +247,7 @@ define( [
 		
 		/**
 		 * @cfg {Function} get
+		 * 
 		 * A function that can be used to change the value that is returned when the Model's {@link data.Model#get get} method is called
 		 * on the Attribute. This is useful to create "computed" attributes, which may be created based on other Attributes' values.  The function is 
 		 * passed the argument of the underlying stored value, and should return the computed value.

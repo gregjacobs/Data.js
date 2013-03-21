@@ -160,6 +160,7 @@ define( [
 		
 		/**
 		 * @cfg {String[]/Object[]} attributes
+		 * 
 		 * Array of {@link data.attribute.Attribute Attribute} declarations. These are objects with any number of properties, but they
 		 * must have the property 'name'. See the configuration options of {@link data.attribute.Attribute} for more information. 
 		 * 
@@ -167,7 +168,7 @@ define( [
 		 * be a string, which will specify the name of the {@link data.attribute.Attribute Attribute}, with no other {@link data.attribute.Attribute Attribute} 
 		 * configuration options.
 		 * 
-		 * Attributes defined on the prototype of a Model, and its superclasses, are concatenated together come
+		 * Attributes defined on the prototype of a Model, and its superclasses, are combined to become a single set of attributes come
 		 * instantiation time. This means that the data.Model base class can define the 'id' attribute, and then subclasses
 		 * can define their own attributes to append to it. So if a subclass defined the attributes `[ 'name', 'phone' ]`, then the
 		 * final concatenated array of attributes for the subclass would be `[ 'id', 'name', 'phone' ]`. This works for however many
@@ -178,11 +179,11 @@ define( [
 		 *     attributes : [
 		 *         'id',    // name-only; no other configs for this attribute (not recommended! should declare the {@link data.attribute.Attribute#type type})
 		 *         { name: 'firstName', type: 'string' },
-		 *         { name: 'lastName', type: 'string' },
+		 *         { name: 'lastName',  type: 'string' },
 		 *         {
 		 *             name : 'fullName',
-		 *             get  : function( value, model ) {
-		 *                 return model.get( 'firstName' ) + ' ' + model.get( 'lastName' );
+		 *             get  : function( value ) {  // // in this example, the Attribute has no value of its own, so we ignore the arg
+		 *                 return this.get( 'firstName' ) + ' ' + this.get( 'lastName' );  // `this` refers to the model that owns the Attribute
 		 *             }
 		 *         }
 		 *     ]
