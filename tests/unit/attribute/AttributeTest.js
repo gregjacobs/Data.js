@@ -197,27 +197,7 @@ define( [
 				},
 				
 				
-				// Check that the defaultValue is handled correctly
-		
-				"A default provided as the keyword 'default' should be accepted properly as defaultValue" : function() {
-					var attribute = new this.Attribute( {
-						name : "TestAttribute",
-						'default' : 1
-					} );
-					
-					Y.Assert.areSame( 1, attribute.getDefaultValue() );
-				},
-				
-				
-				"A default provided as the keyword 'default' that is a function should be executed and set properly to defaultValue" : function() {
-					var attribute = new this.Attribute( {
-						name : "TestAttribute",
-						'default' : function() { return 1; }
-					} );
-					
-					Y.Assert.areSame( 1, attribute.getDefaultValue() );
-				},
-				
+				// Check that the defaultValue is handled correctly				
 				
 				"A default provided as defaultValue should be accepted properly" : function() {
 					var attribute = new this.Attribute( {

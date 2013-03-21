@@ -20,6 +20,103 @@ define( [
 		abstractClass: true,
 		
 		
+		statics : {
+			
+			/**
+			 * An object (hashmap) which stores the registered Attribute types. It maps type names to Attribute subclasses.
+			 * 
+			 * @private
+			 * @static
+			 * @property {Object} attributeTypes
+			 */
+			attributeTypes : {},
+			
+			
+			/**
+			 * Static method to instantiate the appropriate Attribute subclass based on a configuration object, based on its `type` property.
+			 * 
+			 * @static
+			 * @method create
+			 * @param {Object} config The configuration object for the Attribute. Config objects should have the property `type`, 
+			 *   which determines which type of Attribute will be instantiated. If the object does not have a `type` property, it will default 
+			 *   to `mixed`, which accepts any data type, but does not provide any type checking / data consistency. Note that already-instantiated 
+			 *   Attributes will simply be returned unchanged. 
+			 * @return {data.attribute.Attribute} The instantiated Attribute.
+			 */
+			create : function( config ) {
+				var type = config.type ? config.type.toLowerCase() : undefined;
+			
+				if( config instanceof Attribute ) {
+					// Already an Attribute instance, return it
+					return config;
+					
+				} else if( this.hasType( type || "mixed" ) ) {
+					return new this.attributeTypes[ type || "mixed" ]( config );
+					
+				} else {
+					// No registered type with the given config's `type`, throw an error
+					throw new Error( "data.attribute.Attribute: Unknown Attribute type: '" + type + "'" );
+				}
+			},
+			
+			
+			/**
+			 * Static method used to register implementation Attribute subclass types. When creating an Attribute subclass, it 
+			 * should be registered with the Attribute superclass (this class), so that it can be instantiated by a string `type` 
+			 * name in an anonymous configuration object. Note that type names are case-insensitive.
+			 * 
+			 * This method will throw an error if a type name is already registered, to assist in making sure that we don't get
+			 * unexpected behavior from a type name being overwritten.
+			 * 
+			 * @static
+			 * @method registerType
+			 * @param {String} typeName The type name of the registered class. Note that this is case-insensitive.
+			 * @param {Function} jsClass The Attribute subclass (constructor function) to register.
+			 */
+			registerType : function( type, jsClass ) {
+				type = type.toLowerCase();
+				
+				if( !this.attributeTypes[ type ] ) { 
+					this.attributeTypes[ type ] = jsClass;
+				} else {
+					throw new Error( "Error: Attribute type '" + type + "' already exists" );
+				}
+			},
+			
+			
+			/**
+			 * Retrieves the Component class (constructor function) that has been registered by the supplied `type` name. 
+			 * 
+			 * @method getType
+			 * @param {String} type The type name of the registered class.
+			 * @return {Function} The class (constructor function) that has been registered under the given type name.
+			 */
+			getType : function( type ) {
+				return this.attributeTypes[ type.toLowerCase() ];
+			},
+			
+			
+			/**
+			 * Determines if there is a registered Attribute type with the given `typeName`.
+			 * 
+			 * @method hasType
+			 * @param {String} typeName
+			 * @return {Boolean}
+			 */
+			hasType : function( typeName ) {
+				if( !typeName ) {  // any falsy type value given, return false
+					return false;
+				} else {
+					return !!this.attributeTypes[ typeName.toLowerCase() ];
+				}
+			}
+			
+		}, // end statics
+		
+		
+		// -------------------------------------
+		
+		
 		/**
 		 * @cfg {String} name (required)
 		 * The name for the attribute, which is used by the owner Model to reference it.
@@ -43,28 +140,25 @@ define( [
 		
 		/**
 		 * @cfg {Mixed/Function} defaultValue
-		 * The default value for the Attribute, if it has no value of its own. This can also be specified as the config 'default', 
-		 * but must be wrapped in quotes (as `default` is a reserved word in JavaScript).
+		 * 
+		 * The default value to set to the Attribute, when the Attribute is given no initial value.
 		 *
-		 * If the defaultValue is a function, the function will be executed each time a Model is created, and its return value used as 
-		 * the defaultValue. This is useful, for example, to assign a new unique number to an attribute of a model. Ex:
+		 * If the `defaultValue` is a function, the function will be executed each time a {@link Data.Model Model} is created, and its return 
+		 * value used as the `defaultValue`. This is useful, for example, to assign a new unique number to an attribute of a {@link Data.Model Model}. 
+		 * Ex:
 		 * 
 		 *     MyModel = Model.extend( {
 		 *         attributes : [
 		 *             {
 		 *                 name: 'uniqueId', 
 		 *                 defaultValue: function( attribute ) {
-		 *                     return _.uniqueId(); 
+		 *                     return _.uniqueId();
 		 *                 }
 		 *             }
 		 *         ]
 		 *     } );
 		 * 
-		 * Note that the function is passed the Attribute as its first argument, which may be used to query Attribute properties/configs.
-		 * 
-		 * If an Object is provided as the defaultValue, its properties will be recursed and searched for functions. The functions will
-		 * be executed to provide default values for nested properties of the object in the same way that providing a Function for this config
-		 * will do.
+		 * Note that the function is passed the Attribute as its first argument, which may be used to query the Attribute's properties/configs.
 		 */
 		
 		/**
@@ -209,111 +303,12 @@ define( [
 		
 		
 		
-		
-		statics : {
-			/**
-			 * An object (hashmap) which stores the registered Attribute types. It maps type names to Attribute subclasses.
-			 * 
-			 * @private
-			 * @static
-			 * @property {Object} attributeTypes
-			 */
-			attributeTypes : {},
-			
-			
-			/**
-			 * Static method to instantiate the appropriate Attribute subclass based on a configuration object, based on its `type` property.
-			 * 
-			 * @static
-			 * @method create
-			 * @param {Object} config The configuration object for the Attribute. Config objects should have the property `type`, 
-			 *   which determines which type of Attribute will be instantiated. If the object does not have a `type` property, it will default 
-			 *   to `mixed`, which accepts any data type, but does not provide any type checking / data consistency. Note that already-instantiated 
-			 *   Attributes will simply be returned unchanged. 
-			 * @return {data.attribute.Attribute} The instantiated Attribute.
-			 */
-			create : function( config ) {
-				var type = config.type ? config.type.toLowerCase() : undefined;
-			
-				if( config instanceof Attribute ) {
-					// Already an Attribute instance, return it
-					return config;
-					
-				} else if( this.hasType( type || "mixed" ) ) {
-					return new this.attributeTypes[ type || "mixed" ]( config );
-					
-				} else {
-					// No registered type with the given config's `type`, throw an error
-					throw new Error( "data.attribute.Attribute: Unknown Attribute type: '" + type + "'" );
-				}
-			},
-			
-			
-			/**
-			 * Static method used to register implementation Attribute subclass types. When creating an Attribute subclass, it 
-			 * should be registered with the Attribute superclass (this class), so that it can be instantiated by a string `type` 
-			 * name in an anonymous configuration object. Note that type names are case-insensitive.
-			 * 
-			 * This method will throw an error if a type name is already registered, to assist in making sure that we don't get
-			 * unexpected behavior from a type name being overwritten.
-			 * 
-			 * @static
-			 * @method registerType
-			 * @param {String} typeName The type name of the registered class. Note that this is case-insensitive.
-			 * @param {Function} jsClass The Attribute subclass (constructor function) to register.
-			 */
-			registerType : function( type, jsClass ) {
-				type = type.toLowerCase();
-				
-				if( !this.attributeTypes[ type ] ) { 
-					this.attributeTypes[ type ] = jsClass;
-				} else {
-					throw new Error( "Error: Attribute type '" + type + "' already exists" );
-				}
-			},
-			
-			
-			/**
-			 * Retrieves the Component class (constructor function) that has been registered by the supplied `type` name. 
-			 * 
-			 * @method getType
-			 * @param {String} type The type name of the registered class.
-			 * @return {Function} The class (constructor function) that has been registered under the given type name.
-			 */
-			getType : function( type ) {
-				return this.attributeTypes[ type.toLowerCase() ];
-			},
-			
-			
-			/**
-			 * Determines if there is a registered Attribute type with the given `typeName`.
-			 * 
-			 * @method hasType
-			 * @param {String} typeName
-			 * @return {Boolean}
-			 */
-			hasType : function( typeName ) {
-				if( !typeName ) {  // any falsy type value given, return false
-					return false;
-				} else {
-					return !!this.attributeTypes[ typeName.toLowerCase() ];
-				}
-			}
-		},
-		
-		
-		// End Statics
-		
-		// -------------------------------
-		
-		
-		
 		/**
 		 * Creates a new Attribute instance. Note: You will normally not be using this constructor function, as this class
 		 * is only used internally by {@link data.Model}.
 		 * 
 		 * @constructor 
-		 * @param {Object/String} config An object (hashmap) of the Attribute object's configuration options, which is its definition. 
+		 * @param {Object/String} config An Object (map) of the Attribute object's configuration options, which is its definition. 
 		 *   Can also be its Attribute {@link #name} provided directly as a string.
 		 */
 		constructor : function( config ) {
@@ -333,12 +328,6 @@ define( [
 				
 			} else if( typeof this.name === 'number' ) {  // convert to a string if it is a number
 				this.name = name.toString();
-			}
-			
-			
-			// Normalize defaultValue
-			if( this[ 'default' ] ) {  // accept the key as simply 'default'
-				this.defaultValue = this[ 'default' ];
 			}
 		},
 		
