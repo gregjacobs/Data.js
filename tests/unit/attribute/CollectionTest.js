@@ -21,20 +21,20 @@ define( [
 				// Special instructions
 				_should : {
 					error : {
-						"the constructor should throw an error if the undefined value is provided for the collectionClass config, which helps determine when late binding is needed for the collectionClass config" : 
-							 "The 'collectionClass' config provided to an Attribute with the name 'attr' either doesn't exist, or doesn't " +
-				             "exist just yet. Consider using the String or Function form of the collectionClass config for late binding, if needed"
+						"the constructor should throw an error if the undefined value is provided for the `collection` config, which helps determine when late binding is needed for the `collection` config" : 
+							 "The `collection` config provided to a Collection Attribute with the name 'attr' either doesn't exist, or doesn't " +
+				             "exist just yet. Consider using the String or Function form of the `collection` config for late binding, if needed."
 					}
 				},
 				
 				
-				"the constructor should throw an error if the undefined value is provided for the collectionClass config, which helps determine when late binding is needed for the collectionClass config" : function() {
+				"the constructor should throw an error if the undefined value is provided for the `collection` config, which helps determine when late binding is needed for the `collection` config" : function() {
 					var attr = new CollectionAttribute( {
 						name : 'attr',
-						collectionClass: undefined
+						collection: undefined
 					} );
 					
-					Y.Assert.fail( "The constructor should have thrown an error if the collectionClass config was provided but was undefined. This is to help with debugging when late binding for the collectionClass is needed." );
+					Y.Assert.fail( "The constructor should have thrown an error if the `collection` config was provided but was undefined. This is to help with debugging when late binding for the `collection` is needed." );
 				}
 			},
 			
@@ -105,17 +105,17 @@ define( [
 					
 					this.attribute = new CollectionAttribute( { 
 						name: 'attr',
-						collectionClass: this.Collection
+						collection: this.Collection
 					} );
 				},
 				
 				
 				_should : {
 					error : {
-						"beforeSet() should throw an error if the string 'collectionClass' config does not reference a Collection class" :
-							"The string value 'collectionClass' config did not resolve to a Collection class for attribute 'attr'",
-						"beforeSet() should throw an error if the function value 'collectionClass' config does not reference a Collection class" :
-							"The function value 'collectionClass' config did not resolve to a Collection class for attribute 'attr'"
+						"beforeSet() should throw an error if the string `collection` config does not reference a Collection subclass" :
+							"The string value `collection` config did not resolve to a Collection subclass for attribute 'attr'",
+						"beforeSet() should throw an error if the function value `collection` config does not reference a Collection subclass" :
+							"The function value `collection` config did not resolve to a Collection subclass for attribute 'attr'"
 					}
 				},
 				
@@ -157,15 +157,15 @@ define( [
 				
 				// ---------------------------
 				
-				// Test errors for if the string or function 'collectionClass' configs still return an undefined value
+				// Test errors for if the string or function `collection` configs still return an undefined value
 				
-				"beforeSet() should throw an error if the string 'collectionClass' config does not reference a Collection class" : function() {				
+				"beforeSet() should throw an error if the string `collection` config does not reference a Collection subclass" : function() {				
 					var mockModel = JsMockito.mock( Model ),
 					    oldValue;  // undefined
 					
 					var attribute = new CollectionAttribute( { 
 						name: 'attr',
-						collectionClass: 'somethingThatIsNotDefined'
+						collection: 'somethingThatIsNotDefined'
 					} );
 					
 					var data = [ { attr1: 1, attr2: 2 }, { attr1: 3, attr2: 4 } ],
@@ -175,13 +175,13 @@ define( [
 				},
 				
 				
-				"beforeSet() should throw an error if the function value 'collectionClass' config does not reference a Collection class" : function() {
+				"beforeSet() should throw an error if the function value `collection` config does not reference a Collection subclass" : function() {
 					var mockModel = JsMockito.mock( Model ),
 					    oldValue;  // undefined
 					
 					var attribute = new CollectionAttribute( { 
 						name: 'attr',
-						collectionClass: function() {
+						collection: function() {
 							return;  // undefined
 						}
 					} );
@@ -198,7 +198,7 @@ define( [
 				// Test conversions from an array to a Collection
 				
 				
-				"beforeSet() should convert an array of data objects, when collectionClass is a direct reference to the Collection subclass" : function() {
+				"beforeSet() should convert an array of data objects, when the `collection` config is a direct reference to the Collection subclass" : function() {
 					var mockModel = JsMockito.mock( Model ),
 					    data = [ { attr1: 1, attr2: 2 }, { attr1: 3, attr2: 4 } ],
 					    oldValue,  // undefined
@@ -215,7 +215,7 @@ define( [
 				},
 				
 				
-				"beforeSet() should convert an array of data objects, when collectionClass is a string" : function() {
+				"beforeSet() should convert an array of data objects, when the `collection` config is a string" : function() {
 					// Use a deeply nested namespace, as that will probably be what is used
 					window.__Data_CollectionAttributeTest = {};
 					window.__Data_CollectionAttributeTest.ns1 = {};
@@ -229,7 +229,7 @@ define( [
 					
 					var attribute = new CollectionAttribute( { 
 						name: 'attr',
-						collectionClass: '__Data_CollectionAttributeTest.ns1.ns2.MyCollection'
+						collection: '__Data_CollectionAttributeTest.ns1.ns2.MyCollection'
 					} );
 					
 					var data = [ { attr1: 1, attr2: 2 }, { attr1: 3, attr2: 4 } ],
@@ -244,10 +244,12 @@ define( [
 					Y.Assert.areSame( 2, model1.get( 'attr2' ), "The data should have been converted to a model in the collection" );
 					Y.Assert.areSame( 3, model2.get( 'attr1' ), "The data should have been converted to a model in the collection" );
 					Y.Assert.areSame( 4, model2.get( 'attr2' ), "The data should have been converted to a model in the collection" );
+					
+					delete window.__Data_CollectionAttributeTest;
 				},
 				
 				
-				"beforeSet() should convert an array of data objects, when collectionClass is a function" : function() {
+				"beforeSet() should convert an array of data objects, when the `collection` config is a function" : function() {
 					var TestCollection = Collection.extend( {
 						model : this.Model
 					} );
@@ -257,7 +259,7 @@ define( [
 					
 					var attribute = new CollectionAttribute( { 
 						name: 'attr',
-						collectionClass: function() {
+						collection: function() {
 							return TestCollection;   // for late binding
 						}
 					} );
@@ -293,7 +295,7 @@ define( [
 				// --------------------
 				
 				
-				"if no collectionClass was provided, beforeSet() should return an array unchanged" : function() {
+				"if no `collection` config was provided, beforeSet() should return an array unchanged, to allow a user-defined set() method to take care of it" : function() {
 					var mockModel = JsMockito.mock( Model ),
 					    oldValue;
 					

@@ -17,7 +17,7 @@ define( [
 	 * 
 	 * This class enforces that the Attribute hold a {@link data.Model Model} value, or null. However, it will
 	 * automatically convert an anonymous data object into the appropriate {@link data.Model Model} subclass, using
-	 * the Model provided to the {@link #modelClass} config. 
+	 * the Model constructor function (class) provided to the {@link #model} config. 
 	 * 
 	 * Otherwise, you must either provide a {@link data.Model} subclass as the value, or use a custom {@link #cfg-set} 
 	 * function to convert any anonymous object to a Model in the appropriate way. 
@@ -25,24 +25,31 @@ define( [
 	var ModelAttribute = Class.extend( DataComponentAttribute, {
 		
 		/**
-		 * @cfg {data.Model/String/Function} modelClass
-		 * The specific {@link data.Model} subclass that will be used in the Model. This config can be provided
-		 * to perform automatic conversion of anonymous data objects into the approperiate Model subclass.
+		 * @cfg {data.Model/String/Function} model
+		 * 
+		 * The specific {@link data.Model} subclass that will be used in the Model Attribute. This config can be provided
+		 * to perform automatic conversion of anonymous data objects into the appropriate {@link Data.Model Model} subclass.
 		 * 
 		 * This config may be provided as:
 		 * 
-		 * - A direct reference to a Model (ex: `myApp.models.MyModel`),
-		 * - A String which specifies the object path to the Model (which must be able to be referenced from the global scope, 
-		 *   ex: 'myApp.models.MyModel'), 
-		 * - Or a function, which will return a reference to the Model that should be used. 
+		 * - A direct reference to a Model (ex: `myApp.models.MyModel`).
+		 * - A String which specifies the object path to the Model, which must be able to be referenced from the global scope. 
+		 *   Ex: "myApp.models.MyModel".
+		 * - A function, which will return a reference to the Model subclass that should be used. 
 		 * 
-		 * The reason that this config may be specified as a String or a Function is to allow for late binding to the Model class 
-		 * that is used, where the Model class that is to be used does not have to exist in the source code until a value is 
-		 * actually set to the Attribute. This allows for the handling of circular dependencies as well.
+		 * The reason that this config may be specified as a String or a Function is to allow for "very late binding" to the Model 
+		 * subclass that is used, if the particular {@link Data.Model} subclass is not yet available at the time of Attribute definition.
+		 * In this case, the Model subclass that is used does not need to exist until a value is actually set to the Attribute.
+		 * For example, using RequireJS, we may have a circular dependency that needs to be in-line required:
+		 *   
+		 *     model : function() {
+		 *         return require( 'myApp/model/MyOtherModel' );  // will only be resolved once a value is set to the ModelAttribute
+		 *     }
 		 */
 		
 		/**
 		 * @cfg {Boolean} embedded
+		 * 
 		 * Setting this config to true has the parent {@link data.Model Model} treat the child {@link data.Model Model} as if it is a part of itself. 
 		 * Normally, a child Model that is not embedded is treated as a "relation", where it is considered as independent from the parent Model.
 		 * 
@@ -58,6 +65,7 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} persistIdOnly
+		 * 
 		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link data.Model#idAttribute id} of the embedded 
 		 * model be persisted, rather than all of the Model data. Normally, when {@link #embedded} is false (the default), the child {@link data.Model Model}
 		 * is treated as a relation, and only its {@link data.Model#idAttribute id} is persisted.
@@ -68,24 +76,27 @@ define( [
 		// -------------------------------
 		
 		
+		/**
+		 * @constructor
+		 */
 		constructor : function() {
 			this._super( arguments );
-			
-			// Check if the user provided a modelClass, but the value is undefined. This means that they specified
+
+			// <debug>
+			// Check if the user provided a `model`, but the value is undefined. This means that they specified
 			// a class that either doesn't exist, or doesn't exist yet, and we should give them a warning.
-			if( 'modelClass' in this && this.modelClass === undefined ) {
-				throw new Error( "The 'modelClass' config provided to an Attribute with the name '" + this.getName() + "' either doesn't exist, or doesn't " +
-				                 "exist just yet. Consider using the String or Function form of the modelClass config for late binding, if needed" );
+			if( 'model' in this && this.model === undefined ) {
+				throw new Error( "The `model` config provided to a Model Attribute with the name '" + this.getName() + "' either doesn't exist, or doesn't " +
+				                 "exist just yet. Consider using the String or Function form of the `model` config for late binding, if needed." );
 			}
+			// </debug>
 		},
 		
 		
 		/**
 		 * Overridden method used to determine if two models are equal.
-		 * @inheritdoc
 		 * 
-		 * @override
-		 * @method valuesAreEqual
+		 * @inheritdoc
 		 * @param {Mixed} oldValue
 		 * @param {Mixed} newValue
 		 * @return {Boolean} True if the values are equal, and the Model should *not* consider the new value as a 
@@ -98,34 +109,17 @@ define( [
 		
 		
 		/**
-		 * Overridden `beforeSet` method used to convert any anonymous objects into the specified {@link #modelClass}. The anonymous object
-		 * will be provided to the {@link #modelClass modelClass's} constructor.
+		 * Overridden `beforeSet` method used to convert any anonymous objects into the specified {@link #model} subclass. The anonymous 
+		 * object will be provided to the {@link #model} subclass's constructor.
 		 * 
-		 * @override
-		 * @method beforeSet
 		 * @inheritdoc
 		 */
 		beforeSet : function( model, newValue, oldValue ) {
 			// Now, normalize the newValue to an object, or null
 			newValue = this._super( arguments );
 			
-			var Model = require( 'data/Model' );
 			if( newValue !== null ) {
-				var modelClass = this.modelClass;
-				
-				// Normalize the modelClass
-				if( typeof modelClass === 'string' ) {
-					modelClass = this.resolveGlobalPath( modelClass );  // changes the string "a.b.c" into the value at `window.a.b.c`
-					
-					if( !modelClass ) {
-						throw new Error( "The string value 'modelClass' config did not resolve to a Model class for attribute '" + this.getName() + "'" );
-					}
-				} else if( typeof modelClass === 'function' && !Class.isSubclassOf( modelClass, Model ) ) {  // it's not a data.Model subclass, so it must be an anonymous function. Run it, so it returns the Model reference we need
-					this.modelClass = modelClass = modelClass();
-					if( !modelClass ) {
-						throw new Error( "The function value 'modelClass' config did not resolve to a Model class for attribute '" + this.getName() + "'" );
-					}
-				}
+				var modelClass = this.resolveModelClass();
 				
 				if( newValue && typeof modelClass === 'function' && !( newValue instanceof modelClass ) ) {
 					newValue = new modelClass( newValue );
@@ -139,8 +133,6 @@ define( [
 		/**
 		 * Overridden `afterSet` method used to subscribe to change events on a set child {@link data.Model Model}.
 		 * 
-		 * @override
-		 * @method afterSet
 		 * @inheritdoc
 		 */
 		afterSet : function( model, value ) {
@@ -152,6 +144,48 @@ define( [
 			}
 			
 			return value;
+		},
+		
+		
+		/**
+		 * Utility method used to retrieve the normalized {@link Data.Model} subclass provided by the {@link #model} config.
+		 * 
+		 * - If the {@link #model} config was provided directly as a class (constructor function), this class is simply returned.
+		 * - If the {@link #model} config was a String, resolve the class (constructor function) by walking down the object tree 
+		 *   from the global object.
+		 * - If the {@link #model} config was a Function, resolve the class (constructor function) by executing the function, 
+		 *   and taking its return value as the class.
+		 * 
+		 * If the {@link #model} config was a String or Function, the resolved class is cached back into the {@link #model} config
+		 * for subsequent calls.
+		 * 
+		 * @protected
+		 * @return {Function} The class (constructor function) for the {@link Data.Model} subclass referenced by the {@link #model}
+		 *   config.
+		 */
+		resolveModelClass : function() {
+			var modelClass = this.model,
+			    Model = require( 'data/Model' );  // the Model constructor function
+			
+			if( typeof modelClass === 'string' ) {
+				this.model = modelClass = this.resolveGlobalPath( modelClass );  // changes the string "a.b.c" into the value at `window.a.b.c`
+				
+				// <debug>
+				if( !modelClass ) {
+					throw new Error( "The string value `model` config did not resolve to a Model subclass for attribute '" + this.getName() + "'" );
+				}
+				// </debug>
+			} else if( typeof modelClass === 'function' && !Class.isSubclassOf( modelClass, Model ) ) {  // it's not a data.Model subclass, so it must be an anonymous function. Run it, so it returns the Model reference we need
+				this.model = modelClass = modelClass();
+				
+				// <debug>
+				if( !modelClass ) {
+					throw new Error( "The function value `model` config did not resolve to a Model subclass for attribute '" + this.getName() + "'" );
+				}
+				// </debug>
+			}
+			
+			return modelClass;
 		}
 		
 	} );

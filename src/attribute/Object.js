@@ -24,8 +24,6 @@ define( [
 		 * Overridden `beforeSet` method used to normalize the value provided. All non-object values are converted to null,
 		 * while object values are returned unchanged.
 		 * 
-		 * @override
-		 * @method beforeSet
 		 * @inheritdoc
 		 */
 		beforeSet : function( model, newValue, oldValue ) {

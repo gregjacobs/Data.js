@@ -16,7 +16,7 @@ define( [
 				name : "Test provided set() function",
 				
 				
-				"The set() function provided to a Model Attribute should be passed the instantiated Model if a 'modelClass' config is provided" : function() {
+				"The set() function provided to a Model Attribute should be passed the instantiated Model if a `model` config is provided on the attribute" : function() {
 					var setValue;
 					
 					var InnerModel = Model.extend( {
@@ -26,9 +26,9 @@ define( [
 					var MyModel = Model.extend( {
 						attributes : [
 							{
-								name : 'attr',
-								type : 'model',
-								modelClass : InnerModel,
+								name  : 'attr',
+								type  : 'model',
+								model : InnerModel,
 								
 								set : function( value ) {
 									setValue = value;
@@ -61,9 +61,9 @@ define( [
 					var MyModel = Model.extend( {
 						attributes : [
 							{
-								name : 'innerModel',
-								type : 'model',
-								modelClass : InnerModel
+								name  : 'innerModel',
+								type  : 'model',
+								model : InnerModel
 							}
 						]
 					} );

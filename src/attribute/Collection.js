@@ -17,12 +17,13 @@ define( [
 	 * 
 	 * This class enforces that the Attribute hold a {@link data.Collection Collection} value, or null. However, it will
 	 * automatically convert an array of {@link data.Model models} or anonymous data objects into the appropriate 
-	 * {@link data.Collection Collection} subclass, using the Collection provided to the {@link #collectionClass} config.
-	 * Anonymous data objects in this array will be converted to the model type provided to the collection's 
-	 * {@link data.Collection#model}. 
+	 * {@link data.Collection Collection} subclass, using the Collection provided to the {@link #collection} config.
+	 * Anonymous data objects in this array will be converted to the model type specified by the {@link #collection collection's} 
+	 * {@link data.Collection#model model} config.
 	 * 
-	 * Otherwise, you must either provide a {@link data.Collection} subclass as the value, or use a custom {@link #cfg-set} 
-	 * function to convert any anonymous array to a Collection in the appropriate way. 
+	 * If the {@link #collection} config is not provided so that automatic data conversion of an array of anonymous objects can
+	 * take place, then you must either provide a {@link data.Collection} subclass as the value for the Attribute, or use a custom 
+	 * {@link #cfg-set} function to convert any anonymous array into a Collection in the appropriate way. 
 	 */
 	var CollectionAttribute = Class.extend( DataComponentAttribute, {
 			
@@ -30,29 +31,36 @@ define( [
 		 * @cfg {Array/data.Collection} defaultValue
 		 * @inheritdoc
 		 * 
-		 * Defaults to an empty array, to create an empty Collection of the given {@link #collectionClass} type.
+		 * Defaults to an empty array, to create an empty Collection of the given {@link #collection} type.
 		 */
 		//defaultValue : [],  -- Not yet fully implemented on a general level. Can use this in code though.
 		
 		/**
-		 * @cfg {data.Collection/String/Function} collectionClass (required)
+		 * @cfg {data.Collection/String/Function} collection
+		 * 
 		 * The specific {@link data.Collection} subclass that will be used in the Collection Attribute. This config is needed
-		 * to perform automatic conversion of an array of models / anonymous data objects into the approperiate Collection subclass.
+		 * to perform automatic conversion of an array of models or anonymous data objects into the appropriate Collection subclass.
 		 * 
 		 * This config may be provided as:
 		 * 
-		 * - A direct reference to a Collection (ex: `myApp.collections.MyCollection`),
-		 * - A String which specifies the object path to the Collection (which must be able to be referenced from the global scope, 
-		 *   ex: 'myApp.collections.MyCollection'),
-		 * - Or a function, which will return a reference to the Collection that should be used. 
+		 * - A direct reference to a Collection (ex: `myApp.collections.MyCollection`).
+		 * - A String which specifies the object path to the Collection, which must be able to be referenced from the global scope. 
+		 *   Ex: "myApp.collections.MyCollection".
+		 * - A function, which will return a reference to the Collection subclass that should be used. 
 		 * 
-		 * The reason that this config may be specified as a String or a Function is to allow for late binding to the Collection class 
-		 * that is used, where the Collection class that is to be used does not have to exist in the source code until a value is 
-		 * actually set to the Attribute. This allows for the handling of circular dependencies as well.
+		 * The reason that this config may be specified as a String or a Function is to allow for "very late binding" to the Collection 
+		 * subclass that is used, if the particular {@link Data.Collection} subclass is not yet available at the time of Attribute definition.
+		 * In this case, the Collection subclass that is used does not need to exist until a value is actually set to the Attribute.
+		 * For example, using RequireJS, we may have a circular dependency that needs to be in-line required:
+		 *   
+		 *     collection : function() {
+		 *         return require( 'myApp/collection/MyCollection' );  // will only be resolved once a value is set to the CollectionAttribute
+		 *     }
 		 */
 		
 		/**
 		 * @cfg {Boolean} embedded
+		 * 
 		 * Setting this config to true has the parent {@link data.Model Model} treat the child {@link data.Collection Collection} as if it is 
 		 * a part of itself. Normally, a child Collection that is not embedded is treated as a "relation", where it is considered as independent 
 		 * from the parent Model.
@@ -70,6 +78,7 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} persistIdOnly
+		 * 
 		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link data.Model#idAttribute id} of the embedded 
 		 * collection's models be persisted, rather than all of the collection's model data. Normally, when {@link #embedded} is false (the default), 
 		 * the child {@link data.Collection Collection} is treated as a relation, and only its model's {@link data.Model#idAttribute ids} are persisted.
@@ -80,15 +89,18 @@ define( [
 		// -------------------------------
 		
 		
+		/**
+		 * @constructor
+		 */
 		constructor : function() {
 			this._super( arguments );
-			
-			// Check if the user did not provide a collectionClass, or the value is undefined (which means that they specified
-			// a class that either doesn't exist, or doesn't exist yet, and we should give them an error to alert them).
+
 			// <debug>
-			if( 'collectionClass' in this && this.collectionClass === undefined ) {
-				throw new Error( "The 'collectionClass' config provided to an Attribute with the name '" + this.getName() + "' either doesn't exist, or doesn't " +
-				                 "exist just yet. Consider using the String or Function form of the collectionClass config for late binding, if needed" );
+			// Check if the user did not provide a `collection` config, or the value is undefined (which means that they specified
+			// a class that either doesn't exist, or doesn't exist yet, and we should give them an error to alert them).
+			if( 'collection' in this && this.collection === undefined ) {
+				throw new Error( "The `collection` config provided to a Collection Attribute with the name '" + this.getName() + "' either doesn't exist, or doesn't " +
+				                 "exist just yet. Consider using the String or Function form of the `collection` config for late binding, if needed." );
 			}
 			// </debug>
 		},
@@ -98,8 +110,6 @@ define( [
 		 * Overridden method used to determine if two collections are equal.
 		 * @inheritdoc
 		 * 
-		 * @override
-		 * @method valuesAreEqual
 		 * @param {Mixed} oldValue
 		 * @param {Mixed} newValue
 		 * @return {Boolean} True if the values are equal, and the Model should *not* consider the new value as a 
@@ -112,34 +122,17 @@ define( [
 		
 		
 		/**
-		 * Overridden `beforeSet` method used to convert any arrays into the specified {@link #collectionClass}. The array
-		 * will be provided to the {@link #collectionClass collectionClass's} constructor.
+		 * Overridden `beforeSet` method used to convert any arrays into the specified {@link #collection} subclass. The array
+		 * will be provided to the {@link #collection} subclass's constructor.
 		 * 
-		 * @override
-		 * @method beforeSet
 		 * @inheritdoc
 		 */
 		beforeSet : function( model, newValue, oldValue ) {
 			// Now, normalize the newValue to an object, or null
 			newValue = this._super( arguments );
 			
-			var Collection = require( 'data/Collection' );
 			if( newValue !== null ) {
-				var collectionClass = this.collectionClass;
-				
-				// Normalize the collectionClass
-				if( typeof collectionClass === 'string' ) {
-					collectionClass = this.resolveGlobalPath( collectionClass );  // changes the string "a.b.c" into the value at `window.a.b.c`
-					
-					if( !collectionClass ) {
-						throw new Error( "The string value 'collectionClass' config did not resolve to a Collection class for attribute '" + this.getName() + "'" );
-					}
-				} else if( typeof collectionClass === 'function' && !Class.isSubclassOf( collectionClass, Collection ) ) {  // it's not a data.Collection subclass, so it must be an anonymous function. Run it, so it returns the Collection reference we need
-					this.collectionClass = collectionClass = collectionClass();
-					if( !collectionClass ) {
-						throw new Error( "The function value 'collectionClass' config did not resolve to a Collection class for attribute '" + this.getName() + "'" );
-					}
-				}
+				var collectionClass = this.resolveCollectionClass();
 				
 				if( newValue && typeof collectionClass === 'function' && !( newValue instanceof collectionClass ) ) {
 					newValue = new collectionClass( newValue );
@@ -153,8 +146,6 @@ define( [
 		/**
 		 * Overridden `afterSet` method used to subscribe to add/remove/change events on a set child {@link data.Collection Collection}.
 		 * 
-		 * @override
-		 * @method afterSet
 		 * @inheritdoc
 		 */
 		afterSet : function( model, value ) {
@@ -166,6 +157,49 @@ define( [
 			}
 			
 			return value;
+		},
+		
+		
+		/**
+		 * Utility method used to retrieve the normalized {@link Data.Collection} subclass provided by the {@link #collection} config.
+		 * 
+		 * - If the {@link #collection} config was provided directly as a class (constructor function), this class is simply returned.
+		 * - If the {@link #collection} config was a String, resolve the class (constructor function) by walking down the object tree 
+		 *   from the global object.
+		 * - If the {@link #collection} config was a Function, resolve the class (constructor function) by executing the function, 
+		 *   and taking its return value as the class.
+		 * 
+		 * If the {@link #collection} config was a String or Function, the resolved class is cached back into the {@link #collection} config
+		 * for subsequent calls.
+		 * 
+		 * @protected
+		 * @return {Function} The class (constructor function) for the {@link Data.Collection} subclass referenced by the {@link #collection}
+		 *   config.
+		 */
+		resolveCollectionClass : function() {
+			var collectionClass = this.collection,
+			    Collection = require( 'data/Collection' );  // the Collection constructor function
+			
+			// Normalize the collectionClass
+			if( typeof collectionClass === 'string' ) {
+				this.collection = collectionClass = this.resolveGlobalPath( collectionClass );  // changes the string "a.b.c" into the value at `window.a.b.c`
+				
+				// <debug>
+				if( !collectionClass ) {
+					throw new Error( "The string value `collection` config did not resolve to a Collection subclass for attribute '" + this.getName() + "'" );
+				}
+				// </debug>
+			} else if( typeof collectionClass === 'function' && !Class.isSubclassOf( collectionClass, Collection ) ) {  // it's not a data.Collection subclass, so it must be an anonymous function. Run it, so it returns the Collection reference we need
+				this.collection = collectionClass = collectionClass();
+				
+				// <debug>
+				if( !collectionClass ) {
+					throw new Error( "The function value `collection` config did not resolve to a Collection subclass for attribute '" + this.getName() + "'" );
+				}
+				// </debug>
+			}
+			
+			return collectionClass;
 		}
 		
 	} );

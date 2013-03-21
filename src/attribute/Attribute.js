@@ -346,7 +346,6 @@ define( [
 		/**
 		 * Retrieves the name for the Attribute.
 		 * 
-		 * @method getName
 		 * @return {String}
 		 */
 		getName : function() {
@@ -357,7 +356,6 @@ define( [
 		/**
 		 * Retrieves the default value for the Attribute. 
 		 * 
-		 * @method getDefaultValue
 		 * @return {Mixed}
 		 */
 		getDefaultValue : function() {
@@ -380,7 +378,6 @@ define( [
 		/**
 		 * Determines if the Attribute should be persisted.
 		 * 
-		 * @method isPersisted
 		 * @return {Boolean}
 		 */
 		isPersisted : function() {
@@ -391,7 +388,6 @@ define( [
 		/**
 		 * Determines if the Attribute has a user-defined setter (i.e. the {@link #cfg-set set} config was provided).
 		 * 
-		 * @method hasUserDefinedSetter
 		 * @return {Boolean} True if the Attribute was provided a user-defined {@link #cfg-set set} function. 
 		 */
 		hasUserDefinedSetter : function() {
@@ -402,7 +398,6 @@ define( [
 		/**
 		 * Determines if the Attribute has a user-defined getter (i.e. the {@link #cfg-get get} config was provided).
 		 * 
-		 * @method hasUserDefinedGetter
 		 * @return {Boolean} True if the Attribute was provided a user-defined {@link #cfg-get get} function. 
 		 */
 		hasUserDefinedGetter : function() {
@@ -422,7 +417,6 @@ define( [
 		 * This may be overridden by subclasses to provide custom comparisons, but the default implementation is
 		 * to directly compare primitives, and deep compare arrays and objects.
 		 * 
-		 * @method valuesAreEqual
 		 * @param {Mixed} oldValue
 		 * @param {Mixed} newValue
 		 * @return {Boolean} True if the values are equal, and the Model should *not* consider the new value as a 
@@ -446,7 +440,6 @@ define( [
 		 * Note that the default implementation simply returns the raw value unchanged, but this may be overridden
 		 * in subclasses to provide a conversion.
 		 * 
-		 * @method beforeSet
 		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
 		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
@@ -481,7 +474,6 @@ define( [
 		 *         ]
 		 *     } );
 		 * 
-		 * @method doSet
 		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
 		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method, after it has been processed
@@ -506,7 +498,6 @@ define( [
 		 * the {@link #beforeSet} method, and before the {@link #afterSet} method, and can be overridden by the {@link #cfg-set set}
 		 * config. 
 		 * 
-		 * @method set
 		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
 		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method, after it has been processed
@@ -527,7 +518,6 @@ define( [
 		 * Note that the default implementation simply returns the value unchanged, but this may be overridden
 		 * in subclasses to provide a conversion.
 		 * 
-		 * @method afterSet
 		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
 		 * @param {Mixed} value The value provided to the {@link data.Model#set} method, after it has been processed by the

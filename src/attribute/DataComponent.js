@@ -19,6 +19,7 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} embedded
+		 * 
 		 * Setting this config to true has the parent {@link data.Model Model} treat the child {@link data.DataComponent DataComponent} as if it is a part of itself. 
 		 * Normally, a child DataComponent that is not embedded is treated as a "relation", where it is considered as independent from the parent Model.
 		 * 
@@ -35,6 +36,7 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} persistIdOnly
+		 * 
 		 * In the case that the {@link #embedded} config is true, set this to true to only have the {@link data.Model#idAttribute id} of the embedded 
 		 * model(s) be persisted, rather than all of the Model/Collection data. Normally, when {@link #embedded} is false (the default), the child 
 		 * {@link data.DataComponent DataComponent} is treated as a relation, and only its {@link data.Model#idAttribute ids} is/are persisted.
@@ -48,7 +50,6 @@ define( [
 		/**
 		 * Determines if the Attribute is an {@link #embedded} Attribute.
 		 * 
-		 * @method isEmbedded
 		 * @return {Boolean}
 		 */
 		isEmbedded : function() {
@@ -56,13 +57,11 @@ define( [
 		},
 		
 		
-		
 		/**
 		 * Utility method to resolve a string path to an object from the global scope to the
 		 * actual object.
 		 * 
 		 * @protected
-		 * @method resolveGlobalPath
 		 * @param {String} path A string in the form "a.b.c" which will be resolved to the actual `a.b.c` object
 		 *   from the global scope (`window`).
 		 * @return {Mixed} The value at the given path under the global scope. Returns undefined if the value at the
