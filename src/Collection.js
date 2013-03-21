@@ -1,20 +1,21 @@
 /*global define */
 define( [
+	'require',
 	'jquery',
 	'lodash',
 	'Class',
 	'data/Data',
-	'data/Model',
 	'data/DataComponent',
 	'data/NativeObjectConverter',
 	'data/persistence/operation/Read',
-	'data/persistence/operation/Write'
+	'data/persistence/operation/Write',
+	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
 ], function(
+	require,
 	jQuery,
 	_,
 	Class,
 	Data,
-	Model,
 	DataComponent,
 	NativeObjectConverter,
 	ReadOperation,
@@ -422,7 +423,8 @@ define( [
 		insert : function( models, index ) {
 			var indexSpecified = ( typeof index !== 'undefined' ),
 			    i, len, model, modelId,
-			    addedModels = [];
+			    addedModels = [],
+			    Model = require( 'data/Model' );  // reference to constructor function for instanceof check
 			
 			// First, normalize the `index` if it is out of the bounds of the models array
 			if( typeof index !== 'number' ) {
