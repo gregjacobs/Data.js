@@ -26,6 +26,21 @@ define( [
 		 */
 		
 		/**
+		 * @cfg {Boolean} addModels
+		 * 
+		 * `true` if models should be added to a Collection when the Read operation completes,
+		 * `false if the newly loaded models should replace the existing ones in the Collection.
+		 */
+		addModels : false,
+		
+		/**
+		 * @cfg {Number} page
+		 * 
+		 * When loading a page of a paged data set, this is the 1-based page number to load.
+		 */
+		page : 0,
+		
+		/**
 		 * @cfg {Number} start
 		 * 
 		 * The start index of where to load models from. Used for when loading paged sets of data
@@ -36,8 +51,8 @@ define( [
 		/**
 		 * @cfg {Number} limit
 		 * 
-		 * The number of models to load. Used in conjunction with the {@link #start} config,
-		 * when loading paged sets of data in a {@link data.Collection Collection}.
+		 * The number of models to load. Used in conjunction with the {@link #start} or {@link #page}
+		 * configs, when loading paged sets of data in a {@link data.Collection Collection}.
 		 * 
 		 * Defaults to 0, for "no limit"
 		 */
@@ -53,6 +68,26 @@ define( [
 		 */
 		getModelId : function() {
 			return ( this.modelId !== undefined ) ? this.modelId + "" : null;
+		},
+		
+		
+		/**
+		 * Retrieves the value of the {@link #addModels} config.
+		 * 
+		 * @return {Boolean}
+		 */
+		isAddModels : function() {
+			return this.addModels;
+		},
+		
+		
+		/**
+		 * Retrieves the value of the {@link #page} config.
+		 * 
+		 * @return {Number}
+		 */
+		getPage : function() {
+			return this.page;
 		},
 		
 		

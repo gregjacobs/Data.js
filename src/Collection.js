@@ -79,19 +79,7 @@ define( [
 			}
 			
 		},
-		
-		
-		
-		/**
-		 * @cfg {data.persistence.proxy.Proxy} proxy
-		 * 
-		 * The persistence proxy to use (if any) to load or persist the Collection's data to/from persistent
-		 * storage. If this is not configured, the proxy configured on the {@link #model} that this collection uses
-		 * will be used instead. If neither are specified, the Collection may not {@link #method-load} or {@link #sync} its models. 
-		 * 
-		 * Note that this may be specified as part of a Collectoin subclass (so that all instances of the Collection inherit
-		 * the proxy), or on a particular collection instance as a configuration option, or by using {@link #setProxy}.
-		 */
+
 		
 		/**
 		 * @cfg {Function} model
@@ -111,6 +99,17 @@ define( [
 		 */
 		
 		/**
+		 * @cfg {data.persistence.proxy.Proxy} proxy
+		 * 
+		 * The persistence proxy to use (if any) to load or persist the Collection's data to/from persistent
+		 * storage. If this is not configured, the proxy configured on the {@link #model} that this collection uses
+		 * will be used instead. If neither are specified, the Collection may not {@link #method-load} or {@link #sync} its models. 
+		 * 
+		 * Note that this may be specified as part of a Collectoin subclass (so that all instances of the Collection inherit
+		 * the proxy), or on a particular collection instance as a configuration option, or by using {@link #setProxy}.
+		 */
+		
+		/**
 		 * @cfg {Boolean} autoLoad
 		 * 
 		 * If no initial {@link #cfg-models} are specified (specifying inline data), and this config is 
@@ -118,6 +117,22 @@ define( [
 		 * instantiation to load the Collection.
 		 */
 		autoLoad : false,
+		
+		/**
+		 * @cfg {Number} pageSize
+		 * 
+		 * The number of models to load in a page when loading paged data (via {@link #loadPage}). 
+		 */
+		pageSize : 25,
+		
+		/**
+		 * @cfg {Boolean} clearOnPageLoad
+		 * 
+		 * `true` to remove all existing {@link Data.Model Models} from the Collection when loading a new page of data 
+		 * via {@link #loadPage}. This has the effect of only loading the requested page's models in the Collection. 
+		 * Set to `false` to have the loaded models be added to the Collection, instead of replacing the existing ones.
+		 */
+		clearOnPageLoad : true,
 		
 		/**
 		 * @cfg {Function} sortBy
@@ -450,7 +465,7 @@ define( [
 				if( !( model instanceof Model ) ) {
 					model = this.createModel( model );
 				}
-							
+				
 				// Only add if the model does not already exist in the collection
 				if( !this.has( model ) ) {
 					this.modified = true;  // model is being added, then the Collection has been modified
@@ -1029,10 +1044,11 @@ define( [
 		 * - `collection` : {@link data.Collection} This Collection instance.
 		 * - `operation` : {@link data.persistence.operation.Read} The ReadOperation that was executed.
 		 * 
-		 * @method load
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
 		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 * @param {Boolean} [options.addModels=false] `true` to add the loaded models to the Collection instead of 
+		 *   replacing the existing ones. 
 		 * @param {Function} [options.success] Function to call if the loading is successful.
 		 * @param {Function} [options.error] Function to call if the loading fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
@@ -1044,6 +1060,78 @@ define( [
 		 */
 		load : function( options ) {
 			options = options || {};
+			
+			var operation = new ReadOperation( {
+				params    : options.params,
+				addModels : !!options.addModels
+			} );
+			
+			return this.doLoad( operation, options );
+		},
+		
+		
+		/**
+		 * Loads a page of the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
+		 * {@link #model model's} proxy will be used instead.
+		 * 
+		 * The page size is configured on the {@link #proxy} itself. This allows different Collection instances that load
+		 * data from different proxies with different page sizes.
+		 * 
+		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must 
+		 * attached to the returned `jQuery.Promise` object to determine when the loading is complete.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `collection` : {@link data.Collection} This Collection instance.
+		 * - `operation` : {@link data.persistence.operation.Read} The ReadOperation that was executed.
+		 * 
+		 * @param {Number} page The 1-based page number of data to load. Page `1` is the first page.
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
+		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
+		 * @param {Function} [options.success] Function to call if the loading is successful.
+		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
+		 *   of success or failure.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in.
+		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
+		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the load completes. The 
+		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
+		 */
+		loadPage : function( page, options ) {
+			options = options || {};
+			
+			// <debug>
+			if( !page ) {
+				throw new Error( "'page' argument required for loadPage() method, and must be > 0" );
+			}
+			// </debug>
+			
+			var pageSize = this.pageSize;
+			
+			var operation = new ReadOperation( {
+				params    : options.params,
+				addModels : ( options.hasOwnProperty( 'addModels' ) ) ? options.addModels : !this.clearOnPageLoad,
+				
+				page  : page,
+				start : ( page - 1 ) * pageSize,
+				limit : pageSize   // in this case, the `limit` is the pageSize
+			} );
+			
+			return this.doLoad( operation, options );
+		},
+		
+		
+		/**
+		 * Performs the actual load operation for a request to {@link #method-load} or {@link #method-loadPage}, given the `operation` object.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.ReadOperation} operation The Read operation for the load.
+		 * @param {Object} options The original `options` object provided to {@link #method-load} or {@link #method-loadPage}.
+		 */
+		doLoad : function( operation, options ) {
 			var me          = this,  // for closures
 			    proxy       = this.proxy || ( this.model ? this.model.getProxy() : null ),
 			    emptyFn     = function() {},
@@ -1051,7 +1139,7 @@ define( [
 			    successCb   = options.success  || emptyFn,
 			    errorCb     = options.error    || emptyFn,
 			    completeCb  = options.complete || emptyFn;
-
+			
 			// <debug>
 			// No persistence proxy, cannot load. Throw an error
 			if( !proxy ) {
@@ -1067,9 +1155,6 @@ define( [
 				.always( _.bind( completeCb, scope ) );
 			
 			// Make a request to read the data from the persistent storage
-			var operation = new ReadOperation( {
-				params : options.params
-			} );
 			proxy.read( operation ).then(
 				function( operation ) { me.onLoadSuccess( deferred, operation ); },
 				function( operation ) { me.onLoadError( deferred, operation ); }
@@ -1096,7 +1181,10 @@ define( [
 				this.totalCount = totalCount;
 			}
 			
-			this.removeAll();
+			// If we're not adding the models, clear the Collection first
+			if( !operation.isAddModels() ) {
+				this.removeAll();
+			}
 			this.add( resultSet.getRecords() );
 			
 			deferred.resolve( this, operation );

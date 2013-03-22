@@ -199,6 +199,90 @@ define( [
 						}
 					} );
 					Y.Assert.areSame( '/testUrl?p1=a%20b&p2=a%40b', proxy.buildUrl( 'update', writeOperation ) );
+				},
+				
+				
+				"buildUrl() should add the `pageParam` if it is configured, and a page of data to load is provided on a ReadOperation" : function() {
+					var proxy = new AjaxProxy( {
+						url : '/testUrl',
+						pageParam : 'pageNum'
+					} );
+					
+					var readOperation = new ReadOperation( { 
+						page : 5
+					} );
+					Y.Assert.areSame( '/testUrl?pageNum=5', proxy.buildUrl( 'read', readOperation ) );
+				},
+				
+				
+				"buildUrl() should *not* add the `pageParam` if it is configured, but a page of data to load is not provided on a ReadOperation" : function() {
+					var proxy = new AjaxProxy( {
+						url : '/testUrl',
+						pageParam : 'pageNum'
+					} );
+					
+					var readOperation = new ReadOperation( { 
+						//page : 0   -- no page configured
+					} );
+					Y.Assert.areSame( '/testUrl', proxy.buildUrl( 'read', readOperation ) );
+				},
+				
+				
+				"buildUrl() should *not* add the `pageParam` if it is not configured, even if a page of data to load is provided on a ReadOperation" : function() {
+					var proxy = new AjaxProxy( {
+						url : '/testUrl'
+						//pageParam : 'pageNum'  -- not configured
+					} );
+					
+					var readOperation = new ReadOperation( { 
+						page : 5
+					} );
+					Y.Assert.areSame( '/testUrl', proxy.buildUrl( 'read', readOperation ) );
+				},
+				
+				
+				"buildUrl() should add the `pageSizeParam` if it is configured, and a page of data to load is provided on a ReadOperation" : function() {
+					var proxy = new AjaxProxy( {
+						url : '/testUrl',
+						pageParam : 'pageNum',
+						pageSizeParam : 'pageSize'
+					} );
+					
+					var readOperation = new ReadOperation( { 
+						page  : 5,
+						limit : 50
+					} );
+					Y.Assert.areSame( '/testUrl?pageNum=5&pageSize=50', proxy.buildUrl( 'read', readOperation ) );
+				},
+				
+				
+				"buildUrl() should *not* add the `pageSizeParam` if it is configured, but a page of data to load is not provided on a ReadOperation" : function() {
+					var proxy = new AjaxProxy( {
+						url : '/testUrl',
+						pageParam : 'pageNum',
+						pageSizeParam : 'pageSize'
+					} );
+					
+					var readOperation = new ReadOperation( { 
+						//page : 0   -- no page configured
+						limit : 50
+					} );
+					Y.Assert.areSame( '/testUrl', proxy.buildUrl( 'read', readOperation ) );
+				},
+				
+				
+				"buildUrl() should *not* add the `pageSizeParam` if it is not configured, even if a page of data to load is provided on a ReadOperation" : function() {
+					var proxy = new AjaxProxy( {
+						url : '/testUrl',
+						pageParam : 'pageNum'
+						//pageSizeParam : 'pageSize'  -- not configured,
+					} );
+					
+					var readOperation = new ReadOperation( { 
+						page : 5,
+						limit : 50
+					} );
+					Y.Assert.areSame( '/testUrl?pageNum=5', proxy.buildUrl( 'read', readOperation ) );
 				}
 			}
 		]

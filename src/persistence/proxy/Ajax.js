@@ -87,6 +87,28 @@ define( [
 		 */
 		idParam : 'id',
 		
+		/**
+		 * @cfg {String} pageParam
+		 * 
+		 * The name of the parameter to pass the page number when loading a paged data set. If this config is not provided,
+		 * no page number parameter will be included in requests.
+		 * 
+		 * For example, if this config is set to 'page', and a page 10 of data is being loaded (via {@link Data.Collection#loadPage}), 
+		 * a request may be generated as: `/posts/load?page=10`
+		 * 
+		 * (A `pageParam` config must be provided if loading pages of data in this manner.) 
+		 */
+		
+		/**
+		 * @cfg {String} pageSizeParam
+		 * 
+		 * The name of the parameter to pass the page size when loading a paged data set. If this config is not provided,
+		 * no page size parameter will be included in requests.
+		 * 
+		 * For example, if this config is set to 'pageSize', and a page of data is being loaded (via {@link Data.Collection#loadPage}), 
+		 * a request may be generated as: `/posts/load?pageSize=50`
+		 */
+		
 		
 		/**
 		 * @protected
@@ -204,11 +226,25 @@ define( [
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {
-			var params = _.assign( {}, this.extraParams, operation.getParams() || {} );
+			var params = _.assign( {}, this.extraParams, operation.getParams() || {} );   // build the params map
+			
 			if( action === 'read' ) {
-				var modelId = operation.getModelId();
+				var modelId = operation.getModelId(),
+				    page = operation.getPage(),
+				    pageSize = operation.getLimit(),  // the limit is the page size
+				    pageParam = this.pageParam,
+				    pageSizeParam = this.pageSizeParam;
+				
 				if( modelId !== null ) 
 					params[ this.idParam ] = modelId;
+				
+				if( page > 0 && pageParam ) {   // an actual page was requested, and there is a pageParam config defined
+					params[ pageParam ] = page;
+					
+					if( pageSize > 0 && pageSizeParam ) {
+						params[ pageSizeParam ] = pageSize;
+					}
+				}
 			}
 			
 			// Map the params object to an array of query string params
