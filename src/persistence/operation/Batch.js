@@ -17,12 +17,12 @@ define( [
 	 * {@link data.persistence.operation.Operation Operations} were needed to satisfy a request, so that it may be inspected
 	 * for any needed information.
 	 */
-	var Batch = Class.extend( Object, {
+	var OperationBatch = Class.extend( Object, {
 		
 		/**
-		 * @cfg {data.persistence.operation.Operation[]} operations
+		 * @cfg {data.persistence.operation.Operation/data.persistence.operation.Operation[]} operations
 		 * 
-		 * The Operation(s) that make up the Batch.
+		 * One or more Operation(s) that make up the Batch.
 		 */
 		
 		
@@ -32,6 +32,9 @@ define( [
 		 */
 		constructor : function( cfg ) {
 			_.assign( this, cfg );
+			
+			// normalize the `operations` config to an array
+			this.operations = ( this.operations ) ? [].concat( this.operations ) : [];
 		},
 		
 		
@@ -41,7 +44,7 @@ define( [
 		 * @return {data.persistence.operation.Operation[]}
 		 */
 		getOperations : function() {
-			return ( this.operations || (this.operations = []) );
+			return this.operations;
 		},
 		
 		
@@ -86,10 +89,20 @@ define( [
 		 */
 		getErroredOperations : function() {
 			return _.filter( this.operations, function( op ) { return op.hasErrored(); } );
+		},
+		
+		
+		/**
+		 * Determines if all {@link data.persistence.operation.Operation Operations} in the batch are complete.
+		 * 
+		 * @return {Boolean} `true` if all Operations are complete, `false` if any are not yet complete.
+		 */
+		isComplete : function() {
+			return _.all( this.operations, function( op ) { return op.isComplete(); } );
 		}
 		
 	} );
 	
-	return Batch;
+	return OperationBatch;
 	
 } );

@@ -3,7 +3,7 @@ define( [
 	'Class',
 	'data/persistence/operation/Batch',
 	'data/persistence/operation/Operation'
-], function( Class, Batch, Operation ) {
+], function( Class, OperationBatch, Operation ) {
 	
 	var ConcreteOperation = Class.extend( Operation, {
 		// no abstract methods
@@ -26,7 +26,7 @@ define( [
 				op1.setSuccess();
 				op2.setSuccess();
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2 ]
 				} );
 				expect( batch.wasSuccessful() ).toBe( true );
@@ -37,7 +37,7 @@ define( [
 				op1.setSuccess();
 				op2.setException( "An error occurred" );
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2 ]
 				} );
 				expect( batch.wasSuccessful() ).toBe( false );
@@ -52,7 +52,7 @@ define( [
 				op1.setSuccess();
 				op2.setException( "An error occurred" );
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2 ]
 				} );
 				expect( batch.hasErrored() ).toBe( true );
@@ -63,7 +63,7 @@ define( [
 				op1.setSuccess();
 				op2.setSuccess();
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2 ]
 				} );
 				expect( batch.hasErrored() ).toBe( false );
@@ -79,7 +79,7 @@ define( [
 				op2.setException( "An error occurred" );
 				op3.setException( "An error occurred 2" );
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2, op3 ]
 				} );
 				expect( batch.getSuccessfulOperations() ).toEqual( [ op1 ] );
@@ -91,7 +91,7 @@ define( [
 				op2.setSuccess();
 				op3.setSuccess();
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2, op3 ]
 				} );
 				expect( batch.getSuccessfulOperations() ).toEqual( [ op1, op2, op3 ] );
@@ -102,7 +102,7 @@ define( [
 				op1.setException( "An error occurred" );
 				op2.setException( "An error occurred 2" );
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2 ]
 				} );
 				expect( batch.getSuccessfulOperations() ).toEqual( [] );
@@ -118,7 +118,7 @@ define( [
 				op2.setException( "An error occurred" );
 				op3.setException( "An error occurred" );
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2, op3 ]
 				} );
 				expect( batch.getErroredOperations() ).toEqual( [ op2, op3 ] );
@@ -130,7 +130,7 @@ define( [
 				op2.setException( "An error occurred" );
 				op3.setException( "An error occurred" );
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2, op3 ]
 				} );
 				expect( batch.getErroredOperations() ).toEqual( [ op1, op2, op3 ] );
@@ -141,10 +141,50 @@ define( [
 				op1.setSuccess();
 				op2.setSuccess();
 				
-				var batch = new Batch( {
+				var batch = new OperationBatch( {
 					operations : [ op1, op2 ]
 				} );
 				expect( batch.getErroredOperations() ).toEqual( [] );
+			} );
+			
+		} );
+		
+		
+		describe( 'isComplete()', function() {
+			
+			it( "should return true if all operations are complete (success or errored)", function() {
+				op1.setSuccess();
+				op2.setException( "An error occurred" );
+				op3.setException( "An error occurred" );
+				
+				var batch = new OperationBatch( {
+					operations : [ op1, op2, op3 ]
+				} );
+				expect( batch.isComplete() ).toBe( true );
+			} );
+			
+			
+			it( "should return false if just one operation is not yet complete", function() {
+				op1.setSuccess();
+				op2.setSuccess();
+				//op3.setSuccess();  -- this one is not yet complete
+				
+				var batch = new OperationBatch( {
+					operations : [ op1, op2, op3 ]
+				} );
+				expect( batch.isComplete() ).toBe( false );
+			} );
+			
+			
+			it( "should return false if all operations are not yet complete", function() {
+				//op3.setSuccess();  -- not yet complete
+				//op3.setSuccess();  -- not yet complete
+				//op3.setSuccess();  -- not yet complete
+				
+				var batch = new OperationBatch( {
+					operations : [ op1, op2, op3 ]
+				} );
+				expect( batch.isComplete() ).toBe( false );
 			} );
 			
 		} );
