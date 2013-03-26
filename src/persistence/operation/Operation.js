@@ -182,6 +182,16 @@ define( [
 		 */
 		hasErrored : function() {
 			return this.error;
+		},
+		
+		
+		/**
+		 * Determines if the Operation is complete.
+		 * 
+		 * @return {Boolean}
+		 */
+		isComplete : function() {
+			return this.success || this.error;
 		}
 		
 	} );
