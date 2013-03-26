@@ -2,34 +2,48 @@
 /*jshint boss:true */
 define( [
 	'lodash',
-	'Class'
-], function( _, Class ) {
+	'Class',
+	'data/Collection'
+], function( _, Class, Collection ) {
 	
 	/**
 	 * @abstract
 	 * @class data.persistence.writer.Writer
 	 * 
-	 * The purpose of a Write is to take {@link data.Model Model}/{@link data.Collection Collection} data, and convert
+	 * The purpose of a Writer is to take {@link data.Model Model}/{@link data.Collection Collection} data, and convert
 	 * it into the serialized form that a {@link data.persistence.proxy.Proxy Proxy} should use to store the data.
-	 * For example, a {@link data.persistence.writer.Json JSON Writer} would take a {@link Data.Model Model's} data,
-	 * and convert it to a JSON string, so that it may be sent to say, a backend web server.
+	 * For example, a {@link data.persistence.writer.Json Json Writer} would take a {@link Data.Model Model's} data,
+	 * and convert it to a JSON string, so that it can be sent to a backend web server.
 	 * 
+	 * Each Writer subclass must implement the {@link #writeRecords} and {@link #writeRecord} methods, which are provided
+	 * plain JavaScript Objects which represent the {@link data.Model Models} with the properties and values that are
+	 * to be serialized. 
 	 * 
+	 * The overall process of the Writer is this:
 	 * 
+	 * 1. Take a {@link data.Model Model's} data and convert it into a plain JavaScript Object. This intermediate JavaScript
+	 *    Object is referred to as a "record" at this point. This process is performed by either the {@link #processModels} 
+	 *    or {@link #processModel} method, depending on if multiple Models or a single Model was provided to {@link #write}.
+	 * 2. Convert each of the intermediate JavaScript Object's ("record") values into the form that the serialization expects.
+	 *    For example, a JavaScript Date Object value may be converted into the string "mm/dd/yyyy hh:mm:ss" for serialization. 
+	 *    This is performed by the {@link #processValue} method, which is called once for each value in the record.
+	 * 3. Finally, serialize the intermediate JavaScript Object (record) into the target serialization form (json, xml, etc).
+	 *    This is performed by either {@link #writeRecords} or {@link #writeRecord},depending on if multiple Models or a single
+	 *    Model was provided to {@link #write}.
 	 * 
-	 * 
-	 * 
-	 * Each Reader subclass must implement the {@link #convertRaw} method, which is provided the raw data,
-	 * and is expected to return a JavaScript object with the record(s) data and any metadata that exists in 
-	 * the raw data. A "record" is defined simply as a plain JavaScript object that holds the properties and 
-	 * values for a {@link data.Model} model on the client-side app.
-	 * 
-	 * Reader subclasses may override certain methods such as {@link #processRecords} or {@link #processRecord}
-	 * to apply transformations from the raw data to a form that will be consumed by a {@link data.Model Model}
-	 * or {@link data.Collection Collection}.
+	 * Writer subclasses may override certain methods such as {@link #processModels}, {@link #processModel}, or
+	 * {@link #processValue} to implement functionality or transformations other than what is provided by the particular 
+	 * Writer subclass in use.
 	 */
 	var Writer = Class.extend( Object, {
 		abstractClass : true,
+		
+		
+		// TODO: Need config that would specify to always use the "multiple" form, even when a single model
+		//       is to be written (ex: a json writer should return an array, and an xml writer should return a root element 
+		//       with the single model inside of it)
+		
+		// TODO: Need to implement "patch" updates, where only the changed attributes are written.
 		
 		
 		/**
@@ -43,215 +57,111 @@ define( [
 		
 		
 		/**
-		 * "Writes" the data by converting the {@link Data.Model Models} to their serialized form, and returns
-		 * the serialized form. 
+		 * Writes the output data by converting the {@link data.Model Models} to their serialized form.
 		 * 
-		 * @param { ... } ?
-		 * @return {Mixed} The serialized data.
+		 * @param {data.Model/data.Model[]/data.Collection} dataComponent The data component to write into serialized form.
+		 *   This may either be one or more {@link data.Model}s, or a {@link data.Collection}. 
+		 * @return {Mixed} The serialized data. This is usually a string, such as if converting to JSON or XML.
+		 *   The serialized data will reflect the input `dataComponent`. If the input `dataComponent` is an array of 
+		 *   {@link data.Model Models}, or a {@link data.Collection Collection}, then all entities will exist in the
+		 *   serialized form. If a single {@link data.Model} is provided, then the serialized form will reflect just
+		 *   the single entity. 
 		 */
-		write : function(  ) {
-			var records = [];
-			
-			// TODO
-			
-			var data    = this.convertRaw( rawData ),
-			    records = this.extractRecords( data );
-			
-			records = this.processRecords( records );
-			
-			return new ResultSet( {
-				records    : records,
-				totalCount : this.extractTotalCount( data ),
-				message    : this.extractMessage( data )
-			} );
+		write : function( dataComponent ) {
+			var isArray = _.isArray( dataComponent );
+			if( isArray || dataComponent instanceof Collection ) {  // Array of Models, or Collection
+				var models = ( isArray ) ? dataComponent : dataComponent.getRange(),
+				    records = this.processModels( models );
+				
+				return this.writeRecords( records );
+				
+			} else {  // Single model
+				var record = this.processModel( dataComponent );
+				return this.writeRecord( record );
+			}
 		},
 		
 		
 		/**
-		 * Abstract method which should be implemented to take the raw data, and convert it into
-		 * a JavaScript Object.
+		 * Abstract method which should write a list (array) of one or more {@link data.Model Models} in their
+		 * processed intermediate JavaScript Object ("record") form, returning their serialized form. This method
+		 * is provided the return value of the {@link #processModels} method.
 		 * 
 		 * @abstract
 		 * @protected
-		 * @param {Mixed} rawData
-		 * @return {Object}
+		 * @param {Object[]} records The models which have been processed into plain JavaScript Object form, in preparation
+		 *   for serialization.
+		 * @return {Mixed} The serialized form of the array of {@link data.Model Models}.
 		 */
-		convertRaw : Class.abstractMethod,
+		writeRecords : Class.abstractMethod,
 		
-
+		
 		/**
-		 * Extracts the records data from the JavaScript object produced as a result of {@link #convertRaw}.
-		 * The default implementation uses the {@link #dataProperty} config to pull out the object which holds
-		 * the record(s) data.
+		 * Abstract method which should write a single {@link data.Model Model} in its processed intermediate JavaScript
+		 * Object ("record") form, returning its serialized form. This method is provided the return value of the
+		 * {@link #processModel} method.
 		 * 
-		 * @param {Object} data The JavaScript form of the raw data (converted by {@link #convertRaw}).
-		 * @return {Object[]} The data records. If a single record is found, it is wrapped in an array
-		 *   (forming a one element array).
+		 * @abstract
+		 * @protected
+		 * @param {Object} record The model which has been processed into plain JavaScript Object form, in preparation
+		 *   for serialization.
+		 * @return {Mixed} The serialized form of the {@link data.Model Model}.
 		 */
-		extractRecords : function( data ) {
-			var dataProperty = this.dataProperty;
-			if( dataProperty && dataProperty !== '.' ) {
-				data = this.findPropertyValue( data, dataProperty );
-
-				// <debug>
-				if( data === undefined ) {
-					throw new Error( "Reader could not find the data at property '" + dataProperty + "'" );
-				}
-				// </debug>
-			}
-			
-			return ( _.isArray( data ) ) ? data : [ data ];  // Wrap in an array if it is a single object 
+		writeRecord : Class.abstractMethod,
+		
+		
+		
+		/**
+		 * Processes an array of Models, and returns a JavaScript Array of nested plain JavaScript *Objects* ("records")
+		 * that represent the model data. The JavaScript Objects represent the Model's data after being processed 
+		 * by {@link #processModel}. This is an intermediate form, which can then easily be converted to the target
+		 * serialized form.
+		 * 
+		 * @protected
+		 * @param {data.Model[]} models
+		 * @return {Object[]} The array of "records", which are the `models` processed into plain JavaScript Objects, 
+		 *   in preparation for serialization.
+		 */
+		processModels : function( models ) {
+			return _.map( models, function( m ) { return this.processModel( m ); }, this );
 		},
 		
 		
 		/**
-		 * Hook method which may be overridden to process the list of records in the data.
-		 * This method, by default, simply calls {@link #processRecord} with each record in
-		 * the data, but may be overridden to apply transformations to the records list as
-		 * a whole. If your intention is to transform each record (model) one by one, override
-		 * {@link #processRecord} instead.
+		 * Processes a single Model, and returns a plain JavaScript *Object* ("record") that represents the Model's data. 
+		 * This JavaScript Object is an intermediate form, which can then easily be converted to the target serialized form.
 		 * 
 		 * @protected
-		 * @template
-		 * @param {Object[]} records
-		 * @return {Object[]} The `records` with any transformations applied.
+		 * @param {data.Model} model
+		 * @return {Object} The plain JavaScript Object ("record") representation of the `model`, which is prepared to be
+		 *   serialized. Properties of this Object should hold the values that will be directly serialized. 
 		 */
-		processRecords : function( records ) {
-			for( var i = 0, len = records.length; i < len; i++ ) {
-				records[ i ] = this.processRecord( records[ i ] );
-			}
-			return records;
+		processModel : function( model ) {
+			var data = model.getData( { persistedOnly: true } );
+			
+			_.forOwn( data, function( value, key ) {
+				data[ key ] = this.processValue( value, key, model );
+			}, this );
+			return data;
 		},
 		
 		
 		/**
-		 * Hook method which may be overridden to process the data of a single record.
-		 * This method, by default, applies any data mappings specified in a {@link #dataMappings}
-		 * config (by calling {@link #applyDataMappings}, and then returns the newly transformed record 
-		 * object. If overriding this method in a subclass, call this superclass method when you want 
-		 * the {@link #dataMappings} to be applied (and any other future config-driven transformations
-		 * that may be implemented).
+		 * Processes a single attribute value of a {@link data.Model Model}, returning the value in the form of how
+		 * it should be serialized. For example, a JavaScript Date object might be converted to a string
+		 * that represents the full date/time value (ex: "mm/dd/yyyy hh:mm:ss").
 		 * 
-		 * This method, by default, is called once for each record in the data. This is unless 
-		 * {@link #processRecords} has been redefined in a subclass, and the records are handled 
-		 * differently.
+		 * For now, this method simply returns the `value` provided to it, but will be extended in the future to 
+		 * automatically convert Date objects and possibly other types as well.
 		 * 
 		 * @protected
-		 * @template
-		 * @param {Object} recordData
-		 * @return {Object} The `recordData` with any transformations applied.
+		 * @param {Mixed} value The value of the attribute.
+		 * @param {String} attributeName The attribute name in the Model.
+		 * @param {data.Model} model The Model being serialized.
+		 * @return {Mixed} The serialization-form value of the attribute.
 		 */
-		processRecord : function( recordData ) {
-			return this.applyDataMappings( recordData );
-		},
-		
-		
-		// -----------------------------------
-		
-		
-		/**
-		 * Utility method which applies the {@link #dataMappings} to a given record (i.e. the plain
-		 * object that holds the properties which will be later set to a {@link data.Model}.
-		 * 
-		 * This method is by default, executed by {@link #processRecord} (unless {@link #processRecord}
-		 * is redefined in a subclass).
-		 * 
-		 * @protected
-		 * @param {Object} recordData
-		 * @return {Object} The `recordData` with the {@link #dataMappings} applied.
-		 */
-		applyDataMappings : function( recordData ) {
-			var me = this,  // for closure
-			    dataMappings = this.dataMappings;
-			
-			if( dataMappings ) {
-				_.forOwn( dataMappings, function( targetPropName, sourcePropPath ) {
-					// Copy value to target property.
-					// Empty string target property can be used to simply delete the source data property (which we'll do next),
-					// so don't create a new target property in this case
-					if( targetPropName !== '' ) {
-						recordData[ targetPropName ] = me.findPropertyValue( recordData, sourcePropPath );
-					}
-					
-					// Delete the source property.
-					// TODO: implement deleting of nested mapped properties. For now, only deletes top level source properties
-					var pathKeys = me.parsePathString( sourcePropPath );
-					if( pathKeys.length === 1 ) {  // a top level property
-						delete recordData[ pathKeys[ 0 ] ];  // use the pathKeys array, as it will have '\.' sequences processed to '.'
-					}
-				} );
-			}
-			return recordData;
-		},
-		
-		
-		/**
-		 * Utility method which searches for a (possibly nested) property in a data object.
-		 * The `propertyName` parameter accepts a dot-delimited string, which accesses a property
-		 * deep within the object structure. For example: a `propertyName` of 'foo.bar' will access 
-		 * property 'foo' from the `obj` provided, and then the property 'bar' from 'foo'.
-		 * 
-		 * Dots may be escaped by a backslash (specified as a double backslash in a string literal)
-		 * so that property names which have dots within them may be accessed. For example, a
-		 * `propertyName` of 'foo\\.bar' will access the property "foo.bar" from the `obj` provided. 
-		 * 
-		 * @protected
-		 * @param {Object} obj The object to search.
-		 * @param {String} propertyPath A single property name, or dot-delimited path to access nested properties. 
-		 *   Dots escaped with a backslash will be taken as literal dots (i.e. not as nested keys).
-		 * @return {Mixed} The value at the `propertyName`. If the property is not found, returns
-		 *   `undefined`.
-		 */
-		findPropertyValue : function( obj, propertyPath ) {
-			if( !obj || !propertyPath ) return;
-			
-			// Walk down the nested object structure for the value
-			var pathKeys = this.parsePathString( propertyPath );
-			for( var i = 0, len = pathKeys.length; obj && i < len; i++ ) {
-				obj = obj[ pathKeys[ i ] ];
-			}
-			return obj;
-		},
-		
-		
-		/**
-		 * Utility method to parse a dot-delimited object path string into a list of nested keys. Dots
-		 * in the string which are prefixed by a backslash are taken literally. (Note: for escaped dots,
-		 * need to specify a double backslash in JS string literals.)
-		 * 
-		 * Ex:
-		 * 
-		 *     'prop' -> [ 'prop' ]
-		 *     'prop.nested' -> [ 'prop', 'nested' ]
-		 *     'prop.nested.deepNested' -> [ 'prop', 'nested', 'deepNested' ]
-		 *     'prop\\.value' -> [ 'prop.value' ]
-		 *     'prop.nested.namespace\\.value' -> [ 'prop', 'nested', 'namespace.value' ]
-		 * 
-		 * @protected
-		 * @param {String} pathString The dot-delimited path string.
-		 * @return {String[]} A list (array) of the nested keys. 
-		 */
-		parsePathString : function( pathString ) {
-			var dotRe = /\./g,    // match all periods
-			    dotMatch,
-			    escapedDotRe = /\\\./g,
-			    pathKeys = [],    // list where each element is a nested property key, each one level below the one before it
-			    keyStartIdx = 0;  // for parsing, this is the start of the key that is currently being parsed in the loop
-			
-			while( dotMatch = dotRe.exec( pathString ) ) {
-				var dotMatchIdx = dotMatch.index;
-				
-				if( pathString.charAt( dotMatchIdx - 1 ) !== "\\" ) {  // a non-escaped period was matched
-					var key = pathString.substring( keyStartIdx, dotMatchIdx ).replace( escapedDotRe, '.' );  // replace any '\.' sequences with simply '.' before pushing to the array (i.e. remove the escape sequence)
-					pathKeys.push( key );
-					
-					keyStartIdx = dotMatchIdx + 1;
-				}
-			}
-			var lastKey = pathString.substring( keyStartIdx, pathString.length ).replace( escapedDotRe, '.' );  // replace any \. sequences with simply . before pushing to the array (i.e. remove the escape sequence)
-			pathKeys.push( lastKey );  // push the last (or possibly only) key
-			
-			return pathKeys;
+		processValue : function( value, attributeName, model ) {
+			return value;
 		}
 		
 	} );
