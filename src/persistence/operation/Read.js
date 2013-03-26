@@ -26,14 +26,6 @@ define( [
 		 */
 		
 		/**
-		 * @cfg {Boolean} addModels
-		 * 
-		 * `true` if models should be added to a Collection when the Read operation completes,
-		 * `false if the newly loaded models should replace the existing ones in the Collection.
-		 */
-		addModels : false,
-		
-		/**
 		 * @cfg {Number} page
 		 * 
 		 * When loading a page of a paged data set, this is the 1-based page number to load.
@@ -75,16 +67,6 @@ define( [
 		 */
 		getModelId : function() {
 			return ( this.modelId !== undefined ) ? this.modelId + "" : null;
-		},
-		
-		
-		/**
-		 * Retrieves the value of the {@link #addModels} config.
-		 * 
-		 * @return {Boolean}
-		 */
-		isAddModels : function() {
-			return this.addModels;
 		},
 		
 		
