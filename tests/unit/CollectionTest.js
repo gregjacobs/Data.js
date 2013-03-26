@@ -1331,6 +1331,45 @@ define( [
 			
 			{
 				/*
+				 * Test hasRange()
+				 */
+				name : "Test hasRange()",
+				
+				
+				setUp : function() {
+					this.Model = Model.extend( {
+						attributes : [ 'attr' ]
+					} );
+					
+					this.Collection = Collection.extend( {
+						model : this.Model
+					} );
+				},
+				
+				
+				"hasRange() should return true when the Collection has the range of models specified" : function() {
+					var model1 = new this.Model(),
+					    model2 = new this.Model(),
+					    model3 = new this.Model();
+					
+					var collection = new this.Collection( [ model1, model2, model3 ] );
+					Y.Assert.isTrue( collection.hasRange( 0, 2 ) );
+				},
+				
+				
+				"hasRange() should return false when the collection does not have the range of models specified" : function() {
+					var model1 = new this.Model(),
+					    model2 = new this.Model(),
+					    model3 = new this.Model();
+					
+					var collection = new this.Collection( [ model1, model2, model3 ] );
+					Y.Assert.isFalse( collection.hasRange( 0, 3 ) );  // looking for 4 models
+				}
+			},
+			
+			
+			{
+				/*
 				 * Test getModels()
 				 */		
 				name : "Test getModels()",

@@ -712,6 +712,23 @@ define( [
 		
 		
 		/**
+		 * Determines if the collection holds the range of {@link data.Model Models} specified by the `startIndex` and
+		 * `endIndex`. If one or more {@link data.Model Models} are missing from the given range, this method returns
+		 * `false`.
+		 * 
+		 * @param {Number} [startIndex] The starting index.
+		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
+		 * @return {Boolean} `true` if the Collection has {@link data.Model Models} in all indexes specified by
+		 *   the range of `startIndex` to `endIndex`, or `false` if one or more {@link data.Model Models} are missing.
+		 */
+		hasRange : function( startIndex, endIndex ) {
+			// A bit of a naive implementation for now. In the future, this method will cover when say, pages
+			// are loaded out of order, and will ensure that the entire range is present.
+			return endIndex < this.models.length;
+		},
+		
+		
+		/**
 		 * Retrieves all of the models that the Collection has, in order.
 		 * 
 		 * @method getModels
