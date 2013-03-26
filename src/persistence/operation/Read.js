@@ -41,6 +41,14 @@ define( [
 		page : 0,
 		
 		/**
+		 * @cfg {Number} pageSize
+		 * 
+		 * When loading a page of a paged data set, this is size of the page. Used in conjunction
+		 * with the {@link #page} config.
+		 */
+		pageSize : 0,
+		
+		/**
 		 * @cfg {Number} start
 		 * 
 		 * The start index of where to load models from. Used for when loading paged sets of data
@@ -51,8 +59,7 @@ define( [
 		/**
 		 * @cfg {Number} limit
 		 * 
-		 * The number of models to load. Used in conjunction with the {@link #start} or {@link #page}
-		 * configs, when loading paged sets of data in a {@link data.Collection Collection}.
+		 * The number of models to load. Used in conjunction with the {@link #start} config.
 		 * 
 		 * Defaults to 0, for "no limit"
 		 */
@@ -88,6 +95,16 @@ define( [
 		 */
 		getPage : function() {
 			return this.page;
+		},
+		
+		
+		/**
+		 * Retrieves the value of the {@link #pageSize} config.
+		 * 
+		 * @return {Number}
+		 */
+		getPageSize : function() {
+			return this.pageSize;
 		},
 		
 		

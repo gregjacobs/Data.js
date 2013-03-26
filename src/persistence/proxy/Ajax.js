@@ -231,7 +231,7 @@ define( [
 			if( action === 'read' ) {
 				var modelId = operation.getModelId(),
 				    page = operation.getPage(),
-				    pageSize = operation.getLimit(),  // the limit is the page size
+				    pageSize = operation.getPageSize(),
 				    pageParam = this.pageParam,
 				    pageSizeParam = this.pageSizeParam;
 				

@@ -250,7 +250,7 @@ define( [
 					
 					var readOperation = new ReadOperation( { 
 						page  : 5,
-						limit : 50
+						pageSize : 50
 					} );
 					Y.Assert.areSame( '/testUrl?pageNum=5&pageSize=50', proxy.buildUrl( 'read', readOperation ) );
 				},
@@ -265,7 +265,7 @@ define( [
 					
 					var readOperation = new ReadOperation( { 
 						//page : 0   -- no page configured
-						limit : 50
+						pageSize : 50
 					} );
 					Y.Assert.areSame( '/testUrl', proxy.buildUrl( 'read', readOperation ) );
 				},
@@ -280,7 +280,7 @@ define( [
 					
 					var readOperation = new ReadOperation( { 
 						page : 5,
-						limit : 50
+						pageSize : 50
 					} );
 					Y.Assert.areSame( '/testUrl?pageNum=5', proxy.buildUrl( 'read', readOperation ) );
 				}

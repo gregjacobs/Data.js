@@ -2259,6 +2259,9 @@ define( [
 					error : {
 						"loadPage() should throw an error if no `page` argument is provided to the method" :
 							"'page' argument required for loadPage() method, and must be > 0",
+						
+						"loadPage() should throw an error if no `pageSize` config is set on the Collection" :
+							"The `pageSize` config must be set on the Collection to load paged data.",
 							
 						"loadPage() should throw an error if no proxy is configured" :
 							"data.Collection::load() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`.",
@@ -2271,7 +2274,8 @@ define( [
 				
 				"loadPage() should throw an error if no `page` argument is provided to the method" : function() {
 					var MyCollection = Collection.extend( {
-						proxy : this.proxy
+						proxy : this.proxy,
+						pageSize : 25
 					} );
 					
 					new MyCollection().loadPage();
@@ -2280,9 +2284,21 @@ define( [
 				},
 				
 				
+				"loadPage() should throw an error if no `pageSize` config is set on the Collection" : function() {
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy
+					} );
+					
+					new MyCollection().loadPage( 1 );
+					
+					Y.Assert.fail( "Test should have thrown an error for not having a `pageSize` config" );
+				},
+				
+				
 				"loadPage() should throw an error if no proxy is configured" : function() {
 					var MyCollection = Collection.extend( {
 						// note: no proxy, and no model
+						pageSize : 25
 					} );
 					
 					new MyCollection().loadPage( 1 );
@@ -2294,7 +2310,8 @@ define( [
 				"loadPage() should throw an error if it has no proxy but has a Model, but that model has no proxy configured" : function() {
 					var MyCollection = Collection.extend( {
 						// note: no proxy, and a model that doesn't have a proxy
-						model : Model.extend( { /* no proxy on model */ } )
+						model : Model.extend( { /* no proxy on model */ } ),
+						pageSize : 25
 					} );
 					
 					new MyCollection().loadPage( 1 );
@@ -2305,7 +2322,8 @@ define( [
 				
 				"loadPage() should call the proxy's read() method, when the proxy is configured on the Collection" : function() {
 					var MyCollection = Collection.extend( {
-						proxy : this.proxy
+						proxy : this.proxy,
+						pageSize : 25
 					} );
 					
 					new MyCollection().loadPage( 1 );
@@ -2321,7 +2339,8 @@ define( [
 				"loadPage() should call the proxy's read() method, when the proxy is configured on the Collection's Model" : function() {
 					var MyCollection = Collection.extend( {
 						// note: no proxy of its own
-						model : this.Model  // Note: a proxy is defined on the model
+						model : this.Model,  // Note: a proxy is defined on the model
+						pageSize : 25
 					} );
 					
 					new MyCollection().loadPage( 1 );
@@ -2355,6 +2374,7 @@ define( [
 
 					Y.Assert.areSame( params, operation.getParams() );
 					Y.Assert.areSame( 10, operation.getPage() );
+					Y.Assert.areSame( 50, operation.getPageSize() );
 					Y.Assert.areSame( 450, operation.getStart() );
 					Y.Assert.areSame( 50, operation.getLimit() );
 				},
@@ -2374,7 +2394,8 @@ define( [
 					
 					var MyCollection = Collection.extend( {
 						model : this.Model,
-						proxy : this.proxy
+						proxy : this.proxy,
+						pageSize : 25
 					} );
 					var collection = new MyCollection();
 					collection.loadPage( 1 );
@@ -2485,7 +2506,8 @@ define( [
 					
 					var MyCollection = Collection.extend( {
 						model : this.Model,
-						proxy : this.proxy
+						proxy : this.proxy,
+						pageSize : 25
 					} );
 					
 					var successCallCount = 0,
@@ -2557,7 +2579,8 @@ define( [
 					
 					var MyCollection = Collection.extend( {
 						model : this.Model,
-						proxy : this.proxy
+						proxy : this.proxy,
+						pageSize : 25
 					} );
 					
 					var successCallCount = 0,
@@ -2637,7 +2660,8 @@ define( [
 					
 					var MyCollection = Collection.extend( {
 						model : this.Model,
-						proxy : this.proxy
+						proxy : this.proxy,
+						pageSize : 25
 					} );
 					var collection = new MyCollection();
 					
@@ -2662,7 +2686,8 @@ define( [
 					
 					var MyCollection = Collection.extend( {
 						model : this.Model,
-						proxy : this.proxy
+						proxy : this.proxy,
+						pageSize : 25
 					} );
 					var collection = new MyCollection();
 					

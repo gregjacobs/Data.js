@@ -105,7 +105,7 @@ define( [
 		 * storage. If this is not configured, the proxy configured on the {@link #model} that this collection uses
 		 * will be used instead. If neither are specified, the Collection may not {@link #method-load} or {@link #sync} its models. 
 		 * 
-		 * Note that this may be specified as part of a Collectoin subclass (so that all instances of the Collection inherit
+		 * Note that this may be specified as part of a Collection subclass (so that all instances of the Collection inherit
 		 * the proxy), or on a particular collection instance as a configuration option, or by using {@link #setProxy}.
 		 */
 		
@@ -121,9 +121,9 @@ define( [
 		/**
 		 * @cfg {Number} pageSize
 		 * 
-		 * The number of models to load in a page when loading paged data (via {@link #loadPage}). 
+		 * The number of models to load in a page when loading paged data (via {@link #loadPage}). This config
+		 * must be set when loading paged data with {@link #loadPage}.
 		 */
-		pageSize : 25,
 		
 		/**
 		 * @cfg {Boolean} clearOnPageLoad
@@ -981,7 +981,7 @@ define( [
 		 * @param {Number} fn.index The index of the Model in the Collection.
 		 * 
 		 * @param {Object} [options]
-		 * @param {Object} [options.scope=window] The scope to run the function in.
+		 * @param {Object} [options.scope] The scope to run the function in. Defaults to the Collection.
 		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
 		 * 
 		 * @return {data.Model} The model that the function returned `true` for, or `null` if no match was found.
@@ -990,7 +990,7 @@ define( [
 			options = options || {};
 			
 			var models = this.models,
-			    scope = options.scope || window,
+			    scope = options.scope || this,
 			    startIndex = options.startIndex || 0;
 			    
 			for( var i = startIndex, len = models.length; i < len; i++ ) {
@@ -1102,22 +1102,26 @@ define( [
 		 */
 		loadPage : function( page, options ) {
 			options = options || {};
+			var pageSize = this.pageSize;
 			
 			// <debug>
 			if( !page ) {
 				throw new Error( "'page' argument required for loadPage() method, and must be > 0" );
 			}
+			if( !pageSize ) {
+				throw new Error( "The `pageSize` config must be set on the Collection to load paged data." );
+			}
 			// </debug>
 			
-			var pageSize = this.pageSize;
 			
 			var operation = new ReadOperation( {
 				params    : options.params,
 				addModels : ( options.hasOwnProperty( 'addModels' ) ) ? options.addModels : !this.clearOnPageLoad,
 				
-				page  : page,
-				start : ( page - 1 ) * pageSize,
-				limit : pageSize   // in this case, the `limit` is the pageSize
+				page     : page,
+				pageSize : pageSize,
+				start    : ( page - 1 ) * pageSize,
+				limit    : pageSize   // in this case, the `limit` is the pageSize
 			} );
 			
 			return this.doLoad( operation, options );
@@ -1228,7 +1232,7 @@ define( [
 			options = options || {};
 			var scope = options.scope || options.context || this;
 			
-					
+			
 			var models = this.getModels(),
 			    newModels = [],
 			    modifiedModels = [],
