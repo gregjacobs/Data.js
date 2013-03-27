@@ -417,7 +417,6 @@ define( [
 		 * This may be overridden in subclasses to allow for custom processing, or to create a factory method for Model creation.
 		 * 
 		 * @protected
-		 * @method createModel
 		 * @param {Object} modelData
 		 * @return {data.Model} The instantiated model.
 		 */
@@ -434,7 +433,6 @@ define( [
 		/**
 		 * Adds one or more models to the Collection.
 		 * 
-		 * @method add
 		 * @param {data.Model/data.Model[]/Object/Object[]} models One or more models to add to the Collection. This may also
 		 *   be one or more anonymous objects, which will be converted into models based on the {@link #model} config.
 		 */
@@ -448,7 +446,6 @@ define( [
 		 * Fires the {@link #event-add add} event for models that are newly inserted into the Collection,
 		 * and the {@link #event-reorder} event for models that are simply moved within the Collection.
 		 * 
-		 * @method insert
 		 * @param {data.Model/data.Model[]} models The model(s) to insert.
 		 * @param {Number} index The index to insert the models at.
 		 */
@@ -547,7 +544,6 @@ define( [
 		 * Removes one or more models from the Collection. Fires the {@link #event-remove} event with the
 		 * models that were actually removed.
 		 * 
-		 * @method remove
 		 * @param {data.Model/data.Model[]} models One or more models to remove from the Collection.
 		 */
 		remove : function( models ) {
@@ -598,8 +594,6 @@ define( [
 		/**
 		 * Removes all models from the Collection. Fires the {@link #event-remove} event with the models
 		 * that were removed.
-		 * 
-		 * @method removeAll
 		 */
 		removeAll : function() {
 			this.remove( _.clone( this.models ) );  // make a shallow copy of the array to send to this.remove()
@@ -613,7 +607,6 @@ define( [
 		 * Note that {@link #onModelEvent} is still called even when this method executes.
 		 * 
 		 * @protected
-		 * @method onModelIdChange
 		 * @param {data.Model} model The model that fired the change event.
 		 * @param {Mixed} newValue The new value.
 		 * @param {Mixed} oldValue The old value. 
@@ -632,7 +625,6 @@ define( [
 		 * (as if the Collection had fired it).
 		 * 
 		 * @protected
-		 * @method onModelEvent
 		 * @param {String} eventName
 		 * @param {Mixed...} args The original arguments passed to the event.
 		 */
@@ -664,7 +656,6 @@ define( [
 		/**
 		 * Retrieves the Model at a given index.
 		 * 
-		 * @method getAt
 		 * @param {Number} index The index to to retrieve the model at.
 		 * @return {data.Model} The Model at the given index, or null if the index was out of range.
 		 */
@@ -677,7 +668,6 @@ define( [
 		 * Convenience method for retrieving the first {@link data.Model model} in the Collection.
 		 * If the Collection does not have any models, returns null.
 		 * 
-		 * @method getFirst
 		 * @return {data.Model} The first model in the Collection, or null if the Collection does not have
 		 *   any models.
 		 */
@@ -690,7 +680,6 @@ define( [
 		 * Convenience method for retrieving the last {@link data.Model model} in the Collection.
 		 * If the Collection does not have any models, returns null.
 		 * 
-		 * @method getLast
 		 * @return {data.Model} The last model in the Collection, or null if the Collection does not have
 		 *   any models.
 		 */
@@ -703,7 +692,6 @@ define( [
 		 * Retrieves a range of {@link data.Model Models}, specified by the `startIndex` and `endIndex`. These values are inclusive.
 		 * For example, if the Collection has 4 Models, and `getRange( 1, 3 )` is called, the 2nd, 3rd, and 4th models will be returned.
 		 * 
-		 * @method getRange
 		 * @param {Number} [startIndex=0] The starting index.
 		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
 		 * @return {data.Model[]} The array of models from the `startIndex` to the `endIndex`, inclusively.
@@ -748,7 +736,6 @@ define( [
 		/**
 		 * Retrieves all of the models that the Collection has, in order.
 		 * 
-		 * @method getModels
 		 * @return {data.Model[]} An array of the models that this Collection holds.
 		 */
 		getModels : function() {
@@ -762,7 +749,6 @@ define( [
 		 * array of objects, unless the `raw` option is set to true, in which case the Model attributes are retrieved via {@link data.Model#raw}. 
 		 * 
 		 * @override
-		 * @method getData
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
@@ -805,7 +791,6 @@ define( [
 		/**
 		 * Retrieves a Model by its {@link data.Model#clientId clientId}.
 		 * 
-		 * @method getByClientId
 		 * @param {Number} clientId
 		 * @return {data.Model} The Model with the given {@link data.Model#clientId clientId}, or null if there is 
 		 *   no Model in the Collection with that {@link data.Model#clientId clientId}.
@@ -819,7 +804,6 @@ define( [
 		 * Retrieves a Model by its {@link data.Model#id id}. Note: if the Model does not yet have an id, it will not
 		 * be able to be retrieved by this method.
 		 * 
-		 * @method getById
 		 * @param {Mixed} id The id value for the {@link data.Model Model}.
 		 * @return {data.Model} The Model with the given {@link data.Model#id id}, or `null` if no Model was found 
 		 *   with that {@link data.Model#id id}.
@@ -832,7 +816,6 @@ define( [
 		/**
 		 * Determines if the Collection has a given {@link data.Model model}.
 		 * 
-		 * @method has
 		 * @param {data.Model} model
 		 * @return {Boolean} True if the Collection has the given `model`, false otherwise.
 		 */
@@ -845,7 +828,6 @@ define( [
 		 * Retrieves the index of the given {@link data.Model model} within the Collection. 
 		 * Returns -1 if the `model` is not found.
 		 * 
-		 * @method indexOf
 		 * @param {data.Model} model
 		 * @return {Number} The index of the provided `model`, or of -1 if the `model` was not found.
 		 */
@@ -871,7 +853,6 @@ define( [
 		 * Retrieves the index of a given {@link data.Model model} within the Collection by its
 		 * {@link data.Model#idAttribute id}. Returns -1 if the `model` is not found.
 		 * 
-		 * @method indexOfId
 		 * @param {Mixed} id The id value for the model.
 		 * @return {Number} The index of the model with the provided `id`, or of -1 if the model was not found.
 		 */
@@ -891,7 +872,6 @@ define( [
 		 * Commits any changes in the Collection, so that it is no longer considered "modified".
 		 * 
 		 * @override
-		 * @method commit
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Boolean} [options.shallow=false] True to only commit only the additions/removals/reorders
 		 *   of the Collection itself, but not its child Models.
@@ -914,9 +894,6 @@ define( [
 		/**
 		 * Rolls any changes to the Collection back to its state when it was last {@link #commit committed}
 		 * or rolled back.
-		 * 
-		 * @override
-		 * @method rollback 
 		 */
 		rollback : function() {
 			this.modified = false;  // reset flag
@@ -937,8 +914,6 @@ define( [
 		/**
 		 * Determines if the Collection has been added to, removed from, reordered, or 
 		 * has any {@link data.Model models} which are modified.
-		 * 
-		 * @method isModified
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This may be provided as the first argument to the
 		 *   method if no `attributeName` is to be provided. Options may include:
@@ -982,7 +957,6 @@ define( [
 		 * 
 		 * Note that this method is more efficient than using {@link #findBy}, so if it can be used, it should.
 		 * 
-		 * @method find
 		 * @param {String} attributeName The name of the attribute to test the value against.
 		 * @param {Mixed} value The value to look for.
 		 * @param {Object} [options] Optional arguments for this method, provided in an object (hashmap). Accepts the following:
@@ -1006,8 +980,6 @@ define( [
 		/**
 		 * Finds the first {@link data.Model Model} in the Collection, using a custom function. When the function returns true,
 		 * the model is returned. If the function does not return true for any models, `null` is returned.
-		 * 
-		 * @method findBy
 		 * 
 		 * @param {Function} fn The function used to find the Model. Should return an explicit boolean `true` when there is a match. 
 		 *   This function is passed the following arguments:
@@ -1454,7 +1426,6 @@ define( [
 		 * - `collection` : {@link data.Collection} This Collection instance.
 		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
-		 * @method sync
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Function} [options.success] Function to call if the synchronization is successful.
 		 * @param {Function} [options.error] Function to call if the synchronization fails. The sychronization will be considered

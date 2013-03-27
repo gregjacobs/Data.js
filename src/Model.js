@@ -122,7 +122,6 @@ define( [
 			 * 
 			 * @inheritable
 			 * @static
-			 * @method getAttributes
 			 * @return {Object} An Object (hashmap) where the keys are the attribute {@link data.attribute.Attribute#name names},
 			 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 			 */
@@ -440,7 +439,6 @@ define( [
 		 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
 		 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
 		 * 
-		 * @method getAttributes
 		 * @return {Object} An Object (hashmap) where the keys are the attribute {@link data.attribute.Attribute#name names},
 		 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 		 */
@@ -456,7 +454,6 @@ define( [
 		 * Retrieves the ID for the Model. This uses the configured {@link #idAttribute} to retrieve
 		 * the correct ID attribute for the Model.
 		 * 
-		 * @method getId
 		 * @return {Mixed} The ID for the Model.
 		 */
 		getId : function() {
@@ -472,7 +469,6 @@ define( [
 		 * Retrieves the "ID attribute" for the Model, if there is a valid id attribute. The Model has a valid ID attribute if there exists
 		 * an attribute which is referenced by the {@link #idAttribute} config. Otherwise, returns null.
 		 * 
-		 * @method getIdAttribute
 		 * @return {data.attribute.Attribute} The Attribute that represents the ID attribute, or null if there is no valid ID attribute.
 		 */
 		getIdAttribute : function() {
@@ -484,7 +480,6 @@ define( [
 		 * Retrieves the name of the "ID attribute" for the Model. This will be the attribute referenced by the {@link #idAttribute}
 		 * config.
 		 * 
-		 * @method getIdAttributeName
 		 * @return {String} The name of the "ID attribute".
 		 */
 		getIdAttributeName : function() {
@@ -496,7 +491,6 @@ define( [
 		 * Determines if the Model has a valid {@link #idAttribute}. Will return true if there is an {@link #cfg-attributes attribute}
 		 * that is referenced by the {@link #idAttribute}, or false otherwise.
 		 * 
-		 * @method hasIdAttribute
 		 * @return {Boolean}
 		 */
 		hasIdAttribute : function() {
@@ -520,7 +514,6 @@ define( [
 		 * 
 		 * When attributes are set, their {@link data.attribute.Attribute#cfg-set} method is run, if they have one defined.
 		 * 
-		 * @method set
 		 * @param {String/Object} attributeName The attribute name for the Attribute to set, or an object (hash) of name/value pairs.
 		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a hash). 
 		 */
@@ -661,7 +654,6 @@ define( [
 		 * {@link data.attribute.Attribute#get get} function defined, that function will be called, and its return value
 		 * will be used as the return of this method.
 		 * 
-		 * @method get
 		 * @param {String} attributeName The name of the Attribute whose value to retieve.
 		 * @return {Mixed} The value of the attribute returned by the Attribute's {@link data.attribute.Attribute#get get} function (if
 		 * one exists), or the underlying value of the attribute. Will return undefined if there is no {@link data.attribute.Attribute#get get}
@@ -692,7 +684,6 @@ define( [
 		 * by the return of this method. If not, the underlying data that is currently stored will be returned, bypassing any
 		 * {@link data.attribute.Attribute#get get} function defined on the {@link data.attribute.Attribute Attribute}.
 		 * 
-		 * @method raw
 		 * @param {String} attributeName The name of the Attribute whose raw value to retieve.
 		 * @return {Mixed} The value of the attribute returned by the Attribute's {@link data.attribute.Attribute#raw raw} function (if
 		 * one exists), or the underlying value of the attribute. Will return undefined if there is no {@link data.attribute.Attribute#raw raw}
@@ -720,7 +711,6 @@ define( [
 		/**
 		 * Returns the default value specified for an Attribute.
 		 * 
-		 * @method getDefault
 		 * @param {String} attributeName The attribute name to retrieve the default value for.
 		 * @return {Mixed} The default value for the attribute.
 		 */
@@ -732,7 +722,6 @@ define( [
 		/**
 		 * Determines if the Model has a given attribute (attribute).
 		 * 
-		 * @method has
 		 * @param {String} attributeName The name of the attribute (attribute) name to test for.
 		 * @return {Boolean} True if the Model has the given attribute name.
 		 */
@@ -748,7 +737,6 @@ define( [
 		 * Determines if the Model is a new model, and has not yet been persisted to the server.
 		 * It is a new Model if it lacks an id.
 		 * 
-		 * @method isNew
 		 * @return {Boolean} True if the model is new, false otherwise.
 		 */
 		isNew : function() {
@@ -765,7 +753,6 @@ define( [
 		 * {@link #method-commit} or {@link #method-rollback}.
 		 * 
 		 * @override
-		 * @method isModified
 		 * @param {String} [attributeName] Provide this argument to test if a particular attribute has been modified. If this is not 
 		 *   provided, the model itself will be checked to see if there are any modified attributes. 
 		 * 
@@ -831,7 +818,6 @@ define( [
 		 * in which case the Model attributes are retrieved via {@link #raw}. 
 		 * 
 		 * @override
-		 * @method getData
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
@@ -850,7 +836,6 @@ define( [
 		 * The Model attributes are retrieved via the {@link #get} method, to pre-process the data before it is returned in the final hash, 
 		 * unless the `raw` option is set to true, in which case the Model attributes are retrieved via {@link #raw}.
 		 * 
-		 * @method getChanges
 		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
@@ -905,7 +890,6 @@ define( [
 		 * to the server.
 		 * 
 		 * @override
-		 * @method commit
 		 */
 		commit : function() {
 			this.modifiedData = {};  // reset the modifiedData hash. There is no modified data.
@@ -943,7 +927,6 @@ define( [
 		 * Rolls back the Model attributes that have been changed since the last commit or rollback.
 		 * 
 		 * @override
-		 * @method rollback
 		 */
 		rollback : function() {
 			// Loop through the modifiedData hash, which holds the *original* values, and set them back to the data hash.
@@ -972,7 +955,6 @@ define( [
 		 * account for embedded models, while copying embedded models and other such nested data. Will also handle 
 		 * circular dependencies. I don't recommend using it just yet.
 		 * 
-		 * @method clone
 		 * @param {Mixed} [id] A new id for the Model. Defaults to undefined.
 		 * @return {data.Model} The new Model instance, which is a clone of the Model this method was called on.
 		 */
@@ -1031,7 +1013,6 @@ define( [
 		 * - `model` : {@link data.Model} This Model instance.
 		 * - `operation` : {@link data.persistence.operation.Read} The ReadOperation that was executed.
 		 * 
-		 * @method reload
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
 		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
@@ -1090,7 +1071,6 @@ define( [
 		 * - `model` : {@link data.Model} This Model instance.
 		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
-		 * @method save
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
 		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
@@ -1228,7 +1208,6 @@ define( [
 		 * - `model` : {@link data.Model} This Model instance.
 		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
-		 * @method destroy
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
 		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
@@ -1300,7 +1279,6 @@ define( [
 		 * Retrieves an array of the Attributes configured for this model that are {@link data.attribute.DataComponent DataComponent Attributes}.
 		 * 
 		 * @protected
-		 * @method getDataComponentAttributes
 		 * @return {data.attribute.DataComponent[]}
 		 */
 		getDataComponentAttributes : function() {
@@ -1323,7 +1301,6 @@ define( [
 		 * use the embedded DataComponent Attributes. 
 		 * 
 		 * @protected
-		 * @method getEmbeddedDataComponentAttributes
 		 * @return {data.attribute.DataComponent[]} The array of embedded DataComponent Attributes.
 		 */
 		getEmbeddedDataComponentAttributes : function() {
@@ -1346,7 +1323,6 @@ define( [
 		 * Retrieves an array of the Attributes configured for this model that are {@link data.attribute.Collection Collection Attributes}.
 		 * 
 		 * @protected
-		 * @method getCollectionAttributes
 		 * @return {data.attribute.Collection[]}
 		 */
 		getCollectionAttributes : function() {
@@ -1370,7 +1346,6 @@ define( [
 		 * but are *not* {@link data.attribute.Collection#embedded embedded} attributes (i.e. they are "related" attributes).
 		 * 
 		 * @protected
-		 * @method getRelatedCollectionAttributes
 		 * @return {data.attribute.Collection[]} 
 		 */
 		getRelatedCollectionAttributes : function() {

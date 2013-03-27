@@ -29,7 +29,6 @@ define( function() {
 		 * that matches the type of the provided `model`, and the provided instance `id`. If a Model does not already exist, 
 		 * the provided `model` is simply returned.
 		 * 
-		 * @method get
 		 * @param {data.Model} model
 		 * @param {String} [id] The ID of the model (if it has one).
 		 * @return {data.Model}

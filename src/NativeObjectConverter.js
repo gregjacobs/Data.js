@@ -20,9 +20,7 @@ define( [
 		/**
 		 * Converts a {@link data.Collection Collection} or {@link data.Model} to its native Array/Object representation,
 		 * while dealing with circular dependencies.
-		 * 
-		 * @method convert
-		 * 
+		 *  
 		 * @param {data.Collection/data.Model} A Collection or Model to convert to its native Array/Object representation.
 		 * @param {Object} [options] An object (hashmap) of options to change the behavior of this method. This may include:
 		 * @param {String[]} [options.attributeNames] In the case that a {@link data.Model Model} is provided to this method, this

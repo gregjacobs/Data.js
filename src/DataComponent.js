@@ -51,7 +51,6 @@ define( [
 		/**
 		 * Retrieves the DataComponent's unique {@link #clientId}.
 		 * 
-		 * @method getClientId
 		 * @return {String} The DataComponent's unique {@link #clientId}. 
 		 */
 		getClientId : function() {
@@ -77,11 +76,9 @@ define( [
 		 * 
 		 * @abstract
 		 * @method isModified
-		 * 
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method.  Options may include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true if a {@link data.attribute.Attribute#persist persisted} 
-		 *   attribute of a Model is modified within the DataComponent. 
-		 * 
+		 *   attribute of a Model is modified within the DataComponent.
 		 * @return {Boolean}
 		 */
 		isModified : Class.abstractMethod,
@@ -110,7 +107,6 @@ define( [
 		 * Gets the {@link #proxy} that is currently configured for this DataComponent. Note that
 		 * the same proxy instance is shared between all instances of the DataComponent.
 		 * 
-		 * @method getProxy
 		 * @return {data.persistence.proxy.Proxy} The configured persistence proxy, or `null` if there is none configured.
 		 */
 		getProxy : function() {
