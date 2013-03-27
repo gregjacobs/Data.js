@@ -1961,6 +1961,27 @@ define( [
 				},
 				
 				
+				"load() should delegate to loadPage() when the Collection is configured to use paging (i.e. a `pageSize` config is set)" : function() {
+					var loadPageCallCount = 0;
+					var params = { a : 1 };
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy,
+						pageSize : 25,
+						
+						// Override loadPage, just to see that it's called. loadPage() tests are done elsewhere
+						loadPage : function( pageNum, options ) {
+							loadPageCallCount++;  // just to make sure that the method is called
+							Y.Assert.areSame( 1, pageNum, "The pageNum should be 1" );
+							Y.Assert.areSame( params, options.params, "The params should have been passed along from the call to load()" );
+						}
+					} );
+					
+					new MyCollection().load( { params: params } );
+					Y.Assert.areSame( 1, loadPageCallCount, "The loadPage() method should have been called with a configured `pageSize` on the Collection" );
+				},
+				
+				
 				"load() should call the proxy's read() method, when the proxy is configured on the Collection" : function() {
 					var MyCollection = Collection.extend( {
 						proxy : this.proxy

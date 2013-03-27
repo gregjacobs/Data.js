@@ -30,7 +30,6 @@ define( [
 		 * 
 		 * When loading a page of a paged data set, this is the 1-based page number to load.
 		 */
-		page : 0,
 		
 		/**
 		 * @cfg {Number} pageSize
@@ -38,7 +37,6 @@ define( [
 		 * When loading a page of a paged data set, this is size of the page. Used in conjunction
 		 * with the {@link #page} config.
 		 */
-		pageSize : 0,
 		
 		/**
 		 * @cfg {Number} start
@@ -71,7 +69,8 @@ define( [
 		
 		
 		/**
-		 * Retrieves the value of the {@link #page} config.
+		 * Retrieves the value of the {@link #page} config. Will return `undefined` if no {@link #page}
+		 * config has been provided.
 		 * 
 		 * @return {Number}
 		 */
@@ -81,7 +80,8 @@ define( [
 		
 		
 		/**
-		 * Retrieves the value of the {@link #pageSize} config.
+		 * Retrieves the value of the {@link #pageSize} config. Will return `undefined` if no {@link #pageSize}
+		 * config has been provided.
 		 * 
 		 * @return {Number}
 		 */

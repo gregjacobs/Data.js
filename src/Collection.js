@@ -117,6 +117,9 @@ define( [
 		 * If no initial {@link #cfg-models} are specified (specifying inline data), and this config is 
 		 * `true`, the Collection's {@link #method-load} method will be called immediately upon 
 		 * instantiation to load the Collection.
+		 * 
+		 * If the {@link #pageSize} config is set, setting this to `true` will just cause the first page of
+		 * data to be loaded. 
 		 */
 		autoLoad : false,
 		
@@ -1078,6 +1081,11 @@ define( [
 		 * Loads the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
 		 * {@link #model model's} proxy will be used instead.
 		 * 
+		 * This method makes a call to the {@link #proxy proxy's} {@link data.persistence.proxy.Proxy#read read} method to
+		 * perform the load operation. Normally, the entire backend collection is read by the proxy when this method is called.
+		 * However, if the Collection is configured with a {@link #pageSize}, then only page 1 of the data will be requested
+		 * instead. You may load other pages of the data using {@link #loadPage} in this case.
+		 * 
 		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must 
 		 * attached to the returned `jQuery.Promise` object to determine when the loading is complete.
 		 * 
@@ -1102,24 +1110,26 @@ define( [
 		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
 		 */
 		load : function( options ) {
-			options = this.normalizeLoadOptions( options );
-			
-			var operation = new ReadOperation( {
-				params : options.params
-			} );
-			
-			var me = this,  // for closures
-			    deferred = new jQuery.Deferred(),
-			    batch = new OperationBatch( { operations: operation } );
-			
-			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
-			deferred.done( options.success ).fail( options.error ).always( options.complete );
-			
-			this.doLoad( operation ).then(
-				function( operation ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
-				function( operation ) { me.onLoadError( deferred, batch ); }
-			);
-			return deferred.promise();
+			// If loading paged data (there is a `pageSize` config on the Collection), then automatically just load page 1
+			if( this.pageSize ) {
+				return this.loadPage( 1, options );
+				
+			} else {
+				options = this.normalizeLoadOptions( options );
+				var me = this,  // for closures
+				    deferred = new jQuery.Deferred(),
+				    operation = new ReadOperation( { params: options.params } ),
+				    batch = new OperationBatch( { operations: operation } );
+				
+				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
+				deferred.done( options.success ).fail( options.error ).always( options.complete );
+				
+				this.doLoad( operation ).then(
+					function( operation ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
+					function( operation ) { me.onLoadError( deferred, batch ); }
+				);
+				return deferred.promise();
+			}
 		},
 		
 		
