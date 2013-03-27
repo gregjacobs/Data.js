@@ -429,39 +429,40 @@ define( [
 		},
 		
 		
-		
 		/**
-		 * Adds one or more models to the Collection.
+		 * Adds one or more models to the Collection. The default behavior is to append the models, but the `at` option may be
+		 * passed to insert them at a specific position. 
+		 * 
+		 * Models which already exist in the Collection will not be re-added (effectively making the addition of an existing model
+		 * a no-op). However, if the `at` option is specified, it will be moved to that index.
+		 * 
+		 * This method fires the {@link #event-add add} event for models that are newly added, and the {@link #reorder} event for 
+		 * models that are simply moved within the Collection. The latter event will only be fired if the `at` option is specified.
 		 * 
 		 * @param {data.Model/data.Model[]/Object/Object[]} models One or more models to add to the Collection. This may also
-		 *   be one or more anonymous objects, which will be converted into models based on the {@link #model} config.
+		 *   be one or more anonymous objects, which will be converted into models based on the {@link #model} config, or an
+		 *   overridden {@link #createModel} method.
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Number} [options.at] The 0-based index for where to insert the model(s). This can be used to splice new models 
+		 *   in at a certain position, or move existing models in the Collection to this position.
 		 */
-		add : function( models ) {
-			this.insert( models );
-		},
-		
-		
-		/**
-		 * Inserts (or moves) one or more models into the Collection, at the specified `index`.
-		 * Fires the {@link #event-add add} event for models that are newly inserted into the Collection,
-		 * and the {@link #event-reorder} event for models that are simply moved within the Collection.
-		 * 
-		 * @param {data.Model/data.Model[]} models The model(s) to insert.
-		 * @param {Number} index The index to insert the models at.
-		 */
-		insert : function( models, index ) {
-			var indexSpecified = ( typeof index !== 'undefined' ),
-			    i, len, model, modelId,
+		add : function( models, options ) {
+			options = options || {};
+			var index = options.at,
+			    indexSpecified = ( typeof index !== 'undefined' ),
+			    collectionModels = this.models,
+			    model,
+			    modelId,
 			    addedModels = [],
 			    Model = require( 'data/Model' );  // reference to constructor function for instanceof check
 			
 			// First, normalize the `index` if it is out of the bounds of the models array
 			if( typeof index !== 'number' ) {
-				index = this.models.length;  // append by default
+				index = collectionModels.length;  // append by default
 			} else if( index < 0 ) {
 				index = 0;
-			} else if( index > this.models.length ) {
-				index = this.models.length;
+			} else if( index > collectionModels.length ) {
+				index = collectionModels.length;
 			}
 			
 			// Normalize the argument to an array
@@ -474,7 +475,7 @@ define( [
 				return;
 			}
 			
-			for( i = 0, len = models.length; i < len; i++ ) {
+			for( var i = 0, len = models.length; i < len; i++ ) {
 				model = models[ i ];
 				if( !( model instanceof Model ) ) {
 					model = this.createModel( model );
@@ -488,7 +489,7 @@ define( [
 					this.modelsByClientId[ model.getClientId() ] = model;
 					
 					// Insert the model into the models array at the correct position
-					this.models.splice( index, 0, model );  // 0 elements to remove
+					collectionModels.splice( index, 0, model );  // 0 elements to remove
 					index++;  // increment the index for the next model to insert / reorder
 					
 					if( model.hasIdAttribute() ) {  // make sure the model actually has a valid idAttribute first, before trying to call getId()
@@ -516,8 +517,8 @@ define( [
 						var oldIndex = this.indexOf( model );
 						
 						// Move the model to the new index
-						this.models.splice( oldIndex, 1 );
-						this.models.splice( index, 0, model );
+						collectionModels.splice( oldIndex, 1 );
+						collectionModels.splice( index, 0, model );
 						
 						this.fireEvent( 'reorder', this, model, index, oldIndex );
 						index++; // increment the index for the next model to insert / reorder
@@ -527,7 +528,7 @@ define( [
 			
 			// If there is a 'sortBy' config, use that now
 			if( this.sortBy ) {
-				this.models.sort( this.sortBy );  // note: the sortBy function has already been bound to the correct scope
+				collectionModels.sort( this.sortBy );  // note: the sortBy function has already been bound to the correct scope
 			}
 			
 			// Fire the 'add' event for models that were actually inserted into the Collection (meaning that they didn't already

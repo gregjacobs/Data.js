@@ -157,41 +157,7 @@ define( [
 			 * Test add()
 			 */
 			{
-				name : "Test add()",
-				
-				"add() should simply delegate to the insert() method" : function() {
-					var MyModel = Model.extend( {
-						attributes : [ 'attr' ]
-					} );
-					
-					var insertedModels, insertedIndex;
-					var MyCollection = Collection.extend( {
-						model : MyModel,
-						
-						// override insert() method, to make sure it is called
-						insert : function( models, index ) {
-							insertedModels = models;
-							insertedIndex = index;
-						}
-					} );
-					
-					var collection = new MyCollection(),
-					    model1 = new MyModel(),
-					    model2 = new MyModel();
-					    
-					collection.add( [ model1, model2 ] );
-					
-					Y.ArrayAssert.itemsAreSame( [ model1, model2 ], insertedModels, "The models passed to insert() should be the same ones provided to add()" );
-					Y.Assert.isUndefined( insertedIndex, "The index for the insert should be undefined, which defaults to appending the models to the collection" );
-				}
-			},
-			
-		
-			/*
-			 * Test insert()
-			 */
-			{
-				name : "Test insert()",
+				name : "Test add()",				
 				
 				setUp : function() {
 					this.Model = Model.extend( {
@@ -209,7 +175,7 @@ define( [
 				// Test direct adding (appending) of models (not specifying an index of where to add them)
 				
 				
-				"insert() should be able to add a single Model instance to the Collection" : function() {
+				"add() should be able to add a single Model instance to the Collection" : function() {
 					var collection = new this.Collection(),
 					    model = new this.Model( { attr: 'value' } ),
 					    models;
@@ -217,7 +183,7 @@ define( [
 					models = collection.getModels();
 					Y.Assert.areSame( 0, models.length, "Initial condition: There should be no models in the collection" );
 					
-					collection.insert( model );
+					collection.add( model );
 					
 					models = collection.getModels();
 					Y.Assert.areSame( 1, models.length, "There should now be one model in the collection" );
@@ -225,7 +191,7 @@ define( [
 				},
 				
 				
-				"insert() should be able to add an array of Model instances to the Collection" : function() {
+				"add() should be able to add an array of Model instances to the Collection" : function() {
 					var collection = new this.Collection(),
 					    model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
@@ -234,7 +200,7 @@ define( [
 					models = collection.getModels();
 					Y.Assert.areSame( 0, models.length, "Initial condition: There should be no models in the collection" );
 					
-					collection.insert( [ model1, model2 ] );
+					collection.add( [ model1, model2 ] );
 					
 					models = collection.getModels();
 					Y.Assert.areSame( 2, models.length, "There should now be two models in the collection" );
@@ -261,7 +227,7 @@ define( [
 				// Test inserting models at specified indexes
 				
 				
-				"insert() should be able to add a single Model instance to the Collection at a specified index" : function() {
+				"add() should be able to add a single Model instance to the Collection at a specified index" : function() {
 					var model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
 					    model3 = new this.Model( { attr: 'value3' } ),
@@ -272,7 +238,7 @@ define( [
 					Y.Assert.areSame( 2, models.length, "Initial condition: There should be 2 models in the collection" );
 					
 					// Now insert model3 in the middel
-					collection.insert( model3, 1 );
+					collection.add( model3, { at: 1 } );
 					
 					models = collection.getModels();
 					Y.Assert.areSame( 3, models.length, "There should now be 3 models in the collection" );
@@ -280,7 +246,7 @@ define( [
 				},
 				
 				
-				"insert() should be able to add an array of Model instance to the Collection at a specified index" : function() {
+				"add() should be able to add an array of Model instance to the Collection at a specified index" : function() {
 					var model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
 					    model3 = new this.Model( { attr: 'value3' } ),
@@ -292,7 +258,7 @@ define( [
 					Y.Assert.areSame( 2, models.length, "Initial condition: There should be 2 models in the collection" );
 					
 					// Now insert model3 and model4 in the middel
-					collection.insert( [ model3, model4 ], 1 );
+					collection.add( [ model3, model4 ], { at: 1 } );
 					
 					models = collection.getModels();
 					Y.Assert.areSame( 4, models.length, "There should now be 4 models in the collection" );
@@ -307,7 +273,7 @@ define( [
 				// Test the 'add' event
 				
 				
-				"insert() should fire the 'add' event for a single inserted model" : function() {
+				"add() should fire the 'add' event for a single inserted model" : function() {
 					var collection = new this.Collection(),
 					    model = new this.Model( { attr: 'value' } ),
 					    models;
@@ -319,14 +285,14 @@ define( [
 						addEventCount++;
 						addedModel = model;
 					} );
-					collection.insert( model );
+					collection.add( model );
 					
 					Y.Assert.areSame( 1, addEventCount, "The 'add' event should have been fired exactly once" );
 					Y.Assert.areSame( model, addedModel, "The model provided with the 'add' event should be the model added to the collection" );
 				},
 				
 				
-				"insert() should fire the 'add' event one time for each of multiple inserted models" : function() {
+				"add() should fire the 'add' event one time for each of multiple inserted models" : function() {
 					var collection = new this.Collection(),
 					    model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
@@ -340,7 +306,7 @@ define( [
 						addEventCount++;
 						addedModels.push( model );
 					} );
-					collection.insert( [ model1, model2 ] );
+					collection.add( [ model1, model2 ] );
 					
 					Y.Assert.areSame( 2, addEventCount, "The 'add' event should have been fired exactly twice" );
 					Y.Assert.areSame( model1, addedModels[ 0 ], "The first model added should be the first model added to the collection" );
@@ -348,7 +314,7 @@ define( [
 				},
 				
 				
-				"insert() should *not* fire the 'add' event for a model that is already in the Collection" : function() {
+				"add() should *not* fire the 'add' event for a model that is already in the Collection" : function() {
 					var model = new this.Model( { attr: 'value1' } ),
 					    collection = new this.Collection( [ model ] );  // initally add the model
 					
@@ -356,13 +322,13 @@ define( [
 					collection.on( 'add', function( collection, model ) {
 						addEventFired = true;
 					} );
-					collection.insert( model );
+					collection.add( model );
 					
 					Y.Assert.isFalse( addEventFired, "The 'add' event should not have been fired for another insert of the same model" );
 				},
 				
 				
-				"insert() should *not* fire the 'add' event for models that are already in the Collection when multiple models are inserted, and only some exist already" : function() {
+				"add() should *not* fire the 'add' event for models that are already in the Collection when multiple models are inserted, and only some exist already" : function() {
 					var model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
 					    collection = new this.Collection( [ model1 ] );  // initally add model1
@@ -374,7 +340,7 @@ define( [
 						addEventCount++;
 						addedModels.push( model );
 					} );
-					collection.insert( [ model1, model2 ] );  // now insert model1 and model2. Only model2 should really have been "added"
+					collection.add( [ model1, model2 ] );  // now insert model1 and model2. Only model2 should really have been "added"
 					
 					Y.Assert.areSame( 1, addEventCount, "The 'add' event should have been fired exactly once" );
 					Y.ArrayAssert.itemsAreSame( [ model2 ], addedModels, "The 'add' event should have only fired with the model that was actually added" );
@@ -386,7 +352,7 @@ define( [
 				// Test the 'addset' event
 				
 				
-				"insert() should fire the 'addset' event with the array of inserted models, even if only one model is inserted" : function() {
+				"add() should fire the 'addset' event with the array of inserted models, even if only one model is inserted" : function() {
 					var collection = new this.Collection(),
 					    model = new this.Model( { attr: 'value' } ),
 					    models;
@@ -395,14 +361,14 @@ define( [
 					collection.on( 'addset', function( collection, models ) {
 						addedModels = models;
 					} );
-					collection.insert( model );
+					collection.add( model );
 					
 					Y.Assert.areSame( 1, addedModels.length, "1 model should have been provided to the 'addset' event" );
 					Y.Assert.areSame( model, addedModels[ 0 ], "The model provided with the 'addset' event should be the model added to the collection" );
 				},
 				
 				
-				"insert() should fire the 'addset' event with the array of inserted models when multiple models are inserted" : function() {
+				"add() should fire the 'addset' event with the array of inserted models when multiple models are inserted" : function() {
 					var collection = new this.Collection(),
 					    model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
@@ -412,7 +378,7 @@ define( [
 					collection.on( 'addset', function( collection, models ) {
 						addedModels = models;
 					} );
-					collection.insert( [ model1, model2 ] );
+					collection.add( [ model1, model2 ] );
 					
 					Y.Assert.areSame( 2, addedModels.length, "2 models should have been provided to the 'addset' event" );
 					Y.Assert.areSame( model1, addedModels[ 0 ], "The first model added in the array should be the first model added to the collection" );
@@ -420,7 +386,7 @@ define( [
 				},
 				
 				
-				"insert() should *not* fire the 'addset' event for a model that is already in the Collection" : function() {
+				"add() should *not* fire the 'addset' event for a model that is already in the Collection" : function() {
 					var model = new this.Model( { attr: 'value1' } ),
 					    collection = new this.Collection( [ model ] );  // initally add the model
 					
@@ -428,13 +394,13 @@ define( [
 					collection.on( 'addset', function( collection, models ) {
 						addEventFired = true;
 					} );
-					collection.insert( model );
+					collection.add( model );
 					
 					Y.Assert.isFalse( addEventFired, "The 'addset' event should not have been fired for another insert of the same model" );
 				},
 				
 				
-				"insert() should *not* fire the 'addset' event for models that are already in the Collection when multiple models are inserted, and only some exist already" : function() {
+				"add() should *not* fire the 'addset' event for models that are already in the Collection when multiple models are inserted, and only some exist already" : function() {
 					var model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
 					    collection = new this.Collection( [ model1 ] );  // initally add model1
@@ -443,7 +409,7 @@ define( [
 					collection.on( 'addset', function( collection, models ) {
 						addedModels = models;
 					} );
-					collection.insert( [ model1, model2 ] );  // now insert model1 and model2. Only model2 should really have been "added"
+					collection.add( [ model1, model2 ] );  // now insert model1 and model2. Only model2 should really have been "added"
 					
 					Y.ArrayAssert.itemsAreSame( [ model2 ], addedModels, "The 'addset' event should have only fired with the model that was actually added" );
 				},
@@ -454,33 +420,33 @@ define( [
 				// Test reordering models
 				
 				
-				"insert() should reorder models when they already exist in the Collection" : function() {
+				"add() should reorder models when they already exist in the Collection" : function() {
 					var model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
 					    model3 = new this.Model( { attr: 'value3' } ),
 					    collection = new this.Collection( [ model1, model2, model3 ] ),
 					    models;
 					
-					collection.insert( model3, 0 );
-					Y.ArrayAssert.itemsAreSame( [ model3, model1, model2 ], collection.getModels(), "insert() should have moved model3 to the beginning" );
+					collection.add( model3, { at: 0 } );
+					Y.ArrayAssert.itemsAreSame( [ model3, model1, model2 ], collection.getModels(), "add() should have moved model3 to the beginning" );
 					
-					collection.insert( [ model2, model1 ], 0 );
-					Y.ArrayAssert.itemsAreSame( [ model2, model1, model3 ], collection.getModels(), "insert() should have moved model2 and model1 to the beginning" );
+					collection.add( [ model2, model1 ], { at: 0 } );
+					Y.ArrayAssert.itemsAreSame( [ model2, model1, model3 ], collection.getModels(), "add() should have moved model2 and model1 to the beginning" );
 					
-					collection.insert( model2, 2 );
-					Y.ArrayAssert.itemsAreSame( [ model1, model3, model2 ], collection.getModels(), "insert() should have moved model2 to the end" );
+					collection.add( model2, { at: 2 } );
+					Y.ArrayAssert.itemsAreSame( [ model1, model3, model2 ], collection.getModels(), "add() should have moved model2 to the end" );
 					
 					
 					// Try attempting to move models to out-of-bound indexes (they should be normalized)
-					collection.insert( model2, -1000 );
-					Y.ArrayAssert.itemsAreSame( [ model2, model1, model3 ], collection.getModels(), "insert() should have moved model2 to the beginning with an out of bounds negative index" );
+					collection.add( model2, { at: -1000 } );
+					Y.ArrayAssert.itemsAreSame( [ model2, model1, model3 ], collection.getModels(), "add() should have moved model2 to the beginning with an out of bounds negative index" );
 					
-					collection.insert( [ model1, model2 ], 1000 );
-					Y.ArrayAssert.itemsAreSame( [ model3, model1, model2 ], collection.getModels(), "insert() should have moved model1 and model2 to the end with an out of bounds positive index" );
+					collection.add( [ model1, model2 ], { at: 1000 } );
+					Y.ArrayAssert.itemsAreSame( [ model3, model1, model2 ], collection.getModels(), "add() should have moved model1 and model2 to the end with an out of bounds positive index" );
 				},
 				
 				
-				"insert() should fire the 'reorder' event when reordering models" : function() {
+				"add() should fire the 'reorder' event when reordering models" : function() {
 					var model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
 					    model3 = new this.Model( { attr: 'value3' } ),
@@ -499,7 +465,7 @@ define( [
 						reorderedOldIndexes.push( oldIndex );
 					} );
 					
-					collection.insert( model3, 0 );
+					collection.add( model3, { at: 0 } );
 					Y.ArrayAssert.itemsAreSame( [ model3, model1, model2 ], collection.getModels(), "The models should be in the correct new order (this is mostly here to just show which order the collection should now be in)" );
 					Y.Assert.areSame( 1, reorderEventCallCount, "The reorder event should have been fired exactly once" );
 					Y.ArrayAssert.itemsAreSame( [ model3 ], reorderedModels, "model3 should have been fired with a 'reorder' event (and that is the only reorder event that should have been fired)" );
@@ -513,7 +479,7 @@ define( [
 					reorderedNewIndexes = [];
 					reorderedOldIndexes = [];
 					
-					collection.insert( [ model1, model2 ], 0 );  // move model1 and model2 back to the beginning
+					collection.add( [ model1, model2 ], { at: 0 } );  // move model1 and model2 back to the beginning
 					Y.ArrayAssert.itemsAreSame( [ model1, model2, model3 ], collection.getModels(), "The models should be in the correct new order (this is mostly here to just show which order the collection should now be in)" );
 					Y.Assert.areSame( 2, reorderEventCallCount, "The reorder event should have been fired exactly twice" );
 					Y.ArrayAssert.itemsAreSame( [ model1, model2 ], reorderedModels, "model1 and model2 should have been fired with a 'reorder' events" );
@@ -534,10 +500,10 @@ define( [
 						modelsInReorderHandler = collection.getModels();
 					} );
 					
-					collection.insert( model3, 1 );
+					collection.add( model3, { at: 1 } );
 					Y.ArrayAssert.itemsAreSame( [ model1, model3, model2 ], modelsInReorderHandler );	
 					
-					collection.insert( model1, 1 );
+					collection.add( model1, { at: 1 } );
 					Y.ArrayAssert.itemsAreSame( [ model3, model1, model2 ], modelsInReorderHandler );
 				},
 				
@@ -551,19 +517,19 @@ define( [
 					
 					Y.Assert.isFalse( collection.isModified(), "Initial condition: the collection should not yet be considered 'modified'" );
 					
-					collection.insert( model3, 1 );
+					collection.add( model3, { at: 1 } );
 					Y.Assert.isTrue( collection.isModified(), "The collection should now be considered modified, since there has been a reorder" );
 				},
 				
 				
-				"insert() should *not* reorder models when calling insert() without the `index` argument (which would be the case as well if add() was called)" : function() {
+				"add() should *not* reorder models when calling add() without the `index` argument (which would be the case as well if add() was called)" : function() {
 					var model1 = new this.Model( { attr: 'value1' } ),
 					    model2 = new this.Model( { attr: 'value2' } ),
 					    model3 = new this.Model( { attr: 'value3' } ),
 					    collection = new this.Collection( [ model1, model2, model3 ] ),
 					    models;
 					
-					collection.insert( model1 );  // supposed append, but model1 is already in the Collection, and an index was not given
+					collection.add( model1 );  // supposed append, but model1 is already in the Collection, and an index was not given
 					Y.ArrayAssert.itemsAreSame( [ model1, model2, model3 ], collection.getModels(), "The models should be in the original order, as the supposed 'append' should not have happened because the model was already in the collection, and no new index was given" );
 				},
 				
@@ -573,7 +539,7 @@ define( [
 				// Test converting anonymous configs to Model instances
 				
 				
-				"insert() should transform anonymous data objects to Model instances, based on the 'model' config" : function() {
+				"add() should transform anonymous data objects to Model instances, based on the 'model' config" : function() {
 					var collection = new this.Collection(),  // note: this.Collection is configured with this.Model as the 'model'
 					    modelData1 = { attr: 'value1' },
 					    modelData2 = { attr: 'value2' },
@@ -582,7 +548,7 @@ define( [
 					models = collection.getModels();
 					Y.Assert.areSame( 0, models.length, "Initial condition: There should be no models in the collection" );
 					
-					collection.insert( [ modelData1, modelData2 ] );
+					collection.add( [ modelData1, modelData2 ] );
 					
 					models = collection.getModels();
 					Y.Assert.areSame( 2, models.length, "There should now be two models in the collection" );
@@ -591,7 +557,7 @@ define( [
 				},
 				
 				
-				"insert() should fire the 'addset' event with instantiated models for any anonymous config objects" : function() {
+				"add() should fire the 'addset' event with instantiated models for any anonymous config objects" : function() {
 					var collection = new this.Collection(),  // note: this.Collection is configured with this.Model as the 'model'
 					    modelData1 = { attr: 'value1' },
 					    modelData2 = { attr: 'value2' };
@@ -600,7 +566,7 @@ define( [
 					collection.on( 'addset', function( collection, models ) {
 						addedModels = models;
 					} );
-					collection.insert( [ modelData1, modelData2 ] );
+					collection.add( [ modelData1, modelData2 ] );
 					
 					Y.Assert.areSame( 2, addedModels.length, "2 models should have been provided to the 'addset' event" );
 					Y.Assert.areSame( 'value1', addedModels[ 0 ].get( 'attr' ), "The first model added in the array should have the data provided from modelData1" );
@@ -613,7 +579,7 @@ define( [
 				// Test sorting functionality with the `sortBy` config
 				
 				
-				"insert() should insert models in the order specified by the sortBy config, if one is provided" : function() {
+				"add() should insert models in the order specified by the sortBy config, if one is provided" : function() {
 					var MyModel = Model.extend( {
 						attributes : [ 'name' ]
 					} );
@@ -634,7 +600,7 @@ define( [
 					    models;
 					
 					var collection = new MyCollection();
-					collection.insert( [ model2, model4, model1 ] );  // Insert models in incorrect order
+					collection.add( [ model2, model4, model1 ] );  // Insert models in incorrect order
 					
 					models = collection.getModels();
 					Y.ArrayAssert.itemsAreSame( [ model1, model2, model4 ], models, "The models should have been re-ordered based on the 'name' attribute" );
@@ -642,7 +608,7 @@ define( [
 					
 					// Now create a new model, and see if it gets inserted in the correct position
 					var model3 = new MyModel( { name : "C" } );
-					collection.insert( model3 );
+					collection.add( model3 );
 					models = collection.getModels();
 					Y.ArrayAssert.itemsAreSame( [ model1, model2, model3, model4 ], models, "The models should have been re-ordered based on the 'name' attribute with the new model" );
 				},
@@ -673,7 +639,7 @@ define( [
 					    model3 = new MyModel( { name : "C" } );
 					    
 					var collection = new MyCollection();
-					collection.insert( [ model2, model3, model1 ] );  // Insert models in incorrect order
+					collection.add( [ model2, model3, model1 ] );  // Insert models in incorrect order
 					
 					Y.Assert.areSame( 'name', attributeNameToSortBy, "The attributeNameToSortBy variable should have been set by sortBy() being called in the correct scope, able to access its helper method" );
 				},
@@ -684,11 +650,11 @@ define( [
 				// Test duplicates functionality
 				
 				
-				"insert() should not allow duplicate models (at this time. config option to come)" : function() {
+				"add() should not allow duplicate models (at this time. config option to come)" : function() {
 					var model = new this.Model(),
 					    collection = new this.Collection();
 					
-					collection.insert( [ model, model ] );  // try to add the model twice
+					collection.add( [ model, model ] );  // try to add the model twice
 					Y.ArrayAssert.itemsAreSame( [ model ], collection.getModels(), "There should only be the one model in the collection at this time" );
 				},
 				
@@ -698,7 +664,7 @@ define( [
 				// Test adding the "id" change listener
 				
 				
-				"insert() should attach a 'change' listener for changes to the 'idAttribute' of a model, so that its internal modelsById hashmap can be updated if it changes" : function() {
+				"add() should attach a 'change' listener for changes to the 'idAttribute' of a model, so that its internal modelsById hashmap can be updated if it changes" : function() {
 					var onModelIdChangeCallCount = 0,
 					    newIdValue, oldIdValue;
 					
@@ -1730,7 +1696,7 @@ define( [
 					
 					Y.Assert.isFalse( collection.isModified(), "Initial condition: the collection should not be considered modified" );
 					
-					collection.insert( this.unmodifiedModel1, 1 );  // move unmodifiedmodel1 to the 2nd position
+					collection.add( this.unmodifiedModel1, { at: 1 } );  // move unmodifiedmodel1 to the 2nd position
 					Y.Assert.isTrue( collection.isModified(), "The collection should now be modified, since a Model was reordered." );
 				},
 				
