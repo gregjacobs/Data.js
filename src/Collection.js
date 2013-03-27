@@ -226,6 +226,14 @@ define( [
 		
 		/**
 		 * @protected
+		 * @property {Boolean} loading
+		 * 
+		 * Flag that is set to true when the Collection is loading data through its {@link #proxy}.
+		 */
+		loading : false,
+		
+		/**
+		 * @protected
 		 * @property {Number} totalCount
 		 * 
 		 * This property is used to keep track of total number of models in a windowed (paged) data 
@@ -1056,6 +1064,17 @@ define( [
 		
 		
 		/**
+		 * Determines if the Collection is currently loading data from its {@link #proxy}, via any of the "load" methods
+		 * ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}).
+		 * 
+		 * @return {Boolean} `true` if the Collection is currently loading a set of data, `false` otherwise.
+		 */
+		isLoading : function() {
+			return this.loading;
+		},
+		
+		
+		/**
 		 * Loads the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
 		 * {@link #model model's} proxy will be used instead.
 		 * 
@@ -1311,6 +1330,9 @@ define( [
 			}
 			// </debug>
 			
+			// Set the loading flag while the Collection is loading. Will be set to false in onLoadSuccess() or onLoadError().
+			this.loading = true;
+			
 			// Make a request to read the data from the persistent storage, and return a Promise object
 			// which is resolved or rejected with the `operation` object
 			return proxy.read( operation );
@@ -1319,7 +1341,7 @@ define( [
 		
 		/**
 		 * Handles the {@link #proxy} successfully loading a set of data as a result of any of the "load"
-		 * methods being called ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}.
+		 * methods being called ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}).
 		 * 
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the "load" method. This Deferred will be
@@ -1352,6 +1374,8 @@ define( [
 			);
 			this.add( records );
 			
+			this.loading = false;
+			
 			deferred.resolve( this, batch );
 			this.fireEvent( 'load', this, batch );
 		},
@@ -1371,6 +1395,8 @@ define( [
 		 *   One or more of these Operations has errored. Note that all Operations may not be complete.
 		 */
 		onLoadError : function( deferred, batch ) {
+			this.loading = false;
+			
 			deferred.reject( this, batch );
 			this.fireEvent( 'load', this, batch );
 		},

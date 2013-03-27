@@ -2014,6 +2014,60 @@ define( [
 				},
 				
 				
+				"load() should set the 'loading' flag to true when loading data, and back to false when finished with a successful load" : function() {
+					var operation, 
+					    deferred;
+					
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						operation = op;
+						operation.setResultSet( new ResultSet() );
+						deferred = new jQuery.Deferred();
+						
+						return deferred.promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.areSame( false, collection.isLoading(), "Initial condition: the collection should not be loading" );
+					collection.load();
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should be loading now" );
+					
+					deferred.resolve( operation );
+					Y.Assert.areSame( false, collection.isLoading(), "The collection should no longer be considered loading after the proxy finishes its load" );
+				},
+				
+				
+				"load() should set the 'loading' flag to true when loading data, and back to false when finished with an errored load" : function() {
+					var operation, 
+					    deferred;
+					
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						operation = op;
+						operation.setResultSet( new ResultSet() );
+						deferred = new jQuery.Deferred();
+						
+						return deferred.promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.areSame( false, collection.isLoading(), "Initial condition: the collection should not be loading" );
+					collection.load();
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should be loading now" );
+					
+					deferred.reject( operation );
+					Y.Assert.areSame( false, collection.isLoading(), "The collection should no longer be considered loading after the proxy finishes its load" );
+				},
+				
+				
 				"load() should load the models returned by the data in the proxy" : function() {
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
 						operation.setResultSet( new ResultSet( {
@@ -2359,6 +2413,60 @@ define( [
 					} catch( e ) {
 						Y.Assert.fail( e.message || e );
 					}
+				},
+				
+				
+				"loadRange() should set the 'loading' flag to true when loading data, and back to false when finished with a successful load" : function() {
+					var operation, 
+					    deferred;
+					
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						operation = op;
+						operation.setResultSet( new ResultSet() );
+						deferred = new jQuery.Deferred();
+						
+						return deferred.promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.areSame( false, collection.isLoading(), "Initial condition: the collection should not be loading" );
+					collection.loadRange( 0, 9 );
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should be loading now" );
+					
+					deferred.resolve( operation );
+					Y.Assert.areSame( false, collection.isLoading(), "The collection should no longer be considered loading after the proxy finishes its load" );
+				},
+				
+				
+				"loadRange() should set the 'loading' flag to true when loading data, and back to false when finished with an errored load" : function() {
+					var operation, 
+					    deferred;
+					
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						operation = op;
+						operation.setResultSet( new ResultSet() );
+						deferred = new jQuery.Deferred();
+						
+						return deferred.promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.areSame( false, collection.isLoading(), "Initial condition: the collection should not be loading" );
+					collection.loadRange( 0, 9 );
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should be loading now" );
+					
+					deferred.reject( operation );
+					Y.Assert.areSame( false, collection.isLoading(), "The collection should no longer be considered loading after the proxy finishes its load" );
 				},
 				
 				
@@ -2780,6 +2888,62 @@ define( [
 					} catch( e ) {
 						Y.Assert.fail( e.message || e );
 					}
+				},
+				
+				
+				"loadPage() should set the 'loading' flag to true when loading data, and back to false when finished with a successful load" : function() {
+					var operation, 
+					    deferred;
+					
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						operation = op;
+						operation.setResultSet( new ResultSet() );
+						deferred = new jQuery.Deferred();
+						
+						return deferred.promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy,
+						pageSize : 25
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.areSame( false, collection.isLoading(), "Initial condition: the collection should not be loading" );
+					collection.loadPage( 1 );
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should be loading now" );
+					
+					deferred.resolve( operation );
+					Y.Assert.areSame( false, collection.isLoading(), "The collection should no longer be considered loading after the proxy finishes its load" );
+				},
+				
+				
+				"loadPage() should set the 'loading' flag to true when loading data, and back to false when finished with an errored load" : function() {
+					var operation, 
+					    deferred;
+					
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						operation = op;
+						operation.setResultSet( new ResultSet() );
+						deferred = new jQuery.Deferred();
+						
+						return deferred.promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy,
+						pageSize : 25
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.areSame( false, collection.isLoading(), "Initial condition: the collection should not be loading" );
+					collection.loadPage( 1 );
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should be loading now" );
+					
+					deferred.reject( operation );
+					Y.Assert.areSame( false, collection.isLoading(), "The collection should no longer be considered loading after the proxy finishes its load" );
 				},
 				
 				
@@ -3269,6 +3433,72 @@ define( [
 					} catch( e ) {
 						Y.Assert.fail( e.message || e );
 					}
+				},
+				
+				
+				"loadPageRange() should set the 'loading' flag to true when loading data, and back to false when finished with a successful load of *all* pages" : function() {
+					var operations = [], 
+					    deferreds = [];
+					
+					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						operation.setResultSet( new ResultSet() );
+						operations.push( operation );
+						
+						var deferred = new jQuery.Deferred();
+						deferreds.push( deferred );
+						
+						return deferred.promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy,
+						pageSize : 25
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.areSame( false, collection.isLoading(), "Initial condition: the collection should not be loading" );
+					collection.loadPageRange( 1, 2 );
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should be loading now" );
+					
+					// Resolve the first Proxy read operation's deferred
+					deferreds[ 0 ].resolve( operations[ 0 ] );
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should still be considered loading after only one of two requests has finished" );
+					
+					// Now resolve the second read operation's deferred. The collection should now no longer be considered loading.
+					deferreds[ 1 ].resolve( operations[ 1 ] );
+					Y.Assert.areSame( false, collection.isLoading(), "The collection should no longer be considered loading after the proxy finishes its load" );
+				},
+				
+				
+				"loadPageRange() should set the 'loading' flag to true when loading data, and back to false when finished with an errored load of even just one of the pages" : function() {
+					var operations = [], 
+					    deferreds = [];
+					
+					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						operation.setResultSet( new ResultSet() );
+						operations.push( operation );
+						
+						var deferred = new jQuery.Deferred();
+						deferreds.push( deferred );
+						
+						return deferred.promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						proxy : this.proxy,
+						pageSize : 25
+					} );
+					var collection = new MyCollection();
+					
+					Y.Assert.areSame( false, collection.isLoading(), "Initial condition: the collection should not be loading" );
+					collection.loadPageRange( 1, 2 );
+					Y.Assert.areSame( true, collection.isLoading(), "The collection should be loading now" );
+					
+					// Reject the first Proxy read operation's deferred
+					deferreds[ 0 ].reject( operations[ 0 ] );
+					Y.Assert.areSame( false, collection.isLoading(), "The collection should no longer be considered loading after the proxy has errored for one of the requests" );
 				},
 				
 				
