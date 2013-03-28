@@ -1,4 +1,5 @@
 /*global define */
+/*jshint browser:true */
 define( [
 	'lodash',
 	'Class',

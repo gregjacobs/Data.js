@@ -177,7 +177,7 @@ define( [
 		update : function( operation, options ) {
 			options = options || {};
 			var me = this,  // for closures
-			    scope = options.scope || options.context || window,
+			    scope = options.scope || options.context || this,
 			    model = operation.getModels()[ 0 ],
 			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
 			    deferred = new jQuery.Deferred();

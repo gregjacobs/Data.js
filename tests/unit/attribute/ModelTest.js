@@ -1,4 +1,5 @@
 /*global define, Ext, Y, JsMockito, tests */
+/*jshint browser:true */
 define( [
 	'data/attribute/Model',
 	'data/Model'

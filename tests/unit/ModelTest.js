@@ -1,4 +1,5 @@
 /*global define, window, Ext, Y, JsMockito, tests */
+/*jshint browser:true */
 define( [
 	'jquery',
 	'lodash',
