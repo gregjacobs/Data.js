@@ -753,7 +753,7 @@ define( [
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
-		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
+		 * @return {Object[]} An array of the Object representation of each of the Models in the Collection.
 		 */
 		getData : function( options ) {
 			return NativeObjectConverter.convert( this, options );
