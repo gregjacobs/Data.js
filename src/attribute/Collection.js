@@ -49,7 +49,7 @@ define( [
 		 * - A function, which will return a reference to the Collection subclass that should be used. 
 		 * 
 		 * The reason that this config may be specified as a String or a Function is to allow for "very late binding" to the Collection 
-		 * subclass that is used, if the particular {@link Data.Collection} subclass is not yet available at the time of Attribute definition.
+		 * subclass that is used, if the particular {@link data.Collection} subclass is not yet available at the time of Attribute definition.
 		 * In this case, the Collection subclass that is used does not need to exist until a value is actually set to the Attribute.
 		 * For example, using RequireJS, we may have a circular dependency that needs to be in-line required:
 		 *   
@@ -161,7 +161,7 @@ define( [
 		
 		
 		/**
-		 * Utility method used to retrieve the normalized {@link Data.Collection} subclass provided by the {@link #collection} config.
+		 * Utility method used to retrieve the normalized {@link data.Collection} subclass provided by the {@link #collection} config.
 		 * 
 		 * - If the {@link #collection} config was provided directly as a class (constructor function), this class is simply returned.
 		 * - If the {@link #collection} config was a String, resolve the class (constructor function) by walking down the object tree 
@@ -173,7 +173,7 @@ define( [
 		 * for subsequent calls.
 		 * 
 		 * @protected
-		 * @return {Function} The class (constructor function) for the {@link Data.Collection} subclass referenced by the {@link #collection}
+		 * @return {Function} The class (constructor function) for the {@link data.Collection} subclass referenced by the {@link #collection}
 		 *   config.
 		 */
 		resolveCollectionClass : function() {

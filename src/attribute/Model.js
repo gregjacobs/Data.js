@@ -28,7 +28,7 @@ define( [
 		 * @cfg {data.Model/String/Function} model
 		 * 
 		 * The specific {@link data.Model} subclass that will be used in the Model Attribute. This config can be provided
-		 * to perform automatic conversion of anonymous data objects into the appropriate {@link Data.Model Model} subclass.
+		 * to perform automatic conversion of anonymous data objects into the appropriate {@link data.Model Model} subclass.
 		 * 
 		 * This config may be provided as:
 		 * 
@@ -38,7 +38,7 @@ define( [
 		 * - A function, which will return a reference to the Model subclass that should be used. 
 		 * 
 		 * The reason that this config may be specified as a String or a Function is to allow for "very late binding" to the Model 
-		 * subclass that is used, if the particular {@link Data.Model} subclass is not yet available at the time of Attribute definition.
+		 * subclass that is used, if the particular {@link data.Model} subclass is not yet available at the time of Attribute definition.
 		 * In this case, the Model subclass that is used does not need to exist until a value is actually set to the Attribute.
 		 * For example, using RequireJS, we may have a circular dependency that needs to be in-line required:
 		 *   
@@ -148,7 +148,7 @@ define( [
 		
 		
 		/**
-		 * Utility method used to retrieve the normalized {@link Data.Model} subclass provided by the {@link #model} config.
+		 * Utility method used to retrieve the normalized {@link data.Model} subclass provided by the {@link #model} config.
 		 * 
 		 * - If the {@link #model} config was provided directly as a class (constructor function), this class is simply returned.
 		 * - If the {@link #model} config was a String, resolve the class (constructor function) by walking down the object tree 
@@ -160,7 +160,7 @@ define( [
 		 * for subsequent calls.
 		 * 
 		 * @protected
-		 * @return {Function} The class (constructor function) for the {@link Data.Model} subclass referenced by the {@link #model}
+		 * @return {Function} The class (constructor function) for the {@link data.Model} subclass referenced by the {@link #model}
 		 *   config.
 		 */
 		resolveModelClass : function() {

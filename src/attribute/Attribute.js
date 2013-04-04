@@ -143,8 +143,8 @@ define( [
 		 * 
 		 * The default value to set to the Attribute, when the Attribute is given no initial value.
 		 *
-		 * If the `defaultValue` is a function, the function will be executed each time a {@link Data.Model Model} is created, and its return 
-		 * value used as the `defaultValue`. This is useful, for example, to assign a new unique number to an attribute of a {@link Data.Model Model}. 
+		 * If the `defaultValue` is a function, the function will be executed each time a {@link data.Model Model} is created, and its return 
+		 * value used as the `defaultValue`. This is useful, for example, to assign a new unique number to an attribute of a {@link data.Model Model}. 
 		 * Ex:
 		 * 
 		 *     MyModel = Model.extend( {

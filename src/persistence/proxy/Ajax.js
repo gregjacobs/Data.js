@@ -93,7 +93,7 @@ define( [
 		 * The name of the parameter to pass the page number when loading a paged data set. If this config is not provided,
 		 * no page number parameter will be included in requests.
 		 * 
-		 * For example, if this config is set to 'page', and a page 10 of data is being loaded (via {@link Data.Collection#loadPage}), 
+		 * For example, if this config is set to 'page', and a page 10 of data is being loaded (via {@link data.Collection#loadPage}), 
 		 * a request may be generated as: `/posts/load?page=10`
 		 * 
 		 * (A `pageParam` config must be provided if loading pages of data in this manner.) 
@@ -105,7 +105,7 @@ define( [
 		 * The name of the parameter to pass the page size when loading a paged data set. If this config is not provided,
 		 * no page size parameter will be included in requests.
 		 * 
-		 * For example, if this config is set to 'pageSize', and a page of data is being loaded (via {@link Data.Collection#loadPage}), 
+		 * For example, if this config is set to 'pageSize', and a page of data is being loaded (via {@link data.Collection#loadPage}), 
 		 * a request may be generated as: `/posts/load?pageSize=50`
 		 */
 		

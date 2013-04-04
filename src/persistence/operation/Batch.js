@@ -39,7 +39,7 @@ define( [
 		
 		
 		/**
-		 * Retrieves all of the {@link #operation operations} for this Batch. 
+		 * Retrieves all of the {@link #operations} for this Batch. 
 		 * 
 		 * @return {data.persistence.operation.Operation[]}
 		 */

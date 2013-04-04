@@ -133,7 +133,7 @@ define( [
 		/**
 		 * @cfg {Boolean} clearOnPageLoad
 		 * 
-		 * `true` to remove all existing {@link Data.Model Models} from the Collection when loading a new page of data 
+		 * `true` to remove all existing {@link data.Model Models} from the Collection when loading a new page of data 
 		 * via {@link #loadPage}. This has the effect of only loading the requested page's models in the Collection. 
 		 * Set to `false` to have the loaded models be added to the Collection, instead of replacing the existing ones.
 		 */
@@ -283,7 +283,7 @@ define( [
 				
 				/**
 				 * Fires when a model is reordered within the Collection. A reorder can be performed
-				 * by calling the {@link #insert} method with a given index of where to re-insert one or
+				 * by calling the {@link #method-add} method with a given index of where to re-insert one or
 				 * more models. If the model did not yet exist in the Collection, it will *not* fire a 
 				 * reorder event, but will be provided with an {@link #event-add add} event instead. 
 				 * 
@@ -1298,7 +1298,7 @@ define( [
 		 * `operation` object.
 		 * 
 		 * @protected
-		 * @param {data.persistence.operation.ReadOperation} operation The Read operation for the load.
+		 * @param {data.persistence.operation.Read} operation The Read operation for the load.
 		 * @return {jQuery.Promise} A Promise object which is resolved if the load completes successfully, or rejected
 		 *   otherwise. The Promise is resolved or rejected with the argument: `operation`.
 		 */
