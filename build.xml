@@ -44,7 +44,7 @@
 	
 	
 	<target name="doc" description="Builds the documentation using JSDuck. Will be available in docs/ when built.">
-		<exec executable="${basedir}/vendor/jsduck/jsduck-4.4.1.exe" failonerror="true">
+		<exec executable="${basedir}/vendor/jsduck/jsduck-4.7.1.exe" failonerror="true">
 			<arg value="--output=docs" />
 			<arg value="--external=jQuery,jQuery.Deferred,jQuery.Promise,jqXHR" />
 			<arg value="--title=Data.js API Docs" />
