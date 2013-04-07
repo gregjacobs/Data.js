@@ -11,11 +11,10 @@
 define( function() {
 	
 	/**
-	 * @class Data
+	 * @class data.Data
 	 * @singleton
 	 * 
-	 * Main singleton class, namespace, and a few utility functions for the 
-	 * Data library. 
+	 * Main singleton class and a few utility functions for the Data.js library. 
 	 */
 	var Data = {
 		
