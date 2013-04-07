@@ -11,8 +11,12 @@ define( [
 	 * @class data.persistence.proxy.Ajax
 	 * @extends data.persistence.proxy.Proxy
 	 * 
-	 * AjaxProxy is responsible for performing CRUD operations through standard AJAX, using the url(s) configured,
+	 * Ajax proxy is responsible for performing CRUD operations through standard AJAX, using the url(s) configured,
 	 * and providing any parameters and such which are required for the backend service.
+	 * 
+	 * The Ajax proxy must be configured with the appropriate parameter names in order for it to automatically supply
+	 * those parameters as part of its requests. For example, the {@link #pageParam} must be configured for the Ajax
+	 * proxy to automatically add a page number parameter to the request URL.
 	 */
 	var AjaxProxy = Class.extend( Proxy, {
 		

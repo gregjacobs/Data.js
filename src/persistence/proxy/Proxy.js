@@ -13,7 +13,7 @@ define( [
 	 * 
 	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) operations on
 	 * some sort of persistence medium. This can be a backend server, a webservice, or a local storage data store,
-	 * to name a few examples. 
+	 * to name a few examples.
 	 */
 	var Proxy = Class.extend( Observable, {
 		abstractClass : true,
