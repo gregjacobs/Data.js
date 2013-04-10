@@ -718,11 +718,11 @@ define( [
 		
 		
 		/**
-		 * Determines if the collection holds the range of {@link data.Model Models} specified by the `startIndex` and
+		 * Determines if the Collection holds the range of {@link data.Model Models} specified by the `startIndex` and
 		 * `endIndex`. If one or more {@link data.Model Models} are missing from the given range, this method returns
 		 * `false`.
 		 * 
-		 * @param {Number} [startIndex] The starting index.
+		 * @param {Number} startIndex The starting index.
 		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
 		 * @return {Boolean} `true` if the Collection has {@link data.Model Models} in all indexes specified by
 		 *   the range of `startIndex` to `endIndex`, or `false` if one or more {@link data.Model Models} are missing.
@@ -1393,6 +1393,7 @@ define( [
 		 * `success`, `error`, and `complete` functions, and binds them to the `scope` (or `context`). All other properties
 		 * that exist on the `options` object will remain unchanged. 
 		 * 
+		 * @protected
 		 * @param {Object} options The options object provided to any of the "load" methods. If `undefined` or `null` is
 		 *   provided, a normalized options object will still be returned, simply with defaults filled out.
 		 * @param {Function} [options.success] Function to call if the loading is successful. Will be defaulted to an
