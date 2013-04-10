@@ -3574,6 +3574,12 @@ define( [
 					Y.Assert.areSame( 4, collection.getAt( 3 ).get( 'id' ), "model w/ id 4 should be at index 3" );
 					Y.Assert.areSame( 5, collection.getAt( 4 ).get( 'id' ), "model w/ id 5 should be at index 4" );
 					Y.Assert.areSame( 6, collection.getAt( 5 ).get( 'id' ), "model w/ id 6 should be at index 5" );
+					
+					// Check that the method set the loadedPages
+					Y.Assert.isTrue( collection.hasPage( 1 ), "should have page 1" );
+					Y.Assert.isTrue( collection.hasPage( 2 ), "should have page 2" );
+					Y.Assert.isTrue( collection.hasPage( 3 ), "should have page 3" );
+					Y.Assert.isFalse( collection.hasPage( 4 ), "should *not* have page 4" );
 				},
 				
 				
@@ -3623,10 +3629,16 @@ define( [
 					Y.Assert.areSame( 4, collection.getAt( 3 ).get( 'id' ), "model w/ id 4 should be at index 3" );
 					Y.Assert.areSame( 5, collection.getAt( 4 ).get( 'id' ), "model w/ id 5 should be at index 4" );
 					Y.Assert.areSame( 6, collection.getAt( 5 ).get( 'id' ), "model w/ id 6 should be at index 5" );
+					
+					// Check that the method set the loadedPages
+					Y.Assert.isFalse( collection.hasPage( 1 ), "should *not* have page 1" );
+					Y.Assert.isTrue( collection.hasPage( 2 ), "should have page 2" );
+					Y.Assert.isTrue( collection.hasPage( 3 ), "should have page 3" );
+					Y.Assert.isFalse( collection.hasPage( 4 ), "should *not* have page 4" );
 				},
 				
 				
-				"loadPageRange() should add the models returned by the data in the proxy by default, when the Collection's `clearOnPageLoad` config is false" : function() {
+				"loadPageRange() should add the models returned by the data in the proxy, when the Collection's `clearOnPageLoad` config is false" : function() {
 					var deferreds = [];  // for storing each of the proxy's deferreds, so we can resolve them out of order
 					var operations = []; // for storing the operation objects that the Collection creates for each request
 					var recordSets = [   // for returning new data for each "page load"
@@ -3671,6 +3683,12 @@ define( [
 					Y.Assert.areSame( 4, collection.getAt( 3 ).get( 'id' ), "model w/ id 4 should be at index 3" );
 					Y.Assert.areSame( 5, collection.getAt( 4 ).get( 'id' ), "model w/ id 5 should be at index 4" );
 					Y.Assert.areSame( 6, collection.getAt( 5 ).get( 'id' ), "model w/ id 6 should be at index 5" );
+					
+					// Check that the method set the loadedPages
+					Y.Assert.isFalse( collection.hasPage( 1 ), "should *not* have page 1" );
+					Y.Assert.isTrue( collection.hasPage( 2 ), "should have page 2" );
+					Y.Assert.isTrue( collection.hasPage( 3 ), "should have page 3" );
+					Y.Assert.isFalse( collection.hasPage( 4 ), "should *not* have page 4" );
 				},
 				
 				
@@ -3717,6 +3735,12 @@ define( [
 					Y.Assert.areSame( 4, collection.getAt( 1 ).get( 'id' ), "model w/ id 4 should be at index 1" );
 					Y.Assert.areSame( 5, collection.getAt( 2 ).get( 'id' ), "model w/ id 5 should be at index 2" );
 					Y.Assert.areSame( 6, collection.getAt( 3 ).get( 'id' ), "model w/ id 6 should be at index 3" );
+					
+					// Check that the method set the loadedPages
+					Y.Assert.isFalse( collection.hasPage( 1 ), "should *not* have page 1" );
+					Y.Assert.isTrue( collection.hasPage( 2 ), "should have page 2" );
+					Y.Assert.isTrue( collection.hasPage( 3 ), "should have page 3" );
+					Y.Assert.isFalse( collection.hasPage( 4 ), "should *not* have page 4" );
 				},
 				
 				
@@ -3924,6 +3948,43 @@ define( [
 					Y.Assert.isUndefined( collection.getTotalCount(), "Initial Condition: the totalCount should be undefined" );
 					collection.loadPageRange( 1, 3 );  // deferred resolved immediately
 					Y.Assert.isUndefined( collection.getTotalCount(), "The totalCount should still be undefined" );
+				},
+				
+				
+				"loadPageRange() should add to the list of loadedPages when the `clearOnPageLoad` config is false" : function() {
+					var recordSets = [   // for returning new data for each "page load"
+						[ { id: 3, name: "Greg" }, { id: 4, name: "Jeff" } ],
+						[ { id: 5, name: "Andy" }, { id: 6, name: "Sarah" } ]
+					];
+					var opNum = -1;
+					
+					JsMockito.when( this.proxy ).read().then( function( operation ) {
+						opNum++;
+						operation.setResultSet( new ResultSet( {
+							records : recordSets[ opNum ]
+						} ) );
+						
+						return new jQuery.Deferred().resolve( operation ).promise();
+					} );
+					
+					
+					var MyCollection = Collection.extend( {
+						model : this.Model,
+						proxy : this.proxy
+					} );
+					var collection = new MyCollection( {
+						models : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ],
+						pageSize : 2,
+						clearOnPageLoad : false
+					} );
+					collection.loadPageRange( 2, 2 );
+					collection.loadPageRange( 3, 3 );
+
+					// Check that the method set the loadedPages
+					Y.Assert.isFalse( collection.hasPage( 1 ), "should *not* have page 1" );
+					Y.Assert.isTrue( collection.hasPage( 2 ), "should have page 2" );
+					Y.Assert.isTrue( collection.hasPage( 3 ), "should have page 3" );
+					Y.Assert.isFalse( collection.hasPage( 4 ), "should *not* have page 4" );
 				}
 			},
 			

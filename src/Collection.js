@@ -237,6 +237,14 @@ define( [
 		
 		/**
 		 * @protected
+		 * @property {Number[]} loadedPages
+		 * 
+		 * An array that stores the currently-loaded pages in the Collection. This is only used when a {@link #pageSize}
+		 * is set, and the user loads pages using the {@link #loadPage} or {@link #loadPageRange} methods.
+		 */
+		
+		/**
+		 * @protected
 		 * @property {Number} totalCount
 		 * 
 		 * This property is used to keep track of total number of models in a windowed (paged) data 
@@ -366,7 +374,7 @@ define( [
 			this.modelsByClientId = {};
 			this.modelsById = {};
 			this.removedModels = [];
-			
+			this.loadedPages = [];
 			
 			if( initialModels ) {
 				this.add( initialModels );
@@ -731,6 +739,18 @@ define( [
 			// A bit of a naive implementation for now. In the future, this method will cover when say, pages
 			// are loaded out of order, and will ensure that the entire range is present.
 			return endIndex < this.models.length;
+		},
+		
+		
+		/**
+		 * Determines if the Collection has the given page number loaded. This is only valid when a {@link #pageSize} is set,
+		 * and using the paging methods {@link #loadPage} or {@link #loadPageRange}.
+		 * 
+		 * @param {Number} pageNum The page number to check.
+		 * @return {Boolean} `true` if the Collection has the given `pageNum` currently loaded, `false` otherwise.
+		 */
+		hasPage : function( pageNum ) {
+			return _.contains( this.loadedPages, pageNum );
 		},
 		
 		
@@ -1286,8 +1306,15 @@ define( [
 			deferred.done( options.success ).fail( options.error ).always( options.complete );
 			
 			masterPromise.then(
-				function( operation ) { me.onLoadSuccess( deferred, batch, { addModels: addModels } ); },
-				function( operation ) { me.onLoadError( deferred, batch ); }
+				function( operation ) {
+					var loadedPages = _.range( startPage, endPage+1 );  // second arg needs +1 because it is "up to but not included"
+					me.loadedPages = ( addModels ) ? me.loadedPages.concat( loadedPages ) : loadedPages;
+					
+					me.onLoadSuccess( deferred, batch, { addModels: addModels } ); 
+				},
+				function( operation ) { 
+					me.onLoadError( deferred, batch );
+				}
 			);
 			return deferred.promise();
 		},
