@@ -330,6 +330,15 @@ define( [
 				'removeset',
 				
 				/**
+				 * Fires when the Collection begins a load request, through its {@link #proxy}. The {@link #event-load} event
+				 * will fire when the load is complete.
+				 * 
+				 * @event loadbegin
+				 * @param {data.Collection} This Collection instance.
+				 */
+				'loadbegin',
+				
+				/**
 				 * Fires when the Collection is loaded from an external data source, through its {@link #proxy}.
 				 * 
 				 * This event fires for both successful and failed "load" requests. Success of the load request may 
@@ -1341,7 +1350,10 @@ define( [
 			// </debug>
 			
 			// Set the loading flag while the Collection is loading. Will be set to false in onLoadSuccess() or onLoadError().
-			this.loading = true;
+			if( !this.loading ) {   // only set the flag and fire the event if the collection is not already loading for another request (i.e. should only fire once even if multiple pages are being loaded)
+				this.loading = true;
+				this.fireEvent( 'loadbegin', this );
+			}
 			
 			// Make a request to read the data from the persistent storage, and return a Promise object
 			// which is resolved or rejected with the `operation` object

@@ -2110,11 +2110,15 @@ define( [
 				
 				
 				"load() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch" : function() {
-					JsMockito.when( this.proxy ).read().then( function( operation ) {
-						operation.setResultSet( new ResultSet( {
+					var deferred, operation;
+					JsMockito.when( this.proxy ).read().then( function( op ) {
+						op.setResultSet( new ResultSet( {
 							records : []
 						} ) );
-						return new jQuery.Deferred().resolve( operation ).promise();
+						
+						deferred = new jQuery.Deferred();
+						operation = op;
+						return deferred.promise();
 					} );
 					
 					var MyCollection = Collection.extend( {
@@ -2122,7 +2126,8 @@ define( [
 						proxy : this.proxy
 					} );
 					
-					var successCallCount = 0,
+					var loadbeginCallCount = 0,
+					    successCallCount = 0,
 					    errorCallCount = 0,
 					    completeCallCount = 0,
 					    doneCallCount = 0,
@@ -2141,6 +2146,10 @@ define( [
 					// Instantiate and run the load() method
 					var collectionInstance = new MyCollection( {
 						listeners : {
+							'loadbegin' : function( collection ) {
+								loadbeginCallCount++;
+								Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in loadbegin" );
+							},
 							'load' : function( collection, batch ) {
 								loadCallCount++;
 								checkCbArgs( collection, batch, "load event cb" );
@@ -2173,6 +2182,12 @@ define( [
 							alwaysCallCount++;
 							checkCbArgs( collection, batch, "always cb" );
 						} );
+					
+					// First check the loadbegin event
+					Y.Assert.areSame( 1, loadbeginCallCount, "loadbeginCallCount" );
+					
+					// Now resolve the deferred
+					deferred.resolve( operation );
 					
 					// Make sure the appropriate callbacks executed
 					Y.Assert.areSame( 1, successCallCount, "successCallCount" );
@@ -3745,11 +3760,17 @@ define( [
 				
 				
 				"loadPageRange() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch" : function() {
+					var deferreds = [], 
+					    operations = [];
 					JsMockito.when( this.proxy ).read().then( function( operation ) {
 						operation.setResultSet( new ResultSet( {
 							records : []
 						} ) );
-						return new jQuery.Deferred().resolve( operation ).promise();
+						
+						var deferred = new jQuery.Deferred();
+						deferreds.push( deferred );
+						operations.push( operation );
+						return deferred.promise();
 					} );
 					
 					var MyCollection = Collection.extend( {
@@ -3758,7 +3779,8 @@ define( [
 						pageSize : 25
 					} );
 					
-					var successCallCount = 0,
+					var loadbeginCallCount = 0,
+					    successCallCount = 0,
 					    errorCallCount = 0,
 					    completeCallCount = 0,
 					    doneCallCount = 0,
@@ -3778,6 +3800,10 @@ define( [
 					// Instantiate and run the loadPageRange() method
 					var collectionInstance = new MyCollection( {
 						listeners : {
+							'loadbegin' : function( collection ) {
+								loadbeginCallCount++;
+								Y.Assert.areSame( collectionInstance, collection, "the collection should have been arg 1 in loadbegin" );
+							},
 							'load' : function( collection, batch ) {
 								loadCallCount++;
 								checkCbArgs( collection, batch, "load event cb" );
@@ -3811,6 +3837,13 @@ define( [
 							alwaysCallCount++;
 							checkCbArgs( collection, batch, "always cb" );
 						} );
+					
+					// First check the loadbegin event
+					Y.Assert.areSame( 1, loadbeginCallCount, "loadbeginCallCount" );
+					
+					// Now resolve the deferreds
+					for( var i = 0, len = deferreds.length; i < len; i++ )
+						deferreds[ i ].resolve( operations[ i ] );
 					
 					// Make sure the appropriate callbacks executed
 					Y.Assert.areSame( 1, successCallCount, "successCallCount" );
