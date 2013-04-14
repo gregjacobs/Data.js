@@ -114,9 +114,9 @@ define( [
 		/**
 		 * @cfg {Boolean} autoLoad
 		 * 
-		 * If no initial {@link #cfg-models} are specified (specifying inline data), and this config is 
-		 * `true`, the Collection's {@link #method-load} method will be called immediately upon 
-		 * instantiation to load the Collection.
+		 * If no initial {@link #data} config is specified (specifying an initial set of data/models), and this config is 
+		 * `true`, the Collection's {@link #method-load} method will be called immediately upon instantiation to load the 
+		 * Collection.
 		 * 
 		 * If the {@link #pageSize} config is set, setting this to `true` will just cause the first page of
 		 * data to be loaded. 
@@ -171,10 +171,12 @@ define( [
 		 */
 		
 		/**
-		 * @cfg {Object/data.Model/Object[]/data.Model[]} models
-		 * If providing a configuration object to the data.Collection constructor instead of an array of initial models, the initial 
-		 * model(s) may be specified using this configuration option. Can be a single model or an array of models (or object / array of
-		 * objects that will be converted to models).
+		 * @cfg {Object/Object[]/data.Model/data.Model[]} data
+		 * 
+		 * Any initial data/models to load the Collection with. This is used when providing a configuration object to the 
+		 * Collection constructor, instead of an array of initial data/models. Can be a single model, an array of models,
+		 * or an object / array of objects that will be converted to models based on the {@link #model} config (or 
+		 * overridden implementation of {@link #createModel}).
 		 * 
 		 * Ex:
 		 * 
@@ -184,7 +186,20 @@ define( [
 		 *         model2 = new myApp.MyModel();
 		 *     
 		 *     var collection = new myApp.MyCollection( {
-		 *         models: [ model1, model2 ]
+		 *         data: [ model1, model2 ]
+		 *     } );
+		 * 
+		 * Ex 2:    
+		 *     var MyModel = Model.extend( {
+		 *         attributes : [ 'id', 'name' ]
+		 *     } );
+		 *     
+		 *     var collection = new myApp.MyCollection( {
+		 *         model : MyModel,
+		 *         data: [
+		 *             { id: 1, name: "John" },
+		 *             { id: 2, name: "Jane" }
+		 *         ]
 		 *     } );
 		 */
 		
@@ -253,8 +268,8 @@ define( [
 		 * @constructor
 		 * @param {Object/Object[]/data.Model[]} config This can either be a configuration object (in which the options listed
 		 *   under "configuration options" can be provided), or an initial set of Models to provide to the Collection. If providing
-		 *   an initial set of models, they must be wrapped in an array. Note that an initial set of models can be provided when using
-		 *   a configuration object with the {@link #cfg-models} config.
+		 *   an initial set of data/models, they must be wrapped in an array. Note that an initial set of data/models can be provided 
+		 *   when using a configuration object with the {@link #data} config.
 		 */
 		constructor : function( config ) {
 			this.addEvents(
@@ -348,7 +363,7 @@ define( [
 			} else if( typeof config === 'object' ) {
 				_.assign( this, config );
 				
-				initialModels = this.models;  // grab any initial models in the config
+				initialModels = this.data;  // grab any initial data/models in the config
 			}
 
 			// Call Observable constructor
