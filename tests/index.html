@@ -1,13 +1,87 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
+<head>
+	<title>Data.js Tests</title>
+
+	<link rel="shortcut icon" type="image/png" href="../vendor/jasmine/jasmine-1.3.1/jasmine_favicon.png">
+	<link rel="stylesheet" type="text/css" href="../vendor/jasmine/jasmine-1.3.1/jasmine.css">
+	<script type="text/javascript" src="../vendor/jasmine/jasmine-1.3.1/jasmine.js"></script>
+	<script type="text/javascript" src="../vendor/jasmine/jasmine-1.3.1/jasmine-html.js"></script>
 	
-	<head>
-		<title>Data.js Tests</title>
-	</head>
+	<!-- JSMockito Mocking Framework -->
+	<script type="text/javascript" src="../vendor/jsmockito/jshamcrest.js"></script>
+	<script type="text/javascript" src="../vendor/jsmockito/jsmockito.js"></script>
 
-	<frameset rows="70%,30%">
-		<frame src="extTestHarness.html" />
-		<frame src="jasmineHarness.html" />
-	</frameset>
+	<!-- RequireJS -->
+	<script type="text/javascript" src="../vendor/require/require.js"></script>
 
+	<script type="text/javascript">
+		require.config( {
+			baseUrl: '../',
+			paths : {
+				'jquery'     : 'vendor/jquery/jquery',
+				'lodash'     : 'vendor/lodash/lodash',
+				'Class'      : 'vendor/class/Class',
+				'Observable' : 'vendor/observable/Observable',
+				
+				'data' : 'src',
+				
+				'spec' : 'tests/spec'
+			}
+		} );
+		
+		(function() {
+			var jasmineEnv = jasmine.getEnv();
+			    jasmineEnv.updateInterval = 1000;
+	
+			var htmlReporter = new jasmine.HtmlReporter();
+			jasmineEnv.addReporter(htmlReporter);
+			jasmineEnv.specFilter = function(spec) {
+				return htmlReporter.specFilter(spec);
+			};
+			
+			
+			require( [
+				'jquery',
+				'spec/unit/CollectionSpec',
+				'spec/unit/ModelCacheSpec',
+				'spec/unit/ModelSpec',
+				'spec/unit/NativeObjectConverterSpec',
+				'spec/unit/attribute/AttributeSpec',
+				'spec/unit/attribute/BooleanSpec',
+				'spec/unit/attribute/CollectionSpec',
+				'spec/unit/attribute/DateSpec',
+				'spec/unit/attribute/FloatSpec',
+				'spec/unit/attribute/IntegerSpec',
+				'spec/unit/attribute/ModelSpec',
+				'spec/unit/attribute/ObjectSpec',
+				'spec/unit/attribute/StringSpec',
+				'spec/unit/persistence/operation/BatchSpec',
+				'spec/unit/persistence/proxy/AjaxSpec',
+				'spec/unit/persistence/proxy/RestSpec',
+				'spec/unit/persistence/reader/ReaderSpec',
+				'spec/integration/Collection_with_Models.js',
+				'spec/integration/Model_with_ModelAttribute.js',
+				'spec/integration/Model_with_ModelCache.js',
+				'spec/integration/Model_with_NativeObjectConverter.js',
+				'spec/integration/Model_with_Nested_Collections.js',
+				'spec/integration/Model_with_Nested_Models.js',
+				'spec/integration/Model_with_ObjectAttribute.js',
+				'spec/integration/persistence/RestProxy_with_Nested_Models.js'
+			], function( jQuery ) {
+				jQuery( document ).ready( function() {
+					execJasmine();
+				} );
+			} );
+
+			function execJasmine() {
+				jasmineEnv.execute();
+			}
+		})();
+	</script>
+
+</head>
+
+<body>
+</body>
 </html>
