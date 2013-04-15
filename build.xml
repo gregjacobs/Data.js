@@ -1,45 +1,37 @@
 <project name="Data.js" default="build">
 	
-	<path id="rhino">
-		<pathelement location="${basedir}/vendor/rhino/js.jar" />
-	</path>
+	<target name="checkforNode">
+		<property environment="env" />
+		<condition property="node-command-present">
+			<or>
+				<available file="node" filepath="${env.PATH}" />
+				
+				<!-- special case for Windows, may be PATH or Path -->
+				<available file="node.exe" filepath="${env.Path}" />
+				<available file="node.exe" filepath="${env.PATH}" />
+			</or>
+		</condition>
+	</target>
 	
-	<target name="build" description="Builds the source files.">
+	
+	<target name="build" depends="checkforNode" description="Builds the source files. You must have NodeJS installed, and in your PATH for this target to work.">
+		<fail unless="node-command-present" message="You must have NodeJS installed, and in your PATH for this target." />
+		
 		<!-- Concatenated Build -->
-		<java classname="org.mozilla.javascript.tools.shell.Main" fork="true" failonerror="true">
-			<classpath refid="rhino" />
-
+		<exec executable="node">
 			<arg file="${basedir}/vendor/require/r.js" />
 			<arg value="-o" />
-			<arg value="name=data/Data" />
-			<arg value="out=data-all.js" />
-				
-			<arg value="paths.jquery=empty:" />
-			<arg value="paths.lodash=empty:" />
-			<arg value="paths.Class=empty:" />
-			<arg value="paths.Observable=empty:" />
-			<arg value="paths.data=src" />
-			
-			<arg value="optimize=none" />
-		</java>
+			<arg value="src/build.js" />
+		</exec>
 		
 		<!-- Minified Build -->
-		<java classname="org.mozilla.javascript.tools.shell.Main" fork="true" failonerror="true">
-			<classpath refid="rhino" />
-
+		<exec executable="node">
 			<arg file="${basedir}/vendor/require/r.js" />
 			<arg value="-o" />
-			<arg value="name=data/Data" />
+			<arg value="src/build.js" />
 			<arg value="out=data-all-min.js" />
-				
-			<arg value="paths.jquery=empty:" />
-			<arg value="paths.lodash=empty:" />
-			<arg value="paths.Class=empty:" />
-			<arg value="paths.Observable=empty:" />
-			<arg value="paths.data=src" />
-			
 			<arg value="optimize=uglify" />
-		</java>
+		</exec>
 	</target>
 	
 	
