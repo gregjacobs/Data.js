@@ -252,6 +252,14 @@ define( [
 		
 		/**
 		 * @protected
+		 * @property {Number[]} loadedPages
+		 * 
+		 * An array that stores the currently-loaded pages in the Collection. This is only used when a {@link #pageSize}
+		 * is set, and the user loads pages using the {@link #loadPage} or {@link #loadPageRange} methods.
+		 */
+		
+		/**
+		 * @protected
 		 * @property {Number} totalCount
 		 * 
 		 * This property is used to keep track of total number of models in a windowed (paged) data 
@@ -337,6 +345,15 @@ define( [
 				'removeset',
 				
 				/**
+				 * Fires when the Collection begins a load request, through its {@link #proxy}. The {@link #event-load} event
+				 * will fire when the load is complete.
+				 * 
+				 * @event loadbegin
+				 * @param {data.Collection} This Collection instance.
+				 */
+				'loadbegin',
+				
+				/**
 				 * Fires when the Collection is loaded from an external data source, through its {@link #proxy}.
 				 * 
 				 * This event fires for both successful and failed "load" requests. Success of the load request may 
@@ -381,7 +398,7 @@ define( [
 			this.modelsByClientId = {};
 			this.modelsById = {};
 			this.removedModels = [];
-			
+			this.loadedPages = [];
 			
 			if( initialModels ) {
 				this.add( initialModels );
@@ -733,11 +750,11 @@ define( [
 		
 		
 		/**
-		 * Determines if the collection holds the range of {@link data.Model Models} specified by the `startIndex` and
+		 * Determines if the Collection holds the range of {@link data.Model Models} specified by the `startIndex` and
 		 * `endIndex`. If one or more {@link data.Model Models} are missing from the given range, this method returns
 		 * `false`.
 		 * 
-		 * @param {Number} [startIndex] The starting index.
+		 * @param {Number} startIndex The starting index.
 		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
 		 * @return {Boolean} `true` if the Collection has {@link data.Model Models} in all indexes specified by
 		 *   the range of `startIndex` to `endIndex`, or `false` if one or more {@link data.Model Models} are missing.
@@ -746,6 +763,18 @@ define( [
 			// A bit of a naive implementation for now. In the future, this method will cover when say, pages
 			// are loaded out of order, and will ensure that the entire range is present.
 			return endIndex < this.models.length;
+		},
+		
+		
+		/**
+		 * Determines if the Collection has the given page number loaded. This is only valid when a {@link #pageSize} is set,
+		 * and using the paging methods {@link #loadPage} or {@link #loadPageRange}.
+		 * 
+		 * @param {Number} pageNum The page number to check.
+		 * @return {Boolean} `true` if the Collection has the given `pageNum` currently loaded, `false` otherwise.
+		 */
+		hasPage : function( pageNum ) {
+			return _.contains( this.loadedPages, pageNum );
 		},
 		
 		
@@ -768,7 +797,7 @@ define( [
 		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
-		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
+		 * @return {Object[]} An array of the Object representation of each of the Models in the Collection.
 		 */
 		getData : function( options ) {
 			return NativeObjectConverter.convert( this, options );
@@ -1301,8 +1330,15 @@ define( [
 			deferred.done( options.success ).fail( options.error ).always( options.complete );
 			
 			masterPromise.then(
-				function( operation ) { me.onLoadSuccess( deferred, batch, { addModels: addModels } ); },
-				function( operation ) { me.onLoadError( deferred, batch ); }
+				function( operation ) {
+					var loadedPages = _.range( startPage, endPage+1 );  // second arg needs +1 because it is "up to but not included"
+					me.loadedPages = ( addModels ) ? me.loadedPages.concat( loadedPages ) : loadedPages;
+					
+					me.onLoadSuccess( deferred, batch, { addModels: addModels } ); 
+				},
+				function( operation ) { 
+					me.onLoadError( deferred, batch );
+				}
 			);
 			return deferred.promise();
 		},
@@ -1329,7 +1365,10 @@ define( [
 			// </debug>
 			
 			// Set the loading flag while the Collection is loading. Will be set to false in onLoadSuccess() or onLoadError().
-			this.loading = true;
+			if( !this.loading ) {   // only set the flag and fire the event if the collection is not already loading for another request (i.e. should only fire once even if multiple pages are being loaded)
+				this.loading = true;
+				this.fireEvent( 'loadbegin', this );
+			}
 			
 			// Make a request to read the data from the persistent storage, and return a Promise object
 			// which is resolved or rejected with the `operation` object
@@ -1408,6 +1447,7 @@ define( [
 		 * `success`, `error`, and `complete` functions, and binds them to the `scope` (or `context`). All other properties
 		 * that exist on the `options` object will remain unchanged. 
 		 * 
+		 * @protected
 		 * @param {Object} options The options object provided to any of the "load" methods. If `undefined` or `null` is
 		 *   provided, a normalized options object will still be returned, simply with defaults filled out.
 		 * @param {Function} [options.success] Function to call if the loading is successful. Will be defaulted to an
