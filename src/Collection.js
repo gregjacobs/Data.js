@@ -10,6 +10,7 @@ define( [
 	'data/persistence/operation/Read',
 	'data/persistence/operation/Write',
 	'data/persistence/operation/Batch',
+	'data/persistence/proxy/Proxy',
 	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
 ], function(
 	require,
@@ -21,7 +22,8 @@ define( [
 	NativeObjectConverter,
 	ReadOperation,
 	WriteOperation,
-	OperationBatch
+	OperationBatch,
+	Proxy
 ) {
 
 	/**
@@ -1079,7 +1081,12 @@ define( [
 		 * @return {data.persistence.proxy.Proxy} The Proxy configured for the collection, or null.
 		 */
 		getProxy : function() {
-			return this.proxy || null;
+			// Lazy instantiate an anonymous config object to a Proxy instance
+			var proxy = this.proxy;
+			if( _.isPlainObject( proxy ) ) {
+				this.proxy = proxy = Proxy.create( proxy );
+			}
+			return proxy || null;
 		},
 		
 		
@@ -1355,7 +1362,7 @@ define( [
 		 */
 		doLoad : function( operation ) {
 			var me = this,  // for closures
-			    proxy = this.proxy || ( this.model ? this.model.getProxy() : null );
+			    proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 			
 			// <debug>
 			// No persistence proxy, cannot load. Throw an error

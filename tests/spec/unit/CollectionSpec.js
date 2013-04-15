@@ -7,9 +7,10 @@ define( [
 	'data/attribute/Attribute',
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Proxy',
+	'data/persistence/proxy/Ajax',
 	'data/persistence/operation/Read',
 	'data/persistence/operation/Batch'
-], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, ReadOperation, BatchOperation ) {
+], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, AjaxProxy, ReadOperation, BatchOperation ) {
 	describe( "unit.data.Collection", function() {
 		
 		describe( "Test the constructor", function() {
@@ -1680,6 +1681,34 @@ define( [
 					}
 				}, { startIndex: 1 } );
 				expect( foundModel ).toBe( model3 );
+			} );
+			
+		} );
+		
+		
+		// -----------------------------------
+		
+		
+		describe( 'getProxy()', function() {
+			
+			it( "should instantiate the correct Proxy subclass if it is an anonymous config object", function() {
+				var collection = new Collection( {
+					proxy : {
+						type : 'ajax'
+					}
+				} );
+				
+				expect( collection.getProxy() instanceof AjaxProxy ).toBe( true );
+			} );
+			
+			
+			it( "should simply return the `proxy` if it is already a Proxy instance", function() {
+				var proxy = new AjaxProxy();
+				var collection = new Collection( {
+					proxy : proxy
+				} );
+				
+				expect( collection.getProxy() ).toBe( proxy );
 			} );
 			
 		} );
