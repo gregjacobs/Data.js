@@ -1944,11 +1944,15 @@ define( [
 			
 			
 			it( "load() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( operation ) {
-					operation.setResultSet( new ResultSet( {
+				var deferred, operation;
+				JsMockito.when( thisSuite.proxy ).read().then( function( op ) {
+					op.setResultSet( new ResultSet( {
 						records : []
 					} ) );
-					return new jQuery.Deferred().resolve( operation ).promise();
+					
+					deferred = new jQuery.Deferred();
+					operation = op;
+					return deferred.promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
@@ -1956,7 +1960,8 @@ define( [
 					proxy : thisSuite.proxy
 				} );
 				
-				var successCallCount = 0,
+				var loadbeginCallCount = 0,
+				    successCallCount = 0,
 				    errorCallCount = 0,
 				    completeCallCount = 0,
 				    doneCallCount = 0,
@@ -1975,6 +1980,10 @@ define( [
 				// Instantiate and run the load() method
 				var collectionInstance = new MyCollection( {
 					listeners : {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
 						'load' : function( collection, batch ) {
 							loadCallCount++;
 							checkCbArgs( collection, batch, "load event cb" );
@@ -2007,6 +2016,12 @@ define( [
 						alwaysCallCount++;
 						checkCbArgs( collection, batch, "always cb" );
 					} );
+
+				// First check the loadbegin event
+				expect( loadbeginCallCount ).toBe( 1 );
+				
+				// Now resolve the deferred
+				deferred.resolve( operation );
 				
 				// Make sure the appropriate callbacks executed
 				expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
@@ -3505,11 +3520,17 @@ define( [
 			
 			
 			it( "loadPageRange() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
+				var deferreds = [], 
+				    operations = [];
 				JsMockito.when( thisSuite.proxy ).read().then( function( operation ) {
 					operation.setResultSet( new ResultSet( {
 						records : []
 					} ) );
-					return new jQuery.Deferred().resolve( operation ).promise();
+					
+					var deferred = new jQuery.Deferred();
+					deferreds.push( deferred );
+					operations.push( operation );
+					return deferred.promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
@@ -3518,7 +3539,8 @@ define( [
 					pageSize : 25
 				} );
 				
-				var successCallCount = 0,
+				var loadbeginCallCount = 0,
+				    successCallCount = 0,
 				    errorCallCount = 0,
 				    completeCallCount = 0,
 				    doneCallCount = 0,
@@ -3538,6 +3560,10 @@ define( [
 				// Instantiate and run the loadPageRange() method
 				var collectionInstance = new MyCollection( {
 					listeners : {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
 						'load' : function( collection, batch ) {
 							loadCallCount++;
 							checkCbArgs( collection, batch, "load event cb" );
@@ -3571,6 +3597,13 @@ define( [
 						alwaysCallCount++;
 						checkCbArgs( collection, batch, "always cb" );
 					} );
+
+				// First check the loadbegin event
+				expect( loadbeginCallCount ).toBe( 1 );
+				
+				// Now resolve the deferreds
+				for( var i = 0, len = deferreds.length; i < len; i++ )
+					deferreds[ i ].resolve( operations[ i ] );
 				
 				// Make sure the appropriate callbacks executed
 				expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
