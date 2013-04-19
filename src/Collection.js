@@ -68,23 +68,6 @@ define( [
 	 */
 	var Collection = Class.extend( DataComponent, {
 		
-		inheritedStatics : {			
-			
-			/**
-			 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for the Collection class. To retrieve
-			 * a proxy that may belong to a particular collection, use the instance level {@link #method-getProxy}.
-			 * 
-			 * @inheritable
-			 * @static
-			 * @return {data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
-			 */
-			getProxy : function() {
-				return this.prototype.proxy || null;
-			}
-			
-		},
-
-		
 		/**
 		 * @cfg {Function} model
 		 * 
@@ -1081,12 +1064,7 @@ define( [
 		 * @return {data.persistence.proxy.Proxy} The Proxy configured for the collection, or null.
 		 */
 		getProxy : function() {
-			// Lazy instantiate an anonymous config object to a Proxy instance
-			var proxy = this.proxy;
-			if( _.isPlainObject( proxy ) ) {
-				this.proxy = proxy = Proxy.create( proxy );
-			}
-			return proxy || null;
+			return this.proxy || null;
 		},
 		
 		

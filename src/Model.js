@@ -128,19 +128,6 @@ define( [
 			getAttributes : function() {
 				// Note: `this` refers to the class (constructor function) that the static method was called on
 				return this.prototype.attributes;
-			},
-			
-			
-			/**
-			 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for the Model class. To retrieve
-			 * a proxy that may belong to a particular model, use the instance level {@link #method-getProxy}.
-			 * 
-			 * @inheritable
-			 * @static
-			 * @return {data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
-			 */
-			getProxy : function() {
-				return this.prototype.proxy || null;
 			}
 			
 		},

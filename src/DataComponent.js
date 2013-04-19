@@ -2,8 +2,9 @@
 define( [
 	'lodash',
 	'Class',
-	'Observable'
-], function( _, Class, Observable ) {
+	'Observable',
+	'data/persistence/proxy/Proxy'
+], function( _, Class, Observable, Proxy ) {
 
 	/**
 	 * @private
@@ -39,6 +40,9 @@ define( [
 		 */
 		
 		
+		/**
+		 * @constructor
+		 */
 		constructor : function() {
 			// Call the superclass's constructor (Observable)
 			this._super( arguments );
@@ -104,8 +108,38 @@ define( [
 		
 		
 		/**
-		 * Gets the {@link #proxy} that is currently configured for this DataComponent. Note that
-		 * the same proxy instance is shared between all instances of the DataComponent.
+		 * Creates a {@link data.persistence.proxy.Proxy Proxy} instance from an anonymous config object. If a Proxy instance is provided instead of an
+		 * anonymous config object, it will simply be returned.
+		 * 
+		 * @protected
+		 * @param {Object/data.persistence.proxy.Proxy} The anonymous object which should be instantiated into a {@link data.persistence.proxy.Proxy Proxy}
+		 *   instance. This configuration object must have the `type` property specifying the Proxy type. The `type` property must correspond to a registered 
+		 *   (and loaded) {@link data.persistence.proxy.Proxy Proxy} class. If a Proxy instance is provided, it will simply be returned.
+		 * @return {data.persistence.proxy.Proxy}
+		 */
+		createProxy : function( proxy ) {
+			// instantiate an anonymous config object to a Proxy instance
+			if( !( proxy instanceof Proxy ) ) {
+				proxy = Proxy.create( proxy );
+			}
+			return proxy;
+		},
+		
+		
+		/**
+		 * Sets the {@link #proxy} for this DataComponent instance.
+		 * 
+		 * @param {Object/data.persistence.proxy.Proxy} The proxy to set to the DataComponent. This may be a `proxy` configuration object,
+		 *   which must have the `type` property specifying the proxy type. The `type` property must correspond to a registered (and loaded)
+		 *   {@link data.persistence.proxy.Proxy Proxy}.
+		 */
+		setProxy : function( proxy ) {
+			this.proxy = this.createProxy( proxy );
+		},
+		
+		
+		/**
+		 * Gets the {@link #proxy} that is currently configured for this DataComponent.
 		 * 
 		 * @return {data.persistence.proxy.Proxy} The configured persistence proxy, or `null` if there is none configured.
 		 */
