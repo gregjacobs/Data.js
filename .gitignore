@@ -1,6 +1,5 @@
 .project
 .settings
 .externalToolBuilders
-data-all*.js
 docs/
 web.config

@@ -22,17 +22,19 @@
 			<arg file="${basedir}/vendor/require/r.js" />
 			<arg value="-o" />
 			<arg value="src/build.js" />
-			<arg value="out=data-all.js" />
+			<arg value="out=dist/data-all.js" />
 		</exec>
+		<echo>Wrote dist/data-all.js</echo>
 		
 		<!-- Minified Build -->
 		<exec executable="node" failOnError="true">
 			<arg file="${basedir}/vendor/require/r.js" />
 			<arg value="-o" />
 			<arg value="src/build.js" />
-			<arg value="out=data-all-min.js" />
+			<arg value="out=dist/data-all-min.js" />
 			<arg value="optimize=uglify" />
 		</exec>
+		<echo>Wrote dist/data-all-min.js</echo>
 	</target>
 	
 	

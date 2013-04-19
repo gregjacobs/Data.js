@@ -18,18 +18,8 @@ define( [
 	'data/attribute/Collection',
 	'data/attribute/Model',
 	
-	// All attribute types included so developers don't have to specify these when they declare attributes in their models.
-	// These are not included in the arguments list though, as they are not needed specifically by the Model implementation.
-	'data/attribute/Boolean',
-	'data/attribute/Date',
-	'data/attribute/Float',
-	'data/attribute/Integer',
+	// This attribute type is instantiated automatically for attributes that don't have a `type` property
 	'data/attribute/Mixed',
-	'data/attribute/Model',
-	'data/attribute/Number',
-	'data/attribute/Object',
-	'data/attribute/Primitive',
-	'data/attribute/String',
 
 	'data/NativeObjectConverter' // circular dependency, not included in args list
 ], function( 
@@ -1241,10 +1231,10 @@ define( [
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Boolean} [options.syncRelated=true] `true` to synchronize (persist) the "related" child models/collections 
-		 *   of this Model (if it has any). Related models/collections must be stored under {@link data.attribute.Model Model}
+		 *   of this Model (if it has any). Related models/collections must be stored under {@link data.attribute.Model}
 		 *   or {@link data.attribute.Collection} Attributes for this to work. The models/collections that would be synchronized
-		 *   would be the child models/{@link data.Collection collections} that are not {@link data.attribute.DataComponent#embedded embedded}
-		 *   in the Model. 
+		 *   would be the child models/{@link data.Collection collections} that are related to the Model (i.e. not 
+		 *   {@link data.attribute.DataComponent#embedded embedded} in the Model). 
 		 *   
 		 *   Set to `false` to only save the data in this Model, leaving any related child models/collections to be persisted 
 		 *   individually, at another time.

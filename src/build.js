@@ -1,19 +1,6 @@
-({
-	baseUrl: '.',
-	out: '../data-all.js',
+(function() {
 	
-	paths : {
-		'jquery' : 'empty:',
-		'lodash' : 'empty:',
-		'Class'  : 'empty:',
-		'Observable' : 'empty:',
-		'data'   : './'
-	},
-	
-	logLevel: 2,  // 0=trace, 1=info, 2=warn, 3=error, 4=silent
-	optimize: 'none',
-	
-	include : [
+	var files = [
 		'data/Collection',
 		'data/Data',
 		'data/DataComponent',
@@ -43,6 +30,27 @@
 		'data/persistence/reader/Json',
 		'data/persistence/reader/Reader',
 		'data/persistence/ResultSet'
-	]
-
-})
+	];
+	
+	return {
+		baseUrl: '.',
+		out: '../dist/data-all.js',
+		
+		paths : {
+			'jquery' : 'empty:',
+			'lodash' : 'empty:',
+			'Class'  : 'empty:',
+			'Observable' : 'empty:',
+			'data'   : './'
+		},
+		
+		logLevel: 2,  // 0=trace, 1=info, 2=warn, 3=error, 4=silent
+		optimize: 'none',
+		
+		include : files,       // include all files, and
+		insertRequire : files  // insert a require() statement at the end of the build file to get all of them
+		                       // to execute and initialize, so that classes can be instantiated lazily by their `type`
+		                       // (such as for attributes, and proxy types)
+	};
+	
+}())
