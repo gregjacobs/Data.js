@@ -1,5 +1,5 @@
-/*global define, window, _, jasmine, describe, beforeEach, afterEach, it, xit, expect, JsMockito */
-/*jshint browser:true */
+/*global define, window, _, jasmine, describe, beforeEach, afterEach, it, xit, expect, spyOn, JsMockito */
+/*jshint browser:true, sub:true */
 define( [
 	'jquery',
 	'lodash',
@@ -40,7 +40,17 @@ define( [
 	WriteOperation
 ) {
 
-	describe( "unit.data.Model", function() {
+	describe( 'unit.data.Model', function() {
+		
+		// A concrete Proxy class for tests to use.
+		var ConcreteProxy = Proxy.extend( {
+			// Implementation of abstract interface
+			create: Data.emptyFn,
+			read: Data.emptyFn,
+			update: Data.emptyFn,
+			destroy: Data.emptyFn
+		} );
+		
 		
 		describe( "Test the onClassExtended static method", function() {
 			
@@ -1850,101 +1860,99 @@ define( [
 		} );
 		
 		
-		describe( "Test reload()", function() {
-			var thisSuite;
+		describe( 'load()', function() {
+			var proxy,
+			    TestModel,
+			    loadOperation,
+			    proxyDeferred;
 			
 			beforeEach( function() {
-				thisSuite = {};
+				proxy = new ConcreteProxy();
 				
-				thisSuite.proxy = JsMockito.mock( Proxy.extend( {
-					// Implementation of abstract interface
-					create : Data.emptyFn,
-					read : Data.emptyFn,
-					update : Data.emptyFn,
-					destroy : Data.emptyFn
-				} ) );
+				// Reset between each test
+				loadOperation = undefined;
+				proxyDeferred = undefined;
+				
+				spyOn( proxy, 'read' ).andCallFake( function( operation ) {
+					loadOperation = operation;
+					proxyDeferred = new jQuery.Deferred();
+					
+					return proxyDeferred.promise();
+				} );
+				
+				TestModel = Model.extend( {
+					attributes : [ 'id', 'name' ],
+					proxy : proxy
+				} );
 			} );
 			
 			
-			it( "reload() should throw an error if there is no configured proxy", function() {
+			it( "should throw an error if there is no configured proxy", function() {
+				var NoProxyModel = Model.extend( {
+					attributes : [ 'id', 'name' ]
+					// note: no configured proxy
+				} );
+				
+				var model = new NoProxyModel();
 				expect( function() {
-					var MyModel = Model.extend( {
-						attributes : [ 'id', 'name' ]
-						// note: no configured proxy
-					} );
-					
-					var model = new MyModel();
-					model.reload();
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "reload() should have thrown an error with no configured proxy"
-				} ).toThrow( "data.Model::reload() error: Cannot load. No proxy configured." );
+					model.load();
+				} ).toThrow( "data.Model::load() error: Cannot load. No proxy configured." );
 			} );
 			
 			
-			it( "reload() should delegate to its proxy's read() method to retrieve the data", function() {
-				JsMockito.when( thisSuite.proxy ).read().thenReturn( new jQuery.Deferred().promise() );
-				
-				var MyModel = Model.extend( {
-					attributes : [ 'id', 'name' ],
-					proxy : thisSuite.proxy
-				} );
-				
-				
-				// Instantiate and run the reload() method to delegate
-				var model = new MyModel( { id: 1 } ); 
-				model.reload();
-				
-				JsMockito.verify( thisSuite.proxy ).read();
+			it( "should throw an error if the model does not have a value for its `id` attribute", function() {
+				var model = new TestModel();  // note: no value for the `id` attribute
+				expect( function() {
+					model.load();
+				} ).toThrow( "data.Model::load() error: Cannot load. Model does not have an idAttribute that relates to a valid attribute, or does not yet have a valid id (i.e. an id that is not null)." );
 			} );
 			
 			
-			it( "reload() should pass any `params` option provided to the method to proxy's read() method, in the Operation object", function() {
-				var operation;
-				JsMockito.when( thisSuite.proxy ).read().then( function( op ) {
-					operation = op;
-					return new jQuery.Deferred().promise();
-				} );
+			it( "should delegate to its proxy's read() method to retrieve the data", function() {
+				var model = new TestModel( { id: 1 } );
+				model.load();
 				
-				var MyModel = Model.extend( {
-					attributes : [ 'id', 'name' ],
-					proxy : thisSuite.proxy
-				} );
-				
-				
-				// Instantiate and run the reload() method to delegate
-				var model = new MyModel( { id: 1 } ), 
+				expect( proxy.read ).toHaveBeenCalled();
+			} );
+			
+			
+			it( "should pass any `params` option provided to the method to proxy's read() method, in the Operation object", function() {
+				var model = new TestModel( { id: 1 } ), 
 				    params = { a: 1 };
 				
-				model.reload( {
+				model.load( {
 					params : params
 				} );
-				expect( operation.params ).toBe( params );
+				expect( loadOperation.params ).toBe( params );
 			} );
 			
 			
-			it( "reload() should call its success/complete callbacks, and resolve its deferred with the arguments: model, operation", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( operation ) {
-					operation.setResultSet( new ResultSet( {
-						records : [ { id: 1, name: "asdf" } ]
-					} ) );
-					return new jQuery.Deferred().resolve( operation ).promise();
-				} );
-				
-				var MyModel = Model.extend( {
-					attributes : [ 'id', 'name' ],
-					proxy : thisSuite.proxy
-				} );
-				
-				var successCallCount = 0,
+			it( "when successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, operation]", function() {
+				var loadbeginEventCount = 0,
+				    loadEventCount = 0,
+				    successCallCount = 0,
 				    errorCallCount = 0,
 				    completeCallCount = 0,
 				    doneCallCount = 0,
 				    failCallCount = 0,
 				    alwaysCallCount = 0;
 				
-				// Instantiate and run the reload() method to delegate
-				var modelInstance = new MyModel( { id: 1 } ); 
-				var promise = modelInstance.reload( {
+				// Instantiate and run the load() method to delegate
+				var modelInstance = new TestModel( { id: 1 } );
+				modelInstance.on( {
+					'loadbegin' : function( model, operation ) {
+						loadbeginEventCount++;
+						expect( model ).toBe( modelInstance );
+					},
+					'load' : function( model, operation ) {
+						loadEventCount++;
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof ReadOperation ).toBe( true );
+					}
+				} );
+				expect( modelInstance.isLoading() ).toBe( false );  // initial condition
+				
+				var promise = modelInstance.load( {
 					success : function( model, operation ) {
 						successCallCount++;
 						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
@@ -1977,36 +1985,56 @@ define( [
 						expect( operation instanceof ReadOperation ).toBe( true );  // orig YUI Test err msg: "ReadOperation should have been arg 2 in always cb"
 					} );
 				
+				// First check that `loadbegin` was fired, but not `load` yet. Also that the model is loading.
+				expect( loadbeginEventCount ).toBe( 1 );
+				expect( loadEventCount ).toBe( 0 );
+				expect( modelInstance.isLoading() ).toBe( true );
+				
+				// Now set a result set (for the successful load of the model), and resolve the deferred
+				loadOperation.setResultSet( new ResultSet( {
+					records : [ { id: 1, name: "My Model" } ]
+				} ) );
+				proxyDeferred.resolve( loadOperation );
+				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 0 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
+				expect( modelInstance.isLoading() ).toBe( false );
+				expect( loadbeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
+				expect( loadEventCount ).toBe( 1 );
+				expect( successCallCount ).toBe( 1 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 1 );
+				expect( failCallCount ).toBe( 0 );
+				expect( alwaysCallCount ).toBe( 1 );
 			} );
 			
 			
-			it( "reload() should call its error/complete callbacks, and reject its deferred with the arguments: model, operation", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( operation ) {
-					return new jQuery.Deferred().reject( operation ).promise();
-				} );
-				
-				var MyModel = Model.extend( {
-					attributes : [ 'id', 'name' ],
-					proxy : thisSuite.proxy
-				} );
-				
-				var successCallCount = 0,
+			it( "when an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, operation]", function() {
+				var loadbeginEventCount = 0,
+				    loadEventCount = 0,
+				    successCallCount = 0,
 				    errorCallCount = 0,
 				    completeCallCount = 0,
 				    doneCallCount = 0,
 				    failCallCount = 0,
 				    alwaysCallCount = 0;
 				
-				// Instantiate and run the reload() method to delegate
-				var modelInstance = new MyModel( { id: 1 } ); 
-				var promise = modelInstance.reload( {
+				// Instantiate and run the load() method to delegate
+				var modelInstance = new TestModel( { id: 1 } );
+				modelInstance.on( {
+					'loadbegin' : function( model, operation ) {
+						loadbeginEventCount++;
+						expect( model ).toBe( modelInstance );
+					},
+					'load' : function( model, operation ) {
+						loadEventCount++;
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof ReadOperation ).toBe( true );
+					}
+				} );
+				expect( modelInstance.isLoading() ).toBe( false );  // initial condition
+				
+				var promise = modelInstance.load( {
 					success : function( model, operation ) {
 						successCallCount++;
 						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
@@ -2039,383 +2067,313 @@ define( [
 						expect( operation instanceof ReadOperation ).toBe( true );  // orig YUI Test err msg: "ReadOperation should have been arg 2 in always cb"
 					} );
 				
+				// First check that `loadbegin` was fired, but not `load` yet. Also that the model is loading.
+				expect( loadbeginEventCount ).toBe( 1 );
+				expect( loadEventCount ).toBe( 0 );
+				expect( modelInstance.isLoading() ).toBe( true );
+				
+				// Now reject the deferred
+				proxyDeferred.reject( loadOperation );
+				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 0 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
+				expect( modelInstance.isLoading() ).toBe( false );
+				expect( loadbeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
+				expect( loadEventCount ).toBe( 1 );       // the load event is fired even during failure
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
 			} );
 			
 		} );
 		
 		
-		describe( "Test save()", function() {
+		
+		describe( 'save()', function() {
+			var proxy,
+			    TestModel,
+			    saveOperation,
+			    proxyDeferred;
 			
-			describe( "General save() tests", function() {
-				var thisSuite;
+			beforeEach( function() {
+				proxy = new ConcreteProxy();
+				
+				// Reset between each test
+				saveOperation = undefined;
+				proxyDeferred = undefined;
+				
+				spyOn( proxy, 'create' ).andCallFake( function( operation ) {
+					saveOperation = operation;
+					proxyDeferred = new jQuery.Deferred();
+					
+					return proxyDeferred.promise();
+				} );
+				spyOn( proxy, 'update' ).andCallFake( function( operation ) {
+					saveOperation = operation;
+					proxyDeferred = new jQuery.Deferred();
+					
+					return proxyDeferred.promise();
+				} );
+				
+				TestModel = Model.extend( {
+					attributes  : [ 'id', 'name' ],
+					idAttribute : 'id',
+					
+					proxy : proxy
+				} );
+			} );
+			
+			
+				
+			it( "should throw an error if there is no configured proxy", function() {
+				var NoProxyModel = Model.extend( {
+					// note: no proxy
+				} );
+				
+				var model = new NoProxyModel();
+				expect( function() {
+					model.save();
+				} ).toThrow( "data.Model::save() error: Cannot save. No proxy." );
+			} );
+			
+			
+			it( "should delegate to its proxy's create() method to persist changes when the Model does not have an id set", function() {
+				var model = new TestModel();  // note: no 'id' set
+				model.save();
+				
+				expect( proxy.create ).toHaveBeenCalled();
+				expect( proxy.update ).not.toHaveBeenCalled();
+			} );
+			
+			
+			it( "should delegate to its proxy's update() method to persist changes, when the Model has an id", function() {
+				var model = new TestModel( { id: 1 } );
+				model.save();
+				
+				expect( proxy.create ).not.toHaveBeenCalled();
+				expect( proxy.update ).toHaveBeenCalled();
+			} );
+			
+			
+			it( "should pass any `params` option provided to the method to proxy's create() or update() method, in the Operation object", function() {
+				var model = new TestModel(), 
+				    createParams = { a: 1 },
+				    updateParams = { b: 2 };
+				
+				model.save( {
+					params : createParams
+				} );
+				expect( saveOperation.params ).toBe( createParams );
+				
+				model.set( 'id', 1 );  // now give the model an ID
+				model.save( {
+					params : updateParams
+				} );
+				expect( saveOperation.params ).toBe( updateParams );
+			} );
+			
+			
+			describe( "callbacks, events, and deferred resolution/rejection", function() {
+				var savebeginEventCount,
+				    saveEventCount,
+				    successCallCount,
+				    errorCallCount,
+				    completeCallCount,
+				    doneCallCount,
+				    failCallCount,
+				    alwaysCallCount,
+				    modelInstance,
+				    callbacksConfig;
+				
 				
 				beforeEach( function() {
-					thisSuite = {};
+					savebeginEventCount = 0,
+					saveEventCount = 0,
+					successCallCount = 0,
+					errorCallCount = 0,
+					completeCallCount = 0,
+					doneCallCount = 0,
+					failCallCount = 0,
+					alwaysCallCount = 0;
 					
-					thisSuite.proxy = JsMockito.mock( Proxy.extend( {
-						// Implementation of abstract interface
-						create: Data.emptyFn,
-						read: Data.emptyFn,
-						update: Data.emptyFn,
-						destroy: Data.emptyFn
-					} ) );
+					modelInstance = new TestModel();
+					
+					// Listen for events
+					modelInstance.on( {
+						'savebegin' : function( model, operation ) {
+							savebeginEventCount++;
+							expect( model ).toBe( modelInstance );
+						},
+						'save' : function( model, operation ) {
+							saveEventCount++;
+							expect( model ).toBe( modelInstance );
+							expect( operation instanceof WriteOperation ).toBe( true );
+						}
+					} );
+					
+					// Set up the callbacks config. This will be passed to the save() method
+					callbacksConfig = {
+						success : function( model, operation ) {
+							successCallCount++;
+							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
+							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
+						},
+						error : function( model, operation ) {
+							errorCallCount++;
+							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
+							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
+						},
+						complete : function( model, operation ) {
+							completeCallCount++;
+							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
+							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
+						}
+					};
+					
 				} );
 				
 				
-				it( "save() should throw an error if there is no configured proxy", function() {
-					expect( function() {
-						var MyModel = Model.extend( {
-							// note: no proxy
-						} );
-						var model = new MyModel();
-						model.save();
-						expect( true ).toBe( false );  // orig YUI Test err msg: "save() should have thrown an error with no configured proxy"
-					} ).toThrow( "data.Model::save() error: Cannot save. No proxy." );
+				// Helper method for attaching the handlers to the jQuery.Promise object returned by save()
+				function attachPromiseHandlers( promise ) {
+					promise.done( function( model, operation ) {
+						doneCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
+					} );
+					
+					promise.fail( function( model, operation ) {
+						failCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
+					} );
+					
+					promise.always( function( model, operation ) {
+						alwaysCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
+					} );
+				}
+				
+			
+				it( "when creating, and successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, operation]", function() {
+					expect( modelInstance.isSaving() ).toBe( false );  // initial condition
+					
+					var promise = modelInstance.save( callbacksConfig );
+					attachPromiseHandlers( promise );						
+					
+					
+					// First check that `savebegin` was fired, but not `save` yet. Also that the model is saving..
+					expect( savebeginEventCount ).toBe( 1 );
+					expect( saveEventCount ).toBe( 0 );
+					expect( modelInstance.isSaving() ).toBe( true );
+					
+					// Now set a result set (for the successful save, but no return data), and resolve the deferred
+					saveOperation.setResultSet( new ResultSet() );
+					proxyDeferred.resolve( saveOperation );
+					
+					// Make sure the appropriate callbacks executed
+					expect( modelInstance.isSaving() ).toBe( false );
+					expect( savebeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
+					expect( saveEventCount ).toBe( 1 );
+					expect( successCallCount ).toBe( 1 );
+					expect( errorCallCount ).toBe( 0 );
+					expect( completeCallCount ).toBe( 1 );
+					expect( doneCallCount ).toBe( 1 );
+					expect( failCallCount ).toBe( 0 );
+					expect( alwaysCallCount ).toBe( 1 );
 				} );
 				
 				
-				it( "save() should delegate to its proxy's create() method to persist changes when the Model does not have an id set", function() {
-					var MyModel = Model.extend( {
-						attributes : [ 'id' ],
-						idAttribute : 'id',
-						
-						proxy : thisSuite.proxy
-					} );
+				it( "when creating, but an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, operation]", function() {
+					expect( modelInstance.isSaving() ).toBe( false );  // initial condition
 					
-					var writeOperation = JsMockito.mock( WriteOperation );
-					JsMockito.when( writeOperation ).getResultSet().thenReturn( new ResultSet( { records: [] } ) );
-					JsMockito.when( thisSuite.proxy ).create().thenReturn( new jQuery.Deferred().resolve( writeOperation ).promise() );
+					var promise = modelInstance.save( callbacksConfig );
+					attachPromiseHandlers( promise );						
 					
-					var model = new MyModel();  // note: no 'id' set
 					
-					// Run the save() method to delegate 
-					model.save();
+					// First check that `savebegin` was fired, but not `save` yet. Also that the model is saving.
+					expect( savebeginEventCount ).toBe( 1 );
+					expect( saveEventCount ).toBe( 0 );
+					expect( modelInstance.isSaving() ).toBe( true );
 					
-					JsMockito.verify( thisSuite.proxy ).create();
+					// Now reject the deferred
+					proxyDeferred.reject( saveOperation );
+					
+					// Make sure the appropriate callbacks executed
+					expect( modelInstance.isSaving() ).toBe( false );
+					expect( savebeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
+					expect( saveEventCount ).toBe( 1 );
+					expect( successCallCount ).toBe( 0 );
+					expect( errorCallCount ).toBe( 1 );
+					expect( completeCallCount ).toBe( 1 );
+					expect( doneCallCount ).toBe( 0 );
+					expect( failCallCount ).toBe( 1 );
+					expect( alwaysCallCount ).toBe( 1 );
 				} );
 				
 				
-				it( "save() should delegate to its proxy's update() method to persist changes, when the Model has an id", function() {
-					var MyModel = Model.extend( {
-						attributes : [ 'id' ],
-						idAttribute : 'id',
-						
-						proxy : thisSuite.proxy
-					} );
+				it( "when updating, and successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, operation]", function() {
+					expect( modelInstance.isSaving() ).toBe( false );  // initial condition
 					
-					var writeOperation = JsMockito.mock( WriteOperation );
-					JsMockito.when( writeOperation ).getResultSet().thenReturn( new ResultSet( { records: [] } ) );
-					JsMockito.when( thisSuite.proxy ).update().thenReturn( new jQuery.Deferred().resolve( writeOperation ).promise() );
+					var promise = modelInstance.save( callbacksConfig );
+					attachPromiseHandlers( promise );						
 					
-					var model = new MyModel( { id: 1 } );
 					
-					// Run the save() method to delegate 
-					model.save();
+					// First check that `savebegin` was fired, but not `save` yet. Also that the model is saving..
+					expect( savebeginEventCount ).toBe( 1 );
+					expect( saveEventCount ).toBe( 0 );
+					expect( modelInstance.isSaving() ).toBe( true );
 					
-					JsMockito.verify( thisSuite.proxy ).update();
+					// Now set a result set (for the successful save, but no return data), and resolve the deferred
+					saveOperation.setResultSet( new ResultSet() );
+					proxyDeferred.resolve( saveOperation );
+					
+					// Make sure the appropriate callbacks executed
+					expect( modelInstance.isSaving() ).toBe( false );
+					expect( savebeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
+					expect( saveEventCount ).toBe( 1 );
+					expect( successCallCount ).toBe( 1 );
+					expect( errorCallCount ).toBe( 0 );
+					expect( completeCallCount ).toBe( 1 );
+					expect( doneCallCount ).toBe( 1 );
+					expect( failCallCount ).toBe( 0 );
+					expect( alwaysCallCount ).toBe( 1 );
 				} );
 				
 				
-				it( "save() should pass any `params` option provided to the method to proxy's create() (or update()) method, in the Operation object", function() {
-					var operation;
-					JsMockito.when( thisSuite.proxy ).create().then( function( op ) {
-						operation = op;
-						return new jQuery.Deferred().promise();
-					} );
+				it( "when updating, but an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, operation]", function() {
+					expect( modelInstance.isSaving() ).toBe( false );  // initial condition
 					
-					var MyModel = Model.extend( {
-						attributes : [ 'id' ],
-						idAttribute : 'id',
-						
-						proxy : thisSuite.proxy
-					} );
+					var promise = modelInstance.save( callbacksConfig );
+					attachPromiseHandlers( promise );						
 					
 					
-					// Instantiate and run the reload() method to delegate
-					var model = new MyModel(), 
-					    params = { a: 1 };
+					// First check that `savebegin` was fired, but not `save` yet. Also that the model is saving.
+					expect( savebeginEventCount ).toBe( 1 );
+					expect( saveEventCount ).toBe( 0 );
+					expect( modelInstance.isSaving() ).toBe( true );
 					
-					model.save( {
-						params : params
-					} );
+					// Now reject the deferred
+					proxyDeferred.reject( saveOperation );
 					
-					expect( operation.params ).toBe( params );
+					// Make sure the appropriate callbacks executed
+					expect( modelInstance.isSaving() ).toBe( false );
+					expect( savebeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
+					expect( saveEventCount ).toBe( 1 );
+					expect( successCallCount ).toBe( 0 );
+					expect( errorCallCount ).toBe( 1 );
+					expect( completeCallCount ).toBe( 1 );
+					expect( doneCallCount ).toBe( 0 );
+					expect( failCallCount ).toBe( 1 );
+					expect( alwaysCallCount ).toBe( 1 );
 				} );
 				
 			} );
 			
 			
-			describe( "save() callbacks and promise tests", function() {
-				var thisSuite;
-				
-				beforeEach( function() {
-					thisSuite = {};
-					
-					thisSuite.proxy = JsMockito.mock( Proxy.extend( {
-						// Implementation of abstract interface
-						create: Data.emptyFn,
-						read: Data.emptyFn,
-						update: Data.emptyFn,
-						destroy: Data.emptyFn
-					} ) );
-					
-					thisSuite.operation = JsMockito.mock( WriteOperation );
-					JsMockito.when( thisSuite.operation ).getResultSet().thenReturn( new ResultSet() );
-					
-					thisSuite.deferred = new jQuery.Deferred();
-					
-					thisSuite.Model = Model.extend( {
-						attributes : [ 'id', 'attribute1' ],
-						proxy  : thisSuite.proxy
-					} );
-				} );
-				
-				
-				it( "save() should call its success/complete callbacks, and reject its deferred with the arguments (model, operation) if the proxy successfully 'create's", function() {
-					JsMockito.when( thisSuite.proxy ).create().then( function( operation ) {
-						return new jQuery.Deferred().resolve( operation ).promise();
-					} );
-					
-					var successCallCount = 0,
-					    errorCallCount = 0,
-					    completeCallCount = 0,
-					    doneCallCount = 0,
-					    failCallCount = 0,
-					    alwaysCallCount = 0;
-					
-					// Instantiate and run the save() method
-					var modelInstance = new thisSuite.Model(); 
-					var promise = modelInstance.save( {
-						success : function( model, operation ) {
-							successCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
-						},
-						error : function( model, operation ) {
-							errorCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
-						},
-						complete : function( model, operation ) {
-							completeCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
-						}
-					} )
-						.done( function( model, operation ) {
-							doneCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
-						} )
-						.fail( function( model, operation ) {
-							failCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
-						} )
-						.always( function( model, operation ) {
-							alwaysCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
-						} );
-					
-					// Make sure the appropriate callbacks executed
-					expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
-					expect( errorCallCount ).toBe( 0 );  // orig YUI Test err msg: "errorCallCount"
-					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-					expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "doneCallCount"
-					expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "failCallCount"
-					expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				} );
-				
-				
-				it( "save() should call its error/complete callbacks, and reject its deferred with the arguments (model, operation) if the proxy fails to 'create'", function() {
-					JsMockito.when( thisSuite.proxy ).create().then( function( operation ) {
-						return new jQuery.Deferred().reject( operation ).promise();
-					} );
-					
-					var MyModel = Model.extend( {
-						attributes : [ 'id', 'name' ],
-						proxy : thisSuite.proxy
-					} );
-					
-					var successCallCount = 0,
-					    errorCallCount = 0,
-					    completeCallCount = 0,
-					    doneCallCount = 0,
-					    failCallCount = 0,
-					    alwaysCallCount = 0;
-					
-					// Instantiate and run the save() method
-					var modelInstance = new thisSuite.Model(); 
-					var promise = modelInstance.save( {
-						success : function( model, operation ) {
-							successCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
-						},
-						error : function( model, operation ) {
-							errorCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
-						},
-						complete : function( model, operation ) {
-							completeCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
-						}
-					} )
-						.done( function( model, operation ) {
-							doneCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
-						} )
-						.fail( function( model, operation ) {
-							failCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
-						} )
-						.always( function( model, operation ) {
-							alwaysCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
-						} );
-					
-					// Make sure the appropriate callbacks executed
-					expect( successCallCount ).toBe( 0 );  // orig YUI Test err msg: "successCallCount"
-					expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "errorCallCount"
-					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-					expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "doneCallCount"
-					expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "failCallCount"
-					expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				} );
-				
-				
-				it( "save() should call its success/complete callbacks, and reject its deferred with the arguments (model, operation) if the proxy successfully 'update's", function() {
-					JsMockito.when( thisSuite.proxy ).update().then( function( operation ) {
-						return new jQuery.Deferred().resolve( operation ).promise();
-					} );
-					
-					var successCallCount = 0,
-					    errorCallCount = 0,
-					    completeCallCount = 0,
-					    doneCallCount = 0,
-					    failCallCount = 0,
-					    alwaysCallCount = 0;
-					
-					// Instantiate and run the save() method
-					var modelInstance = new thisSuite.Model( { id: 1 } ); 
-					var promise = modelInstance.save( {
-						success : function( model, operation ) {
-							successCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
-						},
-						error : function( model, operation ) {
-							errorCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
-						},
-						complete : function( model, operation ) {
-							completeCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
-						}
-					} )
-						.done( function( model, operation ) {
-							doneCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
-						} )
-						.fail( function( model, operation ) {
-							failCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
-						} )
-						.always( function( model, operation ) {
-							alwaysCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
-						} );
-					
-					// Make sure the appropriate callbacks executed
-					expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
-					expect( errorCallCount ).toBe( 0 );  // orig YUI Test err msg: "errorCallCount"
-					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-					expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "doneCallCount"
-					expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "failCallCount"
-					expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				} );
-				
-				
-				it( "save() should call its error/complete callbacks, and reject its deferred with the arguments (model, operation) if the proxy fails to 'update'", function() {
-					JsMockito.when( thisSuite.proxy ).update().then( function( operation ) {
-						return new jQuery.Deferred().reject( operation ).promise();
-					} );
-					
-					var MyModel = Model.extend( {
-						attributes : [ 'id', 'name' ],
-						proxy : thisSuite.proxy
-					} );
-					
-					var successCallCount = 0,
-					    errorCallCount = 0,
-					    completeCallCount = 0,
-					    doneCallCount = 0,
-					    failCallCount = 0,
-					    alwaysCallCount = 0;
-					
-					// Instantiate and run the save() method
-					var modelInstance = new thisSuite.Model( { id: 1 } ); 
-					var promise = modelInstance.save( {
-						success : function( model, operation ) {
-							successCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
-						},
-						error : function( model, operation ) {
-							errorCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
-						},
-						complete : function( model, operation ) {
-							completeCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
-						}
-					} )
-						.done( function( model, operation ) {
-							doneCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
-						} )
-						.fail( function( model, operation ) {
-							failCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
-						} )
-						.always( function( model, operation ) {
-							alwaysCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
-						} );
-					
-					// Make sure the appropriate callbacks executed
-					expect( successCallCount ).toBe( 0 );  // orig YUI Test err msg: "successCallCount"
-					expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "errorCallCount"
-					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-					expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "doneCallCount"
-					expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "failCallCount"
-					expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				} );
-				
-			} );
+			// -------------------------------
 			
 			
 			describe( "Test basic persistence", function() {
@@ -2583,288 +2541,293 @@ define( [
 			} );
 			
 			
-			describe( "Test save() with related Collections that need to be sync'd first", function() {
-				var thisSuite;
+			describe( "Test save() with related Models and Collections that need to be sync'd first", function() {
+				var parentModelProxy,
+				    ParentModel,
+				    ChildModel,
+				    collections,
+				    models,
+				    deferreds;
 				
 				beforeEach( function() {
-					jasmine.Clock.useMock();
+					collections = {};
+					models = {},
+					deferreds = {};
 					
-					thisSuite = {};
+					parentModelProxy = new ConcreteProxy();
+					spyOn( parentModelProxy, 'create' ).andCallFake( function() {
+						var deferred = deferreds[ 'parentModelProxy' ] = new jQuery.Deferred();
+						return deferred;
+					} );
 					
-					thisSuite.proxy = JsMockito.mock( Proxy.extend( {
-						create  : Data.emptyFn,
-						read    : Data.emptyFn,
-						update  : Data.emptyFn,
-						destroy : Data.emptyFn
-					} ) );
+					ChildModel = Model.extend( {
+						attributes : [ 'id', 'attr' ],
+						proxy : new ConcreteProxy()  // not actually needed for the tests due to "faked" save() method, but makes it clear
+					} );
 					
-					thisSuite.Model = Model.extend( {
+					ParentModel = Model.extend( {
 						attributes : [
 							{ name: 'id', type: 'int' },
 							{ name: 'attr', type: 'string' },
 							{ name: 'c1', type: 'collection' },
-							{ name: 'c2', type: 'collection' }
+							{ name: 'c2', type: 'collection' },
+							{ name: 'm1', type: 'model', model: ChildModel },
+							{ name: 'm2', type: 'model', model: ChildModel }
 						],
 						
-						proxy : thisSuite.proxy
+						proxy : parentModelProxy
 					} );
-					
-					thisSuite.collection1 = JsMockito.mock( Collection );
-					JsMockito.when( thisSuite.collection1 ).getModels().thenReturn( [] );
-					
-					thisSuite.collection2 = JsMockito.mock( Collection );
-					JsMockito.when( thisSuite.collection2 ).getModels().thenReturn( [] );
 				} );
 				
 				
-				it( "save() should synchronize any nested 'related' (as opposed to 'embedded') collections before synchronizing itself", function() {
-					var collection1SyncCallCount = 0,
-					    collection2SyncCallCount = 0,
-					    collection1SyncDoneCount = 0,
-					    collection2SyncDoneCount = 0;
+				// Helper methods
+				
+				function createCollection( collectionName ) {
+					var collection = collections[ collectionName ] = new Collection();
 					
-					JsMockito.when( thisSuite.collection1 ).sync().then( function() {
-						collection1SyncCallCount++;
-						
-						var deferred = new jQuery.Deferred();
-						deferred.done( function() { collection1SyncDoneCount++; } );
-						setTimeout( function() { deferred.resolve(); }, 50 );
-						
-						return deferred.promise();
-					} );
-					JsMockito.when( thisSuite.collection2 ).sync().then( function() {
-						collection2SyncCallCount++;
-						
-						var deferred = new jQuery.Deferred();
-						deferred.done( function() { collection2SyncDoneCount++; } );
-						setTimeout( function() { deferred.resolve(); }, 50 );
-						
+					spyOn( collection, 'getModels' ).andCallFake( function() { return []; } );
+					spyOn( collection, 'sync' ).andCallFake( function() {
+						var deferred = deferreds[ collectionName + 'Sync' ] = new jQuery.Deferred();
 						return deferred.promise();
 					} );
 					
-					JsMockito.when( thisSuite.proxy ).create().then( function( operation ) {
-						var deferred = new jQuery.Deferred();
-						setTimeout( function() { deferred.resolve( operation ); }, 25 );
+					return collection;
+				}
+				
+				function createModel( modelName ) {
+					var model = models[ modelName ] = new ChildModel();
+					
+					spyOn( model, 'save' ).andCallFake( function() {
+						var deferred = deferreds[ modelName + 'Save' ] = new jQuery.Deferred();
 						return deferred.promise();
 					} );
 					
+					return model;
+				}
+				
+				
+				it( "should synchronize any nested 'related' (as opposed to 'embedded') models and collections before synchronizing itself", function() {
+					var collection1 = createCollection( 'collection1' ),
+					    model1 = createModel( 'model1' );
 					
-					var model = new thisSuite.Model( {
+					var parentModel = new ParentModel( {
 						attr : "attrValue",
-						c1   : thisSuite.collection1,
-						c2   : thisSuite.collection2
+						c1   : collection1,
+						m1   : model1
 					} );
 					
-					var successCount = 0,   // 3 vars for callbacks
-					    errorCount = 0,
-					    completeCount = 0,
-					    doneCount = 0,      // 3 vars for returned Promise object
+					var doneCount = 0,      // 3 vars for returned Promise object
 					    failCount = 0,
 					    alwaysCount = 0;
 					    
-					var savePromise = model.save( {
-						success : function() { successCount++; },
-						error : function() { errorCount++; },
-						complete : function() { completeCount++; }
-					} );
-					savePromise
+					var savePromise = parentModel.save()
 						.done( function() { doneCount++; } )
 						.fail( function() { failCount++; } )
 						.always( function() { alwaysCount++; } );
 					
-					expect( collection1SyncCallCount ).toBe( 1 );  // orig YUI Test err msg: "sync() should have been called on collection1"
-					expect( collection2SyncCallCount ).toBe( 1 );  // orig YUI Test err msg: "sync() should have been called on collection2"
-					expect( collection1SyncDoneCount ).toBe( 0 );  // orig YUI Test err msg: "collection1's sync should not yet be done"
-					expect( collection2SyncDoneCount ).toBe( 0 );  // orig YUI Test err msg: "collection2's sync should not yet be done"
-					expect( successCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any success calls yet"
-					expect( errorCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any error calls yet"
-					expect( completeCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any complete calls yet"
-					expect( doneCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any done calls yet"
-					expect( failCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any fail calls yet"
-					expect( alwaysCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any always calls yet"
-										
-					jasmine.Clock.tick( 50 );  // "wait" for the nested collections' sync() to complete
-					expect( collection1SyncDoneCount ).toBe( 1 );  // orig YUI Test err msg: "collection1's sync should now be done"
-					expect( collection2SyncDoneCount ).toBe( 1 );  // orig YUI Test err msg: "collection2's sync should now be done"
-					expect( successCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any success calls yet (2)"
-					expect( errorCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any error calls yet (2)"
-					expect( completeCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any complete calls yet (2)"
-					expect( doneCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any done calls yet (2)"
-					expect( failCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any fail calls yet (2)"
-					expect( alwaysCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any always calls yet (2)"
+					// Initial state after parent model save() call
+					expect( collection1.sync.calls.length ).toBe( 1 );
+					expect( model1.save.calls.length ).toBe( 1 );
+					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 0 );
 					
-					jasmine.Clock.tick( 25 );  // "wait" for the model's own save() to complete
-					expect( successCount ).toBe( 1 );  // orig YUI Test err msg: "`complete` callback should have been called"
-					expect( errorCount ).toBe( 0 );  // orig YUI Test err msg: "`error` callback should NOT have been called"
-					expect( completeCount ).toBe( 1 );  // orig YUI Test err msg: "`complete` callback should have been called"
-					expect( doneCount ).toBe( 1 );  // orig YUI Test err msg: "`done` callback should have been called"
-					expect( failCount ).toBe( 0 );  // orig YUI Test err msg: "`fail` callback should NOT have been called"
-					expect( alwaysCount ).toBe( 1 );  // orig YUI Test err msg: "`always` callback should have been called"
+					
+					// State after all related data components (models and collections) have completed saving/sync'ing.
+					// Still waiting for the parent model itself to save.
+					deferreds[ 'collection1Sync' ].resolve();
+					deferreds[ 'model1Save' ].resolve();
+					
+					expect( collection1.sync.calls.length ).toBe( 1 );
+					expect( model1.save.calls.length ).toBe( 1 );
+					expect( parentModelProxy.create.calls.length ).toBe( 1 );  // parent model proxy should now have been called, since the children have sync'd
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 0 );
+					
+					
+					// State after parent model has saved
+					var operation = new WriteOperation();
+					operation.setResultSet( new ResultSet() );
+					deferreds[ 'parentModelProxy' ].resolve( operation );
+					
+					expect( doneCount ).toBe( 1 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 1 );
 				} );
 				
 				
-				it( "save() should call the 'error' and 'fail' callbacks if a collection fails to synchronize", function() {
-					var collection1SyncCallCount = 0,
-					    collection2SyncCallCount = 0,
-					    collection1SyncDoneCount = 0,
-					    collection2SyncFailCount = 0;
+				it( "should *not* synchronize any nested 'related' (as opposed to 'embedded') models and collections if the `syncRelated` option is passed as `false`", function() {
+					var collection1 = createCollection( 'collection1' ),
+					    model1 = createModel( 'model1' );
 					
-					JsMockito.when( thisSuite.collection1 ).sync().then( function() {
-						collection1SyncCallCount++;
-						
-						var deferred = new jQuery.Deferred();
-						deferred.done( function() { collection1SyncDoneCount++; } );
-						setTimeout( function() { deferred.resolve(); }, 50 );
-						
-						return deferred.promise();
-					} );
-					JsMockito.when( thisSuite.collection2 ).sync().then( function() {
-						collection2SyncCallCount++;
-						
-						var deferred = new jQuery.Deferred();
-						deferred.fail( function() { collection2SyncFailCount++; } );
-						setTimeout( function() { deferred.reject(); }, 50 );
-						
-						return deferred.promise();
-					} );
-					
-					JsMockito.when( thisSuite.proxy ).create().then( function( operation ) {
-						var deferred = new jQuery.Deferred();
-						setTimeout( function() { deferred.resolve( operation ); }, 25 );
-						return deferred.promise();
-					} );
-					
-					
-					var model = new thisSuite.Model( {
+					var parentModel = new ParentModel( {
 						attr : "attrValue",
-						c1   : thisSuite.collection1,
-						c2   : thisSuite.collection2
+						c1   : collection1,
+						m1   : model1
 					} );
 					
-					var successCount = 0,   // 3 vars for callbacks
-					    errorCount = 0,
-					    completeCount = 0,
-					    doneCount = 0,      // 3 vars for returned Promise object
+					var doneCount = 0,      // 3 vars for returned Promise object
 					    failCount = 0,
 					    alwaysCount = 0;
 					    
-					var savePromise = model.save( {
-						success : function() { successCount++; },
-						error : function() { errorCount++; },
-						complete : function() { completeCount++; }
-					} );
-					savePromise
+					var savePromise = parentModel.save( { syncRelated: false } )  // don't sync related models/collections
 						.done( function() { doneCount++; } )
 						.fail( function() { failCount++; } )
 						.always( function() { alwaysCount++; } );
 					
-					expect( collection1SyncCallCount ).toBe( 1 );  // orig YUI Test err msg: "sync() should have been called on collection1"
-					expect( collection2SyncCallCount ).toBe( 1 );  // orig YUI Test err msg: "sync() should have been called on collection2"
-					expect( collection1SyncDoneCount ).toBe( 0 );  // orig YUI Test err msg: "collection1's sync should not yet be done"
-					expect( collection2SyncFailCount ).toBe( 0 );  // orig YUI Test err msg: "collection2's sync should not yet be failed"
-					expect( successCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any success calls yet"
-					expect( errorCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any error calls yet"
-					expect( completeCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any complete calls yet"
-					expect( doneCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any done calls yet"
-					expect( failCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any fail calls yet"
-					expect( alwaysCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any always calls yet"
+					// Initial state after parent model save() call
+					expect( collection1.sync ).not.toHaveBeenCalled();
+					expect( model1.save ).not.toHaveBeenCalled();
+					expect( parentModelProxy.create.calls.length ).toBe( 1 );  // parent model proxy should have been immediately called, since the children don't need to be sync'd
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 0 );
 					
-					jasmine.Clock.tick( 50 );  // "wait" for collections' sync() to complete
-					expect( collection1SyncDoneCount ).toBe( 1 );  // orig YUI Test err msg: "collection1's sync should now be done"
-					expect( collection2SyncFailCount ).toBe( 1 );  // orig YUI Test err msg: "collection2's sync should now be failed"
+					// State after parent model has saved
+					var operation = new WriteOperation();
+					operation.setResultSet( new ResultSet() );
+					deferreds[ 'parentModelProxy' ].resolve( operation );
 					
-					expect( successCount ).toBe( 0 );  // orig YUI Test err msg: "`complete` callback NOT should have been called"
-					expect( errorCount ).toBe( 1 );  // orig YUI Test err msg: "`error` callback should have been called"
-					expect( completeCount ).toBe( 1 );  // orig YUI Test err msg: "`complete` callback should have been called"
-					expect( doneCount ).toBe( 0 );  // orig YUI Test err msg: "`done` callback should NOT have been called"
-					expect( failCount ).toBe( 1 );  // orig YUI Test err msg: "`fail` callback should have been called"
-					expect( alwaysCount ).toBe( 1 );  // orig YUI Test err msg: "`always` callback should have been called"
+					expect( collection1.sync ).not.toHaveBeenCalled();  // make sure it still havent' been called
+					expect( model1.save ).not.toHaveBeenCalled();       // make sure it still havent' been called
+					expect( doneCount ).toBe( 1 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 1 );
 				} );
 				
 				
-				it( "save() should call the 'error' and 'fail' callbacks if collections synchronize, but the model itself fails to save", function() {
-					var collection1SyncCallCount = 0,
-					    collection2SyncCallCount = 0,
-					    collection1SyncDoneCount = 0,
-					    collection2SyncDoneCount = 0;
+				it( "should call the 'error' and 'fail' callbacks if a nested related collection fails to synchronize", function() {
+					var collection1 = createCollection( 'collection1' ),  // this one will succeed
+					    collection2 = createCollection( 'collection2' ),  // this one will error
+					    model1 = createModel( 'model1' );
 					
-					JsMockito.when( thisSuite.collection1 ).sync().then( function() {
-						collection1SyncCallCount++;
-						
-						var deferred = new jQuery.Deferred();
-						deferred.done( function() { collection1SyncDoneCount++; } );
-						setTimeout( function() { deferred.resolve(); }, 50 );
-						
-						return deferred.promise();
-					} );
-					JsMockito.when( thisSuite.collection2 ).sync().then( function() {
-						collection2SyncCallCount++;
-						
-						var deferred = new jQuery.Deferred();
-						deferred.done( function() { collection2SyncDoneCount++; } );
-						setTimeout( function() { deferred.resolve(); }, 50 );
-						
-						return deferred.promise();
-					} );
-					
-					JsMockito.when( thisSuite.proxy ).create().then( function( model, options ) {
-						var deferred = new jQuery.Deferred();
-						setTimeout( function() { deferred.reject(); }, 25 );
-						return deferred.promise();
-					} );
-					
-					
-					var model = new thisSuite.Model( {
+					var parentModel = new ParentModel( {
 						attr : "attrValue",
-						c1   : thisSuite.collection1,
-						c2   : thisSuite.collection2
+						c1   : collection1,
+						c2   : collection2,
+						m1   : model1
 					} );
 					
-					var successCount = 0,   // 3 vars for callbacks
-					    errorCount = 0,
-					    completeCount = 0,
-					    doneCount = 0,      // 3 vars for returned Promise object
+					var doneCount = 0,      // 3 vars for returned Promise object
 					    failCount = 0,
 					    alwaysCount = 0;
-					
-					var savePromise = model.save( {
-						success : function() { successCount++; },
-						error : function() { errorCount++; },
-						complete : function() { completeCount++; }
-					} );
-					savePromise
+					    
+					var savePromise = parentModel.save()
 						.done( function() { doneCount++; } )
 						.fail( function() { failCount++; } )
 						.always( function() { alwaysCount++; } );
 					
-					expect( collection1SyncCallCount ).toBe( 1 );  // orig YUI Test err msg: "sync() should have been called on collection1"
-					expect( collection2SyncCallCount ).toBe( 1 );  // orig YUI Test err msg: "sync() should have been called on collection2"
-					expect( collection1SyncDoneCount ).toBe( 0 );  // orig YUI Test err msg: "collection1's sync should not yet be done"
-					expect( collection2SyncDoneCount ).toBe( 0 );  // orig YUI Test err msg: "collection2's sync should not yet be done"
-					expect( successCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any success calls yet"
-					expect( errorCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any error calls yet"
-					expect( completeCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any complete calls yet"
-					expect( doneCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any done calls yet"
-					expect( failCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any fail calls yet"
-					expect( alwaysCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any always calls yet"
+					// Initial state after parent model save() call
+					expect( collection1.sync.calls.length ).toBe( 1 );
+					expect( model1.save.calls.length ).toBe( 1 );
+					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 0 );
 					
-					jasmine.Clock.tick( 50 );  // "wait" for the collections' sync() to complete
-					expect( collection1SyncDoneCount ).toBe( 1 );  // orig YUI Test err msg: "collection1's sync should now be done"
-					expect( collection2SyncDoneCount ).toBe( 1 );  // orig YUI Test err msg: "collection2's sync should now be done"
-					expect( successCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any success calls yet (2)"
-					expect( errorCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any error calls yet (2)"
-					expect( completeCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any complete calls yet (2)"
-					expect( doneCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any done calls yet (2)"
-					expect( failCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any fail calls yet (2)"
-					expect( alwaysCount ).toBe( 0 );  // orig YUI Test err msg: "Shouldn't have any always calls yet (2)"
-						
-					jasmine.Clock.tick( 25 );  // "wait" for the model's save() to complete
-					expect( successCount ).toBe( 0 );  // orig YUI Test err msg: "`complete` callback NOT should have been called"
-					expect( errorCount ).toBe( 1 );  // orig YUI Test err msg: "`error` callback should have been called"
-					expect( completeCount ).toBe( 1 );  // orig YUI Test err msg: "`complete` callback should have been called"
-					expect( doneCount ).toBe( 0 );  // orig YUI Test err msg: "`done` callback should NOT have been called"
-					expect( failCount ).toBe( 1 );  // orig YUI Test err msg: "`fail` callback should have been called"
-					expect( alwaysCount ).toBe( 1 );  // orig YUI Test err msg: "`always` callback should have been called"
+					
+					// State after a related collection has failed to save
+					deferreds[ 'collection1Sync' ].resolve();
+					deferreds[ 'collection2Sync' ].reject();  // this one fails
+					deferreds[ 'model1Save' ].resolve();
+					
+					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // still shouldn't have called the parent model's proxy, since the children failed to sync
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 1 );
+					expect( alwaysCount ).toBe( 1 );
+				} );
+				
+				
+				it( "should call the 'error' and 'fail' callbacks if a nested related model fails to synchronize", function() {
+					var collection1 = createCollection( 'collection1' ),
+					    model1 = createModel( 'model1' ),  // this one will succeed
+					    model2 = createModel( 'model2' );  // this one will fail
+					
+					var parentModel = new ParentModel( {
+						attr : "attrValue",
+						c1   : collection1,
+						m1   : model1,
+						m2   : model2
+					} );
+					
+					var doneCount = 0,      // 3 vars for returned Promise object
+					    failCount = 0,
+					    alwaysCount = 0;
+					    
+					var savePromise = parentModel.save()
+						.done( function() { doneCount++; } )
+						.fail( function() { failCount++; } )
+						.always( function() { alwaysCount++; } );
+					
+					// Initial state after parent model save() call
+					expect( collection1.sync.calls.length ).toBe( 1 );
+					expect( model1.save.calls.length ).toBe( 1 );
+					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 0 );
+					
+					
+					// State after the related model has failed to save
+					deferreds[ 'collection1Sync' ].resolve();
+					deferreds[ 'model1Save' ].resolve();
+					deferreds[ 'model2Save' ].reject();  // this one fails
+					
+					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // still shouldn't have called the parent model's proxy, since the children failed to sync
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 1 );
+					expect( alwaysCount ).toBe( 1 );
+				} );
+				
+				
+				it( "should call the 'error' and 'fail' callbacks if nested related models/collections synchronize, but the parent model itself fails to save", function() {
+					var collection1 = createCollection( 'collection1' ),
+					    model1 = createModel( 'model1' );
+					
+					var parentModel = new ParentModel( {
+						attr : "attrValue",
+						c1   : collection1,
+						m1   : model1
+					} );
+					
+					var doneCount = 0,      // 3 vars for returned Promise object
+					    failCount = 0,
+					    alwaysCount = 0;
+					    
+					var savePromise = parentModel.save()
+						.done( function() { doneCount++; } )
+						.fail( function() { failCount++; } )
+						.always( function() { alwaysCount++; } );
+					
+					// Initial state after parent model save() call
+					expect( collection1.sync.calls.length ).toBe( 1 );
+					expect( model1.save.calls.length ).toBe( 1 );
+					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 0 );
+					
+					
+					// State after all related data components (models and collections) have completed saving/sync'ing.
+					// Still waiting for the parent model itself to save.
+					deferreds[ 'collection1Sync' ].resolve();
+					deferreds[ 'model1Save' ].resolve();
+					
+					expect( parentModelProxy.create.calls.length ).toBe( 1 );  // should have called the parent model's proxy now, since the children have been sync'd
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 0 );
+					expect( alwaysCount ).toBe( 0 );
+					
+					
+					// State after parent model itself has failed to save
+					var operation = new WriteOperation();
+					deferreds[ 'parentModelProxy' ].reject( operation );
+					
+					expect( doneCount ).toBe( 0 );
+					expect( failCount ).toBe( 1 );
+					expect( alwaysCount ).toBe( 1 );
 				} );
 				
 			} );
@@ -2872,325 +2835,367 @@ define( [
 		} );
 		
 		
-		describe( "Test destroy()", function() {
+		describe( 'destroy()', function() {
+			var proxy,
+			    TestModel,
+			    destroyOperation,
+			    proxyDeferred;
 			
-			describe( "General destroy() tests", function() {
-				var thisSuite;
+			beforeEach( function() {
+				proxy = new ConcreteProxy();
 				
-				beforeEach( function() {
-					thisSuite = {};
+				// Reset between each test
+				destroyOperation = undefined;
+				proxyDeferred = undefined;
+				
+				spyOn( proxy, 'destroy' ).andCallFake( function( operation ) {
+					destroyOperation = operation;
+					proxyDeferred = new jQuery.Deferred();
 					
-					thisSuite.proxy = JsMockito.mock( Proxy.extend( {
-						// Implementation of abstract interface
-						create: Data.emptyFn,
-						read: Data.emptyFn,
-						update: Data.emptyFn,
-						destroy: Data.emptyFn
-					} ) );
-					
-					thisSuite.Model = Model.extend( {
-						attributes : [ 'id', 'name' ],
-						proxy : thisSuite.proxy
-					} );
+					return proxyDeferred.promise();
 				} );
 				
-				
-				it( "destroy() should throw an error if there is no configured proxy when it tries to destroy a model that has been persisted (i.e. has an id)", function() {
-					expect( function() {
-						var MyModel = Model.extend( {
-							attributes : [ 'id', 'attribute1', 'attribute2' ]
-							// note: no proxy
-						} );
-						
-						var model = new MyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
-						model.destroy();
-						expect( true ).toBe( false );  // orig YUI Test err msg: "destroy() should have thrown an error with no configured proxy"
-					} ).toThrow( "data.Model::destroy() error: Cannot destroy model on server. No proxy." );
+				TestModel = Model.extend( {
+					attributes : [ 'id', 'name' ],
+					proxy : proxy
 				} );
-				
-				
-				it( "destroy() should delegate to its proxy's destroy() method to persist the destruction of the model", function() {
-					JsMockito.when( thisSuite.proxy ).destroy().thenReturn( new jQuery.Deferred().promise() );
-					
-					var model = new thisSuite.Model( { id: 1 } );  // the model needs an id to be considered as persisted on the server
-					
-					// Run the destroy() method to delegate 
-					model.destroy();
-					
-					JsMockito.verify( thisSuite.proxy ).destroy();
-				} );
-				
-				
-				it( "destroy() should pass any `params` option provided to the method to proxy's destroy() method, in the Operation object", function() {
-					var operation;
-					JsMockito.when( thisSuite.proxy ).destroy().then( function( op ) {
-						operation = op;
-						return new jQuery.Deferred().promise();
-					} );							
-					
-					// Instantiate and run the reload() method to delegate
-					var model = new thisSuite.Model( { id: 1 } ),  // the model needs an id to be considered as persisted on the server
-					    params = { a: 1 };
-					
-					model.destroy( {
-						params : params
-					} );
-					
-					expect( operation.params ).toBe( params );
-				} );
-				
-				
-				it( "upon successful destruction of the Model, the Model should fire its 'destroy' event", function() {
-					JsMockito.when( thisSuite.proxy ).destroy().thenReturn( new jQuery.Deferred().resolve().promise() );
-												
-					var model = new thisSuite.Model( { id: 1 } );  // the model needs an id to be considered as persisted on the server
-					
-					var destroyEventFired = false;
-					model.addListener( 'destroy', function() {
-						destroyEventFired = true;
-					} );
-					
-					// Run the destroy() method to delegate 
-					model.destroy();
-					expect( destroyEventFired ).toBe( true );  // orig YUI Test err msg: "Should have fired its destroy event"
-				} );
-				
 			} );
 			
 			
-			describe( "destroy() callbacks and returned promise tests", function() {
-				var thisSuite;
-				
-				beforeEach( function() {
-					thisSuite = {};
-					
-					thisSuite.proxy = JsMockito.mock( Proxy.extend( {
-						// Implementation of abstract interface
-						create: Data.emptyFn,
-						read: Data.emptyFn,
-						update: Data.emptyFn,
-						destroy: Data.emptyFn
-					} ) );
-					
-					thisSuite.Model = Model.extend( {
-						attributes : [ 'id', 'name' ],
-						proxy : thisSuite.proxy
-					} );
+			
+			it( "should throw an error if there is no configured proxy", function() {
+				var NoProxyModel = Model.extend( {
+					attributes : [ 'id', 'attribute1', 'attribute2' ]
+					// note: no proxy
 				} );
 				
+				var model = new NoProxyModel( { id: 1 } );
+				expect( function() {
+					model.destroy();
+				} ).toThrow( "data.Model::destroy() error: Cannot destroy model on server. No proxy." );
+			} );
+			
+			
+			it( "should delegate to its proxy's destroy() method to persist the destruction of the model", function() {
+				var model = new TestModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
+				model.destroy();
 				
-				it( "destroy() should call its success/complete callbacks, and reject its deferred with the arguments (model, operation) when successful", function() {
-					JsMockito.when( thisSuite.proxy ).destroy().then( function( operation ) {
-						return new jQuery.Deferred().resolve( operation ).promise();
-					} );
-					
-					var successCallCount = 0,
-					    errorCallCount = 0,
-					    completeCallCount = 0,
-					    doneCallCount = 0,
-					    failCallCount = 0,
-					    alwaysCallCount = 0;
-					
-					// Instantiate and run the destroy() method
-					var modelInstance = new thisSuite.Model( { id: 1 } ); 
-					var promise = modelInstance.destroy( {
-						success : function( model, operation ) {
-							successCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
-						},
-						error : function( model, operation ) {
-							errorCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
-						},
-						complete : function( model, operation ) {
-							completeCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
-						}
+				expect( proxy.destroy ).toHaveBeenCalled();
+			} );
+			
+			
+			it( "should pass any `params` option provided to the method to proxy's destroy() method, in the Operation object", function() {
+				// Instantiate and run the destroy() method to delegate
+				var model = new TestModel( { id: 1 } ),  // the model needs an id to be considered persisted on the server
+				    params = { a: 1 };
+				
+				model.destroy( {
+					params : params
+				} );
+				
+				expect( destroyOperation.params ).toBe( params );
+			} );
+			
+			
+			it( "should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments [model, operation] when successful", function() {
+				var destroybeginEventCount = 0,
+				    destroyEventCount = 0,
+				    successCallCount = 0,
+				    errorCallCount = 0,
+				    completeCallCount = 0,
+				    doneCallCount = 0,
+				    failCallCount = 0,
+				    alwaysCallCount = 0;
+				
+				// Instantiate and run the destroy() method
+				var modelInstance = new TestModel( { id: 1 } );
+				modelInstance.on( {
+					'destroybegin' : function( model, operation ) {
+						destroybeginEventCount++;
+						expect( model ).toBe( modelInstance );
+					},
+					'destroy' : function( model, operation ) {
+						destroyEventCount++;
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof WriteOperation ).toBe( true );
+					}
+				} );
+				expect( modelInstance.isDestroying() ).toBe( false );  // initial condition
+				
+				var promise = modelInstance.destroy( {
+					success : function( model, operation ) {
+						successCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
+					},
+					error : function( model, operation ) {
+						errorCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
+					},
+					complete : function( model, operation ) {
+						completeCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
+					}
+				} )
+					.done( function( model, operation ) {
+						doneCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
 					} )
-						.done( function( model, operation ) {
-							doneCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
-						} )
-						.fail( function( model, operation ) {
-							failCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
-						} )
-						.always( function( model, operation ) {
-							alwaysCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
-						} );
-					
-					// Make sure the appropriate callbacks executed
-					expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
-					expect( errorCallCount ).toBe( 0 );  // orig YUI Test err msg: "errorCallCount"
-					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-					expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "doneCallCount"
-					expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "failCallCount"
-					expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				} );
-				
-				
-				it( "destroy() should call its error/complete callbacks, and reject its deferred with the arguments (model, operation) if an error occurs", function() {
-					JsMockito.when( thisSuite.proxy ).destroy().then( function( operation ) {
-						return new jQuery.Deferred().reject( operation ).promise();
-					} );
-					
-					var MyModel = Model.extend( {
-						attributes : [ 'id', 'name' ],
-						proxy : thisSuite.proxy
-					} );
-					
-					var successCallCount = 0,
-					    errorCallCount = 0,
-					    completeCallCount = 0,
-					    doneCallCount = 0,
-					    failCallCount = 0,
-					    alwaysCallCount = 0;
-					
-					// Instantiate and run the destroy() method
-					var modelInstance = new thisSuite.Model( { id: 1 } ); 
-					var promise = modelInstance.destroy( {
-						success : function( model, operation ) {
-							successCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
-						},
-						error : function( model, operation ) {
-							errorCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
-						},
-						complete : function( model, operation ) {
-							completeCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
-						}
+					.fail( function( model, operation ) {
+						failCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
 					} )
-						.done( function( model, operation ) {
-							doneCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
-						} )
-						.fail( function( model, operation ) {
-							failCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
-						} )
-						.always( function( model, operation ) {
-							alwaysCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-							expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
-						} );
-					
-					// Make sure the appropriate callbacks executed
-					expect( successCallCount ).toBe( 0 );  // orig YUI Test err msg: "successCallCount"
-					expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "errorCallCount"
-					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-					expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "doneCallCount"
-					expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "failCallCount"
-					expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
+					.always( function( model, operation ) {
+						alwaysCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
+					} );
+				
+				// First check that `destroybegin` was fired, but not `destroy` yet. Also that the model is destroying.
+				expect( destroybeginEventCount ).toBe( 1 );
+				expect( destroyEventCount ).toBe( 0 );
+				expect( modelInstance.isDestroying() ).toBe( true );
+				expect( modelInstance.isDestroyed() ).toBe( false );  // initial condition - not done destroying yet
+				
+				// Now resolve the deferred
+				proxyDeferred.resolve( destroyOperation );
+				
+				// Make sure the appropriate callbacks executed, and that the Model is no longer considered "destroying"
+				expect( modelInstance.isDestroying() ).toBe( false );
+				expect( modelInstance.isDestroyed() ).toBe( true );
+				expect( destroybeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
+				expect( destroyEventCount ).toBe( 1 );
+				expect( successCallCount ).toBe( 1 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 1 );
+				expect( failCallCount ).toBe( 0 );
+				expect( alwaysCallCount ).toBe( 1 );
+			} );
+			
+			
+			it( "should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments [model, operation] if an error occurs", function() {
+				var destroybeginEventCount = 0,
+				    destroyEventCount = 0,
+				    successCallCount = 0,
+				    errorCallCount = 0,
+				    completeCallCount = 0,
+				    doneCallCount = 0,
+				    failCallCount = 0,
+				    alwaysCallCount = 0;
+				
+				// Instantiate and run the destroy() method
+				var modelInstance = new TestModel( { id: 1 } );
+				modelInstance.on( {
+					'destroybegin' : function( model, operation ) {
+						destroybeginEventCount++;
+						expect( model ).toBe( modelInstance );
+					},
+					'destroy' : function( model, operation ) {
+						destroyEventCount++;
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof WriteOperation ).toBe( true );
+					}
 				} );
 				
+				var promise = modelInstance.destroy( {
+					success : function( model, operation ) {
+						successCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in success cb"
+					},
+					error : function( model, operation ) {
+						errorCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in error cb"
+					},
+					complete : function( model, operation ) {
+						completeCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in complete cb"
+					}
+				} )
+					.done( function( model, operation ) {
+						doneCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in done cb"
+					} )
+					.fail( function( model, operation ) {
+						failCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in fail cb"
+					} )
+					.always( function( model, operation ) {
+						alwaysCallCount++;
+						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
+						expect( operation instanceof WriteOperation ).toBe( true );  // orig YUI Test err msg: "WriteOperation should have been arg 2 in always cb"
+					} );
 				
-				it( "destroy() should call its 'success' and 'complete' callbacks if the proxy is successful", function() {
-					var successCallCount = 0,
-					    completeCallCount = 0;
-					
-					JsMockito.when( thisSuite.proxy ).destroy().thenReturn( new jQuery.Deferred().resolve().promise() );
-					
-					var MyModel = Model.extend( {
-						attributes : [ 'id' ],
-						proxy  : thisSuite.proxy
-					} );
-					var model = new MyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
-					
-					model.destroy( {
-						success  : function() { successCallCount++; },
-						complete : function() { completeCallCount++; },
-						scope    : this
-					} );
-					
-					expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "The 'success' function should have been called exactly once"
-					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "The 'complete' function should have been called exactly once"
+				// First check that `destroybegin` was fired, but not `destroy` yet. Also that the model is destroying.
+				expect( destroybeginEventCount ).toBe( 1 );
+				expect( destroyEventCount ).toBe( 0 );
+				expect( modelInstance.isDestroying() ).toBe( true );
+				expect( modelInstance.isDestroyed() ).toBe( false );  // initial condition - not done destroying yet
+				
+				// Now reject the deferred
+				proxyDeferred.reject( destroyOperation );
+				
+				// Make sure the appropriate callbacks executed, and that the Model is no longer considered "destroying"
+				expect( modelInstance.isDestroying() ).toBe( false );
+				expect( modelInstance.isDestroyed() ).toBe( false );   // failed to destroy
+				expect( destroybeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
+				expect( destroyEventCount ).toBe( 1 );
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+			} );
+			
+		} );
+		
+		
+		
+		// ---------------------------------------
+		
+		// Utility methods
+		
+		describe( 'getDataComponentAttributes()', function() {
+			
+			it( "should return an array of the attributes which are to hold data.DataComponent values", function() {
+				var TestModel = Model.extend( {
+					attributes : [
+						{ name: 'stringAttr', type: 'string' },
+						{ name: 'modelAttr', type: 'model' },
+						{ name: 'collectionAttr', type: 'collection' }
+					]
 				} );
 				
+				var model = new TestModel(),
+				    dataComponentAttrs = model.getDataComponentAttributes();
 				
-				it( "destroy() should call its 'error' and 'complete' callbacks if the proxy encounters an error", function() {
-					var errorCallCount = 0,
-					    completeCallCount = 0;
-					
-					JsMockito.when( thisSuite.proxy ).destroy().thenReturn( new jQuery.Deferred().reject().promise() );
-					
-					var MyModel = Model.extend( {
-						attributes : [ 'id' ],
-						proxy  : thisSuite.proxy
-					} );
-					var model = new MyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
-					
-					model.destroy( {
-						error    : function() { errorCallCount++; },
-						complete : function() { completeCallCount++; },
-						scope    : this
-					} );
-					
-					expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "The 'error' function should have been called exactly once"
-					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "The 'complete' function should have been called exactly once"
+				expect( dataComponentAttrs.length ).toBe( 2 );
+				expect( dataComponentAttrs[ 0 ].getName() ).toBe( 'modelAttr' );
+				expect( dataComponentAttrs[ 1 ].getName() ).toBe( 'collectionAttr' );
+			} );
+			
+		} );
+		
+		
+		describe( 'getEmbeddedDataComponentAttributes()', function() {
+			
+			it( "should return an array of the attributes which are to hold data.DataComponent values, and are 'embedded'", function() {
+				var TestModel = Model.extend( {
+					attributes : [
+						{ name: 'stringAttr', type: 'string' },
+						{ name: 'modelAttr', type: 'model' },
+						{ name: 'collectionAttr', type: 'collection' },
+						{ name: 'embeddedModelAttr', type: 'model', embedded: true },
+						{ name: 'embeddedCollectionAttr', type: 'collection', embedded: true }
+					]
 				} );
 				
+				var model = new TestModel(),
+				    embeddedDataComponentAttrs = model.getEmbeddedDataComponentAttributes();
 				
-				it( "destroy() should return a jQuery.Promise object, which has its `done` and `always` callbacks executed upon successful completion", function() {
-					var doneCallCount = 0,
-					    failCallCount = 0,
-					    alwaysCallCount = 0;
-					
-					JsMockito.when( thisSuite.proxy ).destroy().thenReturn( new jQuery.Deferred().resolve().promise() );
-					
-					var MyModel = Model.extend( {
-						attributes : [ 'id' ],
-						proxy  : thisSuite.proxy
-					} );
-					var model = new MyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
-					
-					var promise = model.destroy()
-						.done( function()   { doneCallCount++; } )
-						.fail( function()   { failCallCount++; } )
-						.always( function() { alwaysCallCount++; } );
-					
-					expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "The 'done' function should have been called exactly once"
-					expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "The 'fail' function should have not been called"
-					expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "The 'always' function should have been called exactly once"
+				expect( embeddedDataComponentAttrs.length ).toBe( 2 );
+				expect( embeddedDataComponentAttrs[ 0 ].getName() ).toBe( 'embeddedModelAttr' );
+				expect( embeddedDataComponentAttrs[ 1 ].getName() ).toBe( 'embeddedCollectionAttr' );
+			} );
+			
+		} );
+		
+		
+		describe( 'getCollectionAttributes()', function() {
+			
+			it( "should return an array of attributes which are to hold data.Collection values", function() {
+				var TestModel = Model.extend( {
+					attributes : [
+						{ name: 'stringAttr', type: 'string' },
+						{ name: 'modelAttr', type: 'model' },
+						{ name: 'collectionAttr', type: 'collection' }
+					]
 				} );
 				
+				var model = new TestModel(),
+				    collectionAttrs = model.getCollectionAttributes();
 				
-				it( "destroy() should return a jQuery.Promise object, which has its `fail` and `always` callbacks executed upon an error while persisting", function() {
-					var doneCallCount = 0,
-					    failCallCount = 0,
-					    alwaysCallCount = 0;
-					
-					JsMockito.when( thisSuite.proxy ).destroy().thenReturn( new jQuery.Deferred().reject().promise() );
-					
-					var MyModel = Model.extend( {
-						attributes : [ 'id' ],
-						proxy  : thisSuite.proxy
-					} );
-					var model = new MyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
-					
-					var promise = model.destroy()
-						.done( function()   { doneCallCount++; } )
-						.fail( function()   { failCallCount++; } )
-						.always( function() { alwaysCallCount++; } );
-					
-					expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "The 'done' function should not have been called"
-					expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "The 'fail' function should have been called exactly once"
-					expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "The 'always' function should have been called exactly once"
+				expect( collectionAttrs.length ).toBe( 1 );
+				expect( collectionAttrs[ 0 ].getName() ).toBe( 'collectionAttr' );
+			} );
+			
+		} );
+		
+		
+		describe( 'getRelatedCollectionAttributes()', function() {
+			
+			it( "should return an array of attributes which are to hold data.Collection values, that are 'related' (i.e. not 'embedded')", function() {
+				var TestModel = Model.extend( {
+					attributes : [
+						{ name: 'stringAttr', type: 'string' },
+						{ name: 'modelAttr', type: 'model' },
+						{ name: 'relatedCollectionAttr1', type: 'collection' },
+						{ name: 'relatedCollectionAttr2', type: 'collection' },
+						{ name: 'embeddedCollectionAttr', type: 'collection', embedded: true }
+					]
 				} );
 				
+				var model = new TestModel(),
+				    relatedCollectionAttrs = model.getRelatedCollectionAttributes();
+				
+				expect( relatedCollectionAttrs.length ).toBe( 2 );
+				expect( relatedCollectionAttrs[ 0 ].getName() ).toBe( 'relatedCollectionAttr1' );
+				expect( relatedCollectionAttrs[ 1 ].getName() ).toBe( 'relatedCollectionAttr2' );
+			} );
+			
+		} );
+		
+		
+		describe( 'getModelAttributes()', function() {
+			
+			it( "should return an array of attributes which are to hold data.Model values", function() {
+				var TestModel = Model.extend( {
+					attributes : [
+						{ name: 'stringAttr', type: 'string' },
+						{ name: 'modelAttr', type: 'model' },
+						{ name: 'collectionAttr', type: 'collection' }
+					]
+				} );
+				
+				var model = new TestModel(),
+				    modelAttrs = model.getModelAttributes();
+				
+				expect( modelAttrs.length ).toBe( 1 );
+				expect( modelAttrs[ 0 ].getName() ).toBe( 'modelAttr' );
+			} );
+			
+		} );
+		
+		
+		describe( 'getRelatedModelAttributes()', function() {
+			
+			it( "should return an array of attributes which are to hold data.Model values, that are 'related' (i.e. not 'embedded')", function() {
+				var TestModel = Model.extend( {
+					attributes : [
+						{ name: 'stringAttr', type: 'string' },
+						{ name: 'collectionAttr', type: 'collection' },
+						{ name: 'relatedModelAttr1', type: 'model' },
+						{ name: 'relatedModelAttr2', type: 'model' },
+						{ name: 'embeddedModelAttr', type: 'model', embedded: true }
+					]
+				} );
+				
+				var model = new TestModel(),
+				    relatedModelAttrs = model.getRelatedModelAttributes();
+				
+				expect( relatedModelAttrs.length ).toBe( 2 );
+				expect( relatedModelAttrs[ 0 ].getName() ).toBe( 'relatedModelAttr1' );
+				expect( relatedModelAttrs[ 1 ].getName() ).toBe( 'relatedModelAttr2' );
 			} );
 			
 		} );

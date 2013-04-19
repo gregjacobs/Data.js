@@ -1,11 +1,23 @@
 /*global define, window, _, describe, beforeEach, afterEach, it, expect, JsMockito */
 define( [
 	'jquery',
+	'data/Data',
 	'data/Collection',
-	'data/Model'
-], function( jQuery, Collection, Model ) {
+	'data/Model',
+	'data/persistence/proxy/Proxy'
+], function( jQuery, Data, Collection, Model, Proxy ) {
 
-	describe( "integration.Collection with Models", function() {
+	describe( "Integration: Collection with Models", function() {
+		
+		// A concrete Proxy class for tests to use.
+		var ConcreteProxy = Proxy.extend( {
+			// Implementation of abstract interface
+			create: Data.emptyFn,
+			read: Data.emptyFn,
+			update: Data.emptyFn,
+			destroy: Data.emptyFn
+		} );
+		
 		
 		describe( "Test Model Events", function() {
 			
@@ -267,7 +279,8 @@ define( [
 				var removeEventCount = 0;
 				
 				var MyModel = Model.extend( {
-					attributes : [ 'attr' ]
+					attributes : [ 'attr' ],
+					proxy : new ConcreteProxy()
 				} );
 				
 				var MyCollection = Collection.extend( {

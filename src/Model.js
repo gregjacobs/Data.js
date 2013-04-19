@@ -16,6 +16,7 @@ define( [
 	'data/attribute/Attribute',
 	'data/attribute/DataComponent',
 	'data/attribute/Collection',
+	'data/attribute/Model',
 	
 	// All attribute types included so developers don't have to specify these when they declare attributes in their models.
 	// These are not included in the arguments list though, as they are not needed specifically by the Model implementation.
@@ -46,7 +47,8 @@ define( [
 	
 	Attribute,
 	DataComponentAttribute,
-	CollectionAttribute
+	CollectionAttribute,
+	ModelAttribute
 ) {
 	
 	/**
@@ -151,7 +153,7 @@ define( [
 		 * @cfg {data.persistence.proxy.Proxy} proxy
 		 * 
 		 * The persistence proxy to use (if any) to load or persist the Model's data to/from persistent
-		 * storage. If this is not specified, the Model may not {@link #reload load} or {@link #save} its data.
+		 * storage. If this is not specified, the Model may not {@link #method-load} or {@link #method-save} its data.
 		 * 
 		 * Note that this may be specified as part of a Model subclass (so that all instances of the Model inherit
 		 * the proxy), or on a particular model instance using {@link #setProxy}.
@@ -270,9 +272,33 @@ define( [
 		
 		/**
 		 * @protected
+		 * @property {Boolean} loading
+		 * 
+		 * Flag that is set to `true` while the Model is loading.
+		 */
+		loading : false,
+		
+		/**
+		 * @protected
+		 * @property {Boolean} saving
+		 * 
+		 * Flag that is set to `true` while the Model is saving.
+		 */
+		saving : false,
+		
+		/**
+		 * @protected
+		 * @property {Boolean} destroying
+		 * 
+		 * Flag that is set to `true` while the Model is destroying.
+		 */
+		destroying : false,
+		
+		/**
+		 * @protected
 		 * @property {Boolean} destroyed
 		 * 
-		 * Flag that is set to true once the Model is successfully destroyed.
+		 * Flag that is set to true once the Model has been successfully destroyed.
 		 */
 		destroyed : false,
 		
@@ -361,7 +387,7 @@ define( [
 				
 				/**
 				 * Fires when the data in the model is {@link #method-commit committed}. This happens if the
-				 * {@link #method-commit commit} method is called, and after a successful {@link #save}.
+				 * {@link #method-commit commit} method is called, and after a successful {@link #method-save}.
 				 * 
 				 * @event commit
 				 * @param {data.Model} model This Model instance.
@@ -378,10 +404,67 @@ define( [
 				'rollback',
 				
 				/**
-				 * Fires when the Model has been destroyed (via {@link #method-destroy}).
+				 * Fires when the Model begins a {@link #method-load} request, through its {@link #proxy}. The 
+				 * {@link #event-load} event will fire when the load is complete.
+				 * 
+				 * @event loadbegin
+				 * @param {data.Model} This Model instance.
+				 */
+				'loadbegin',
+				
+				/**
+				 * Fires when the Model is {@link #method-load loaded} from its external data store (such as a web server), 
+				 * through its {@link #proxy}.
+				 * 
+				 * This event fires for both successful and failed "load" requests. Success of the load request may 
+				 * be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful} 
+				 * method.
+				 * 
+				 * @event load
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Read} operation The ReadOperation object for the load request.
+				 */
+				'load',
+				
+				/**
+				 * Fires when the Model begins a {@link #method-save} request, through its {@link #proxy}. The 
+				 * {@link #event-save} event will fire when the save is complete.
+				 * 
+				 * @event savebegin
+				 * @param {data.Model} This Model instance.
+				 */
+				'savebegin',
+				
+				/**
+				 * Fires when the Model is {@link #method-save saved} to its external data store (such as a web server),
+				 * through its {@link #proxy}.
+				 * 
+				 * This event fires for both successful and failed "save" requests. Success of the save request may 
+				 * be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful} 
+				 * method.
+				 * 
+				 * @event save
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Write} operation The WriteOperation object for the save request.
+				 */
+				'save',
+				
+				/**
+				 * Fires when the Model begins a {@link #method-destroy} request, through its {@link #proxy}. The 
+				 * {@link #event-destroy} event will fire when the destroy is complete.
+				 * 
+				 * @event destroybegin
+				 * @param {data.Model} This Model instance.
+				 */
+				'destroybegin',
+				
+				/**
+				 * Fires when the Model has been {@link #method-destroy destroyed} on its external data store (such as a 
+				 * web server), through its {@link #proxy}.
 				 * 
 				 * @event destroy
 				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Write} operation The WriteOperation object for the destroy request.
 				 */
 				'destroy'
 			);
@@ -1006,7 +1089,49 @@ define( [
 		
 		
 		/**
-		 * Reloads the Model data from the server (discarding any changed data), using the configured {@link #proxy}.
+		 * Determines if the Model is currently {@link #loading}, via its {@link #proxy}.
+		 * 
+		 * @return {Boolean} `true` if the Model is currently loading a set of data, `false` otherwise.
+		 */
+		isLoading : function() {
+			return this.loading;
+		},
+		
+		
+		/**
+		 * Determines if the Model is currently {@link #method-save saving} its data, via its {@link #proxy}
+		 * 
+		 * @return {Boolean} `true` if the Model is currently saving its set of data, `false` otherwise.
+		 */
+		isSaving : function() {
+			return this.saving;
+		},
+		
+		
+		/**
+		 * Determines if the Model is currently {@link #method-destroy destroying} itself, via its {@link #proxy}.
+		 * 
+		 * @return {Boolean} `true` if the Model is currently saving its set of data, `false` otherwise.
+		 */
+		isDestroying : function() {
+			return this.destroying;
+		},
+		
+		
+		/**
+		 * Determines if the Model has been {@link #method-destroy destroyed}.
+		 * 
+		 * @return {Boolean} `true` if the Model has been destroyed, `false` otherwise.
+		 */
+		isDestroyed : function() {
+			return this.destroyed;
+		},
+		
+		
+		/**
+		 * (Re)Loads the Model's attributes from its persistent storage (such as a web server), using the configured 
+		 * {@link #proxy}. Any changed data will be discarded. The Model must have a value for its {@link #idAttribute}
+		 * for this method to succeed.
 		 * 
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
@@ -1024,7 +1149,7 @@ define( [
 		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the reload completes. The Promise is both 
 		 *   resolved or rejected with the arguments listed above in the method description.
 		 */
-		reload : function( options ) {
+		load : function( options ) {
 			options = options || {};
 			var emptyFn    = Data.emptyFn,
 			    scope      = options.scope    || options.context || this,
@@ -1035,30 +1160,73 @@ define( [
 			
 			// <debug>
 			if( !this.proxy ) {
-				throw new Error( "data.Model::reload() error: Cannot load. No proxy configured." );
+				throw new Error( "data.Model::load() error: Cannot load. No proxy configured." );
 			}
 			if( this.isNew() ) {
-				throw new Error( "data.Model::reload() error: Cannot load. Model does not have an idAttribute that relates to a valid attribute, or does not yet have a valid id (i.e. an id that is not null)." );
+				throw new Error( "data.Model::load() error: Cannot load. Model does not have an idAttribute that relates to a valid attribute, or does not yet have a valid id (i.e. an id that is not null)." );
 			}
 			// </debug>
 			
 			// Attach any user-provided callbacks to the deferred.
-			// This model is always provided as the first argument to the callbacks, and the ReadOperation
-			// object will be provided as the second.
 			deferred
 				.done( _.bind( successCb, scope ) )
 				.fail( _.bind( errorCb, scope ) )
 				.always( _.bind( completeCb, scope ) );
 			
+			// Set the `loading` flag while the Model is loading. Will be set to false in onLoadSuccess or onLoadError
+			this.loading = true;
+			this.fireEvent( 'loadbegin', this );
+			
 			// Make a request to load the data from the proxy
 			var me = this,  // for closures
 			    operation = new ReadOperation( { modelId: this.getId(), params: options.params } );
 			this.proxy.read( operation ).then(
-				function( operation ) { me.set( operation.getResultSet().getRecords()[ 0 ] ); me.commit(); deferred.resolve( me, operation ); },
-				function( operation ) { deferred.reject( me, operation ); }
+				function( operation ) { me.onLoadSuccess( deferred, operation ); },
+				function( operation ) { me.onLoadError( deferred, operation ); }
 			);
 			
 			return deferred.promise();
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} successfully loading a set of data as a result of the {@link #method-load}
+		 * method being called.
+		 * 
+		 * Resolves the `jQuery.Deferred` object created by {@link #method-load}.
+		 * 
+		 * @protected
+		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-load} method. This 
+		 *   Deferred will be resolved after post-processing of the successful load is complete.
+		 * @param {data.persistence.operation.Read} operation The ReadOperation object which represents the load.
+		 */
+		onLoadSuccess : function( deferred, operation ) {
+			this.set( operation.getResultSet().getRecords()[ 0 ] );
+			this.loading = false;
+			
+			this.commit();
+			
+			deferred.resolve( this, operation ); 
+			this.fireEvent( 'load', this, operation );
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} failing to load a set of data as a result of the {@link #method-load} method 
+		 * being called.
+		 * 
+		 * Rejects the `jQuery.Deferred` object created by {@link #method-load}.
+		 * 
+		 * @protected
+		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-load} method. This 
+		 *   Deferred will be rejected after any post-processing.
+		 * @param {data.persistence.operation.Read} operation The ReadOperation object which represents the load.
+		 */
+		onLoadError : function( deferred, operation ) {
+			this.loading = false;
+			
+			deferred.reject( this, operation );
+			this.fireEvent( 'load', this, operation );
 		},
 		
 		
@@ -1072,6 +1240,14 @@ define( [
 		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Boolean} [options.syncRelated=true] `true` to synchronize (persist) the "related" child models/collections 
+		 *   of this Model (if it has any). Related models/collections must be stored under {@link data.attribute.Model Model}
+		 *   or {@link data.attribute.Collection} Attributes for this to work. The models/collections that would be synchronized
+		 *   would be the child models/{@link data.Collection collections} that are not {@link data.attribute.DataComponent#embedded embedded}
+		 *   in the Model. 
+		 *   
+		 *   Set to `false` to only save the data in this Model, leaving any related child models/collections to be persisted 
+		 *   individually, at another time.
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
 		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
 		 * @param {Function} [options.success] Function to call if the save is successful.
@@ -1085,6 +1261,7 @@ define( [
 		save : function( options ) {
 			options = options || {};
 			var me          = this,  // for closures
+			    syncRelated = ( options.syncRelated === undefined ) ? true : options.syncRelated,  // defaults to true
 			    emptyFn     = Data.emptyFn,
 			    scope       = options.scope    || options.context || this,
 			    successCb   = options.success  || emptyFn,
@@ -1102,12 +1279,21 @@ define( [
 			}
 			// </debug>
 			
-			// First, synchronize any nested related (i.e. non-embedded) Collections of the model.
+			// Set the `saving` flag while the Model is saving. Will be set to false in onSaveSuccess or onSaveError
+			this.saving = true;
+			this.fireEvent( 'savebegin', this );
+			
+			// First, synchronize any nested related (i.e. non-embedded) Models and Collections of the model.
 			// Chain the synchronization of collections to the synchronization of this Model itself to create
-			// the `modelSavePromise`.
-			var modelSavePromise = this.syncRelatedCollections().then( function() { 
-				return me.doSave( options ); 
-		    } );
+			// the `modelSavePromise` (if the `syncRelated` option is true)
+			var modelSavePromise;
+			if( syncRelated ) {
+				modelSavePromise = jQuery.when( this.syncRelatedCollections(), this.syncRelatedModels() ).then( function() { 
+					return me.doSave( options ); 
+			    } );
+			} else {  // not synchronizing related collections/models
+				modelSavePromise = this.doSave( options );
+			}
 			
 			// Set up any callbacks provided in the options
 			modelSavePromise
@@ -1132,6 +1318,7 @@ define( [
 		syncRelatedCollections : function() {
 			var collectionSyncPromises = [],
 			    relatedCollectionAttributes = this.getRelatedCollectionAttributes();
+			
 			for( var i = 0, len = relatedCollectionAttributes.length; i < len; i++ ) {
 				var collection = this.get( relatedCollectionAttributes[ i ].getName() );
 				if( collection ) {  // make sure there is actually a Collection (i.e. it's not null)
@@ -1145,15 +1332,41 @@ define( [
 		
 		
 		/**
-		 * Private method that performs the actual save (persistence) of this Model. This method is called from {@link #save} at the appropriate
-		 * time. It is delayed from being called if the Model first has to persist non-{@link data.attribute.DataComponent#embedded embedded}) 
-		 * child collections.
+		 * Private utility method which is used to save all of the nested related (i.e. not 'embedded') 
+		 * models for this Model. Returns a Promise object which is resolved when all models have been 
+		 * successfully saved.
 		 * 
 		 * @private
-		 * @param {Object} options The `options` object provided to the {@link #save} method.
-		 * @return {jQuery.Promise} The observable Promise object which can be used to determine if the save call has completed
-		 *   successfully (`done` callback) or errored (`fail` callback), and to perform any actions that need to be taken in either
-		 *   case with the `always` callback.
+		 * @return {jQuery.Promise} A Promise object which is resolved when all related models have been successfully
+		 *   saved. If any of the requests to save a model should fail, the Promise will be rejected.
+		 *   If there are no nested related models, the promise is resolved immediately.
+		 */
+		syncRelatedModels : function() {
+			var modelSavePromises = [],
+			    relatedModelAttributes = this.getRelatedModelAttributes();
+			
+			for( var i = 0, len = relatedModelAttributes.length; i < len; i++ ) {
+				var model = this.get( relatedModelAttributes[ i ].getName() );
+				if( model ) {  // make sure there is actually a Model (i.e. it's not null)
+					modelSavePromises.push( model.save() );
+				}
+			}
+			
+			// create and return single Promise object out of all the Model save promises
+			return jQuery.when.apply( null, modelSavePromises );
+		},
+		
+		
+		/**
+		 * Private method that performs the actual save (persistence) of this Model. This method is called from 
+		 * {@link #method-save} at the appropriate time. It is delayed from being called if the Model first has to 
+		 * persist non-{@link data.attribute.DataComponent#embedded embedded}) child collections.
+		 * 
+		 * @private
+		 * @param {Object} options The `options` object provided to the {@link #method-save} method.
+		 * @return {jQuery.Promise} The observable Promise object which can be used to determine if the save call has 
+		 *   completed successfully (`done` callback) or errored (`fail` callback), and to perform any actions that need to 
+		 *   be taken in either case with the `always` callback.
 		 */
 		doSave : function( options ) {
 			var me = this,   // for closures
@@ -1191,11 +1404,49 @@ define( [
 				params : options.params
 			} );
 			this.proxy[ this.isNew() ? 'create' : 'update' ]( writeOperation ).then(
-				function( operation ) { handleServerUpdate( operation.getResultSet() ); deferred.resolve( me, writeOperation ); },
-				function( operation ) { deferred.reject( me, writeOperation ); }
+				function( operation ) { handleServerUpdate( operation.getResultSet() ); me.onSaveSuccess( deferred, operation ); },
+				function( operation ) { me.onSaveError( deferred, operation ); }
 			);
 			
 			return deferred.promise();  // return only the observable Promise object of the Deferred
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} successfully saving the Model as a result of the {@link #method-save}
+		 * method being called.
+		 * 
+		 * Resolves the `jQuery.Deferred` object created by {@link #method-save}.
+		 * 
+		 * @protected
+		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-save} method. This 
+		 *   Deferred will be resolved after post-processing of the successful save is complete.
+		 * @param {data.persistence.operation.Write} operation The WriteOperation object which represents the save.
+		 */
+		onSaveSuccess : function( deferred, operation ) {
+			this.saving = false;
+			
+			deferred.resolve( this, operation ); 
+			this.fireEvent( 'save', this, operation );
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} failing to destroy the Model a result of the {@link #method-destroy} method 
+		 * being called.
+		 * 
+		 * Rejects the `jQuery.Deferred` object created by {@link #method-save}.
+		 * 
+		 * @protected
+		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-save} method. This 
+		 *   Deferred will be rejected after post-processing of the successful save is complete.
+		 * @param {data.persistence.operation.Write} operation The WriteOperation object which represents the save.
+		 */
+		onSaveError : function( deferred, operation ) {
+			this.saving = false;
+			
+			deferred.reject( this, operation );
+			this.fireEvent( 'save', this, operation );
 		},
 		
 		
@@ -1222,55 +1473,93 @@ define( [
 		destroy : function( options ) {
 			options = options || {};
 			var me          = this,   // for closures
-			    deferred    = new jQuery.Deferred(),
 			    emptyFn     = Data.emptyFn,
 			    scope       = options.scope    || options.context || this,
 			    successCb   = options.success  || emptyFn,
 			    errorCb     = options.error    || emptyFn,
-			    completeCb  = options.complete || emptyFn;
+			    completeCb  = options.complete || emptyFn,
+			    deferred    = new jQuery.Deferred();
+			
+			// No proxy, cannot destroy. Throw an error
+			// <debug>
+			if( !this.proxy ) {
+				throw new Error( "data.Model::destroy() error: Cannot destroy model on server. No proxy." );
+			}
+			// </debug>
+			
+			// Attach any user-provided callbacks to the deferred.
+			deferred
+				.done( _.bind( successCb, scope ) )
+				.fail( _.bind( errorCb, scope ) )
+				.always( _.bind( completeCb, scope ) );
+			
+			// Set the `destroying` flag while the Model is destroying. Will be set to false in onDestroySuccess 
+			// or onDestroyError
+			this.destroying = true;
+			this.fireEvent( 'destroybegin', this );
 			
 			var operation = new WriteOperation( {
 				models : [ this ],
 				params : options.params
 			} );
 			
-			deferred.done( function() {
-				me.destroyed = true;
-				me.fireEvent( 'destroy', me );
-			} );
-			
-			
 			if( this.isNew() ) {
-				// If it is a new model, there is nothing on the server to destroy. Simply fire the event and call the callback
-				operation.setSuccess();
-				deferred.resolve( this, operation );
+				// If it is a new model, there is nothing on the server to destroy. Simply fire the event and call the callback.
+				operation.setSuccess();  // would normally be set by the proxy if we were making a request to it
+				this.onDestroySuccess( deferred, operation );
 				
 			} else {
-				// No proxy, cannot destroy. Throw an error
-				// <debug>
-				if( !this.proxy ) {
-					throw new Error( "data.Model::destroy() error: Cannot destroy model on server. No proxy." );
-				}
-				// </debug>
-				
 				// Make a request to destroy the data on the server
 				this.proxy.destroy( operation ).then(
-					function( operation ) { deferred.resolve( me, operation ); },
-					function( operation ) { deferred.reject( me, operation ); }
+					function( operation ) { me.onDestroySuccess( deferred, operation ); },
+					function( operation ) { me.onDestroyError( deferred, operation ); }
 				);
 			}
-			
-			// Set up any callbacks provided in the options
-			deferred
-				.done( _.bind( successCb, scope ) )
-				.fail( _.bind( errorCb, scope ) )
-				.always( _.bind( completeCb, scope ) );
 			
 			return deferred.promise();  // return just the observable Promise object of the Deferred
 		},
 		
 		
-		// --------------------------
+		/**
+		 * Handles the {@link #proxy} successfully destroying the Model as a result of the {@link #method-destroy}
+		 * method being called.
+		 * 
+		 * Resolves the `jQuery.Deferred` object created by {@link #method-destroy}.
+		 * 
+		 * @protected
+		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
+		 *   Deferred will be resolved after post-processing of the successful destroy is complete.
+		 * @param {data.persistence.operation.Write} operation The WriteOperation object which represents the destroy.
+		 */
+		onDestroySuccess : function( deferred, operation ) {
+			this.destroying = false;
+			this.destroyed = true;
+			
+			deferred.resolve( this, operation ); 
+			this.fireEvent( 'destroy', this, operation );
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} failing to destroy the Model a result of the {@link #method-destroy} method 
+		 * being called.
+		 * 
+		 * Rejects the `jQuery.Deferred` object created by {@link #method-destroy}.
+		 * 
+		 * @protected
+		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
+		 *   Deferred will be rejected after post-processing of the successful destroy is complete.
+		 * @param {data.persistence.operation.Write} operation The WriteOperation object which represents the destroy.
+		 */
+		onDestroyError : function( deferred, operation ) {
+			this.destroying = false;
+			
+			deferred.reject( this, operation );
+			this.fireEvent( 'destroy', this, operation );
+		},
+		
+		
+		// ------------------------------------
 		
 		// Protected utility methods
 		
@@ -1282,16 +1571,7 @@ define( [
 		 * @return {data.attribute.DataComponent[]}
 		 */
 		getDataComponentAttributes : function() {
-			var attributes = this.attributes,
-			    attribute,
-			    dataComponentAttributes = [];
-			
-			for( var attrName in attributes ) {
-				if( attributes.hasOwnProperty( attrName ) && ( attribute = attributes[ attrName ] ) instanceof DataComponentAttribute ) {
-					dataComponentAttributes.push( attribute );
-				}
-			}
-			return dataComponentAttributes;
+			return _.filter( this.attributes, function( attr ) { return ( attr instanceof DataComponentAttribute ); } );
 		},
 		
 		
@@ -1304,18 +1584,7 @@ define( [
 		 * @return {data.attribute.DataComponent[]} The array of embedded DataComponent Attributes.
 		 */
 		getEmbeddedDataComponentAttributes : function() {
-			var dataComponentAttributes = this.getDataComponentAttributes(),
-			    dataComponentAttribute,
-			    embeddedAttributes = [];
-			
-			for( var i = 0, len = dataComponentAttributes.length; i < len; i++ ) {
-				dataComponentAttribute = dataComponentAttributes[ i ];
-				
-				if( dataComponentAttribute.isEmbedded() ) {
-					embeddedAttributes.push( dataComponentAttribute );
-				}
-			}
-			return embeddedAttributes;
+			return _.filter( this.getDataComponentAttributes(), function( attr ) { return attr.isEmbedded(); } );
 		},
 		
 		
@@ -1326,18 +1595,7 @@ define( [
 		 * @return {data.attribute.Collection[]}
 		 */
 		getCollectionAttributes : function() {
-			var dataComponentAttributes = this.getDataComponentAttributes(),
-			    dataComponentAttribute,
-			    collectionAttributes = [];
-			
-			for( var i = 0, len = dataComponentAttributes.length; i < len; i++ ) {
-				dataComponentAttribute = dataComponentAttributes[ i ];
-				
-				if( dataComponentAttribute instanceof CollectionAttribute ) {
-					collectionAttributes.push( dataComponentAttribute );
-				}
-			}
-			return collectionAttributes;
+			return _.filter( this.attributes, function( attr ) { return attr instanceof CollectionAttribute; } );
 		},
 		
 		
@@ -1349,15 +1607,30 @@ define( [
 		 * @return {data.attribute.Collection[]} 
 		 */
 		getRelatedCollectionAttributes : function() {
-			var collectionAttributes = this.getCollectionAttributes(),
-			    relatedCollectionAttributes = [];
-			
-			for( var i = 0, len = collectionAttributes.length; i < len; i++ ) {
-				if( !collectionAttributes[ i ].isEmbedded() ) {
-					relatedCollectionAttributes.push( collectionAttributes[ i ] );
-				}
-			}
-			return relatedCollectionAttributes;
+			return _.filter( this.getCollectionAttributes(), function( attr ) { return !attr.isEmbedded(); } );
+		},
+		
+		
+		/**
+		 * Retrieves an array of the Attributes configured for this model that are {@link data.attribute.Model Model Attributes}.
+		 * 
+		 * @protected
+		 * @return {data.attribute.Model[]}
+		 */
+		getModelAttributes : function() {
+			return _.filter( this.attributes, function( attr ) { return attr instanceof ModelAttribute; } );
+		},
+		
+		
+		/**
+		 * Retrieves an array of the Attributes configured for this model that are {@link data.attribute.Collection Collection Attributes},
+		 * but are *not* {@link data.attribute.Collection#embedded embedded} attributes (i.e. they are "related" attributes).
+		 * 
+		 * @protected
+		 * @return {data.attribute.Collection[]} 
+		 */
+		getRelatedModelAttributes : function() {
+			return _.filter( this.getModelAttributes(), function( attr ) { return !attr.isEmbedded(); } );
 		}
 		
 	} );
