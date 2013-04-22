@@ -2413,6 +2413,396 @@ define('data/attribute/Model', [
 	
 } );
 /*global define */
+define('data/attribute/Primitive', [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute'
+], function( _, Class, Attribute ) {
+	
+	/**
+	 * @abstract
+	 * @class data.attribute.Primitive
+	 * @extends data.attribute.Attribute
+	 * 
+	 * Base Attribute definition class for an Attribute that holds a JavaScript primitive value 
+	 * (i.e. A Boolean, Number, or String).
+	 */
+	var PrimitiveAttribute = Class.extend( Attribute, {
+		
+		abstractClass: true,
+		
+		/**
+		 * @cfg {Boolean} useNull
+		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
+		 * Attribute is "unset", and it shouldn't take an actual default value).
+		 * 
+		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
+		 * cannot be "easily" parsed into a valid representation of its primitive type, `null` will be used 
+		 * instead of converting to the primitive type's default.
+		 */
+		useNull : false
+		
+	} );
+	
+	return PrimitiveAttribute;
+	
+} );
+/*global define */
+define('data/attribute/Boolean', [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute',
+	'data/attribute/Primitive'
+], function( _, Class, Attribute, PrimitiveAttribute ) {
+	
+	/**
+	 * @class data.attribute.Boolean
+	 * @extends data.attribute.Primitive
+	 * 
+	 * Attribute definition class for an Attribute that takes a boolean (i.e. true/false) data value.
+	 */
+	var BooleanAttribute = Class.extend( PrimitiveAttribute, {
+		
+		/**
+		 * @cfg {Mixed/Function} defaultValue
+		 * @inheritdoc
+		 * 
+		 * The Boolean Attribute defaults to `false`, unless the {@link #useNull} config is set to `true`, 
+		 * in which case it defaults to `null` (to denote the Attribute being "unset").
+		 */
+		defaultValue: function( attribute ) {
+			return attribute.useNull ? null : false;
+		},
+		
+		
+		/**
+		 * @cfg {Boolean} useNull
+		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
+		 * Attribute is "unset", and it shouldn't take an actual default value).
+		 * 
+		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
+		 * cannot be "easily" parsed into a Boolean (i.e. if it's undefined, null, or an empty string), 
+		 * `null` will be used instead of converting to `false`.
+		 */
+		
+		
+		/**
+		 * Converts the provided data value into a Boolean. If {@link #useNull} is true, "unparsable" values
+		 * will return null. 
+		 * 
+		 * @method beforeSet
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
+		 *   but is provided in case any model processing is needed.
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
+		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
+		 * @return {Boolean} The converted value.
+		 */
+		beforeSet : function( model, newValue, oldValue ) {
+			if( this.useNull && ( newValue === undefined || newValue === null || newValue === '' ) ) {
+				return null;
+			}
+			return newValue === true || newValue === 'true' || newValue === 1 || newValue === "1";
+		}
+		
+	} );
+	
+	
+	// Register the Attribute type
+	Attribute.registerType( 'boolean', BooleanAttribute );
+	Attribute.registerType( 'bool', BooleanAttribute );
+	
+	return BooleanAttribute;
+	
+} );
+/*global define */
+define('data/attribute/Date', [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute',
+	'data/attribute/Object'
+], function( _, Class, Attribute, ObjectAttribute ) {
+	
+	/**
+	 * @class data.attribute.Date
+	 * @extends data.attribute.Object
+	 * 
+	 * Attribute definition class for an Attribute that takes a JavaScript Date object.
+	 */
+	var DateAttribute = Class.extend( ObjectAttribute, {
+			
+		/**
+		 * Converts the provided data value into a Date object. If the value provided is not a Date, or cannot be parsed
+		 * into a Date, will return null.
+		 * 
+		 * @method beforeSet
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
+		 *   but is provided in case any model processing is needed.
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
+		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
+		 * @return {Boolean} The converted value.
+		 */
+		beforeSet : function( model, newValue, oldValue ) {
+			if( _.isDate( newValue ) ) {
+				return newValue;
+			}
+			if( _.isNumber( newValue ) || ( _.isString( newValue ) && newValue && !isNaN( +newValue ) ) ) {
+				return new Date( +newValue );  // If the date is a number (or a number in a string), assume it's the number of milliseconds since the Unix epoch (1/1/1970)
+			}
+			
+			// All else fails, try to parse the value using Date.parse
+			var parsed = Date.parse( newValue );
+			return ( parsed ) ? new Date( parsed ) : null;
+		}
+	} );
+	
+	
+	// Register the Attribute type
+	Attribute.registerType( 'date', DateAttribute );
+	
+	return DateAttribute;
+	
+} );
+/*global define */
+define('data/attribute/Number', [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute',
+	'data/attribute/Primitive'
+], function( _, Class, Attribute, PrimitiveAttribute ) {
+	
+	/**
+	 * @abstract
+	 * @class data.attribute.Number
+	 * @extends data.attribute.Primitive
+	 * 
+	 * Abstract base class for an Attribute that takes a number data value.
+	 */
+	var NumberAttribute = Class.extend( PrimitiveAttribute, {
+		
+		abstractClass: true,
+		
+		/**
+		 * @cfg {Mixed/Function} defaultValue
+		 * @inheritdoc
+		 * 
+		 * The Number Attribute defaults to 0, unless the {@link #useNull} config is 
+		 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
+		 */
+		defaultValue: function( attribute ) {
+			return attribute.useNull ? null : 0;
+		},
+		
+		
+		/**
+		 * @cfg {Boolean} useNull
+		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
+		 * Attribute is "unset", and it shouldn't take an actual default value).
+		 * 
+		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
+		 * cannot be "easily" parsed into an integer (i.e. if it's undefined, null, or empty string), `null` will be used 
+		 * instead of converting to 0.
+		 */
+		
+		
+		/**
+		 * @protected
+		 * @property {RegExp} stripCharsRegex 
+		 * 
+		 * A regular expression for stripping non-numeric characters from a numeric value. Defaults to `/[\$,%]/g`.
+		 * This should be overridden for localization. A way to do this globally is, for example:
+		 * 
+		 *     require( [ 'data/attribute/Number' ], function( NumberAttribute ) {
+		 *         NumberAttribute.prototype.stripCharsRegex = /newRegexHere/g;
+		 *     } );
+		 */
+		stripCharsRegex : /[\$,%]/g
+		
+	} );
+	
+	return NumberAttribute;
+	
+} );
+/*global define */
+define('data/attribute/Float', [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute',
+	'data/attribute/Number'
+], function( _, Class, Attribute, NumberAttribute ) {
+	
+	/**
+	 * @class data.attribute.Float
+	 * @extends data.attribute.Number
+	 * 
+	 * Attribute definition class for an Attribute that takes a float (i.e. decimal, or "real") number data value.
+	 */
+	var FloatAttribute = Class.extend( NumberAttribute, {
+		
+		/**
+		 * Converts the provided data value into a float. If {@link #useNull} is true, undefined/null/empty string 
+		 * values will return null, or else will otherwise be converted to 0. If the number is simply not parsable, will 
+		 * return NaN.
+		 * 
+		 * @method beforeSet
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
+		 *   but is provided in case any model processing is needed.
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
+		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
+		 * @return {Boolean} The converted value.
+		 */
+		beforeSet : function( model, newValue, oldValue ) {
+			var defaultValue = ( this.useNull ) ? null : 0;
+			return ( newValue !== undefined && newValue !== null && newValue !== '' ) ? parseFloat( String( newValue ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
+		}
+		
+	} );
+	
+	
+	// Register the Attribute type
+	Attribute.registerType( 'float', FloatAttribute );
+	Attribute.registerType( 'number', FloatAttribute );
+	
+	return FloatAttribute;
+	
+} );
+/*global define */
+define('data/attribute/Integer', [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute',
+	'data/attribute/Number'
+], function( _, Class, Attribute, NumberAttribute ) {
+	
+	/**
+	 * @class data.attribute.Integer
+	 * @extends data.attribute.Number
+	 * 
+	 * Attribute definition class for an Attribute that takes an integer data value. If a decimal
+	 * number is provided (i.e. a "float"), the decimal will be ignored, and only the integer value used.
+	 */
+	var IntegerAttribute = Class.extend( NumberAttribute, {
+		
+		/**
+		 * Converts the provided data value into an integer. If {@link #useNull} is true, undefined/null/empty string 
+		 * values will return null, or else will otherwise be converted to 0. If the number is simply not parsable, will 
+		 * return NaN. 
+		 * 
+		 * This method will strip off any decimal value from a provided number.
+		 * 
+		 * @method beforeSet
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
+		 *   but is provided in case any model processing is needed.
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
+		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
+		 * @return {Boolean} The converted value.
+		 */
+		beforeSet : function( model, newValue, oldValue ) {
+			var defaultValue = ( this.useNull ) ? null : 0;
+			return ( newValue !== undefined && newValue !== null && newValue !== '' ) ? parseInt( String( newValue ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
+		}
+		
+	} );
+	
+	
+	// Register the Attribute type
+	Attribute.registerType( 'int', IntegerAttribute );
+	Attribute.registerType( 'integer', IntegerAttribute );
+	
+	
+	return IntegerAttribute;
+	
+} );
+/*global define */
+define('data/attribute/Mixed', [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute'
+], function( _, Class, Attribute ) {
+	
+	/**
+	 * @class data.attribute.Mixed
+	 * @extends data.attribute.Attribute
+	 * 
+	 * Attribute definition class for an Attribute that takes any data value.
+	 */
+	var MixedAttribute = Class.extend( Attribute, {
+			
+		// No specific implementation at this time. All handled by the base class Attribute.
+		
+	} );
+	
+	
+	// Register the Attribute type
+	Attribute.registerType( 'mixed', MixedAttribute );
+	
+	return MixedAttribute;
+	
+} );
+/*global define */
+define('data/attribute/String', [
+	'lodash',
+	'Class',
+	'data/attribute/Attribute',
+	'data/attribute/Primitive'
+], function( _, Class, Attribute, PrimitiveAttribute ) {
+	
+	/**
+	 * @class data.attribute.String
+	 * @extends data.attribute.Primitive
+	 * 
+	 * Attribute definition class for an Attribute that takes a string data value.
+	 */
+	var StringAttribute = Class.extend( PrimitiveAttribute, {
+		
+		/**
+		 * @cfg {Mixed/Function} defaultValue
+		 * @inheritdoc
+		 * 
+		 * The String Attribute defaults to `""` (empty string), unless the {@link #useNull} config is 
+		 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
+		 */
+		defaultValue: function( attribute ) {
+			return attribute.useNull ? null : "";
+		},
+		
+		
+		/**
+		 * @cfg {Boolean} useNull
+		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
+		 * Attribute is "unset", and it shouldn't take an actual default value).
+		 * 
+		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
+		 * cannot be "easily" parsed into a String (i.e. if it's undefined, or null), `null` will be used 
+		 * instead of converting to an empty string.
+		 */
+		
+		
+		/**
+		 * Converts the provided data value into a Boolean. If {@link #useNull} is true, "unparsable" values
+		 * will return null. 
+		 * 
+		 * @method beforeSet
+		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
+		 *   but is provided in case any model processing is needed.
+		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
+		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
+		 * @return {Boolean} The converted value.
+		 */
+		beforeSet : function( model, newValue, oldValue ) {
+			var defaultValue = ( this.useNull ) ? null : "";
+			return ( newValue === undefined || newValue === null ) ? defaultValue : String( newValue );
+		}
+		
+	} );
+	
+	
+	// Register the Attribute type
+	Attribute.registerType( 'string', StringAttribute );
+	
+	return StringAttribute;
+	
+} );
+/*global define */
 /*jshint forin:true, eqnull:true */
 define('data/Model', [
 	'require',
@@ -2431,6 +2821,19 @@ define('data/Model', [
 	'data/attribute/DataComponent',
 	'data/attribute/Collection',
 	'data/attribute/Model',
+	
+	// All attribute types included so developers don't have to specify these when they declare attributes in their models.
+	// These are not included in the arguments list though, as they are not needed specifically by the Model implementation.
+	'data/attribute/Boolean',
+	'data/attribute/Date',
+	'data/attribute/Float',
+	'data/attribute/Integer',
+	'data/attribute/Mixed',
+	'data/attribute/Model',
+	'data/attribute/Number',
+	'data/attribute/Object',
+	'data/attribute/Primitive',
+	'data/attribute/String',
 
 	'data/NativeObjectConverter' // circular dependency, not included in args list
 ], function( 
@@ -5866,396 +6269,6 @@ define('data/Collection', [
 	} );
 	
 	return Collection;
-	
-} );
-/*global define */
-define('data/attribute/Primitive', [
-	'lodash',
-	'Class',
-	'data/attribute/Attribute'
-], function( _, Class, Attribute ) {
-	
-	/**
-	 * @abstract
-	 * @class data.attribute.Primitive
-	 * @extends data.attribute.Attribute
-	 * 
-	 * Base Attribute definition class for an Attribute that holds a JavaScript primitive value 
-	 * (i.e. A Boolean, Number, or String).
-	 */
-	var PrimitiveAttribute = Class.extend( Attribute, {
-		
-		abstractClass: true,
-		
-		/**
-		 * @cfg {Boolean} useNull
-		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
-		 * Attribute is "unset", and it shouldn't take an actual default value).
-		 * 
-		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
-		 * cannot be "easily" parsed into a valid representation of its primitive type, `null` will be used 
-		 * instead of converting to the primitive type's default.
-		 */
-		useNull : false
-		
-	} );
-	
-	return PrimitiveAttribute;
-	
-} );
-/*global define */
-define('data/attribute/Boolean', [
-	'lodash',
-	'Class',
-	'data/attribute/Attribute',
-	'data/attribute/Primitive'
-], function( _, Class, Attribute, PrimitiveAttribute ) {
-	
-	/**
-	 * @class data.attribute.Boolean
-	 * @extends data.attribute.Primitive
-	 * 
-	 * Attribute definition class for an Attribute that takes a boolean (i.e. true/false) data value.
-	 */
-	var BooleanAttribute = Class.extend( PrimitiveAttribute, {
-		
-		/**
-		 * @cfg {Mixed/Function} defaultValue
-		 * @inheritdoc
-		 * 
-		 * The Boolean Attribute defaults to `false`, unless the {@link #useNull} config is set to `true`, 
-		 * in which case it defaults to `null` (to denote the Attribute being "unset").
-		 */
-		defaultValue: function( attribute ) {
-			return attribute.useNull ? null : false;
-		},
-		
-		
-		/**
-		 * @cfg {Boolean} useNull
-		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
-		 * Attribute is "unset", and it shouldn't take an actual default value).
-		 * 
-		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
-		 * cannot be "easily" parsed into a Boolean (i.e. if it's undefined, null, or an empty string), 
-		 * `null` will be used instead of converting to `false`.
-		 */
-		
-		
-		/**
-		 * Converts the provided data value into a Boolean. If {@link #useNull} is true, "unparsable" values
-		 * will return null. 
-		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
-		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			if( this.useNull && ( newValue === undefined || newValue === null || newValue === '' ) ) {
-				return null;
-			}
-			return newValue === true || newValue === 'true' || newValue === 1 || newValue === "1";
-		}
-		
-	} );
-	
-	
-	// Register the Attribute type
-	Attribute.registerType( 'boolean', BooleanAttribute );
-	Attribute.registerType( 'bool', BooleanAttribute );
-	
-	return BooleanAttribute;
-	
-} );
-/*global define */
-define('data/attribute/Date', [
-	'lodash',
-	'Class',
-	'data/attribute/Attribute',
-	'data/attribute/Object'
-], function( _, Class, Attribute, ObjectAttribute ) {
-	
-	/**
-	 * @class data.attribute.Date
-	 * @extends data.attribute.Object
-	 * 
-	 * Attribute definition class for an Attribute that takes a JavaScript Date object.
-	 */
-	var DateAttribute = Class.extend( ObjectAttribute, {
-			
-		/**
-		 * Converts the provided data value into a Date object. If the value provided is not a Date, or cannot be parsed
-		 * into a Date, will return null.
-		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
-		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			if( _.isDate( newValue ) ) {
-				return newValue;
-			}
-			if( _.isNumber( newValue ) || ( _.isString( newValue ) && newValue && !isNaN( +newValue ) ) ) {
-				return new Date( +newValue );  // If the date is a number (or a number in a string), assume it's the number of milliseconds since the Unix epoch (1/1/1970)
-			}
-			
-			// All else fails, try to parse the value using Date.parse
-			var parsed = Date.parse( newValue );
-			return ( parsed ) ? new Date( parsed ) : null;
-		}
-	} );
-	
-	
-	// Register the Attribute type
-	Attribute.registerType( 'date', DateAttribute );
-	
-	return DateAttribute;
-	
-} );
-/*global define */
-define('data/attribute/Number', [
-	'lodash',
-	'Class',
-	'data/attribute/Attribute',
-	'data/attribute/Primitive'
-], function( _, Class, Attribute, PrimitiveAttribute ) {
-	
-	/**
-	 * @abstract
-	 * @class data.attribute.Number
-	 * @extends data.attribute.Primitive
-	 * 
-	 * Abstract base class for an Attribute that takes a number data value.
-	 */
-	var NumberAttribute = Class.extend( PrimitiveAttribute, {
-		
-		abstractClass: true,
-		
-		/**
-		 * @cfg {Mixed/Function} defaultValue
-		 * @inheritdoc
-		 * 
-		 * The Number Attribute defaults to 0, unless the {@link #useNull} config is 
-		 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
-		 */
-		defaultValue: function( attribute ) {
-			return attribute.useNull ? null : 0;
-		},
-		
-		
-		/**
-		 * @cfg {Boolean} useNull
-		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
-		 * Attribute is "unset", and it shouldn't take an actual default value).
-		 * 
-		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
-		 * cannot be "easily" parsed into an integer (i.e. if it's undefined, null, or empty string), `null` will be used 
-		 * instead of converting to 0.
-		 */
-		
-		
-		/**
-		 * @protected
-		 * @property {RegExp} stripCharsRegex 
-		 * 
-		 * A regular expression for stripping non-numeric characters from a numeric value. Defaults to `/[\$,%]/g`.
-		 * This should be overridden for localization. A way to do this globally is, for example:
-		 * 
-		 *     require( [ 'data/attribute/Number' ], function( NumberAttribute ) {
-		 *         NumberAttribute.prototype.stripCharsRegex = /newRegexHere/g;
-		 *     } );
-		 */
-		stripCharsRegex : /[\$,%]/g
-		
-	} );
-	
-	return NumberAttribute;
-	
-} );
-/*global define */
-define('data/attribute/Float', [
-	'lodash',
-	'Class',
-	'data/attribute/Attribute',
-	'data/attribute/Number'
-], function( _, Class, Attribute, NumberAttribute ) {
-	
-	/**
-	 * @class data.attribute.Float
-	 * @extends data.attribute.Number
-	 * 
-	 * Attribute definition class for an Attribute that takes a float (i.e. decimal, or "real") number data value.
-	 */
-	var FloatAttribute = Class.extend( NumberAttribute, {
-		
-		/**
-		 * Converts the provided data value into a float. If {@link #useNull} is true, undefined/null/empty string 
-		 * values will return null, or else will otherwise be converted to 0. If the number is simply not parsable, will 
-		 * return NaN.
-		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
-		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			var defaultValue = ( this.useNull ) ? null : 0;
-			return ( newValue !== undefined && newValue !== null && newValue !== '' ) ? parseFloat( String( newValue ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
-		}
-		
-	} );
-	
-	
-	// Register the Attribute type
-	Attribute.registerType( 'float', FloatAttribute );
-	Attribute.registerType( 'number', FloatAttribute );
-	
-	return FloatAttribute;
-	
-} );
-/*global define */
-define('data/attribute/Integer', [
-	'lodash',
-	'Class',
-	'data/attribute/Attribute',
-	'data/attribute/Number'
-], function( _, Class, Attribute, NumberAttribute ) {
-	
-	/**
-	 * @class data.attribute.Integer
-	 * @extends data.attribute.Number
-	 * 
-	 * Attribute definition class for an Attribute that takes an integer data value. If a decimal
-	 * number is provided (i.e. a "float"), the decimal will be ignored, and only the integer value used.
-	 */
-	var IntegerAttribute = Class.extend( NumberAttribute, {
-		
-		/**
-		 * Converts the provided data value into an integer. If {@link #useNull} is true, undefined/null/empty string 
-		 * values will return null, or else will otherwise be converted to 0. If the number is simply not parsable, will 
-		 * return NaN. 
-		 * 
-		 * This method will strip off any decimal value from a provided number.
-		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
-		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			var defaultValue = ( this.useNull ) ? null : 0;
-			return ( newValue !== undefined && newValue !== null && newValue !== '' ) ? parseInt( String( newValue ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
-		}
-		
-	} );
-	
-	
-	// Register the Attribute type
-	Attribute.registerType( 'int', IntegerAttribute );
-	Attribute.registerType( 'integer', IntegerAttribute );
-	
-	
-	return IntegerAttribute;
-	
-} );
-/*global define */
-define('data/attribute/Mixed', [
-	'lodash',
-	'Class',
-	'data/attribute/Attribute'
-], function( _, Class, Attribute ) {
-	
-	/**
-	 * @class data.attribute.Mixed
-	 * @extends data.attribute.Attribute
-	 * 
-	 * Attribute definition class for an Attribute that takes any data value.
-	 */
-	var MixedAttribute = Class.extend( Attribute, {
-			
-		// No specific implementation at this time. All handled by the base class Attribute.
-		
-	} );
-	
-	
-	// Register the Attribute type
-	Attribute.registerType( 'mixed', MixedAttribute );
-	
-	return MixedAttribute;
-	
-} );
-/*global define */
-define('data/attribute/String', [
-	'lodash',
-	'Class',
-	'data/attribute/Attribute',
-	'data/attribute/Primitive'
-], function( _, Class, Attribute, PrimitiveAttribute ) {
-	
-	/**
-	 * @class data.attribute.String
-	 * @extends data.attribute.Primitive
-	 * 
-	 * Attribute definition class for an Attribute that takes a string data value.
-	 */
-	var StringAttribute = Class.extend( PrimitiveAttribute, {
-		
-		/**
-		 * @cfg {Mixed/Function} defaultValue
-		 * @inheritdoc
-		 * 
-		 * The String Attribute defaults to `""` (empty string), unless the {@link #useNull} config is 
-		 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
-		 */
-		defaultValue: function( attribute ) {
-			return attribute.useNull ? null : "";
-		},
-		
-		
-		/**
-		 * @cfg {Boolean} useNull
-		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
-		 * Attribute is "unset", and it shouldn't take an actual default value).
-		 * 
-		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
-		 * cannot be "easily" parsed into a String (i.e. if it's undefined, or null), `null` will be used 
-		 * instead of converting to an empty string.
-		 */
-		
-		
-		/**
-		 * Converts the provided data value into a Boolean. If {@link #useNull} is true, "unparsable" values
-		 * will return null. 
-		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
-		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			var defaultValue = ( this.useNull ) ? null : "";
-			return ( newValue === undefined || newValue === null ) ? defaultValue : String( newValue );
-		}
-		
-	} );
-	
-	
-	// Register the Attribute type
-	Attribute.registerType( 'string', StringAttribute );
-	
-	return StringAttribute;
 	
 } );
 /*global define */

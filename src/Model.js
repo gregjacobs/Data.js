@@ -18,8 +18,18 @@ define( [
 	'data/attribute/Collection',
 	'data/attribute/Model',
 	
-	// This attribute type is instantiated automatically for attributes that don't have a `type` property
+	// All attribute types included so developers don't have to specify these when they declare attributes in their models.
+	// These are not included in the arguments list though, as they are not needed specifically by the Model implementation.
+	'data/attribute/Boolean',
+	'data/attribute/Date',
+	'data/attribute/Float',
+	'data/attribute/Integer',
 	'data/attribute/Mixed',
+	'data/attribute/Model',
+	'data/attribute/Number',
+	'data/attribute/Object',
+	'data/attribute/Primitive',
+	'data/attribute/String',
 
 	'data/NativeObjectConverter' // circular dependency, not included in args list
 ], function( 
