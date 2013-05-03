@@ -21,8 +21,8 @@ define( [
 		 * The Boolean Attribute defaults to `false`, unless the {@link #useNull} config is set to `true`, 
 		 * in which case it defaults to `null` (to denote the Attribute being "unset").
 		 */
-		defaultValue: function( attribute ) {
-			return attribute.useNull ? null : false;
+		defaultValue: function() {
+			return this.useNull ? null : false;
 		},
 		
 		

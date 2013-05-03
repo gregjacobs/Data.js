@@ -14,7 +14,6 @@ define( [
 	 * (i.e. A Boolean, Number, or String).
 	 */
 	var PrimitiveAttribute = Class.extend( Attribute, {
-		
 		abstractClass: true,
 		
 		/**

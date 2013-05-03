@@ -144,21 +144,29 @@ define( [
 		 * The default value to set to the Attribute, when the Attribute is given no initial value.
 		 *
 		 * If the `defaultValue` is a function, the function will be executed each time a {@link data.Model Model} is created, and its return 
-		 * value used as the `defaultValue`. This is useful, for example, to assign a new unique number to an attribute of a {@link data.Model Model}. 
+		 * value is used as the `defaultValue`. This is useful, for example, to assign a new unique number to an attribute of a {@link data.Model Model}. 
 		 * Ex:
 		 * 
-		 *     MyModel = Model.extend( {
-		 *         attributes : [
-		 *             {
-		 *                 name: 'uniqueId', 
-		 *                 defaultValue: function( attribute ) {
-		 *                     return _.uniqueId();
+		 *     require( [
+		 *         'lodash',   // assuming Lo-Dash (or alternatively, Underscore.js) is available
+		 *         'data/Model'
+		 *     ], function( _, Model ) {
+		 *     
+		 *         MyModel = Model.extend( {
+		 *             attributes : [
+		 *                 {
+		 *                     name: 'uniqueId', 
+		 *                     defaultValue: function() {
+		 *                         return _.uniqueId();
+		 *                     }
 		 *                 }
-		 *             }
-		 *         ]
+		 *             ]
+		 *         } );
+		 *     
 		 *     } );
 		 * 
-		 * Note that the function is passed the Attribute as its first argument, which may be used to query the Attribute's properties/configs.
+		 * Note that the function is called in the scope of the Attribute, which may be used to read the Attribute's own properties/configs,
+		 * or call its methods.
 		 */
 		
 		/**
@@ -218,31 +226,6 @@ define( [
 		 * - Both a `set` and a {@link #get} function can be used in conjunction.
 		 * - The `set` function is called upon instantiation of the {@link data.Model Model} if the Model is passed an initial value
 		 *   for the Attribute, or if the Attribute has a {@link #defaultValue}.
-		 * 
-		 * 
-		 * When using {@link #type typed} Attributes, providing a `set` function overrides the Attribute's {@link #method-set set} method, which
-		 * does the automatic conversion that the Attribute subclass advertises. If you would like to still use the original {@link #method-set set}
-		 * method in conjunction with pre-processing and/or post-processing the value, you can call the original {@link #method-set set} method as
-		 * such:
-		 * 
-		 *     {
-		 *         // Some integer value attribute, which may need to convert string values (such as "123") to an actual integer 
-		 *         // (done behind the scenes via `parseInt()`)
-		 *         name : 'myValue',
-		 *         type : 'int',
-		 *         
-		 *         set : function( newValue, oldValue ) {
-		 *             // Pre-process the raw newValue here, if desired
-		 *             
-		 *             // Call the original `set` method, which does the conversion to an integer if need be
-		 *             newValue = this._super( arguments );
-		 *             
-		 *             // Post-process the converted newValue here, if desired
-		 *             
-		 *             // And finally, return the value that should be stored for the attribute
-		 *             return newValue;
-		 *         }
-		 *     }
 		 */
 		
 		/**
@@ -344,7 +327,7 @@ define( [
 		
 		
 		/**
-		 * Retrieves the default value for the Attribute. 
+		 * Retrieves the default value for the Attribute.
 		 * 
 		 * @return {Mixed}
 		 */
@@ -352,11 +335,11 @@ define( [
 			var defaultValue = this.defaultValue;
 			
 			if( typeof defaultValue === "function" ) {
-				defaultValue = defaultValue( this );
-			}
-			
-			// If defaultValue is an object, clone it, to not edit the original object structure
-			if( typeof defaultValue === 'object' ) {
+				// If the default value is a factory function, execute it and use its return value
+				defaultValue = defaultValue.call( this );  // call the function in the scope of this Attribute object
+				
+			} else if( _.isPlainObject( defaultValue ) ) {
+				// If defaultValue is an anonymous object, clone it, to not edit the original object structure
 				defaultValue = _.cloneDeep( defaultValue );
 			}
 			

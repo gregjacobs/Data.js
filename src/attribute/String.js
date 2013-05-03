@@ -21,8 +21,8 @@ define( [
 		 * The String Attribute defaults to `""` (empty string), unless the {@link #useNull} config is 
 		 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
 		 */
-		defaultValue: function( attribute ) {
-			return attribute.useNull ? null : "";
+		defaultValue: function() {
+			return this.useNull ? null : "";
 		},
 		
 		
