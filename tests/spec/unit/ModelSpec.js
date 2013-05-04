@@ -51,6 +51,18 @@ define( [
 			destroy: Data.emptyFn
 		} );
 		
+		// A concrete DataComponent for tests to use
+		var ConcreteDataComponent = DataComponent.extend( { 
+			// Implementation of abstract interface
+			getData : Data.emptyFn,
+			isModified : Data.emptyFn,
+			commit : Data.emptyFn,
+			rollback : Data.emptyFn
+		} );
+		
+		// A concrete DataComponentAttribute for Models to be configured with
+		var ConcreteDataComponentAttribute = DataComponentAttribute.extend( {} );
+		
 		
 		describe( "Test the onClassExtended static method", function() {
 			
@@ -198,9 +210,9 @@ define( [
 		} );
 		
 		
-		describe( "Test the getAttributes() static method", function() {
+		describe( 'getAttributes() static method', function() {
 			
-			it( "The getAttributes() static method should retrieve a hashmap of the attributes for the model", function() {
+			it( "should retrieve an Object (map) of the attributes for the model", function() {
 				var SuperclassModel = Model.extend( {
 					attributes : [
 						{ name: 'id', type: 'float' },
@@ -303,26 +315,20 @@ define( [
 			
 			
 			describe( "Test change event upon initialization", function() {
-				var thisSuite;
-				
-				beforeEach( function() {
-					thisSuite = {};
-					
-					thisSuite.TestModel = Class.extend( Model, {
-						attributes: [
-							{ name: 'attribute1' },
-							{ name: 'attribute2', defaultValue: "attribute2's default" },
-							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-							{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-							{ name: 'attribute5', set : function( newValue ) { return newValue + " " + newValue.get( 'attribute2' ); } }
-						]
-					} );
+				var TestModel = Class.extend( Model, {
+					attributes: [
+						{ name: 'attribute1' },
+						{ name: 'attribute2', defaultValue: "attribute2's default" },
+						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
+						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + newValue.get( 'attribute2' ); } }
+					]
 				} );
 				
 				
 				it( "The Model should fire its 'change' event when an attribute's data is set externally", function() {
 					var changeEventFired = false;
-					var model = new thisSuite.TestModel();
+					var model = new TestModel();
 					model.addListener( 'change', function() { changeEventFired = true; } );
 					
 					// Set the value
@@ -334,39 +340,33 @@ define( [
 			
 			
 			describe( "Test that the initial default values are applied", function() {
-				var thisSuite;
-				
-				beforeEach( function() {
-					thisSuite = {};
-					
-					thisSuite.TestModel = Class.extend( Model, {
-						attributes: [
-							{ name: 'attribute1' },
-							{ name: 'attribute2', defaultValue: "attribute2's default" },
-							{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-							{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-							{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
-						]
-					} );
+				var TestModel = Class.extend( Model, {
+					attributes: [
+						{ name: 'attribute1' },
+						{ name: 'attribute2', defaultValue: "attribute2's default" },
+						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
+						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+					]
 				} );
 				
 				
 				it( "A attribute with a defaultValue but no provided data should have its defaultValue when retrieved", function() {
-					var model = new thisSuite.TestModel();  // no data provided
+					var model = new TestModel();  // no data provided
 					
 					expect( model.get( 'attribute2' ) ).toBe( "attribute2's default" );
 				} );
 				
 				
 				it( "A attribute with a defaultValue that is a function, but no provided data should have its defaultValue when retrieved", function() {
-					var model = new thisSuite.TestModel();  // no data provided
+					var model = new TestModel();  // no data provided
 					
 					expect( model.get( 'attribute3' ) ).toBe( "attribute3's default" );  // attribute3 has a defaultValue that is a function
 				} );
 				
 				
 				it( "A attribute with a defaultValue and also provided data should have its provided data when retrieved", function() {
-					var model = new thisSuite.TestModel( {
+					var model = new TestModel( {
 						attribute2 : "attribute2's data"
 					} );
 					
@@ -415,9 +415,9 @@ define( [
 		} );
 		
 		
-		describe( "Test getId()", function() {
+		describe( 'getId()', function() {
 			
-			it( "getId() should throw an error if the default idAttribute 'id' does not exist on the model", function() {
+			it( "should throw an error if the default idAttribute 'id' does not exist on the model", function() {
 				expect( function() {
 					var MyModel = Model.extend( {
 						attributes : [
@@ -435,7 +435,7 @@ define( [
 			} );
 			
 			
-			it( "getId() should throw an error with a custom idAttribute that does not relate to an attribute on the model", function() {
+			it( "should throw an error with a custom `idAttribute` that does not relate to an attribute on the model", function() {
 				expect( function() {
 					var MyModel = Model.extend( {
 						attributes : [
@@ -454,7 +454,7 @@ define( [
 			} );
 			
 			
-			it( "getId() should return the value of the idAttribute", function() {
+			it( "should return the value of the `idAttribute`", function() {
 				var MyModel = Model.extend( {
 					attributes : [ 'myIdAttribute' ],
 					idAttribute: 'myIdAttribute'
@@ -470,9 +470,9 @@ define( [
 		} );
 		
 		
-		describe( "Test getIdAttribute()", function() {
+		describe( 'getIdAttribute()', function() {
 			
-			it( "getIdAttribute() should return the Attribute referenced by the 'idAttribute' config", function() {
+			it( "should return the Attribute referenced by the 'idAttribute' config", function() {
 				var MyModel = Model.extend( {
 					attributes: [ 'id' ],
 					idAttribute: 'id'
@@ -483,7 +483,7 @@ define( [
 			} );
 			
 			
-			it( "getIdAttribute() should return null if there is no attribute referenced by the 'idAttribute' config", function() {
+			it( "should return null if there is no attribute referenced by the 'idAttribute' config", function() {
 				var MyModel = Model.extend( {
 					attributes: [ 'id' ],
 					idAttribute: 'ooglyBoogly'
@@ -496,9 +496,9 @@ define( [
 		} );
 		
 		
-		describe( "Test getIdAttributeName()", function() {
+		describe( 'getIdAttributeName()', function() {
 			
-			it( "getIdAttributeName() should return the value of the 'idAttribute' config", function() {
+			it( "should return the value of the 'idAttribute' config", function() {
 				var MyModel = Model.extend( {
 					attributes: [ 'id' ],
 					idAttribute: 'myBrandyNewIdAttribute'  // doesn't matter if there is no attribute that matches the idAttribute's name (for now...) 
@@ -511,9 +511,9 @@ define( [
 		} );
 		
 		
-		describe( "Test hasIdAttribute()", function() {
+		describe( 'hasIdAttribute()', function() {
 			
-			it( "hasIdAttribute should return false when the idAttribute config does not reference a valid Attribute", function() {
+			it( "should return false when the `idAttribute` config does not reference a valid Attribute", function() {
 				var MyModel = Model.extend( {
 					attributes  : [ 'attr' ],  // note: no "id" attribute
 					idAttribute : 'id'
@@ -524,7 +524,7 @@ define( [
 			} );
 			
 			
-			it( "hasIdAttribute should return truue when the idAttribute config does reference a valid Attribute", function() {
+			it( "should return true when the `idAttribute` config does reference a valid Attribute", function() {
 				var MyModel = Model.extend( {
 					attributes  : [ 'id', 'attr' ],
 					idAttribute : 'id'
@@ -537,21 +537,17 @@ define( [
 		} );
 		
 		
-		describe( "Test set()", function() {
-			var thisSuite;
+		
+		describe( 'set()', function() {
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.TestModel = Class.extend( Model, {
-					attributes: [
-						{ name: 'attribute1' },
-						{ name: 'attribute2', defaultValue: "attribute2's default" },
-						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
-					]
-				} );
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1' },
+					{ name: 'attribute2', defaultValue: "attribute2's default" },
+					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+				]
 			} );
 			
 			
@@ -588,9 +584,9 @@ define( [
 			}
 			
 			
-			it( "set() should throw an error when trying to set an attribute that isn't defined (using the attr and value args)", function() {
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attr and value args)", function() {
 				expect( function() {
-					var model = new thisSuite.TestModel();
+					var model = new TestModel();
 					model.set( 'nonExistentAttr', 1 );
 					
 					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error"
@@ -598,9 +594,9 @@ define( [
 			} );
 			
 			
-			it( "set() should throw an error when trying to set an attribute that isn't defined (using the attr as an object literal arg)", function() {
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attr as an object literal arg)", function() {
 				expect( function() {
-					var model = new thisSuite.TestModel();
+					var model = new TestModel();
 					model.set( { 'nonExistentAttr': 1 } );
 					
 					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error"
@@ -608,24 +604,24 @@ define( [
 			} );
 			
 			
-			it( "set() should accept all datatypes including falsy values", function() {
-				var model = new thisSuite.TestModel();
+			it( "should accept all datatypes including falsy values", function() {
+				var model = new TestModel();
 				
 				assertAttributeAcceptsAll( model, 'attribute1' );
 			} );
 			
 			
-			it( "set() should accept all datatypes, and still work even with a default value", function() {
+			it( "should accept all datatypes, and still work even with a default value", function() {
 				// Test with regular values, given a default value
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				
 				assertAttributeAcceptsAll( model, 'attribute2' );  // attribute2 has a default value
 			} );
 			
 			
-			it( "set() should accept all datatypes, and still work even with a given value", function() {
+			it( "should accept all datatypes, and still work even with a given value", function() {
 				// Test with regular values, given a default value
-				var model = new thisSuite.TestModel( {
+				var model = new TestModel( {
 					attribute2 : "initial value"
 				} );
 				
@@ -660,7 +656,7 @@ define( [
 			} );
 			
 			
-			it( "set() should not re-set an attribute to the same value from the initial value provided to the constructor", function() {
+			it( "should not re-set an attribute to the same value from the initial value provided to the constructor", function() {
 				var changeCount = 0;
 				
 				var TestModel = Model.extend( {
@@ -676,7 +672,7 @@ define( [
 			} );
 			
 			
-			it( "set() should not re-set an attribute to the same value", function() {
+			it( "should not re-set an attribute to the same value", function() {
 				var changeCount = 0;
 				
 				var TestModel = Model.extend( {
@@ -696,7 +692,7 @@ define( [
 			} );
 			
 			
-			it( "set() should run the Attribute's set() method on an attribute that has initial data of its own", function() {
+			it( "should run the Attribute's set() method on an attribute that has initial data of its own", function() {
 				var TestModel = Class.extend( Model, {
 					attributes: [
 						{ name: 'attribute1' },
@@ -712,7 +708,7 @@ define( [
 			} );
 			
 			
-			it( "set() should convert an attribute with a 'set' function when it is set() again", function() {
+			it( "should convert an attribute with a 'set' function when it is set() again", function() {
 				var TestModel = Class.extend( Model, {
 					attributes: [
 						{ name: 'attribute1' },
@@ -753,7 +749,7 @@ define( [
 			} );
 			
 			
-			it( "set() should delegate to the Attribute's beforeSet() and afterSet() methods to do any pre and post processing needed for the value", function() {
+			it( "should delegate to the Attribute's beforeSet() and afterSet() methods to do any pre and post processing needed for the value", function() {
 				var beforeSetValue, 
 				    afterSetValue;
 				
@@ -1233,7 +1229,7 @@ define( [
 			} );
 			
 			
-			it( "for compatibility with Backbone's Collection, set() should set the id property to the Model object itself with the idAttribute is changed", function() {
+			it( "for compatibility with Backbone's Collection, should set the id property to the Model object itself with the idAttribute is changed", function() {
 				var TestModel = Model.extend( {
 					attributes: [
 						{ name: 'attribute1' },
@@ -1256,32 +1252,27 @@ define( [
 		} );
 		
 		
-		describe( "Test get()", function() {
-			var thisSuite;
-			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.TestModel = Class.extend( Model, {
-					attributes: [
-						{ name: 'attribute1' },
-						{ name: 'attribute2', defaultValue: "attribute2's default" },
-						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-						{ name: 'attribute5', get : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } }
-					]
-				} );
+		
+		describe( 'get()', function() {
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1' },
+					{ name: 'attribute2', defaultValue: "attribute2's default" },
+					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
+					{ name: 'attribute5', get : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } }
+				]
 			} );
 			
 			
 			it( "running get() on an attribute with no initial value and no default value should return undefined", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				expect( _.isUndefined( model.get( 'attribute1' ) ) ).toBe( true );  // attribute1 has no default value
 			} );
 			
 			
 			it( "running get() on an attribute with an initial value and no default value should return the initial value", function() {
-				var model = new thisSuite.TestModel( {
+				var model = new TestModel( {
 					attribute1 : "initial value"
 				} );
 				expect( model.get( 'attribute1' ) ).toBe( "initial value" );  // attribute1 has no default value
@@ -1289,13 +1280,13 @@ define( [
 			
 			
 			it( "running get() on an attribute with no initial value but does have a default value should return the default value", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				expect( model.get( 'attribute2' ) ).toBe( "attribute2's default" );  // attribute2 has a default value
 			} );
 			
 			
 			it( "running get() on an attribute with an initial value and a default value should return the initial value", function() {
-				var model = new thisSuite.TestModel( {
+				var model = new TestModel( {
 					attribute2 : "initial value"
 				} );
 				expect( model.get( 'attribute2' ) ).toBe( "initial value" );  // attribute2 has a default value
@@ -1303,54 +1294,49 @@ define( [
 			
 			
 			it( "running get() on an attribute with no initial value but does have a default value which is a function should return the default value", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				expect( model.get( 'attribute3' ) ).toBe( "attribute3's default" );  // attribute3 has a defaultValue that is a function
 			} );
 			
 			
 			it( "running get() on an attribute with a `get` function defined should return the value that the `get` function returns", function() {
-				var model = new thisSuite.TestModel( { attribute1: 'value1' } );
+				var model = new TestModel( { attribute1: 'value1' } );
 				expect( model.get( 'attribute5' ) ).toBe( "value1 attribute2's default" );
 			} );
 			
 		} );
 		
 		
-		describe( "Test raw()", function() {
-			var thisSuite;
-			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.TestModel = Class.extend( Model, {
-					attributes: [
-						{ name: 'attribute1' },
-						{ name: 'attribute2', defaultValue: "attribute2's default" },
-						{ 
-							name: 'attribute3', 
-							get : function( newValue ) { 
-								return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); 
-							} 
-						},
-						{ 
-							name: 'attribute4', 
-							raw : function( newValue ) { 
-								return newValue + " " + this.get( 'attribute1' );
-							} 
-						}
-					]
-				} );
+		
+		describe( 'raw()', function() {
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1' },
+					{ name: 'attribute2', defaultValue: "attribute2's default" },
+					{ 
+						name: 'attribute3', 
+						get : function( newValue ) { 
+							return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); 
+						} 
+					},
+					{ 
+						name: 'attribute4', 
+						raw : function( newValue ) { 
+							return newValue + " " + this.get( 'attribute1' );
+						} 
+					}
+				]
 			} );
 			
 			
 			it( "running raw() on an attribute with no initial value and no default value should return undefined", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				expect( _.isUndefined( model.raw( 'attribute1' ) ) ).toBe( true );  // attribute1 has no default value
 			} );
 			
 			
 			it( "running raw() on an attribute with an initial value and no default value should return the initial value", function() {
-				var model = new thisSuite.TestModel( {
+				var model = new TestModel( {
 					attribute1 : "initial value"
 				} );
 				expect( model.raw( 'attribute1' ) ).toBe( "initial value" );  // attribute1 has no default value
@@ -1358,19 +1344,19 @@ define( [
 			
 			
 			it( "running raw() on an attribute with no initial value but does have a default value should return the default value", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				expect( model.raw( 'attribute2' ) ).toBe( "attribute2's default" );  // attribute2 has a default value
 			} );
 			
 			
 			it( "running raw() on an attribute with a `get` function defined should return the *underlying* value, not the value that the `get` function returns", function() {
-				var model = new thisSuite.TestModel( { attribute3: 'value1' } );
+				var model = new TestModel( { attribute3: 'value1' } );
 				expect( model.raw( 'attribute3' ) ).toBe( "value1" );
 			} );
 			
 			
 			it( "running raw() on an attribute with a `raw` function defined should return the value that the `raw` function returns", function() {
-				var model = new thisSuite.TestModel( { 
+				var model = new TestModel( { 
 					attribute1: 'value1',
 					attribute4: 'value4'
 				} );
@@ -1380,98 +1366,67 @@ define( [
 		} );
 		
 		
-		describe( "Test getDefault()", function() {
-			var thisSuite;
-			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.TestModel = Class.extend( Model, {
-					attributes: [
-						{ name: 'attribute1' },
-						{ name: 'attribute2', defaultValue: "attribute2's default" },
-						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
-					]
-				} );
+		describe( 'getDefault()', function() {
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1' },
+					{ name: 'attribute2', defaultValue: "attribute2's default" },
+					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+				]
 			} );
 			
 			
 			it( "A attribute with no defaultValue should return undefined when trying to retrieve its default value", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				expect( _.isUndefined( model.getDefault( 'attribute1' ) ) ).toBe( true );  // attribute1 has no default value
 			} );
 			
 			
 			it( "A defaultValue should be able to be retrieved directly when the attribute has one", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				expect( model.getDefault( 'attribute2' ) ).toBe( "attribute2's default" );  // attribute2 has a defaultValue of a string
 			} );
 			
 			
 			it( "A defaultValue should be able to be retrieved directly when the defaultValue is a function that returns its default", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				expect( model.getDefault( 'attribute3' ) ).toBe( "attribute3's default" );  // attribute2 has a defaultValue that is a function that returns a string
 			} );
 			
 		} );
 		
 		
-		describe( "Test onEmbeddedDataComponentChange()", function() {
-			
-			it( "onEmbeddedDataComponentChange() should ", function() {
-				
-			} );
-			
-		} );
-		
-		
-		describe( "Test isModified()", function() {
-			var thisSuite;
-			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.TestModel = Class.extend( Model, {
-					attributes: [
-						{ name: 'attribute1' },
-						{ name: 'attribute2', defaultValue: "attribute2's default" },
-						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
-					]
-				} );
-				
-				thisSuite.ConcreteDataComponentAttribute = DataComponentAttribute.extend( {} );
-				
-				thisSuite.ConcreteDataComponent = DataComponent.extend( {
-					// Implementation of abstract interface
-					getData : Data.emptyFn,
-					isModified : Data.emptyFn,
-					commit : Data.emptyFn,
-					rollback : Data.emptyFn
-				} );
+		describe( 'isModified()', function() {
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1' },
+					{ name: 'attribute2', defaultValue: "attribute2's default" },
+					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+				]
 			} );
 			
 			
-			it( "isModified should return false if there are no changes on the model", function() {
-				var model = new thisSuite.TestModel();
+			it( "should return false if there are no changes on the model", function() {
+				var model = new TestModel();
 				
 				expect( model.isModified() ).toBe( false );
 			} );
 			
 			
-			it( "isModified should return true if there is at least one change on the model", function() {
-				var model = new thisSuite.TestModel();
+			it( "should return true if there is at least one change on the model", function() {
+				var model = new TestModel();
 				model.set( 'attribute1', 'newValue1' );
 				
 				expect( model.isModified() ).toBe( true );
 			} );
 			
 			
-			it( "isModified should return true if there are multiple changes on the model", function() {
-				var model = new thisSuite.TestModel();
+			it( "should return true if there are multiple changes on the model", function() {
+				var model = new TestModel();
 				model.set( 'attribute1', 'newValue1' );
 				model.set( 'attribute2', 'newValue2' );
 				
@@ -1480,7 +1435,7 @@ define( [
 			
 			
 			it( "isModified() should return false for particular attributes that have not been changed, even if there are other changes", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				model.set( 'attribute3', 'testing123' );
 				
 				expect( model.isModified( 'attribute1' ) ).toBe( false );  // orig YUI Test err msg: "attribute1, with no defaultValue, should not be modified"
@@ -1489,7 +1444,7 @@ define( [
 			
 			
 			it( "isModified() should return true for particular attributes that have been changed", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				
 				model.set( 'attribute1', "new value 1" );
 				model.set( 'attribute2', "new value 2" );
@@ -1499,7 +1454,7 @@ define( [
 			
 			
 			it( "isModified() should return false for particular attributes that have been changed, but then committed", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				
 				model.set( 'attribute1', "new value 1" );
 				model.set( 'attribute2', "new value 2" );
@@ -1510,7 +1465,7 @@ define( [
 			
 			
 			it( "isModified() should return false for particular attributes that have been changed, but then rolled back", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				
 				model.set( 'attribute1', "new value 1" );
 				model.set( 'attribute2', "new value 2" );
@@ -1523,11 +1478,11 @@ define( [
 			it( "In the case of embedded DataComponents, the parent model should be considered 'modified' when a child embedded DataComponent has changes", function() {
 				var ParentModel = Model.extend( {
 					attributes : [
-						new thisSuite.ConcreteDataComponentAttribute( { name: 'child', embedded: true } )
+						new ConcreteDataComponentAttribute( { name: 'child', embedded: true } )
 					]
 				} );
 				
-				var childDataComponent = JsMockito.mock( thisSuite.ConcreteDataComponent );
+				var childDataComponent = JsMockito.mock( ConcreteDataComponent );
 				JsMockito.when( childDataComponent ).isModified().thenReturn( true );
 				
 				var parentModel = new ParentModel( {
@@ -1542,11 +1497,11 @@ define( [
 			it( "The parent model should *not* have changes when a child model has changes, but is not 'embedded'", function() {
 				var ParentModel = Model.extend( {
 					attributes : [
-						new thisSuite.ConcreteDataComponentAttribute( { name: 'child', embedded: false } )  // note: NOT embedded
+						new ConcreteDataComponentAttribute( { name: 'child', embedded: false } )  // note: NOT embedded
 					]
 				} );
 				
-				var childDataComponent = JsMockito.mock( thisSuite.ConcreteDataComponent );
+				var childDataComponent = JsMockito.mock( ConcreteDataComponent );
 				JsMockito.when( childDataComponent ).isModified().thenReturn( true );
 				
 				var parentModel = new ParentModel( {
@@ -1604,22 +1559,7 @@ define( [
 		} );
 		
 		
-		describe( "Test getChanges()", function() {
-			var thisSuite;
-			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.ConcreteDataComponentAttribute = DataComponentAttribute.extend( {} );
-				thisSuite.ConcreteDataComponent = DataComponent.extend( { 
-					// Implementation of abstract interface
-					getData : Data.emptyFn,
-					isModified : Data.emptyFn,
-					commit : Data.emptyFn,
-					rollback : Data.emptyFn
-				} );
-			} );
-			
+		describe( 'getChanges()', function() {
 			
 			xit( "getChanges() should delegate to the singleton NativeObjectConverter to create an Object representation of its data, but only provide changed attributes for the attributes that should be returned", function() {
 				var MyModel = Model.extend( {
@@ -1627,13 +1567,13 @@ define( [
 						'attr1', 
 						'attr2', 
 						'attr3',
-						new thisSuite.ConcreteDataComponentAttribute( { name: 'nestedDataComponent', embedded: false } ),  // this one NOT embedded
-						new thisSuite.ConcreteDataComponentAttribute( { name: 'embeddedDataComponent', embedded: true } )  // this one IS embedded
+						new ConcreteDataComponentAttribute( { name: 'nestedDataComponent', embedded: false } ),  // this one NOT embedded
+						new ConcreteDataComponentAttribute( { name: 'embeddedDataComponent', embedded: true } )  // this one IS embedded
 					]
 				} );
 				
 				
-				var mockDataComponent = JsMockito.mock( thisSuite.ConcreteDataComponent );
+				var mockDataComponent = JsMockito.mock( ConcreteDataComponent );
 				JsMockito.when( mockDataComponent ).isModified().thenReturn( true );
 				
 				var model = new MyModel( {
@@ -1650,46 +1590,31 @@ define( [
 				// even though there really is no result from this unit test with a mock object, this has the side effect of populating the test data
 				var result = model.getChanges( { raw: true } );  // add an extra option to make sure it goes through
 				
-				var optionsProvidedToConvert = thisSuite.args[ 1 ];  // defined in the setUp method
+				//var optionsProvidedToConvert = thisSuite.args[ 1 ];  // defined in the setUp method
 				
 				// Check that the correct arguments were provided to the NativeObjectConverter's convert() method
-				expect( thisSuite.args[ 0 ] ).toBe( model );  // orig YUI Test err msg: "The first arg provided to NativeObjectConverter::convert() should have been the model."
-				expect( optionsProvidedToConvert.raw ).toBe( true );  // orig YUI Test err msg: "The second arg provided to NativeObjectConverter::convert() should have receieved the 'raw:true' option"
-				expect( optionsProvidedToConvert.attributeNames ).toEqual( [ 'attr1', 'attr2', 'embeddedDataComponent' ] );  // orig YUI Test err msg: "The second arg provided to NativeObjectConverter::convert() should have receieved the 'attributeNames' option, with the attributes that were changed"
+				//expect( thisSuite.args[ 0 ] ).toBe( model );  // orig YUI Test err msg: "The first arg provided to NativeObjectConverter::convert() should have been the model."
+				//expect( optionsProvidedToConvert.raw ).toBe( true );  // orig YUI Test err msg: "The second arg provided to NativeObjectConverter::convert() should have receieved the 'raw:true' option"
+				//expect( optionsProvidedToConvert.attributeNames ).toEqual( [ 'attr1', 'attr2', 'embeddedDataComponent' ] );  // orig YUI Test err msg: "The second arg provided to NativeObjectConverter::convert() should have receieved the 'attributeNames' option, with the attributes that were changed"
 			} );
 			
 		} );
 		
 		
-		describe( "Test commit()", function() {
-			var thisSuite;
-			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.TestModel = Class.extend( Model, {
-					attributes: [
-						{ name: 'attribute1' },
-						{ name: 'attribute2', defaultValue: "attribute2's default" },
-						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
-					]
-				} );
-				
-				
-				thisSuite.ConcreteDataComponent = DataComponent.extend( { 
-					// Implementation of abstract interface
-					getData : Data.emptyFn,
-					isModified : Data.emptyFn,
-					commit : Data.emptyFn,
-					rollback : Data.emptyFn
-				} );
+		describe( 'commit()', function() {
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1' },
+					{ name: 'attribute2', defaultValue: "attribute2's default" },
+					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+				]
 			} );
 			
 			
 			it( "committing changed data should cause the model to no longer be considered modified, and cause getChanges() to return an empty object", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				model.set( 'attribute1', "new value 1" );
 				model.set( 'attribute2', "new value 2" );
 				model.commit();
@@ -1702,21 +1627,21 @@ define( [
 			
 			
 			it( "committing changed data should cause rollback() to have no effect", function() {
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				model.set( 'attribute1', "new value 1" );
 				model.set( 'attribute2', "new value 2" );
 				model.commit();
 				
 				// Attempt a rollback, even though the data was committed. Should have no effect.
 				model.rollback();
-				expect( model.get( 'attribute1' ) ).toBe( "new value 1" );  // orig YUI Test err msg: "attribute1 should have been 'new value 1'. rollback() should not have had any effect."
-				expect( model.get( 'attribute2' ) ).toBe( "new value 2" );  // orig YUI Test err msg: "attribute2 should have been 'new value 2'. rollback() should not have had any effect."
+				expect( model.get( 'attribute1' ) ).toBe( "new value 1" );  // orig YUI Test err msg: "attribute1 should have been 'new value 1'. should not have had any effect."
+				expect( model.get( 'attribute2' ) ).toBe( "new value 2" );  // orig YUI Test err msg: "attribute2 should have been 'new value 2'. should not have had any effect."
 			} );
 			
 			
 			it( "committing changed data should fire the 'commit' event", function() {
 				var commitEventCount = 0;
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				model.addListener( 'commit', function() {
 					commitEventCount++;
 				} );
@@ -1743,7 +1668,7 @@ define( [
 					attributes : [ new ConcreteDataComponentAttribute( { name: 'childDataComponent', embedded: true } ) ]
 				} );
 				
-				var mockDataComponent = JsMockito.mock( thisSuite.ConcreteDataComponent );
+				var mockDataComponent = JsMockito.mock( ConcreteDataComponent );
 				var model = new MyModel();
 				
 				model.set( 'childDataComponent', mockDataComponent );
@@ -1755,29 +1680,24 @@ define( [
 		} );
 		
 		
-		describe( "Test rollback()", function() {
-			var thisSuite;
-			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.TestModel = Class.extend( Model, {
-					attributes: [
-						{ name: 'attribute1' },
-						{ name: 'attribute2', defaultValue: "attribute2's default" },
-						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
-					]
-				} );
+		
+		describe( 'rollback()', function() {
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1' },
+					{ name: 'attribute2', defaultValue: "attribute2's default" },
+					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+				]
 			} );
 			
 			
-			it( "rollback() should revert the model's values back to default values if before any committed set() calls", function() {
+			it( "should revert the model's values back to default values if before any committed set() calls", function() {
 				// No initial data. 
 				// attribute1 should be undefined
 				// attribute2 should have the string "attribute2's default"
-				var model = new thisSuite.TestModel();
+				var model = new TestModel();
 				
 				// Set, and then rollback
 				model.set( 'attribute1', "new value 1" );
@@ -1794,8 +1714,8 @@ define( [
 			} );
 			
 			
-			it( "rollback() should revert the model's values back to their pre-set() values", function() {
-				var model = new thisSuite.TestModel( {
+			it( "should revert the model's values back to their pre-set() values", function() {
+				var model = new TestModel( {
 					attribute1 : "original attribute1",
 					attribute2 : "original attribute2"
 				} );
@@ -1815,8 +1735,8 @@ define( [
 			} );
 			
 			
-			it( "rollback() should revert the model's values back to their pre-set() values, when more than one set() call is made", function() {
-				var model = new thisSuite.TestModel( {
+			it( "should revert the model's values back to their pre-set() values, when more than one set() call is made", function() {
+				var model = new TestModel( {
 					attribute1 : "original attribute1",
 					attribute2 : "original attribute2"
 				} );
@@ -1838,10 +1758,10 @@ define( [
 			} );
 			
 			
-			it( "rollback() should fire the 'rollback' event", function() {
+			it( "should fire the 'rollback' event", function() {
 				var rollbackEventCount = 0;
 				
-				var model = new thisSuite.TestModel( {
+				var model = new TestModel( {
 					attribute1 : 'orig1',
 					attribute2 : 'orig2'
 				} );
@@ -2377,31 +2297,20 @@ define( [
 			
 			
 			describe( "Test basic persistence", function() {
-				var thisSuite;
-				
-				beforeEach( function() {
-					thisSuite = {};
-					
-					thisSuite.Model = Model.extend( {
-						attributes : [ 'id', 'attribute1', 'attribute2' ]
-					} );
+				var TestModel = Model.extend( {
+					attributes : [ 'id', 'attribute1', 'attribute2' ]
 				} );
 				
 				
 				it( "Model attributes that have been persisted should not be persisted again if they haven't changed since the last persist", function() {
 					var dataToPersist;
-					var proxy = JsMockito.mock( Proxy.extend( {
-						create  : Data.emptyFn,
-						read    : Data.emptyFn,
-						update  : Data.emptyFn,
-						destroy : Data.emptyFn
-					} ) );
+					var proxy = JsMockito.mock( ConcreteProxy );
 					JsMockito.when( proxy ).update().then( function( operation ) {
 						dataToPersist = operation.getModels()[ 0 ].getChanges();
 						return new jQuery.Deferred().resolve( operation ).promise();
 					} );
 					
-					var MyModel = thisSuite.Model.extend( {
+					var MyModel = TestModel.extend( {
 						proxy : proxy
 					} );
 					var model = new MyModel( { id: 1 } );
@@ -2429,12 +2338,7 @@ define( [
 			describe( "Test concurrent persistence and model updates", function() {
 				
 				function createModel( timeout ) {
-					var proxy = JsMockito.mock( Proxy.extend( {
-						create  : Data.emptyFn,
-						read    : Data.emptyFn,
-						update  : Data.emptyFn,
-						destroy : Data.emptyFn
-					} ) );
+					var proxy = JsMockito.mock( ConcreteProxy );
 					
 					JsMockito.when( proxy ).update().then( function( operation ) {
 						// update method just resolves its Deferred after the timeout
