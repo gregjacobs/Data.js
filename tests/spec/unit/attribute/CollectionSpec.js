@@ -5,7 +5,7 @@ define( [
 	'data/attribute/Collection'
 ], function( Model, Collection, CollectionAttribute ) {
 	
-	describe( "unit.attribute.data.attribute.Collection", function() {
+	describe( "data.attribute.Collection", function() {
 		
 		describe( "Test constructor", function() {
 			
@@ -71,7 +71,7 @@ define( [
 		} );
 		
 		
-		describe( "Test beforeSet()", function() {
+		describe( 'convert()', function() {
 			var thisSuite;
 			
 			beforeEach( function() {
@@ -92,39 +92,39 @@ define( [
 			} );
 			
 			
-			it( "beforeSet() should return null when provided any falsy value, or non-object", function() {
+			it( "should return null when provided any falsy value, or non-object", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    attribute = new CollectionAttribute( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
-				value = attribute.beforeSet( mockModel, 0, oldValue );
+				value = attribute.convert( 0 );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
+				value = attribute.convert( 1 );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, "", oldValue );
+				value = attribute.convert( "" );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
+				value = attribute.convert( "hi" );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, false, oldValue );
+				value = attribute.convert( false );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, true, oldValue );
+				value = attribute.convert( true );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
+				value = attribute.convert( undefined );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, null, oldValue );
+				value = attribute.convert( null );
 				expect( value ).toBe( null );
 			} );
 			
 			
-			it( "beforeSet() should throw an error if the string `collection` config does not reference a Collection subclass", function() {
+			it( "should throw an error if the string `collection` config does not reference a Collection subclass", function() {
 				expect( function() {
 					var mockModel = JsMockito.mock( Model ),
 					    oldValue;  // undefined
@@ -135,14 +135,14 @@ define( [
 					} );
 					
 					var data = [ { attr1: 1, attr2: 2 }, { attr1: 3, attr2: 4 } ],
-					    value = attribute.beforeSet( mockModel, data, oldValue );
+					    value = attribute.convert( data );
 					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have thrown an error in the call to attribute.beforeSet()"
+					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have thrown an error in the call to attribute.convert()"
 				} ).toThrow( "The string value `collection` config did not resolve to a Collection subclass for attribute 'attr'" );
 			} );
 			
 			
-			it( "beforeSet() should throw an error if the function value `collection` config does not reference a Collection subclass", function() {
+			it( "should throw an error if the function value `collection` config does not reference a Collection subclass", function() {
 				expect( function() {
 					var mockModel = JsMockito.mock( Model ),
 					    oldValue;  // undefined
@@ -155,20 +155,20 @@ define( [
 					} );
 					
 					var data = [ { attr1: 1, attr2: 2 }, { attr1: 3, attr2: 4 } ],
-					    value = attribute.beforeSet( mockModel, data, oldValue );
+					    value = attribute.convert( data );
 					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have thrown an error in the call to attribute.beforeSet()"
+					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have thrown an error in the call to attribute.convert()"
 				} ).toThrow( "The function value `collection` config did not resolve to a Collection subclass for attribute 'attr'" );
 			} );
 			
 			
-			it( "beforeSet() should convert an array of data objects, when the `collection` config is a direct reference to the Collection subclass", function() {
+			it( "should convert an array of data objects, when the `collection` config is a direct reference to the Collection subclass", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    data = [ { attr1: 1, attr2: 2 }, { attr1: 3, attr2: 4 } ],
 				    oldValue,  // undefined
-				    value = thisSuite.attribute.beforeSet( mockModel, data, oldValue );
+				    value = thisSuite.attribute.convert( data );
 				
-				expect( value instanceof thisSuite.Collection ).toBe( true );  // orig YUI Test err msg: "The return value from beforeSet should have been an instance of the Collection"
+				expect( value instanceof thisSuite.Collection ).toBe( true );  // orig YUI Test err msg: "The return value from convert should have been an instance of the Collection"
 				
 				var model1 = value.getAt( 0 ),
 				    model2 = value.getAt( 1 );
@@ -179,7 +179,7 @@ define( [
 			} );
 			
 			
-			it( "beforeSet() should convert an array of data objects, when the `collection` config is a string", function() {
+			it( "should convert an array of data objects, when the `collection` config is a string", function() {
 				// Use a deeply nested namespace, as that will probably be what is used
 				window.__Data_CollectionAttributeTest = {};
 				window.__Data_CollectionAttributeTest.ns1 = {};
@@ -197,9 +197,9 @@ define( [
 				} );
 				
 				var data = [ { attr1: 1, attr2: 2 }, { attr1: 3, attr2: 4 } ],
-				    value = attribute.beforeSet( mockModel, data, oldValue );
+				    value = attribute.convert( data );
 				
-				expect( value instanceof window.__Data_CollectionAttributeTest.ns1.ns2.MyCollection ).toBe( true );  // orig YUI Test err msg: "The return value from beforeSet should have been an instance of the Collection"
+				expect( value instanceof window.__Data_CollectionAttributeTest.ns1.ns2.MyCollection ).toBe( true );  // orig YUI Test err msg: "The return value from convert should have been an instance of the Collection"
 				
 				
 				var model1 = value.getAt( 0 ),
@@ -213,7 +213,7 @@ define( [
 			} );
 			
 			
-			it( "beforeSet() should convert an array of data objects, when the `collection` config is a function", function() {
+			it( "should convert an array of data objects, when the `collection` config is a function", function() {
 				var TestCollection = Collection.extend( {
 					model : thisSuite.Model
 				} );
@@ -229,9 +229,9 @@ define( [
 				} );
 				
 				var data = [ { attr1: 1, attr2: 2 }, { attr1: 3, attr2: 4 } ],
-				    value = attribute.beforeSet( mockModel, data, oldValue );
+				    value = attribute.convert( data );
 				
-				expect( value instanceof TestCollection ).toBe( true );  // orig YUI Test err msg: "The return value from beforeSet should have been an instance of the Collection"
+				expect( value instanceof TestCollection ).toBe( true );  // orig YUI Test err msg: "The return value from convert should have been an instance of the Collection"
 				
 				var model1 = value.getAt( 0 ),
 				    model2 = value.getAt( 1 );
@@ -242,13 +242,13 @@ define( [
 			} );
 			
 			
-			it( "beforeSet() should return an actual Collection instance unchanged", function() {
+			it( "should return an actual Collection instance unchanged", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    oldValue,  // undefined
 				    data = new thisSuite.Collection( [ { attr1 : 1, attr2: 2 } ] ),
-				    value = thisSuite.attribute.beforeSet( mockModel, data, oldValue );
+				    value = thisSuite.attribute.convert( data );
 				
-				expect( value ).toBe( data );  // orig YUI Test err msg: "The return value from beforeSet should have been the same collection instance"
+				expect( value ).toBe( data );  // orig YUI Test err msg: "The return value from convert should have been the same collection instance"
 				
 				var model = value.getAt( 0 );
 				expect( model.get( 'attr1' ) ).toBe( 1 );  // orig YUI Test err msg: "The data should remain set to the new model"
@@ -256,7 +256,7 @@ define( [
 			} );
 			
 			
-			it( "if no `collection` config was provided, beforeSet() should return an array unchanged, to allow a user-defined set() method to take care of it", function() {
+			it( "if no `collection` config was provided, should return an array unchanged, to allow a user-defined set() method to take care of it", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    oldValue;
 				
@@ -265,7 +265,7 @@ define( [
 				} );
 				
 				var data = [ { attr1: 1, attr2: 2 } ],
-				    value = attribute.beforeSet( mockModel, data, oldValue );
+				    value = attribute.convert( data );
 				
 				expect( value ).toBe( data );
 			} );

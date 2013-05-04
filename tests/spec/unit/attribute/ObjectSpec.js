@@ -4,7 +4,7 @@ define( [
 	'data/Model'
 ], function( ObjectAttribute, Model ) {
 	
-	describe( "unit.attribute.data.attribute.Object", function() {
+	describe( "data.attribute.Object", function() {
 		
 		describe( "Test the defaultValue", function() {
 			
@@ -15,47 +15,47 @@ define( [
 		} );
 		
 		
-		describe( "Test beforeSet()", function() {
+		describe( 'convert()', function() {
 			
-			it( "beforeSet() should return null when provided any falsy value, or non-object", function() {
+			it( "should return null when provided any falsy value, or non-object", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    attribute = new ObjectAttribute( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
-				value = attribute.beforeSet( mockModel, 0, oldValue );
+				value = attribute.convert( 0 );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
+				value = attribute.convert( 1 );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, "", oldValue );
+				value = attribute.convert( "" );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
+				value = attribute.convert( "hi" );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, false, oldValue );
+				value = attribute.convert( false );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, true, oldValue );
+				value = attribute.convert( true );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
+				value = attribute.convert( undefined );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, null, oldValue );
+				value = attribute.convert( null );
 				expect( value ).toBe( null );
 			} );
 			
 			
-			it( "beforeSet() should return an object unchanged", function() {
+			it( "should return an object unchanged", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    attribute = new ObjectAttribute( { name: 'attr' } ),
 				    oldValue;  // undefined
 				
 				var data = { attr1: 1, attr2: 2 };
-				var value = attribute.beforeSet( mockModel, data, oldValue );
+				var value = attribute.convert( data );
 				
 				expect( value ).toBe( data );
 			} );

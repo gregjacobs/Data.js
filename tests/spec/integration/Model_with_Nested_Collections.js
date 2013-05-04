@@ -5,7 +5,7 @@ define( [
 	'data/Collection'
 ], function( Class, Model, Collection ) {
 	
-	describe( "integration.Model with Nested Collections", function() {
+	describe( "Integration: Model with Nested Collections", function() {
 		
 		describe( "Test default nested Collection initialization", function() {
 			

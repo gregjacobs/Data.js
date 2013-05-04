@@ -4,7 +4,7 @@ define( [
 	'data/attribute/Attribute'
 ], function( Model, Attribute ) {
 	
-	describe( "unit.attribute.Attribute", function() {
+	describe( 'data.attribute.Attribute', function() {
 		
 		// A concrete Attribute subclass used for testing
 		var ConcreteAttribute = Attribute.extend( {} );
@@ -113,7 +113,7 @@ define( [
 			it( "hasUserDefinedSetter() should return true when there is a user-defined setter", function() {
 				var attribute = new ConcreteAttribute( {
 					name : 'myAttr',
-					set : function( v ) { return v; }
+					set : function( model, v ) { return v; }
 				} );
 				
 				expect( attribute.hasUserDefinedSetter() ).toBe( true );
@@ -136,7 +136,7 @@ define( [
 			it( "hasUserDefinedGetter() should return true when there is a user-defined getter", function() {
 				var attribute = new ConcreteAttribute( {
 					name : 'myAttr',
-					get : function( v ) { return v; }
+					get : function( model, v ) { return v; }
 				} );
 				
 				expect( attribute.hasUserDefinedGetter() ).toBe( true );
@@ -204,64 +204,6 @@ define( [
 				
 				defaultValue.c.d = 99;
 				expect( origDefaultValue.c.d ).toBe( 3 );  // make sure the deep object in the original was not modified
-			} );
-			
-		} );
-		
-		
-		describe( 'doSet()', function() {
-			
-			it( "should call the Attribute's prototype set() method if there is no 'set' config, with the appropriate arguments", function() {
-				var mockModel = JsMockito.mock( Model ),
-				    newValue = 42,
-				    oldValue = 27;
-				
-				var providedModel, 
-				    providedNewValue, 
-				    providedOldValue;
-				    
-				var ConcreteAttribute = Attribute.extend( {
-					set : function( model, newValue, oldValue ) {
-						providedModel = model;
-						providedNewValue = newValue;
-						providedOldValue = oldValue;
-					}
-				} );
-				
-				var attribute = new ConcreteAttribute( 'attr' );
-				attribute.doSet( mockModel, newValue, oldValue );
-				
-				expect( providedModel ).toBe( mockModel );  // orig YUI Test err msg: "The mock model should have been provided as the first arg to the set() method"
-				expect( providedNewValue ).toBe( newValue );  // orig YUI Test err msg: "The new value should have been provided as the second arg to the set() method"
-				expect( providedOldValue ).toBe( oldValue );  // orig YUI Test err msg: "The old value should have been provided as the third arg to the set() method"
-			} );
-			
-			
-			it( "should call a provided 'set' config function if provided to the Attribute, and it should be called in the scope of the model", function() {
-				var mockModel = JsMockito.mock( Model ),
-				    newValue = 42,
-				    oldValue = 27;
-				
-				var contextCalledIn, 
-				    providedNewValue, 
-				    providedOldValue;
-				    
-				var ConcreteAttribute = Attribute.extend( {} );
-				
-				var attribute = new ConcreteAttribute( {
-					name: 'attr',
-					set: function( newValue, oldValue ) {
-						contextCalledIn = this;
-						providedNewValue = newValue;
-						providedOldValue = oldValue;
-					}
-				} );
-				
-				attribute.doSet( mockModel, newValue, oldValue );
-				
-				expect( contextCalledIn ).toBe( mockModel );  // orig YUI Test err msg: "The 'set' config should have been called in the context of the mock model"
-				expect( providedNewValue ).toBe( newValue );  // orig YUI Test err msg: "The new value should have been provided as the first arg to the set() method"
-				expect( providedOldValue ).toBe( oldValue );  // orig YUI Test err msg: "The old value should have been provided as the second arg to the set() method"
 			} );
 			
 		} );

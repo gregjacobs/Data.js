@@ -4,7 +4,7 @@ define( [
 	'data/Model'
 ], function( _, Model ) {
 		
-	describe( "integration.Model with NativeObjectConverter", function() {
+	describe( "Integration: Model with NativeObjectConverter", function() {
 		
 		describe( "Test getData()", function() {
 			
@@ -26,7 +26,7 @@ define( [
 				var MyModel = Model.extend( {
 					attributes : [ 
 						'attribute1', 
-						{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } }
+						{ name: 'attribute2', get: function( model, value ) { return "42 " + model.get( 'attribute1' ); } }
 					]
 				} );
 				var model = new MyModel( { attribute1: 'value1', attribute2: 'value2' } );
@@ -41,8 +41,8 @@ define( [
 				var MyModel = Model.extend( {
 					attributes : [ 
 						'attribute1', 
-						{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } },
-						{ name: 'attribute3', raw: function( value ) { return value + " " + this.get( 'attribute1' ); } }
+						{ name: 'attribute2', get: function( model, value ) { return "42 " + model.get( 'attribute1' ); } },
+						{ name: 'attribute3', raw: function( model, value ) { return value + " " + model.get( 'attribute1' ); } }
 					]
 				} );
 				var model = new MyModel( { attribute1: 'value1', attribute2: 'value2', attribute3: 'value3' } );
@@ -108,7 +108,7 @@ define( [
 				var MyModel = Model.extend( {
 					attributes : [ 
 						'attribute1', 
-						{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } },
+						{ name: 'attribute2', get: function( model, value ) { return "42 " + model.get( 'attribute1' ); } },
 						'attribute3'
 					]
 				} );
@@ -127,8 +127,8 @@ define( [
 				var MyModel = Model.extend( {
 					attributes : [
 						'attribute1', 
-						{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } },
-						{ name: 'attribute3', raw: function( value ) { return value + " " + this.get( 'attribute1' ); } },
+						{ name: 'attribute2', get: function( model, value ) { return "42 " + model.get( 'attribute1' ); } },
+						{ name: 'attribute3', raw: function( model, value ) { return value + " " + model.get( 'attribute1' ); } },
 						{ name: 'attribute4', defaultValue: 'value4' }
 					]
 				} );

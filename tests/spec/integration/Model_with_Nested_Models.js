@@ -3,7 +3,8 @@ define( [
 	'lodash',
 	'data/Model'
 ], function( _, Model ) {
-	describe( "integration.Model with Nested Models", function() {
+	
+	describe( "Integration: Model with Nested Models", function() {
 		
 		describe( "Test setting nested Models", function() {
 			

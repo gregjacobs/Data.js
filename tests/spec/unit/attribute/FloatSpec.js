@@ -4,7 +4,7 @@ define( [
 	'data/Model'
 ], function( FloatAttribute, Model ) {
 
-	describe( "unit.attribute.Float", function() {
+	describe( "data.attribute.Float", function() {
 		
 		describe( "Test getDefaultValue()", function() {
 			
@@ -24,127 +24,127 @@ define( [
 		} );
 		
 		
-		describe( "Test beforeSet()", function() {
+		describe( 'convert()', function() {
 			
-			it( "beforeSet() should return the appropriate string value when provided a range of values and types, when the useNull config is false", function() {
+			it( "should return the appropriate string value when provided a range of values and types, when the useNull config is false", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    attribute = new FloatAttribute( { name: 'attr', useNull: false } ),
 				    oldValue,  // undefined
 				    value;
 				
 				// Test with undefined and null
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
+				value = attribute.convert( undefined );
 				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: undefined"
 				
-				value = attribute.beforeSet( mockModel, null, oldValue );
+				value = attribute.convert( null );
 				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: null"
 				
 				
 				// Test with booleans
-				value = attribute.beforeSet( mockModel, false, oldValue );
+				value = attribute.convert( false );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: false"
 				
-				value = attribute.beforeSet( mockModel, true, oldValue );
+				value = attribute.convert( true );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: true"
 				
 				
 				// Test with numbers
-				value = attribute.beforeSet( mockModel, 0, oldValue );
+				value = attribute.convert( 0 );
 				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: 0"
 				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
+				value = attribute.convert( 1 );
 				expect( value ).toBe( 1 );  // orig YUI Test err msg: "Test with value: 1"
 				
-				value = attribute.beforeSet( mockModel, 1.42, oldValue );
+				value = attribute.convert( 1.42 );
 				expect( value ).toBe( 1.42 );  // orig YUI Test err msg: "Test with value: 1.42"
 				
 				
 				// Test with actual strings
-				value = attribute.beforeSet( mockModel, "", oldValue );
+				value = attribute.convert( "" );
 				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: ''"
 				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
+				value = attribute.convert( "hi" );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: 'hi'"
 				
-				value = attribute.beforeSet( mockModel, "true", oldValue );
+				value = attribute.convert( "true" );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: 'true'"
 				
-				value = attribute.beforeSet( mockModel, "1", oldValue );
+				value = attribute.convert( "1" );
 				expect( value ).toBe( 1 );  // orig YUI Test err msg: "Test with value: '1'"
 				
-				value = attribute.beforeSet( mockModel, "1.11", oldValue );
+				value = attribute.convert( "1.11" );
 				expect( value ).toBe( 1.11 );  // orig YUI Test err msg: "Test with value: '1.11'"	
 				
 				
 				// Test with an object
-				value = attribute.beforeSet( mockModel, {}, oldValue );
+				value = attribute.convert( {} );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: {}"
 			} );
 			
 			
-			it( "beforeSet() should return null for 'unparsable' values/types, when the useNull config is true", function() {
+			it( "should return null for 'unparsable' values/types, when the useNull config is true", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    attribute = new FloatAttribute( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
 				// Test with undefined and null
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
+				value = attribute.convert( undefined );
 				expect( value ).toBe( null );  // orig YUI Test err msg: "Test with value: undefined"
 				
-				value = attribute.beforeSet( mockModel, null, oldValue );
+				value = attribute.convert( null );
 				expect( value ).toBe( null );  // orig YUI Test err msg: "Test with value: null"
 				
 				
 				// Test with booleans
-				value = attribute.beforeSet( mockModel, false, oldValue );
+				value = attribute.convert( false );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: false"
 				
-				value = attribute.beforeSet( mockModel, true, oldValue );
+				value = attribute.convert( true );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: true"
 				
 				
 				// Test with numbers
-				value = attribute.beforeSet( mockModel, 0, oldValue );
+				value = attribute.convert( 0 );
 				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: 0"
 				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
+				value = attribute.convert( 1 );
 				expect( value ).toBe( 1 );  // orig YUI Test err msg: "Test with value: 1"
 				
-				value = attribute.beforeSet( mockModel, 1.42, oldValue );
+				value = attribute.convert( 1.42 );
 				expect( value ).toBe( 1.42 );  // orig YUI Test err msg: "Test with value: 1.42"
 				
 				
 				// Test with actual strings
-				value = attribute.beforeSet( mockModel, "", oldValue );
+				value = attribute.convert( "" );
 				expect( value ).toBe( null );  // orig YUI Test err msg: "Test with value: ''"
 				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
+				value = attribute.convert( "hi" );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: 'hi'"
 				
-				value = attribute.beforeSet( mockModel, "true", oldValue );
+				value = attribute.convert( "true" );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: 'true'"
 				
-				value = attribute.beforeSet( mockModel, "1", oldValue );
+				value = attribute.convert( "1" );
 				expect( value ).toBe( 1 );  // orig YUI Test err msg: "Test with value: '1'"
 				
-				value = attribute.beforeSet( mockModel, "1.11", oldValue );
+				value = attribute.convert( "1.11" );
 				expect( value ).toBe( 1.11 );  // orig YUI Test err msg: "Test with value: '1.11'"
 				
 				
 				// Test with an object
-				value = attribute.beforeSet( mockModel, {}, oldValue );
+				value = attribute.convert( {} );
 				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: {}"
 			} );
 			
 			
-			it( "beforeSet() should strip off $, %, and comma (',') characters from an input string, to make a float", function() {
+			it( "should strip off $, %, and comma (',') characters from an input string, to make a float", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    attribute = new FloatAttribute( { name: 'attr', useNull: true } ),
 				    oldValue,  // undefined
 				    value;
 				
-				value = attribute.beforeSet( mockModel, "$1,000.32%", oldValue );
+				value = attribute.convert( "$1,000.32%" );
 				expect( value ).toBe( 1000.32 );  // orig YUI Test err msg: "Test with value: $1,000.32%"
 			} );
 			

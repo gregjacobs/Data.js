@@ -5,7 +5,7 @@ define( [
 	'data/Model'
 ], function( ModelAttribute, Model ) {
 		
-	describe( "unit.attribute.Model", function() {
+	describe( "data.attribute.Model", function() {
 		
 		describe( "Test constructor", function() {
 			
@@ -79,7 +79,7 @@ define( [
 		} );
 		
 		
-		describe( "Test beforeSet()", function() {
+		describe( 'convert()', function() {
 			var thisSuite;
 			
 			beforeEach( function() {
@@ -96,39 +96,39 @@ define( [
 			} );
 			
 			
-			it( "beforeSet() should return null when provided any falsy value, or non-object", function() {
+			it( "should return null when provided any falsy value, or non-object", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    attribute = new ModelAttribute( { name: 'attr' } ),
 				    oldValue,  // undefined
 				    value;
 				
-				value = attribute.beforeSet( mockModel, 0, oldValue );
+				value = attribute.convert( 0 );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, 1, oldValue );
+				value = attribute.convert( 1 );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, "", oldValue );
+				value = attribute.convert( "" );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, "hi", oldValue );
+				value = attribute.convert( "hi" );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, false, oldValue );
+				value = attribute.convert( false );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, true, oldValue );
+				value = attribute.convert( true );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, undefined, oldValue );
+				value = attribute.convert( undefined );
 				expect( value ).toBe( null );
 				
-				value = attribute.beforeSet( mockModel, null, oldValue );
+				value = attribute.convert( null );
 				expect( value ).toBe( null );
 			} );
 			
 			
-			it( "beforeSet() should throw an error if the string `model` config does not reference a Model class", function() {
+			it( "should throw an error if the string `model` config does not reference a Model class", function() {
 				expect( function() {
 					var mockModel = JsMockito.mock( Model ),
 					    oldValue;  // undefined
@@ -139,14 +139,14 @@ define( [
 					} );
 					
 					var data = { attr1: 1, attr2: 2 },
-					    value = attribute.beforeSet( mockModel, data, oldValue );
+					    value = attribute.convert( data );
 					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have thrown an error in the call to attribute.beforeSet()"
+					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have thrown an error in the call to attribute.convert()"
 				} ).toThrow( "The string value `model` config did not resolve to a Model subclass for attribute 'attr'" );
 			} );
 			
 			
-			it( "beforeSet() should throw an error if the function value `model` config does not reference a Model class", function() {
+			it( "should throw an error if the function value `model` config does not reference a Model class", function() {
 				expect( function() {
 					var mockModel = JsMockito.mock( Model ),
 					    oldValue;  // undefined
@@ -159,26 +159,26 @@ define( [
 					} );
 					
 					var data = { attr1: 1, attr2: 2 },
-					    value = attribute.beforeSet( mockModel, data, oldValue );
+					    value = attribute.convert( data );
 					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have thrown an error in the call to attribute.beforeSet()"
+					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have thrown an error in the call to attribute.convert()"
 				} ).toThrow( "The function value `model` config did not resolve to a Model subclass for attribute 'attr'" );
 			} );
 			
 			
-			it( "beforeSet() should convert an anonymous data object to the provided `model`, when `model` is a direct reference to the Model subclass", function() {
+			it( "should convert an anonymous data object to the provided `model`, when `model` is a direct reference to the Model subclass", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    data = { attr1: 1, attr2: 2 },
 				    oldValue,  // undefined
-				    value = thisSuite.attribute.beforeSet( mockModel, data, oldValue );
+				    value = thisSuite.attribute.convert( data );
 				
-				expect( value instanceof thisSuite.Model ).toBe( true );  // orig YUI Test err msg: "The return value from beforeSet should have been an instance of the Model"
+				expect( value instanceof thisSuite.Model ).toBe( true );  // orig YUI Test err msg: "The return value from convert should have been an instance of the Model"
 				expect( value.get( 'attr1' ) ).toBe( 1 );  // orig YUI Test err msg: "The data should have been set to the new model"
 				expect( value.get( 'attr2' ) ).toBe( 2 );  // orig YUI Test err msg: "The data should have been set to the new model"
 			} );
 			
 			
-			it( "beforeSet() should convert an anonymous data object to the provided `model` subclass, when the `model` config is a string", function() {
+			it( "should convert an anonymous data object to the provided `model` subclass, when the `model` config is a string", function() {
 				// Use a deeply nested namespace, as that will probably be what is used
 				window.__Data_CollectionAttributeTest = {};
 				window.__Data_CollectionAttributeTest.ns1 = {};
@@ -196,9 +196,9 @@ define( [
 				} );
 				
 				var data = { attr1: 1, attr2: 2 };
-				var value = attribute.beforeSet( mockModel, data, oldValue );
+				var value = attribute.convert( data );
 				
-				expect( value instanceof window.__Data_CollectionAttributeTest.ns1.ns2.MyModel ).toBe( true );  // orig YUI Test err msg: "The return value from beforeSet should have been an instance of the Model"
+				expect( value instanceof window.__Data_CollectionAttributeTest.ns1.ns2.MyModel ).toBe( true );  // orig YUI Test err msg: "The return value from convert should have been an instance of the Model"
 				expect( value.get( 'attr1' ) ).toBe( 1 );  // orig YUI Test err msg: "The data should have been set to the new model"
 				expect( value.get( 'attr2' ) ).toBe( 2 );  // orig YUI Test err msg: "The data should have been set to the new model"
 				
@@ -206,7 +206,7 @@ define( [
 			} );
 			
 			
-			it( "beforeSet() should convert an anonymous data object to the provided `model` subclass, when the `model` config is a function", function() {
+			it( "should convert an anonymous data object to the provided `model` subclass, when the `model` config is a function", function() {
 				var TestModel = Model.extend( {
 					attributes : [ 'attr1', 'attr2' ]
 				} );
@@ -222,27 +222,27 @@ define( [
 				} );
 				
 				var data = { attr1: 1, attr2: 2 };
-				var value = attribute.beforeSet( mockModel, data, oldValue );
+				var value = attribute.convert( data );
 				
-				expect( value instanceof TestModel ).toBe( true );  // orig YUI Test err msg: "The return value from beforeSet should have been an instance of the Model"
+				expect( value instanceof TestModel ).toBe( true );  // orig YUI Test err msg: "The return value from convert should have been an instance of the Model"
 				expect( value.get( 'attr1' ) ).toBe( 1 );  // orig YUI Test err msg: "The data should have been set to the new model"
 				expect( value.get( 'attr2' ) ).toBe( 2 );  // orig YUI Test err msg: "The data should have been set to the new model"
 			} );
 			
 			
-			it( "beforeSet() should return an actual Model instance unchanged", function() {
+			it( "should return an actual Model instance unchanged", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    oldValue,  // undefined
 				    data = new thisSuite.Model( { attr1 : 1, attr2: 2 } ),
-				    value = thisSuite.attribute.beforeSet( mockModel, data, oldValue );
+				    value = thisSuite.attribute.convert( data );
 				
-				expect( value ).toBe( data );  // orig YUI Test err msg: "The return value from beforeSet should have been the same model instance"
+				expect( value ).toBe( data );  // orig YUI Test err msg: "The return value from convert should have been the same model instance"
 				expect( value.get( 'attr1' ) ).toBe( 1 );  // orig YUI Test err msg: "The data should remain set to the new model"
 				expect( value.get( 'attr2' ) ).toBe( 2 );  // orig YUI Test err msg: "The data should remain set to the new model"
 			} );
 			
 			
-			it( "if no `model` config was provided, beforeSet() should return an anonymous data object unchanged, to allow a user-defined set() method to take care of it", function() {
+			it( "if no `model` config was provided, should return an anonymous data object unchanged, to allow a user-defined set() method to take care of it", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    oldValue;
 				
@@ -251,7 +251,7 @@ define( [
 				} );
 				
 				var data = { attr1: 1, attr2: 2 };
-				var value = attribute.beforeSet( mockModel, data, oldValue );
+				var value = attribute.convert( data );
 				
 				expect( value ).toBe( data );
 			} );

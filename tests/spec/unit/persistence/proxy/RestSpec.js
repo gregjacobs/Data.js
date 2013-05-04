@@ -16,7 +16,7 @@ define( [
 	} );
 	
 	
-	describe( "unit.persistence.proxy.Rest", function() {
+	describe( "data.persistence.proxy.Rest", function() {
 		
 		describe( "Test create", function() {
 			

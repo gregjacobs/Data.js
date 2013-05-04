@@ -1,4 +1,5 @@
 /*global define */
+/*jshint eqnull:true */
 define( [
 	'lodash',
 	'Class',
@@ -38,19 +39,17 @@ define( [
 		
 		
 		/**
-		 * Converts the provided data value into a Boolean. If {@link #useNull} is true, "unparsable" values
-		 * will return null. 
+		 * Override of superclass method used to convert the value into a string. If {@link #useNull} is true, "unparsable" values
+		 * will return null. See {@link #useNull} for details.
 		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
+		 * @param {Mixed} value The value to convert.
+		 * @return {String}
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
+		convert : function( value ) {
+			value = this._super( arguments );
+			
 			var defaultValue = ( this.useNull ) ? null : "";
-			return ( newValue === undefined || newValue === null ) ? defaultValue : String( newValue );
+			return ( value == null ) ? defaultValue : String( value );
 		}
 		
 	} );

@@ -6,7 +6,7 @@ define( [
 	'data/persistence/operation/Write'
 ], function( _, Model, RestProxy, WriteOperation ) {
 
-	describe( "integration.persistence.RestProxy with Nested Models", function() {
+	describe( "Integration: persistence.RestProxy with Nested Models", function() {
 		
 		describe( "Test updating when nested model attributes are changed", function() {
 			var thisSuite;

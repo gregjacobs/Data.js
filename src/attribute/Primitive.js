@@ -18,6 +18,7 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} useNull
+		 * 
 		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
 		 * Attribute is "unset", and it shouldn't take an actual default value).
 		 * 

@@ -40,7 +40,7 @@ define( [
 	WriteOperation
 ) {
 
-	describe( 'unit.data.Model', function() {
+	describe( 'data.Model', function() {
 		
 		// A concrete Proxy class for tests to use.
 		var ConcreteProxy = Proxy.extend( {
@@ -320,8 +320,8 @@ define( [
 						{ name: 'attribute1' },
 						{ name: 'attribute2', defaultValue: "attribute2's default" },
 						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + newValue.get( 'attribute2' ); } }
+						{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+						{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + newValue.get( 'attribute2' ); } }
 					]
 				} );
 				
@@ -345,8 +345,8 @@ define( [
 						{ name: 'attribute1' },
 						{ name: 'attribute2', defaultValue: "attribute2's default" },
 						{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-						{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-						{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+						{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+						{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute2' ); } }
 					]
 				} );
 				
@@ -545,8 +545,8 @@ define( [
 					{ name: 'attribute1' },
 					{ name: 'attribute2', defaultValue: "attribute2's default" },
 					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+					{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute2' ); } }
 				]
 			} );
 			
@@ -696,7 +696,7 @@ define( [
 				var TestModel = Class.extend( Model, {
 					attributes: [
 						{ name: 'attribute1' },
-						{ name: 'attribute2', set : function( newValue ) { return newValue + " " + this.get( 'attribute1' ); } }
+						{ name: 'attribute2', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute1' ); } }
 					]
 				} );
 				var model = new TestModel( {
@@ -712,7 +712,7 @@ define( [
 				var TestModel = Class.extend( Model, {
 					attributes: [
 						{ name: 'attribute1' },
-						{ name: 'attribute2', set : function( newValue ) { return newValue + " " + this.get( 'attribute1' ); } }
+						{ name: 'attribute2', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute1' ); } }
 					]
 				} );
 				var model = new TestModel( {
@@ -727,12 +727,12 @@ define( [
 			} );
 			
 			
-			it( "When set() is provided an Object (hashmap) of data to set, the attributes with user-provided 'set' methods should be run after ones with out any (in case they rely on the ones without setters)", function() {
+			it( "When set() is provided an Object (map) of data to set, the attributes with user-provided 'set' methods should be run after ones with out any (in case they rely on the ones without setters)", function() {
 				var TestModel = Model.extend( {
 					attributes : [
-						{ name: 'attr_with_setter1', set: function( value ) { return this.get( 'attr_without_setter' ) + value; } },
+						{ name: 'attr_with_setter1', set: function( model, value ) { return model.get( 'attr_without_setter' ) + value; } },
 						{ name: 'attr_without_setter' },
-						{ name: 'attr_with_setter2', set: function( value ) { return this.get( 'attr_without_setter' ) + value; } }
+						{ name: 'attr_with_setter2', set: function( model, value ) { return model.get( 'attr_without_setter' ) + value; } }
 					]
 				} );
 				
@@ -749,13 +749,13 @@ define( [
 			} );
 			
 			
-			it( "should delegate to the Attribute's beforeSet() and afterSet() methods to do any pre and post processing needed for the value", function() {
-				var beforeSetValue, 
+			it( "should delegate to the Attribute's set() and afterSet() methods to do any processing and post-processing needed for the value", function() {
+				var setValue, 
 				    afterSetValue;
 				
 				var TestAttribute = Attribute.extend( {
-					beforeSet : function( model, newValue, oldValue ) {
-						return ( beforeSetValue = newValue + 1 );
+					set : function( model, newValue, oldValue ) {
+						return ( setValue = newValue + 1 );
 					},
 					afterSet : function( model, newValue ) {
 						return ( afterSetValue = newValue + 20 );
@@ -765,20 +765,15 @@ define( [
 				var TestModel = Model.extend( {
 					attributes : [
 						new TestAttribute( {
-							name : 'attr1',
-							
-							// A custom 'set' function that should be executed in between the beforeSet() and afterSet() methods
-							set : function( value ) {
-								return value + 5;
-							}
+							name : 'attr1'
 						} )
 					]
 				} );
 				
 				var model = new TestModel( { attr1: 0 } );
 				
-				expect( beforeSetValue ).toBe( 1 );
-				expect( afterSetValue ).toBe( 26 );
+				expect( setValue ).toBe( 1 );
+				expect( afterSetValue ).toBe( 21 );
 			} );
 			
 			
@@ -787,23 +782,18 @@ define( [
 					attributes: [ 'attribute1', 'attribute2' ]
 				} );
 				var model = new TestModel(),
-				    changeEventFired = false,
-				    attributeNameChanged,
-				    newValue,
-				    oldValue;
+				    changeEventCount = 0;
 				    
-				model.addListener( 'change', function( model, attributeName, _newValue, _oldValue ) {
-					changeEventFired = true;
-					attributeNameChanged = attributeName;
-					newValue = _newValue;
-					oldValue = _oldValue;
+				model.addListener( 'change', function( model, attributeName, newValue, oldValue ) {
+					changeEventCount++;
+						
+					expect( attributeName ).toBe( "attribute2" );
+					expect( newValue ).toBe( "brandNewValue" );
+					expect( oldValue ).toBeUndefined();  // no old value
 				} );
 				
 				model.set( 'attribute2', "brandNewValue" );
-				expect( changeEventFired ).toBe( true );  // orig YUI Test err msg: "The 'change' event was not fired"
-				expect( attributeNameChanged ).toBe( "attribute2" );  // orig YUI Test err msg: "The attributeName that was changed was not provided to the event correctly."
-				expect( newValue ).toBe( "brandNewValue" );  // orig YUI Test err msg: "The value for attribute2 that was changed was not provided to the event correctly."
-				expect( _.isUndefined( oldValue ) ).toBe( true );  // orig YUI Test err msg: "The oldValue for attribute2 that was changed was not provided to the event correctly. Should have been undefined, from having no original value"
+				expect( changeEventCount ).toBe( 1 );  // make sure the event was fired exactly once
 			} );
 			
 			
@@ -812,20 +802,17 @@ define( [
 					attributes: [ 'attribute1', 'attribute2' ]
 				} );
 				var model = new TestModel(),
-				    changeEventFired = false,
-				    newValue,
-				    oldValue;
+				    changeEventCount = 0;
 				    
-				model.addListener( 'change:attribute2', function( model, _newValue, _oldValue ) {
-					changeEventFired = true;
-					newValue = _newValue;
-					oldValue = _oldValue;
+				model.addListener( 'change:attribute2', function( model, newValue, oldValue ) {
+					changeEventCount++;
+					
+					expect( newValue ).toBe( "brandNewValue" );
+					expect( oldValue ).toBeUndefined( true );
 				} );
 				
 				model.set( 'attribute2', "brandNewValue" );
-				expect( changeEventFired ).toBe( true );  // orig YUI Test err msg: "The 'change:attribute2' event was not fired"
-				expect( newValue ).toBe( "brandNewValue" );  // orig YUI Test err msg: "The value for attribute2 that was changed was not provided to the event correctly."
-				expect( _.isUndefined( oldValue ) ).toBe( true );  // orig YUI Test err msg: "The oldValue for attribute2 that was changed was not provided to the event correctly. Should have been undefined, from having no original value"
+				expect( changeEventCount ).toBe( 1 );  // make sure the event was fired exactly once
 			} );
 			
 			
@@ -835,7 +822,7 @@ define( [
 						{ 
 							// Attribute with a set() function that returns a new value
 							name : 'attribute1',
-							set : function( value ) { 
+							set : function( model, value ) { 
 								return value;
 							}
 						},
@@ -843,7 +830,7 @@ define( [
 							// Attribute with a set() function that does not return a new value (presumably modifying some other Attribute in the model),
 							// and therefore does not have a new value set to the underlying data
 							name : 'attribute2', 
-							set : function( value ) {
+							set : function( model, value ) {
 								// Presumably updating some other Attribute in the model
 							}
 						} 
@@ -851,48 +838,48 @@ define( [
 				} );
 				
 				var model = new TestModel(),
-				    attribute1ChangeEventCount = 0,
+				    attribute1ChangeCount = 0,
 				    attribute1ChangeEventValue,
-				    attribute2ChangeEventCount = 0,
+				    attribute2ChangeCount = 0,
 				    attribute2ChangeEventValue;
 				    
 				model.addListener( 'change:attribute1', function( model, value ) {
-					attribute1ChangeEventCount++;
+					attribute1ChangeCount++;
 					attribute1ChangeEventValue = value;
 				} );
 				model.addListener( 'change:attribute2', function( model, value ) {
-					attribute2ChangeEventCount++;
+					attribute2ChangeCount++;
 					attribute2ChangeEventValue = value;
 				} );
 				
 				
 				// Test changing the attribute with a set() function that returns a new value
 				model.set( 'attribute1', 'attribute1value1' );
-				expect( attribute1ChangeEventCount ).toBe( 1 );  // orig YUI Test err msg: "The attribute1 change event count should now be 1, with the initial value"
-				expect( attribute2ChangeEventCount ).toBe( 0 );  // orig YUI Test err msg: "The attribute2 change event count should still be 0, as no set has been performed on it yet"
-				expect( attribute1ChangeEventValue ).toBe( 'attribute1value1' );  // orig YUI Test err msg: "The attribute1 change event value was not correct"
+				expect( attribute1ChangeCount ).toBe( 1 );
+				expect( attribute2ChangeCount ).toBe( 0 );
+				expect( attribute1ChangeEventValue ).toBe( 'attribute1value1' );
 				
 				model.set( 'attribute1', 'attribute1value2' );
-				expect( attribute1ChangeEventCount ).toBe( 2 );  // orig YUI Test err msg: "The attribute1 change event count should now be 2, with a new value"
-				expect( attribute2ChangeEventCount ).toBe( 0 );  // orig YUI Test err msg: "The attribute2 change event count should still be 0, as no set has been performed on it yet"
-				expect( attribute1ChangeEventValue ).toBe( 'attribute1value2' );  // orig YUI Test err msg: "The attribute1 change event value was not correct"
+				expect( attribute1ChangeCount ).toBe( 2 );
+				expect( attribute2ChangeCount ).toBe( 0 );
+				expect( attribute1ChangeEventValue ).toBe( 'attribute1value2' );
 				
 				model.set( 'attribute1', 'attribute1value2' );  // setting to the SAME value, to make sure a new 'change' event has not been fired
-				expect( attribute1ChangeEventCount ).toBe( 2 );  // orig YUI Test err msg: "The attribute1 change event count should still be 2, being set to the same value"
-				expect( attribute2ChangeEventCount ).toBe( 0 );  // orig YUI Test err msg: "The attribute2 change event count should still be 0, as no set has been performed on it yet"
+				expect( attribute1ChangeCount ).toBe( 2 );
+				expect( attribute2ChangeCount ).toBe( 0 );
 				
 				
 				// Test changing the attribute with a set() function that does *not* return a new value (which makes the model not store
 				// any new value on its underlying data hash)
 				model.set( 'attribute2', 'attribute2value1' );
-				expect( attribute1ChangeEventCount ).toBe( 2 );  // orig YUI Test err msg: "The attribute1 change event count should still be 2, as no new set has been performed on it"
-				expect( attribute2ChangeEventCount ).toBe( 1 );  // orig YUI Test err msg: "The attribute2 change event count should now be 1, since a set has been performed on it"
-				expect( _.isUndefined( attribute2ChangeEventValue ) ).toBe( true );  // orig YUI Test err msg: "The attribute2 change event value should have been undefined, as its set() function does not return anything"
+				expect( attribute1ChangeCount ).toBe( 2 );
+				expect( attribute2ChangeCount ).toBe( 1 );
+				expect( attribute2ChangeEventValue ).toBeUndefined();
 				
 				model.set( 'attribute2', 'attribute2value2' );
-				expect( attribute1ChangeEventCount ).toBe( 2 );  // orig YUI Test err msg: "The attribute1 change event count should still be 2, as no new set has been performed on it (2nd time)"
-				expect( attribute2ChangeEventCount ).toBe( 2 );  // orig YUI Test err msg: "The attribute2 change event count should now be 2, since a set has been performed on it"
-				expect( _.isUndefined( attribute2ChangeEventValue ) ).toBe( true );  // orig YUI Test err msg: "The attribute2 change event value should still be undefined, as its set() function does not return anything"
+				expect( attribute1ChangeCount ).toBe( 2 );
+				expect( attribute2ChangeCount ).toBe( 2 );
+				expect( attribute2ChangeEventValue ).toBe();
 			} );
 			
 			
@@ -901,7 +888,7 @@ define( [
 					attributes: [
 						{
 							name : 'myAttribute',
-							get : function( value ) { return value + 10; } // add 10, to make sure we're using the getter
+							get : function( model, value ) { return value + 10; } // add 10, to make sure we're using the getter
 						}
 					]
 				} );
@@ -940,8 +927,8 @@ define( [
 							// Computed Attribute with both a set() function and a get() function, which simply uses 'baseAttribute' for its value
 							// (which in practice, would probably be composed of two or more attributes, and possible does calculations as well)
 							name : 'computedAttribute',
-							set : function( value ) { this.set( 'baseAttribute', value ); },
-							get : function( value ) { return this.get( 'baseAttribute' ) + 10; }   // add 10, to make sure we're using the getter
+							set : function( model, value ) { model.set( 'baseAttribute', value ); },
+							get : function( model, value ) { return model.get( 'baseAttribute' ) + 10; }   // add 10, to make sure we're using the getter
 						}
 					]
 				} );
@@ -1020,9 +1007,9 @@ define( [
 					attributes: [ 
 						{ 
 							name : 'a', 
-							set : function( value ) {
-								this.set( 'b', value + 1 );
-								this.set( 'c', value + 2 );
+							set : function( model, value ) {
+								model.set( 'b', value + 1 );
+								model.set( 'c', value + 2 );
 								return value;
 							}
 						}, 
@@ -1233,7 +1220,7 @@ define( [
 				var TestModel = Model.extend( {
 					attributes: [
 						{ name: 'attribute1' },
-						{ name: 'attribute2', set : function( value ) { return value + " " + this.get( 'attribute1' ); } }
+						{ name: 'attribute2', set : function( model, value ) { return value + " " + model.get( 'attribute1' ); } }
 					],
 					idAttribute: 'attribute1'
 				} );
@@ -1259,8 +1246,8 @@ define( [
 					{ name: 'attribute1' },
 					{ name: 'attribute2', defaultValue: "attribute2's default" },
 					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-					{ name: 'attribute5', get : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } }
+					{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+					{ name: 'attribute5', get : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } }
 				]
 			} );
 			
@@ -1315,14 +1302,14 @@ define( [
 					{ name: 'attribute2', defaultValue: "attribute2's default" },
 					{ 
 						name: 'attribute3', 
-						get : function( newValue ) { 
-							return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); 
+						get : function( model, newValue ) { 
+							return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); 
 						} 
 					},
 					{ 
 						name: 'attribute4', 
-						raw : function( newValue ) { 
-							return newValue + " " + this.get( 'attribute1' );
+						raw : function( model, newValue ) { 
+							return newValue + " " + model.get( 'attribute1' );
 						} 
 					}
 				]
@@ -1372,8 +1359,8 @@ define( [
 					{ name: 'attribute1' },
 					{ name: 'attribute2', defaultValue: "attribute2's default" },
 					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+					{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute2' ); } }
 				]
 			} );
 			
@@ -1404,8 +1391,8 @@ define( [
 					{ name: 'attribute1' },
 					{ name: 'attribute2', defaultValue: "attribute2's default" },
 					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+					{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute2' ); } }
 				]
 			} );
 			
@@ -1607,8 +1594,8 @@ define( [
 					{ name: 'attribute1' },
 					{ name: 'attribute2', defaultValue: "attribute2's default" },
 					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+					{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute2' ); } }
 				]
 			} );
 			
@@ -1687,8 +1674,8 @@ define( [
 					{ name: 'attribute1' },
 					{ name: 'attribute2', defaultValue: "attribute2's default" },
 					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-					{ name: 'attribute4', set : function( newValue ) { return this.get( 'attribute1' ) + " " + this.get( 'attribute2' ); } },
-					{ name: 'attribute5', set : function( newValue ) { return newValue + " " + this.get( 'attribute2' ); } }
+					{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute2' ); } }
 				]
 			} );
 			

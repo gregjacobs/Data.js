@@ -602,7 +602,7 @@ define( [
 		 */
 		set : function( attributeName, newValue ) {
 			// If coming into the set() method for the first time (non-recursively, not from an attribute setter, not from a 'change' handler, etc),
-			// reset the hashmaps which will hold the newValues and oldValues that will be provided to the 'changeset' event.
+			// reset the maps which will hold the newValues and oldValues that will be provided to the 'changeset' event.
 			if( this.setCallCount === 0 ) {
 				this.changeSetNewValues = {};
 				this.changeSetOldValues = {};
@@ -616,7 +616,7 @@ define( [
 			    changeSetOldValues = this.changeSetOldValues;
 			
 			if( typeof attributeName === 'object' ) {
-				// Hash provided
+				// Map provided
 				var values = attributeName,  // for clarity
 				    attrsWithSetters = [];
 				
@@ -641,7 +641,7 @@ define( [
 				}
 				
 			} else {
-				// attributeName and newValue provided
+				// `attributeName` and `newValue` args provided to method
 				var attribute = attributes[ attributeName ];
 				
 				// <debug>
@@ -653,12 +653,9 @@ define( [
 				// Get the current (old) value of the attribute, and its current "getter" value (to provide to the 'change' event as the oldValue)
 				var oldValue = this.data[ attributeName ],
 				    oldGetterValue = this.get( attributeName );
-							
-				// Allow the Attribute to pre-process the newValue
-				newValue = attribute.beforeSet( this, newValue, oldValue );
 				
-				// Now call the Attribute's set() method (or user-provided 'set' config function)
-				newValue = attribute.doSet( this, newValue, oldValue );  // doSet() is a method which provides a level of indirection for calling the 'set' config function, or set() method
+				// Call the Attribute's set() method (or user-provided 'set' config function) to do any implemented conversion
+				newValue = attribute.set( this, newValue, oldValue );
 				
 				// *** Temporary workaround to get the 'change' event to fire on an Attribute whose set() config function does not
 				// return a new value to set to the underlying data. This will be resolved once dependencies are 
@@ -685,15 +682,15 @@ define( [
 					this.fireEvent( 'change', this, attributeName, newValue, oldGetterValue );    // model, attributeName, newValue, oldValue
 				}
 				
-				// Allow the Attribute to post-process the newValue
+				// Allow the Attribute to post-process the newValue (the value returned from the Attribute's set() function)
 				newValue = attribute.afterSet( this, newValue );
 				
 				// Only change if there is no current value for the attribute, or if newValue is different from the current
-				if( !( attributeName in this.data ) || !attribute.valuesAreEqual( oldValue, newValue ) ) {   // let the Attribute itself determine if two values of its datatype are equal
+				if( !this.data.hasOwnProperty( attributeName ) || !attribute.valuesAreEqual( oldValue, newValue ) ) {   // let the Attribute itself determine if two values of its datatype are equal
 					// Store the attribute's *current* value (not the newValue) into the "modifiedData" attributes hash.
 					// This should only happen the first time the attribute is set, so that the attribute can be rolled back even if there are multiple
 					// set() calls to change it.
-					if( !( attributeName in this.modifiedData ) ) {
+					if( !this.modifiedData.hasOwnProperty( attributeName ) ) {
 						this.modifiedData[ attributeName ] = oldValue;
 					}
 					this.data[ attributeName ] = newValue;
@@ -754,7 +751,7 @@ define( [
 			
 			// If there is a `get` function on the Attribute, run it now to convert the value before it is returned.
 			if( typeof attribute.get === 'function' ) {
-				value = attribute.get.call( this, value );  // provided the underlying value
+				value = attribute.get( this, value );  // provide the underlying value
 			}
 			
 			return value;
@@ -774,17 +771,17 @@ define( [
 		 */
 		raw : function( attributeName ) {
 			// <debug>
-			if( !( attributeName in this.attributes ) ) {
+			if( !this.attributes.hasOwnProperty( attributeName ) ) {
 				throw new Error( "data.Model::raw() error: attribute '" + attributeName + "' was not found on the Model." );
 			}
 			// </debug>
 			
 			var value = this.data[ attributeName ],
 			    attribute = this.attributes[ attributeName ];
-			    
+			
 			// If there is a `raw` function on the Attribute, run it now to convert the value before it is returned.
 			if( typeof attribute.raw === 'function' ) {
-				value = attribute.raw.call( this, value, this );  // provided the value, and the Model instance
+				value = attribute.raw( this, value );  // provide the underlying value
 			}
 			
 			return value;

@@ -3,7 +3,7 @@ define( [
 	'data/ModelCache'
 ], function( ModelCache ) {
 	
-	describe( "unit.data.ModelCache", function() {
+	describe( "data.ModelCache", function() {
 		var thisSuite;
 		
 		beforeEach( function() {

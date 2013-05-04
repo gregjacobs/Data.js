@@ -11,7 +11,7 @@ define( [
 	'data/persistence/operation/Read',
 	'data/persistence/operation/Batch'
 ], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, AjaxProxy, ReadOperation, BatchOperation ) {
-	describe( "unit.data.Collection", function() {
+	describe( "data.Collection", function() {
 		
 		describe( "Test the constructor", function() {
 			var thisSuite;

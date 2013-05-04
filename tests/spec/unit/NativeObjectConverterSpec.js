@@ -7,7 +7,7 @@ define( [
 	'data/Collection'
 ], function( jQuery, _, NativeObjectConverter, Model, Collection ) {
 
-	describe( "unit.data.NativeObjectConverter", function() {
+	describe( "data.NativeObjectConverter", function() {
 		
 		describe( "Test convert() with a model", function() {
 			
@@ -29,7 +29,7 @@ define( [
 				var MyModel = Model.extend( {
 					attributes : [ 
 						'attribute1', 
-						{ name: 'attribute2', get: function( valuel ) { return "42 " + this.get( 'attribute1' ); } }
+						{ name: 'attribute2', get: function( model, valuel ) { return "42 " + model.get( 'attribute1' ); } }
 					]
 				} );
 				var model = new MyModel( { attribute1: 'value1', attribute2: 'value2' } );
@@ -44,8 +44,8 @@ define( [
 				var MyModel = Model.extend( {
 					attributes : [ 
 						'attribute1', 
-						{ name: 'attribute2', get: function( value ) { return "42 " + this.get( 'attribute1' ); } },
-						{ name: 'attribute3', raw: function( value ) { return value + " " + this.get( 'attribute1' ); } }
+						{ name: 'attribute2', get: function( model, value ) { return "42 " + model.get( 'attribute1' ); } },
+						{ name: 'attribute3', raw: function( model, value ) { return value + " " + model.get( 'attribute1' ); } }
 					]
 				} );
 				var model = new MyModel( { attribute1: 'value1', attribute2: 'value2', attribute3: 'value3' } );

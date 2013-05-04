@@ -3,7 +3,7 @@ define( [
 	'data/Model'
 ], function( Model ) {
 
-	describe( "integration.Model with Object Attribute", function() {
+	describe( "Integration: Model with Object Attribute", function() {
 		
 		describe( "Test defaultValue of Object Attribute", function() {
 			

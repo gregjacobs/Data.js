@@ -16,7 +16,7 @@ define( [
 	} );
 	
 	
-	describe( "unit.persistence.proxy.Ajax", function() {
+	describe( "data.persistence.proxy.Ajax", function() {
 		
 		describe( "Test read", function() {
 			

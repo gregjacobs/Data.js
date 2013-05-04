@@ -3,7 +3,7 @@ define( [
 	'data/Model'
 ], function( Model ) {
 		
-	describe( "integration.Model with ModelCache", function() {
+	describe( "Integration: Model with ModelCache", function() {
 		
 		describe( "Duplicate models should not be able to be instantiated", function() {
 			
