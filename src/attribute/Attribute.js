@@ -454,7 +454,7 @@ define( [
 		/**
 		 * Method that allows for processing the value that is to be stored for this Attribute on a {@link data.Model}. This method,
 		 * by default, calls the {@link #convert} method to do any necessary conversion for the value, dependent on the particular
-		 * Attribute subclass in use. However, this method may be overridden by providing a {@link cfg-set set config}.
+		 * Attribute subclass in use. However, this method may be overridden by providing a {@link #cfg-set set config}.
 		 * 
 		 * @param {data.Model} model The Model instance that is providing the value.
 		 * @param {Mixed} newValue The new value, which was provided to the Model's {@link data.Model#set set} method.
@@ -467,7 +467,7 @@ define( [
 		
 		/**
 		 * Method that allows for post-processing of the value that is to be set to the {@link data.Model}.
-		 * This method is executed after the {@link #method-set set method} (or {@link cfg-set set config} function, if one was
+		 * This method is executed after the {@link #method-set set method} (or {@link #cfg-set set config} function, if one was
 		 * provided). The `value` provided to this method is the value that has been already processed by {@link #method-set}. 
 		 * 
 		 * The return value from this method will be the value that is ultimately set as the data for the Attribute on the 
