@@ -81,14 +81,14 @@ define( [
 			 * @ignore
 			 */
 			onClassExtended : function( newModelClass ) {
-				// Assign a unique id to this class, which is used in hashmaps that hold the class
+				// Assign a unique id to this class, which is used in maps that hold the class
 				newModelClass.__Data_modelTypeId = _.uniqueId();
 				
 				
 				// Now handle initializing the Attributes, merging this subclass's attributes with the superclass's attributes
 				var classPrototype = newModelClass.prototype,
 				    superclassPrototype = newModelClass.superclass,
-				    superclassAttributes = superclassPrototype.attributes || {},    // will be an object (hashmap) of attributeName -> Attribute instances
+				    superclassAttributes = superclassPrototype.attributes || {},    // will be an Object (map) of attributeName -> Attribute instances
 				    newAttributes = {},
 				    attributeDefs = [],  // will be an array of Attribute configs (definitions) on the new subclass 
 				    attributeObj,   // for holding each of the attributeDefs, one at a time
@@ -119,12 +119,12 @@ define( [
 			
 			
 			/**
-			 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
+			 * Retrieves the Attribute objects that are present for the Model, in an Object (map) where the keys
 			 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
 			 * 
 			 * @inheritable
 			 * @static
-			 * @return {Object} An Object (hashmap) where the keys are the attribute {@link data.attribute.Attribute#name names},
+			 * @return {Object} An Object (map) where the keys are the attribute {@link data.attribute.Attribute#name names},
 			 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 			 */
 			getAttributes : function() {
@@ -246,7 +246,7 @@ define( [
 		 * @private
 		 * @property {Object} changeSetNewValues
 		 * 
-		 * A hashmap which holds the changes to attributes for the {@link #changeset} event to fire with. This hashmap collects the 
+		 * An Object (map) which holds the changes to attributes for the {@link #changeset} event to fire with. This map collects the 
 		 * changed values as calls to {@link #method-set} are made, and is used with the arguments that the {@link #changeset} event fires
 		 * with (when it does fire, at the end of all of the calls to {@link #method-set}).
 		 */
@@ -255,7 +255,7 @@ define( [
 		 * @private
 		 * @property {Object} changeSetOldValues
 		 * 
-		 * A hashmap which holds the changes to attributes for the {@link #changeset} event to fire with. This hashmap collects the 
+		 * A map which holds the changes to attributes for the {@link #changeset} event to fire with. This map collects the 
 		 * previous ("old") values as calls to {@link #method-set} are made, and is used with the arguments that the {@link #changeset} event fires
 		 * with (when it does fire, at the end of all of the calls to {@link #method-set}).
 		 */
@@ -378,9 +378,9 @@ define( [
 				 * 
 				 * @event changeset
 				 * @param {data.Model} model This Model instance.
-				 * @param {Object} newValues An object (hashmap) of the new values of the Attributes that changed. The object's keys (property names) are the
+				 * @param {Object} newValues An Object (map) of the new values of the Attributes that changed. The object's keys (property names) are the
 				 *   {@link data.attribute.Attribute#name Attribute names}, and the object's values are the new values for those Attributes.
-				 * @param {Object} oldValues An object (hashmap) of the old values of the Attributes that changed. The object's keys (property names) are the
+				 * @param {Object} oldValues An Object (map) of the old values of the Attributes that changed. The object's keys (property names) are the
 				 *   {@link data.attribute.Attribute#name Attribute names}, and the object's values are the old values that were held for those Attributes.
 				 */
 				'changeset',
@@ -519,10 +519,10 @@ define( [
 		
 		
 		/**
-		 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
+		 * Retrieves the Attribute objects that are present for the Model, in an Object (map) where the keys
 		 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
 		 * 
-		 * @return {Object} An Object (hashmap) where the keys are the attribute {@link data.attribute.Attribute#name names},
+		 * @return {Object} An Object (map) where the keys are the attribute {@link data.attribute.Attribute#name names},
 		 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 		 */
 		getAttributes : function() {
@@ -671,7 +671,7 @@ define( [
 					// Fire the events with the value of the Attribute after it has been processed by any Attribute-specific `get()` function.
 					newValue = this.get( attributeName );
 					
-					// Store the 'change' in the 'changeset' hashmaps
+					// Store the 'change' in the 'changeset' maps
 					this.changeSetNewValues[ attributeName ] = newValue;
 					if( !( attributeName in changeSetOldValues ) ) {  // only store the "old" value if we don't have an "old" value for the attribute already. This leaves us with the real "old" value when multiple sets occur for an attribute during the changeset.
 						this.changeSetOldValues[ attributeName ] = oldGetterValue;
@@ -709,7 +709,7 @@ define( [
 						ModelCache.get( this, newValue );
 					}
 					
-					// Store the 'change' values in the changeset hashmaps, for use when the 'changeset' event fires
+					// Store the 'change' values in the changeset maps, for use when the 'changeset' event fires
 					changeSetNewValues[ attributeName ] = newValue;
 					if( !( attributeName in changeSetOldValues ) ) {  // Only store the "old" value if we don't have an "old" value for the attribute already. This leaves us with the real "old" value when multiple set()'s occur for an attribute during the changeset.
 						changeSetOldValues[ attributeName ] = oldGetterValue;
@@ -860,7 +860,7 @@ define( [
 				// If the 'persistedOnly' option is true, we only consider attributes that are persisted.
 				for( var attr in modifiedData ) {
 					if( modifiedData.hasOwnProperty( attr ) && ( !options.persistedOnly || ( options.persistedOnly && attributes[ attr ].isPersisted() ) ) ) {
-						return true;  // there is any property in the modifiedData hashmap, return true (unless 'persistedOnly' option is set, in which case we only consider persisted attributes)
+						return true;  // there is any property in the modifiedData map, return true (unless 'persistedOnly' option is set, in which case we only consider persisted attributes)
 					}
 				}
 				
@@ -922,7 +922,7 @@ define( [
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details. Options specific to this method include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return only changed attributes that are 
 		 *   {@link data.attribute.Attribute#persist persisted}. In the case of nested models, a nested model will only be returned in the resulting
-		 *   hashmap if one if its {@link data.attribute.Attribute#persist persisted} attributes are modified. 
+		 *   map if one if its {@link data.attribute.Attribute#persist persisted} attributes are modified. 
 		 * 
 		 * @return {Object} A hash of the attributes that have been changed since the last {@link #method-commit} or {@link #method-rollback}.
 		 *   The hash's property names are the attribute names, and the hash's values are the new values.

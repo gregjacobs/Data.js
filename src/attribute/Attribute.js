@@ -176,13 +176,21 @@ define( [
 		 * the value which will ultimately be stored on the {@link data.Model Model}. Only provide this config if you want to override
 		 * the default {@link #convert} function which is used by the Attribute (or Attribute subclass). 
 		 * 
-		 * 
 		 * This function is passed the following arguments:
 		 * 
-		 * @cfg {data.Model} set.model The Model for which a value to the Attribute is being set.
-		 * @cfg {Mixed} set.newValue The provided new data value to the attribute. If the attribute has no initial data value, its {@link #defaultValue}
+		 * - **model** : {@link data.Model}
+		 *   
+		 *   The Model for which a value to the Attribute is being set.
+		 *   
+		 * - **newValue** : Mixed
+		 *   
+		 *   The provided new data value to the attribute. If the attribute has no initial data value, its {@link #defaultValue}
 		 *   will be provided to this argument upon instantiation of the {@link data.Model Model}.
-		 * @cfg {Mixed} set.oldValue The old value that the attribute held (if any).
+		 *   
+		 * - **oldValue** : Mixed
+		 *   
+		 *   The old value that the attribute held (if any).
+		 * 
 		 * 
 		 * The function should do any processing that is necessary, and return the value that the Model should hold for the value. 
 		 * For example, this `set` function will convert a string value to a JavaScript
@@ -259,8 +267,16 @@ define( [
 		 * method is called for the Attribute. This is useful to create "computed" attributes, which may be created based on other 
 		 * Attributes' values. The function is passed the argument of the underlying stored value, and should return the computed value.
 		 * 
-		 * @cfg {data.Model} get.model The Model for which the value of the Attribute is being retrieved.
-		 * @cfg {Mixed} get.value The value that the Attribute currently has stored in the {@link data.Model Model}.
+		 * This function is passed the following arguments:
+		 * 
+		 * - **model** : {@link data.Model}
+		 * 
+		 *   The Model for which the value of the Attribute is being retrieved.
+		 *   
+		 * - **value** : Mixed
+		 *   
+		 *   The value that the Attribute currently has stored in the {@link data.Model Model}.
+		 *
 		 * 
 		 * For example, if we had a {@link data.Model Model} with `firstName` and `lastName` Attributes, and we wanted to create a `fullName` 
 		 * Attribute, this could be done as in the example below.
