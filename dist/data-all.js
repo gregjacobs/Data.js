@@ -1487,155 +1487,185 @@ define('data/attribute/Attribute', [
 		 * The default value to set to the Attribute, when the Attribute is given no initial value.
 		 *
 		 * If the `defaultValue` is a function, the function will be executed each time a {@link data.Model Model} is created, and its return 
-		 * value used as the `defaultValue`. This is useful, for example, to assign a new unique number to an attribute of a {@link data.Model Model}. 
+		 * value is used as the `defaultValue`. This is useful, for example, to assign a new unique number to an attribute of a {@link data.Model Model}. 
 		 * Ex:
 		 * 
-		 *     MyModel = Model.extend( {
-		 *         attributes : [
-		 *             {
-		 *                 name: 'uniqueId', 
-		 *                 defaultValue: function( attribute ) {
-		 *                     return _.uniqueId();
+		 *     require( [
+		 *         'lodash',   // assuming Lo-Dash (or alternatively, Underscore.js) is available
+		 *         'data/Model'
+		 *     ], function( _, Model ) {
+		 *     
+		 *         MyModel = Model.extend( {
+		 *             attributes : [
+		 *                 {
+		 *                     name: 'uniqueId', 
+		 *                     defaultValue: function() {
+		 *                         return _.uniqueId();
+		 *                     }
 		 *                 }
-		 *             }
-		 *         ]
+		 *             ]
+		 *         } );
+		 *     
 		 *     } );
 		 * 
-		 * Note that the function is passed the Attribute as its first argument, which may be used to query the Attribute's properties/configs.
+		 * Note that the function is called in the scope of the Attribute, which may be used to read the Attribute's own properties/configs,
+		 * or call its methods.
 		 */
 		
 		/**
 		 * @cfg {Function} set
-		 * A function that can be used to convert the raw value provided to the attribute, to a new value which will be stored
-		 * on the {@link data.Model Model}. This function is passed the following arguments:
 		 * 
-		 * @cfg {Mixed} set.newValue The provided new data value to the attribute. If the attribute has no initial data value, its {@link #defaultValue}
+		 * A function that can be used to implement any custom processing needed to convert the raw value provided to the attribute to 
+		 * the value which will ultimately be stored on the {@link data.Model Model}. Only provide this config if you want to override
+		 * the default {@link #convert} function which is used by the Attribute (or Attribute subclass). 
+		 * 
+		 * This function is passed the following arguments:
+		 * 
+		 * - **model** : {@link data.Model}
+		 *   
+		 *   The Model for which a value to the Attribute is being set.
+		 *   
+		 * - **newValue** : Mixed
+		 *   
+		 *   The provided new data value to the attribute. If the attribute has no initial data value, its {@link #defaultValue}
 		 *   will be provided to this argument upon instantiation of the {@link data.Model Model}.
-		 * @cfg {Mixed} set.oldValue The old value that the attribute held (if any).
+		 *   
+		 * - **oldValue** : Mixed
+		 *   
+		 *   The old value that the attribute held (if any).
 		 * 
-		 * The function should then do any processing that is necessary, and return the value that the Attribute should hold. For example,
-		 * this `set` function will convert a string value to a 
+		 * 
+		 * The function should do any processing that is necessary, and return the value that the Model should hold for the value. 
+		 * For example, this `set` function will convert a string value to a JavaScript
 		 * <a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date" target="_blank">Date</a>
 		 * object. Otherwise, it will return the value unchanged:
-		 *     
+		 * 
 		 *     {
 		 *         name : 'myDateAttr',
 		 *         
-		 *         set : function( newValue, oldValue ) {
-		 *             if( typeof value === 'string' ) {
-		 *                 value = new Date( value );
+		 *         set : function( model, newValue, oldValue ) {
+		 *             if( typeof newValue === 'string' ) {
+		 *                 newValue = new Date( newValue );
 		 *             }
-		 *             return value;
+		 *             return newValue;
 		 *         }
 		 *     }
 		 * 
-		 * Just as with {@link #get}, the `set` function is called in the scope of the {@link data.Model Model} that owns the attribute. 
-		 * This can be used to set other attributes of a "computed" attribute. Ex:
+		 * If you are using an Attribute subclass (such as the {@link data.attribute.String StringAttribute}), and you want to call the
+		 * original {@link #convert} function that is defined, as well as add your own conversion processing, you can do so by simply
+		 * calling `this.convert( newValue )` in your `set` function. Ex:
 		 * 
 		 *     {
-		 *         // A "computed" attribute which combines the 'firstName' and 'lastName' attributes in this model (assuming they are there)
-		 *         name : 'fullName',
+		 *         name : 'trimmedName',
+		 *         type : 'string',
 		 *         
-		 *         set : function( newValue, oldValue ) {
-		 *             // A setter which takes the first and last name given (such as "Gregory Jacobs"), and splits them up into 
-		 *             // their appropriate parts, to set the appropriate attributes for the computed attribute
-		 *             var names = newValue.split( ' ' );  // split on the space between first and last name
+		 *         set : function( model, newValue ) {
+		 *             newValue = this.convert( newValue );  // make sure it's been converted to a string, using all of the rules defined in the StringAttribute
 		 *             
-		 *             // Note: `this` refers to the model which is setting the value, so we can call the set() method
-		 *             this.set( 'firstName', names[ 0 ] );
-		 *             this.set( 'lastName', names[ 1 ] );
-		 *         },
-		 * 
-		 *         get : function( value ) {
-		 *             return this.get( 'firstName' ) + " " + this.get( 'lastName' );  // Combine firstName and lastName for the computed attribute. `this` refers to the model
+		 *             return ( newValue.length > 50 ) ? newValue.substr( 0, 47 ) + '...' : newValue;   // this would most likely be a View detail in a real application, but demonstrates the capability
 		 *         }
 		 *     }
 		 * 
-		 * The function is run in the context (the `this` reference) of the {@link data.Model Model} instance that owns the attribute, in the that case 
-		 * that other Attributes need to be queried, or need to be {@link data.Model#set set} by the `set` function. However, in the case of querying 
-		 * other Attributes for their value, be careful in that they may not be set to the expected value when the `set` function executes. For creating 
-		 * computed Attributes that rely on other Attributes' values, use a {@link #get} function instead.
 		 * 
-		 * Notes:
+		 * ## Computed Attributes
+		 * 
+		 * The `set` function can also be used to set other attributes of a "computed" attribute. Ex:
+		 * 
+		 *     {
+		 *         // A "computed" attribute which combines the 'firstName' and 'lastName' attributes in this model 
+		 *         // (assuming they are there)
+		 *         name : 'fullName',
+		 *         
+		 *         set : function( model, newValue, oldValue ) {
+		 *             // Setter which takes the first and last name given (such as "John Smith"), and splits them up into 
+		 *             // their appropriate parts, to set the appropriate "source" attributes for the computed attribute.
+		 *             var names = newValue.split( ' ' );  // split on the space between first and last name
+		 *             
+		 *             model.set( 'firstName', names[ 0 ] );
+		 *             model.set( 'lastName', names[ 1 ] );
+		 *         },
+		 * 
+		 *         get : function( model, value ) {
+		 *             // Combine firstName and lastName "source" attributes for the computed attribute's return
+		 *             return model.get( 'firstName' ) + " " + model.get( 'lastName' );
+		 *         }
+		 *     }
+		 * 
+		 * For the general case of querying other Attributes for their value, be careful in that they may not be set to the expected value 
+		 * when this `set` function executes. For creating computed Attributes that rely on other Attributes' values, use a {@link #cfg-get} 
+		 * function instead.
+		 * 
+		 * ## Notes:
 		 * 
 		 * - Both a `set` and a {@link #get} function can be used in conjunction.
 		 * - The `set` function is called upon instantiation of the {@link data.Model Model} if the Model is passed an initial value
 		 *   for the Attribute, or if the Attribute has a {@link #defaultValue}.
-		 * 
-		 * 
-		 * When using {@link #type typed} Attributes, providing a `set` function overrides the Attribute's {@link #method-set set} method, which
-		 * does the automatic conversion that the Attribute subclass advertises. If you would like to still use the original {@link #method-set set}
-		 * method in conjunction with pre-processing and/or post-processing the value, you can call the original {@link #method-set set} method as
-		 * such:
-		 * 
-		 *     {
-		 *         // Some integer value attribute, which may need to convert string values (such as "123") to an actual integer 
-		 *         // (done behind the scenes via `parseInt()`)
-		 *         name : 'myValue',
-		 *         type : 'int',
-		 *         
-		 *         set : function( newValue, oldValue ) {
-		 *             // Pre-process the raw newValue here, if desired
-		 *             
-		 *             // Call the original `set` method, which does the conversion to an integer if need be
-		 *             newValue = this._super( arguments );
-		 *             
-		 *             // Post-process the converted newValue here, if desired
-		 *             
-		 *             // And finally, return the value that should be stored for the attribute
-		 *             return newValue;
-		 *         }
-		 *     }
+		 * - The `set` function is called in the scope of the Attribute, so any properties or methods of the Attribute may be referenced.
 		 */
 		
 		/**
 		 * @cfg {Function} get
 		 * 
-		 * A function that can be used to change the value that is returned when the Model's {@link data.Model#get get} method is called
-		 * on the Attribute. This is useful to create "computed" attributes, which may be created based on other Attributes' values.  The function is 
-		 * passed the argument of the underlying stored value, and should return the computed value.
+		 * A function that can be used to convert the stored value that is held by a Model, when the Model's {@link data.Model#get get} 
+		 * method is called for the Attribute. This is useful to create "computed" attributes, which may be created based on other 
+		 * Attributes' values. The function is passed the argument of the underlying stored value, and should return the computed value.
 		 * 
-		 * @cfg {Mixed} get.value The value that the Attribute currently has stored in the {@link data.Model Model}.
+		 * This function is passed the following arguments:
+		 * 
+		 * - **model** : {@link data.Model}
+		 * 
+		 *   The Model for which the value of the Attribute is being retrieved.
+		 *   
+		 * - **value** : Mixed
+		 *   
+		 *   The value that the Attribute currently has stored in the {@link data.Model Model}.
+		 *
 		 * 
 		 * For example, if we had a {@link data.Model Model} with `firstName` and `lastName` Attributes, and we wanted to create a `fullName` 
-		 * Attribute, this could be done as in the example below. Note that just as with {@link #cfg-set}, the `get` function is called in the 
-		 * scope of the {@link data.Model Model} that owns the attribute. 
+		 * Attribute, this could be done as in the example below.
 		 * 
 		 *     {
 		 *         name : 'fullName',
-		 *         get : function( value ) {  // in this example, the Attribute has no value of its own, so we ignore the arg
-		 *             return this.get( 'firstName' ) + " " + this.get( 'lastName' );   // `this` refers to the model that owns the Attribute
+		 *         
+		 *         get : function( model, value ) {  // in this example, the Attribute has no value of its own, so we ignore the `value` arg
+		 *             return model.get( 'firstName' ) + " " + model.get( 'lastName' );
 		 *         }
 		 *     }
 		 * 
-		 * Note: if the intention is to convert a provided value which needs to be stored on the {@link data.Model Model} in a different way,
-		 * use a {@link #cfg-set} function instead. 
+		 * ## Notes:
 		 * 
-		 * However, also note that both a {@link #cfg-set} and a `get` function can be used in conjunction.
+		 * - Both a `set` and a {@link #get} function can be used in conjunction.
+		 * - If the intention is to convert a provided value which needs to be stored on the {@link data.Model Model} in a different way,
+		 *   use a {@link #cfg-set} function instead. 
+		 * - The `get` function is called in the scope of the Attribute, so any properties or methods of the Attribute may be referenced.
 		 */
 		
 		/**
 		 * @cfg {Function} raw
+		 * 
 		 * A function that can be used to convert an Attribute's value to a raw representation, usually for persisting data on a server.
 		 * This function is automatically called (if it exists) when a persistence {@link data.persistence.proxy.Proxy proxy} is collecting
 		 * the data to send to the server. The function is passed two arguments, and should return the raw value.
 		 * 
-		 * @cfg {Mixed} raw.value The underlying value that the Attribute currently has stored in the {@link data.Model Model}.
 		 * @cfg {data.Model} raw.model The Model instance that this Attribute belongs to.
+		 * @cfg {Mixed} raw.value The underlying value that the Attribute currently has stored in the {@link data.Model Model}.
 		 * 
 		 * For example, a Date object is normally converted to JSON with both its date and time components in a serialized string (such
 		 * as "2012-01-26T01:20:54.619Z"). To instead persist the Date in m/d/yyyy format, one could create an Attribute such as this:
 		 * 
 		 *     {
 		 *         name : 'eventDate',
-		 *         set : function( value, model ) { return new Date( value ); },  // so the value is stored as a Date object when used client-side
-		 *         raw : function( value, model ) {
+		 *         
+		 *         set : function( model, value ) { return new Date( value ); },  // so the value is stored as a Date object when used client-side
+		 *         raw : function( model, value ) {
 		 *             return (value.getMonth()+1) + '/' + value.getDate() + '/' + value.getFullYear();  // m/d/yyyy format 
 		 *         }
 		 *     }
 		 * 
 		 * The value that this function returns is the value that is used when the Model's {@link data.Model#raw raw} method is called
 		 * on the Attribute.
+		 * 
+		 * This function is called in the scope of the Attribute, so any properties or methods of the Attribute may be referenced.
 		 */
 		
 		/**
@@ -1687,7 +1717,7 @@ define('data/attribute/Attribute', [
 		
 		
 		/**
-		 * Retrieves the default value for the Attribute. 
+		 * Retrieves the default value for the Attribute.
 		 * 
 		 * @return {Mixed}
 		 */
@@ -1695,11 +1725,11 @@ define('data/attribute/Attribute', [
 			var defaultValue = this.defaultValue;
 			
 			if( typeof defaultValue === "function" ) {
-				defaultValue = defaultValue( this );
-			}
-			
-			// If defaultValue is an object, clone it, to not edit the original object structure
-			if( typeof defaultValue === 'object' ) {
+				// If the default value is a factory function, execute it and use its return value
+				defaultValue = defaultValue.call( this );  // call the function in the scope of this Attribute object
+				
+			} else if( _.isPlainObject( defaultValue ) ) {
+				// If defaultValue is an anonymous object, clone it, to not edit the original object structure
 				defaultValue = _.cloneDeep( defaultValue );
 			}
 			
@@ -1764,97 +1794,51 @@ define('data/attribute/Attribute', [
 		
 		
 		/**
-		 * Method that allows pre-processing for the value that is to be set to a {@link data.Model}.
-		 * After this method has processed the value, it is provided to the {@link #cfg-set} function (if
-		 * one exists) or the {@link #method-set set} method, and then finally, the return value from 
-		 * {@link #cfg-set set} will be provided to {@link #afterSet}, and then set as the data on the 
-		 * {@link data.Model Model}.
+		 * Implements the conversion function, if any, for the Attribute or Attribute subclass. By default, this method
+		 * simply returns the value unchanged, but subclasses override this to implement their specific data 
+		 * conversions.
 		 * 
-		 * Note that the default implementation simply returns the raw value unchanged, but this may be overridden
-		 * in subclasses to provide a conversion.
+		 * This method is automatically called by the {@link #method-set set method}, unless a {@link #cfg-set set config} 
+		 * has been provided to override it. This method may still be called from within a provided {@link #cfg-set set config}
+		 * function however, by simply calling `this.convert( newValue )`.
 		 * 
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
+		 * @param {Mixed} value The value to convert.
 		 * @return {Mixed} The converted value.
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			return newValue;
+		convert : function( value ) {
+			return value;
 		},
 		
 		
 		/**
-		 * Indirection method that is called by a {@link data.Model} when the {@link #method-set} method is to be called. This method provides
-		 * a wrapping function that allows for `this._super( arguments )` to be called when a {@link #cfg-set} config is provided, to call the 
-		 * original conversion method from a {@link #cfg-set} config function.
+		 * Method that allows for processing the value that is to be stored for this Attribute on a {@link data.Model}. This method,
+		 * by default, calls the {@link #convert} method to do any necessary conversion for the value, dependent on the particular
+		 * Attribute subclass in use. However, this method may be overridden by providing a {@link #cfg-set set config}.
 		 * 
-		 * Basically, it allows:
-		 * 
-		 *     var MyModel = Model.extend( {
-		 *         attributes: [
-		 *             {
-		 *                 name: 'myAttr',
-		 *                 type: 'int',
-		 *                 set: function( newValue, oldValue ) {
-		 *                     // Preprocess the new value (if desired)
-		 *                     
-		 *                     newValue = this._super( [ newValue, oldValue ] );  // run original conversion provided by 'int' attribute
-		 *                     
-		 *                     // post process the new value (if desired)
-		 *                 }
-		 *             }
-		 *         ]
-		 *     } );
-		 * 
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method, after it has been processed
-		 *   by the {@link #beforeSet} method..
-		 * @param {Mixed} oldValue The old (previous) value that the model held.
-		 */
-		doSet : function( model, newValue, oldValue ) {
-			if( this.hasOwnProperty( 'set' ) ) {  // a 'set' config was provided
-				// Call the provided 'set' function in the scope of the model
-				return this.set.call( model, newValue, oldValue );
-				
-			} else {
-				// No 'set' config provided, just call the set() method on the prototype
-				return this.set( model, newValue, oldValue );
-			}
-		},
-		
-		
-		
-		/**
-		 * Method that allows processing of the value that is to be set to a {@link data.Model}. This method is executed after
-		 * the {@link #beforeSet} method, and before the {@link #afterSet} method, and can be overridden by the {@link #cfg-set set}
-		 * config. 
-		 * 
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method, after it has been processed
-		 *   by the {@link #beforeSet} method..
-		 * @param {Mixed} oldValue The old (previous) value that the model held.
+		 * @param {data.Model} model The Model instance that is providing the value.
+		 * @param {Mixed} newValue The new value, which was provided to the Model's {@link data.Model#set set} method.
+		 * @param {Mixed} oldValue The old (previous) value that the {@link data.Model Model} held.
 		 */
 		set : function( model, newValue, oldValue ) {
-			return newValue;
+			return this.convert( newValue );
 		},
 		
 		
 		/**
-		 * Method that allows post-processing for the value that is to be set to a {@link data.Model}.
-		 * This method is executed after the {@link #beforeSet} method, and the {@link #cfg-set} function (if one is provided), and is given 
-		 * the value that the {@link #cfg-set} function returns. If no {@link #cfg-set} function exists, this will simply be executed 
-		 * immediately after {@link #beforeSet}, after which the return from this method will be set as the data on the {@link data.Model Model}.
+		 * Method that allows for post-processing of the value that is to be set to the {@link data.Model}.
+		 * This method is executed after the {@link #method-set set method} (or {@link #cfg-set set config} function, if one was
+		 * provided). The `value` provided to this method is the value that has been already processed by {@link #method-set}. 
+		 * 
+		 * The return value from this method will be the value that is ultimately set as the data for the Attribute on the 
+		 * {@link data.Model Model}.
 		 * 
 		 * Note that the default implementation simply returns the value unchanged, but this may be overridden
-		 * in subclasses to provide a conversion.
+		 * in subclasses to provide a post-processing conversion or type check.
 		 * 
 		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
 		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} value The value provided to the {@link data.Model#set} method, after it has been processed by the
-		 *   {@link #beforeSet} method, and any provided {@link #cfg-set} function.
+		 * @param {Mixed} value The value provided to the {@link data.Model#set} method, after it has been processed by either
+		 *   the {@link #method-set set method} or any provided {@link #cfg-set set config} function.
 		 * @return {Mixed} The converted value.
 		 */
 		afterSet : function( model, value ) {
@@ -1891,17 +1875,20 @@ define('data/attribute/Object', [
 		
 		
 		/**
-		 * Overridden `beforeSet` method used to normalize the value provided. All non-object values are converted to null,
+		 * Override of superclass method used to normalize the provided `value`. All non-object values are converted to `null`,
 		 * while object values are returned unchanged.
 		 * 
-		 * @inheritdoc
+		 * @param {Mixed} value The value to convert.
+		 * @return {Object}
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			if( typeof newValue !== 'object' ) {
-				newValue = null;  // convert all non-object values to null
+		convert : function( value ) {
+			value = this._super( arguments );
+			
+			if( typeof value !== 'object' ) {
+				value = null;  // convert all non-object values to null
 			}
 			
-			return newValue;
+			return value;
 		}
 		
 	} );
@@ -2063,7 +2050,7 @@ define('data/attribute/Collection', [
 		/**
 		 * @cfg {Boolean} embedded
 		 * 
-		 * Setting this config to true has the parent {@link data.Model Model} treat the child {@link data.Collection Collection} as if it is 
+		 * Setting this config to `true` has the parent {@link data.Model Model} treat the child {@link data.Collection Collection} as if it is 
 		 * a part of itself. Normally, a child Collection that is not embedded is treated as a "relation", where it is considered as independent 
 		 * from the parent Model.
 		 * 
@@ -2076,7 +2063,6 @@ define('data/attribute/Collection', [
 		 * - The child Collection's model data is persisted with the parent Collection's data, unless the {@link #persistIdOnly} config is set to true,
 		 *   in which case just the child Collection's models' {@link data.Model#idAttribute ids} are persisted with the parent Model.
 		 */
-		embedded : false,
 		
 		/**
 		 * @cfg {Boolean} persistIdOnly
@@ -2124,24 +2110,25 @@ define('data/attribute/Collection', [
 		
 		
 		/**
-		 * Overridden `beforeSet` method used to convert any arrays into the specified {@link #collection} subclass. The array
+		 * Override of superclass method used to convert any arrays into the specified {@link #collection} subclass. The array
 		 * will be provided to the {@link #collection} subclass's constructor.
 		 * 
-		 * @inheritdoc
+		 * @param {Mixed} value The value to convert.
+		 * @return {data.Collection} The Collection.
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			// Now, normalize the newValue to an object, or null
-			newValue = this._super( arguments );
+		convert : function( value ) {
+			// First, call the superclass method to normalize the value to an object, or `null`
+			value = this._super( arguments );
 			
-			if( newValue !== null ) {
+			if( value !== null ) {
 				var collectionClass = this.resolveCollectionClass();
 				
-				if( newValue && typeof collectionClass === 'function' && !( newValue instanceof collectionClass ) ) {
-					newValue = new collectionClass( newValue );
+				if( value && typeof collectionClass === 'function' && !( value instanceof collectionClass ) ) {
+					value = new collectionClass( value );
 				}
 			}
 			
-			return newValue;
+			return value;
 		},
 		
 		
@@ -2265,7 +2252,7 @@ define('data/attribute/Model', [
 		/**
 		 * @cfg {Boolean} embedded
 		 * 
-		 * Setting this config to true has the parent {@link data.Model Model} treat the child {@link data.Model Model} as if it is a part of itself. 
+		 * Setting this config to `true` has the parent {@link data.Model Model} treat the child {@link data.Model Model} as if it is a part of itself. 
 		 * Normally, a child Model that is not embedded is treated as a "relation", where it is considered as independent from the parent Model.
 		 * 
 		 * What this means is that, when true:
@@ -2276,7 +2263,6 @@ define('data/attribute/Model', [
 		 * - The child Model's data is persisted with the parent Model's data, unless the {@link #persistIdOnly} config is set to true,
 		 *   in which case just the child Model's {@link data.Model#idAttribute id} is persisted with the parent Model.
 		 */
-		embedded : false,
 		
 		/**
 		 * @cfg {Boolean} persistIdOnly
@@ -2324,24 +2310,25 @@ define('data/attribute/Model', [
 		
 		
 		/**
-		 * Overridden `beforeSet` method used to convert any anonymous objects into the specified {@link #model} subclass. The anonymous 
+		 * Override of superclass method used to convert any anonymous objects into the specified {@link #model} subclass. The anonymous 
 		 * object will be provided to the {@link #model} subclass's constructor.
 		 * 
-		 * @inheritdoc
+		 * @param {Mixed} value The value to convert.
+		 * @return {data.Model} The Model.
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			// Now, normalize the newValue to an object, or null
-			newValue = this._super( arguments );
+		convert : function( value ) {
+			// First, normalize the value to an object, or `null`
+			value = this._super( arguments );
 			
-			if( newValue !== null ) {
+			if( value !== null ) {
 				var modelClass = this.resolveModelClass();
 				
-				if( newValue && typeof modelClass === 'function' && !( newValue instanceof modelClass ) ) {
-					newValue = new modelClass( newValue );
+				if( value && typeof modelClass === 'function' && !( value instanceof modelClass ) ) {
+					value = new modelClass( value );
 				}
 			}
 			
-			return newValue;
+			return value;
 		},
 		
 		
@@ -2428,11 +2415,11 @@ define('data/attribute/Primitive', [
 	 * (i.e. A Boolean, Number, or String).
 	 */
 	var PrimitiveAttribute = Class.extend( Attribute, {
-		
 		abstractClass: true,
 		
 		/**
 		 * @cfg {Boolean} useNull
+		 * 
 		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
 		 * Attribute is "unset", and it shouldn't take an actual default value).
 		 * 
@@ -2448,6 +2435,7 @@ define('data/attribute/Primitive', [
 	
 } );
 /*global define */
+/*jshint eqnull:true */
 define('data/attribute/Boolean', [
 	'lodash',
 	'Class',
@@ -2470,13 +2458,14 @@ define('data/attribute/Boolean', [
 		 * The Boolean Attribute defaults to `false`, unless the {@link #useNull} config is set to `true`, 
 		 * in which case it defaults to `null` (to denote the Attribute being "unset").
 		 */
-		defaultValue: function( attribute ) {
-			return attribute.useNull ? null : false;
+		defaultValue: function() {
+			return this.useNull ? null : false;
 		},
 		
 		
 		/**
 		 * @cfg {Boolean} useNull
+		 * 
 		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
 		 * Attribute is "unset", and it shouldn't take an actual default value).
 		 * 
@@ -2487,21 +2476,19 @@ define('data/attribute/Boolean', [
 		
 		
 		/**
-		 * Converts the provided data value into a Boolean. If {@link #useNull} is true, "unparsable" values
-		 * will return null. 
+		 * Override of superclass method, which converts the provided data value into a Boolean. If {@link #useNull} is true, 
+		 * "unparsable" values will return `null`. See {@link #useNull} for details.
 		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
+		 * @param {Mixed} value The value to convert.
 		 * @return {Boolean} The converted value.
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			if( this.useNull && ( newValue === undefined || newValue === null || newValue === '' ) ) {
+		convert : function( value ) {
+			value = this._super( arguments );
+			
+			if( this.useNull && ( value == null || value === '' ) ) {
 				return null;
 			}
-			return newValue === true || newValue === 'true' || newValue === 1 || newValue === "1";
+			return value === true || value === 'true' || value === 1 || value === "1";
 		}
 		
 	} );
@@ -2529,28 +2516,24 @@ define('data/attribute/Date', [
 	 * Attribute definition class for an Attribute that takes a JavaScript Date object.
 	 */
 	var DateAttribute = Class.extend( ObjectAttribute, {
-			
+		
 		/**
-		 * Converts the provided data value into a Date object. If the value provided is not a Date, or cannot be parsed
-		 * into a Date, will return null.
+		 * Override of superclass method used to convert the provided data value into a JavaScript Date object. If the value provided 
+		 * is not a Date, or cannot be parsed into a Date, will return `null`.
 		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
+		 * @param {Mixed} value The value to convert.
+		 * @return {Date} The Date object, or `null` if the value could not be parsed into a Date.
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
-			if( _.isDate( newValue ) ) {
-				return newValue;
+		convert : function( value ) {
+			if( _.isDate( value ) ) {
+				return value;
 			}
-			if( _.isNumber( newValue ) || ( _.isString( newValue ) && newValue && !isNaN( +newValue ) ) ) {
-				return new Date( +newValue );  // If the date is a number (or a number in a string), assume it's the number of milliseconds since the Unix epoch (1/1/1970)
+			if( _.isNumber( value ) || ( _.isString( value ) && value && !isNaN( +value ) ) ) {
+				return new Date( +value );  // If the date is a number (or a number in a string), assume it's the number of milliseconds since the Unix epoch (1/1/1970)
 			}
 			
 			// All else fails, try to parse the value using Date.parse
-			var parsed = Date.parse( newValue );
+			var parsed = Date.parse( value );
 			return ( parsed ) ? new Date( parsed ) : null;
 		}
 	} );
@@ -2578,7 +2561,6 @@ define('data/attribute/Number', [
 	 * Abstract base class for an Attribute that takes a number data value.
 	 */
 	var NumberAttribute = Class.extend( PrimitiveAttribute, {
-		
 		abstractClass: true,
 		
 		/**
@@ -2588,13 +2570,14 @@ define('data/attribute/Number', [
 		 * The Number Attribute defaults to 0, unless the {@link #useNull} config is 
 		 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
 		 */
-		defaultValue: function( attribute ) {
-			return attribute.useNull ? null : 0;
+		defaultValue: function() {
+			return this.useNull ? null : 0;
 		},
 		
 		
 		/**
 		 * @cfg {Boolean} useNull
+		 * 
 		 * True to allow `null` to be set to the Attribute (which is usually used to denote that the 
 		 * Attribute is "unset", and it shouldn't take an actual default value).
 		 * 
@@ -2639,20 +2622,18 @@ define('data/attribute/Float', [
 	var FloatAttribute = Class.extend( NumberAttribute, {
 		
 		/**
-		 * Converts the provided data value into a float. If {@link #useNull} is true, undefined/null/empty string 
-		 * values will return null, or else will otherwise be converted to 0. If the number is simply not parsable, will 
-		 * return NaN.
+		 * Override of superclass method used to convert the provided data value into a float. If {@link #useNull} is true, 
+		 * undefined/null/empty string values will return `null`, or else will otherwise be converted to 0. If the number is 
+		 * simply not parsable, will return NaN.
 		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
+		 * @param {Mixed} value The value to convert.
+		 * @return {Number} The converted value.
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
+		convert : function( value ) {
+			value = this._super( arguments );
+			
 			var defaultValue = ( this.useNull ) ? null : 0;
-			return ( newValue !== undefined && newValue !== null && newValue !== '' ) ? parseFloat( String( newValue ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
+			return ( value !== undefined && value !== null && value !== '' ) ? parseFloat( String( value ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
 		}
 		
 	} );
@@ -2683,22 +2664,18 @@ define('data/attribute/Integer', [
 	var IntegerAttribute = Class.extend( NumberAttribute, {
 		
 		/**
-		 * Converts the provided data value into an integer. If {@link #useNull} is true, undefined/null/empty string 
-		 * values will return null, or else will otherwise be converted to 0. If the number is simply not parsable, will 
-		 * return NaN. 
+		 * Override of superclass method used to convert the provided data value into an integer. If {@link #useNull} is true, 
+		 * undefined/null/empty string values will return `null`, or else will otherwise be converted to 0. If the number is simply 
+		 * not parsable, will return NaN. 
 		 * 
-		 * This method will strip off any decimal value from a provided number.
-		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
+		 * @param {Mixed} value The value to convert.
+		 * @return {Number} The converted value.
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
+		convert : function( value ) {
+			value = this._super( arguments );
+			
 			var defaultValue = ( this.useNull ) ? null : 0;
-			return ( newValue !== undefined && newValue !== null && newValue !== '' ) ? parseInt( String( newValue ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
+			return ( value !== undefined && value !== null && value !== '' ) ? parseInt( String( value ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
 		}
 		
 	} );
@@ -2707,7 +2684,6 @@ define('data/attribute/Integer', [
 	// Register the Attribute type
 	Attribute.registerType( 'int', IntegerAttribute );
 	Attribute.registerType( 'integer', IntegerAttribute );
-	
 	
 	return IntegerAttribute;
 	
@@ -2739,6 +2715,7 @@ define('data/attribute/Mixed', [
 	
 } );
 /*global define */
+/*jshint eqnull:true */
 define('data/attribute/String', [
 	'lodash',
 	'Class',
@@ -2761,8 +2738,8 @@ define('data/attribute/String', [
 		 * The String Attribute defaults to `""` (empty string), unless the {@link #useNull} config is 
 		 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
 		 */
-		defaultValue: function( attribute ) {
-			return attribute.useNull ? null : "";
+		defaultValue: function() {
+			return this.useNull ? null : "";
 		},
 		
 		
@@ -2778,19 +2755,17 @@ define('data/attribute/String', [
 		
 		
 		/**
-		 * Converts the provided data value into a Boolean. If {@link #useNull} is true, "unparsable" values
-		 * will return null. 
+		 * Override of superclass method used to convert the value into a string. If {@link #useNull} is true, "unparsable" values
+		 * will return null. See {@link #useNull} for details.
 		 * 
-		 * @method beforeSet
-		 * @param {data.Model} model The Model instance that is providing the value. This is normally not used,
-		 *   but is provided in case any model processing is needed.
-		 * @param {Mixed} newValue The new value provided to the {@link data.Model#set} method.
-		 * @param {Mixed} oldValue The old (previous) value that the model held (if any).
-		 * @return {Boolean} The converted value.
+		 * @param {Mixed} value The value to convert.
+		 * @return {String}
 		 */
-		beforeSet : function( model, newValue, oldValue ) {
+		convert : function( value ) {
+			value = this._super( arguments );
+			
 			var defaultValue = ( this.useNull ) ? null : "";
-			return ( newValue === undefined || newValue === null ) ? defaultValue : String( newValue );
+			return ( value == null ) ? defaultValue : String( value );
 		}
 		
 	} );
@@ -2885,14 +2860,14 @@ define('data/Model', [
 			 * @ignore
 			 */
 			onClassExtended : function( newModelClass ) {
-				// Assign a unique id to this class, which is used in hashmaps that hold the class
+				// Assign a unique id to this class, which is used in maps that hold the class
 				newModelClass.__Data_modelTypeId = _.uniqueId();
 				
 				
 				// Now handle initializing the Attributes, merging this subclass's attributes with the superclass's attributes
 				var classPrototype = newModelClass.prototype,
 				    superclassPrototype = newModelClass.superclass,
-				    superclassAttributes = superclassPrototype.attributes || {},    // will be an object (hashmap) of attributeName -> Attribute instances
+				    superclassAttributes = superclassPrototype.attributes || {},    // will be an Object (map) of attributeName -> Attribute instances
 				    newAttributes = {},
 				    attributeDefs = [],  // will be an array of Attribute configs (definitions) on the new subclass 
 				    attributeObj,   // for holding each of the attributeDefs, one at a time
@@ -2923,12 +2898,12 @@ define('data/Model', [
 			
 			
 			/**
-			 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
+			 * Retrieves the Attribute objects that are present for the Model, in an Object (map) where the keys
 			 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
 			 * 
 			 * @inheritable
 			 * @static
-			 * @return {Object} An Object (hashmap) where the keys are the attribute {@link data.attribute.Attribute#name names},
+			 * @return {Object} An Object (map) where the keys are the attribute {@link data.attribute.Attribute#name names},
 			 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 			 */
 			getAttributes : function() {
@@ -3050,7 +3025,7 @@ define('data/Model', [
 		 * @private
 		 * @property {Object} changeSetNewValues
 		 * 
-		 * A hashmap which holds the changes to attributes for the {@link #changeset} event to fire with. This hashmap collects the 
+		 * An Object (map) which holds the changes to attributes for the {@link #changeset} event to fire with. This map collects the 
 		 * changed values as calls to {@link #method-set} are made, and is used with the arguments that the {@link #changeset} event fires
 		 * with (when it does fire, at the end of all of the calls to {@link #method-set}).
 		 */
@@ -3059,7 +3034,7 @@ define('data/Model', [
 		 * @private
 		 * @property {Object} changeSetOldValues
 		 * 
-		 * A hashmap which holds the changes to attributes for the {@link #changeset} event to fire with. This hashmap collects the 
+		 * A map which holds the changes to attributes for the {@link #changeset} event to fire with. This map collects the 
 		 * previous ("old") values as calls to {@link #method-set} are made, and is used with the arguments that the {@link #changeset} event fires
 		 * with (when it does fire, at the end of all of the calls to {@link #method-set}).
 		 */
@@ -3182,9 +3157,9 @@ define('data/Model', [
 				 * 
 				 * @event changeset
 				 * @param {data.Model} model This Model instance.
-				 * @param {Object} newValues An object (hashmap) of the new values of the Attributes that changed. The object's keys (property names) are the
+				 * @param {Object} newValues An Object (map) of the new values of the Attributes that changed. The object's keys (property names) are the
 				 *   {@link data.attribute.Attribute#name Attribute names}, and the object's values are the new values for those Attributes.
-				 * @param {Object} oldValues An object (hashmap) of the old values of the Attributes that changed. The object's keys (property names) are the
+				 * @param {Object} oldValues An Object (map) of the old values of the Attributes that changed. The object's keys (property names) are the
 				 *   {@link data.attribute.Attribute#name Attribute names}, and the object's values are the old values that were held for those Attributes.
 				 */
 				'changeset',
@@ -3323,10 +3298,10 @@ define('data/Model', [
 		
 		
 		/**
-		 * Retrieves the Attribute objects that are present for the Model, in an object (hashmap) where the keys
+		 * Retrieves the Attribute objects that are present for the Model, in an Object (map) where the keys
 		 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
 		 * 
-		 * @return {Object} An Object (hashmap) where the keys are the attribute {@link data.attribute.Attribute#name names},
+		 * @return {Object} An Object (map) where the keys are the attribute {@link data.attribute.Attribute#name names},
 		 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 		 */
 		getAttributes : function() {
@@ -3406,7 +3381,7 @@ define('data/Model', [
 		 */
 		set : function( attributeName, newValue ) {
 			// If coming into the set() method for the first time (non-recursively, not from an attribute setter, not from a 'change' handler, etc),
-			// reset the hashmaps which will hold the newValues and oldValues that will be provided to the 'changeset' event.
+			// reset the maps which will hold the newValues and oldValues that will be provided to the 'changeset' event.
 			if( this.setCallCount === 0 ) {
 				this.changeSetNewValues = {};
 				this.changeSetOldValues = {};
@@ -3420,7 +3395,7 @@ define('data/Model', [
 			    changeSetOldValues = this.changeSetOldValues;
 			
 			if( typeof attributeName === 'object' ) {
-				// Hash provided
+				// Map provided
 				var values = attributeName,  // for clarity
 				    attrsWithSetters = [];
 				
@@ -3445,7 +3420,7 @@ define('data/Model', [
 				}
 				
 			} else {
-				// attributeName and newValue provided
+				// `attributeName` and `newValue` args provided to method
 				var attribute = attributes[ attributeName ];
 				
 				// <debug>
@@ -3457,12 +3432,9 @@ define('data/Model', [
 				// Get the current (old) value of the attribute, and its current "getter" value (to provide to the 'change' event as the oldValue)
 				var oldValue = this.data[ attributeName ],
 				    oldGetterValue = this.get( attributeName );
-							
-				// Allow the Attribute to pre-process the newValue
-				newValue = attribute.beforeSet( this, newValue, oldValue );
 				
-				// Now call the Attribute's set() method (or user-provided 'set' config function)
-				newValue = attribute.doSet( this, newValue, oldValue );  // doSet() is a method which provides a level of indirection for calling the 'set' config function, or set() method
+				// Call the Attribute's set() method (or user-provided 'set' config function) to do any implemented conversion
+				newValue = attribute.set( this, newValue, oldValue );
 				
 				// *** Temporary workaround to get the 'change' event to fire on an Attribute whose set() config function does not
 				// return a new value to set to the underlying data. This will be resolved once dependencies are 
@@ -3478,7 +3450,7 @@ define('data/Model', [
 					// Fire the events with the value of the Attribute after it has been processed by any Attribute-specific `get()` function.
 					newValue = this.get( attributeName );
 					
-					// Store the 'change' in the 'changeset' hashmaps
+					// Store the 'change' in the 'changeset' maps
 					this.changeSetNewValues[ attributeName ] = newValue;
 					if( !( attributeName in changeSetOldValues ) ) {  // only store the "old" value if we don't have an "old" value for the attribute already. This leaves us with the real "old" value when multiple sets occur for an attribute during the changeset.
 						this.changeSetOldValues[ attributeName ] = oldGetterValue;
@@ -3489,15 +3461,15 @@ define('data/Model', [
 					this.fireEvent( 'change', this, attributeName, newValue, oldGetterValue );    // model, attributeName, newValue, oldValue
 				}
 				
-				// Allow the Attribute to post-process the newValue
+				// Allow the Attribute to post-process the newValue (the value returned from the Attribute's set() function)
 				newValue = attribute.afterSet( this, newValue );
 				
 				// Only change if there is no current value for the attribute, or if newValue is different from the current
-				if( !( attributeName in this.data ) || !attribute.valuesAreEqual( oldValue, newValue ) ) {   // let the Attribute itself determine if two values of its datatype are equal
+				if( !this.data.hasOwnProperty( attributeName ) || !attribute.valuesAreEqual( oldValue, newValue ) ) {   // let the Attribute itself determine if two values of its datatype are equal
 					// Store the attribute's *current* value (not the newValue) into the "modifiedData" attributes hash.
 					// This should only happen the first time the attribute is set, so that the attribute can be rolled back even if there are multiple
 					// set() calls to change it.
-					if( !( attributeName in this.modifiedData ) ) {
+					if( !this.modifiedData.hasOwnProperty( attributeName ) ) {
 						this.modifiedData[ attributeName ] = oldValue;
 					}
 					this.data[ attributeName ] = newValue;
@@ -3516,7 +3488,7 @@ define('data/Model', [
 						ModelCache.get( this, newValue );
 					}
 					
-					// Store the 'change' values in the changeset hashmaps, for use when the 'changeset' event fires
+					// Store the 'change' values in the changeset maps, for use when the 'changeset' event fires
 					changeSetNewValues[ attributeName ] = newValue;
 					if( !( attributeName in changeSetOldValues ) ) {  // Only store the "old" value if we don't have an "old" value for the attribute already. This leaves us with the real "old" value when multiple set()'s occur for an attribute during the changeset.
 						changeSetOldValues[ attributeName ] = oldGetterValue;
@@ -3558,7 +3530,7 @@ define('data/Model', [
 			
 			// If there is a `get` function on the Attribute, run it now to convert the value before it is returned.
 			if( typeof attribute.get === 'function' ) {
-				value = attribute.get.call( this, value );  // provided the underlying value
+				value = attribute.get( this, value );  // provide the underlying value
 			}
 			
 			return value;
@@ -3578,17 +3550,17 @@ define('data/Model', [
 		 */
 		raw : function( attributeName ) {
 			// <debug>
-			if( !( attributeName in this.attributes ) ) {
+			if( !this.attributes.hasOwnProperty( attributeName ) ) {
 				throw new Error( "data.Model::raw() error: attribute '" + attributeName + "' was not found on the Model." );
 			}
 			// </debug>
 			
 			var value = this.data[ attributeName ],
 			    attribute = this.attributes[ attributeName ];
-			    
+			
 			// If there is a `raw` function on the Attribute, run it now to convert the value before it is returned.
 			if( typeof attribute.raw === 'function' ) {
-				value = attribute.raw.call( this, value, this );  // provided the value, and the Model instance
+				value = attribute.raw( this, value );  // provide the underlying value
 			}
 			
 			return value;
@@ -3667,7 +3639,7 @@ define('data/Model', [
 				// If the 'persistedOnly' option is true, we only consider attributes that are persisted.
 				for( var attr in modifiedData ) {
 					if( modifiedData.hasOwnProperty( attr ) && ( !options.persistedOnly || ( options.persistedOnly && attributes[ attr ].isPersisted() ) ) ) {
-						return true;  // there is any property in the modifiedData hashmap, return true (unless 'persistedOnly' option is set, in which case we only consider persisted attributes)
+						return true;  // there is any property in the modifiedData map, return true (unless 'persistedOnly' option is set, in which case we only consider persisted attributes)
 					}
 				}
 				
@@ -3729,7 +3701,7 @@ define('data/Model', [
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details. Options specific to this method include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return only changed attributes that are 
 		 *   {@link data.attribute.Attribute#persist persisted}. In the case of nested models, a nested model will only be returned in the resulting
-		 *   hashmap if one if its {@link data.attribute.Attribute#persist persisted} attributes are modified. 
+		 *   map if one if its {@link data.attribute.Attribute#persist persisted} attributes are modified. 
 		 * 
 		 * @return {Object} A hash of the attributes that have been changed since the last {@link #method-commit} or {@link #method-rollback}.
 		 *   The hash's property names are the attribute names, and the hash's values are the new values.
@@ -6329,14 +6301,14 @@ define('data/persistence/proxy/Ajax', [
 		 */
 		
 		/**
-		 * @cfg {Object} extraParams
+		 * @cfg {Object} defaultParams
 		 * 
-		 * An Object (map) of any extra parameters to include with every request. Params provided to individual
-		 * requests will override these params of the same name.
+		 * An Object (map) of any default parameters to include with every request. `params` provided to individual
+		 * requests will override default parameters of the same name.
 		 * 
 		 * Ex:
 		 * 
-		 *     extraParams : {
+		 *     defaultParams : {
 		 *         returnType : 'json'
 		 *     }
 		 *     
@@ -6406,7 +6378,7 @@ define('data/persistence/proxy/Ajax', [
 			this._super( arguments );
 			
 			this.api = this.api || {};
-			this.extraParams = this.extraParams || {};
+			this.defaultParams = this.defaultParams || {};
 		},
 		
 		
@@ -6503,7 +6475,7 @@ define('data/persistence/proxy/Ajax', [
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {
-			var params = _.assign( {}, this.extraParams, operation.getParams() || {} );   // build the params map
+			var params = _.assign( {}, this.defaultParams, operation.getParams() || {} );   // build the params map
 			
 			if( action === 'read' ) {
 				var modelId = operation.getModelId(),

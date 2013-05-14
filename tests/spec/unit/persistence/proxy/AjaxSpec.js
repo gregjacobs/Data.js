@@ -131,10 +131,10 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should return the base url + configured extraParams + any params passed on the Operation, where params on the Operation override extraParams of the same name", function() {
+			it( "buildUrl() should return the base url + configured defaultParams + any params passed on the Operation, where params on the Operation override defaultParams of the same name", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
-					extraParams : {
+					defaultParams : {
 						p1: "value1",
 						p2: "value2"
 					}
@@ -159,10 +159,10 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should url encode both its extraParam and Operation-level params' values", function() {
+			it( "buildUrl() should url encode both its defaultParams and Operation-level params' values", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
-					extraParams : {
+					defaultParams : {
 						p1: "a b"
 					}
 				} );
