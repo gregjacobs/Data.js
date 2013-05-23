@@ -582,26 +582,84 @@ define( [
 				model.set( attributeName, [] );
 				expect( _.isArray( model.get( attributeName ) ) ).toBe( true );  // orig YUI Test err msg: attributeName + "'s value should have the value set by set() (array)."
 			}
+
 			
+			// ----------------------------------
 			
-			it( "should throw an error when trying to set an attribute that isn't defined (using the attr and value args)", function() {
+			// Test unknown attributes being provided to the method
+			
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attrName and value args)", function() {
+				var model = new TestModel();
+				
 				expect( function() {
-					var model = new TestModel();
 					model.set( 'nonExistentAttr', 1 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error"
 				} ).toThrow( "data.Model.set(): An attribute with the attributeName 'nonExistentAttr' was not found." );
 			} );
 			
 			
-			it( "should throw an error when trying to set an attribute that isn't defined (using the attr as an anonymous object arg)", function() {
+			it( "should *not* throw an error when trying to set an attribute that isn't defined (using the attrName and value args), and the `ignoreUnknownAttrs` config is set to `true`", function() {
+				var TestModel2 = TestModel.extend( { ignoreUnknownAttrs: true } );
+				var model = new TestModel2();
+				
+				// Following line simply should not throw an error
+				model.set( 'nonExistentAttr', 1 );
+			} );
+			
+			
+			it( "should *not* throw an error when trying to set an attribute that isn't defined (using the attrName and value args), and the `ignoreUnknownAttrs` method option is set to `true`", function() {
+				var model = new TestModel();
+				
+				// Following line simply should not throw an error
+				model.set( 'nonExistentAttr', 1, { ignoreUnknownAttrs: true } );
+			} );
+			
+			
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attrName and value args), when the `ignoreUnknownAttrs` config is `true`, but the *method option* is passed explicitly as `false`", function() {
+				var TestModel2 = TestModel.extend( { ignoreUnknownAttrs: true } );
+				var model = new TestModel();
+				
+				expect( function() {
+					model.set( 'nonExistentAttr', 1, { ignoreUnknownAttrs: false } );
+				} ).toThrow( "data.Model.set(): An attribute with the attributeName 'nonExistentAttr' was not found." );
+			} );
+			
+			
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attrName arg as an anonymous object)", function() {
 				expect( function() {
 					var model = new TestModel();
 					model.set( { 'nonExistentAttr': 1 } );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error"
 				} ).toThrow( "data.Model.set(): An attribute with the attributeName 'nonExistentAttr' was not found." );
 			} );
+			
+			
+			it( "should *not* throw an error when trying to set an attribute that isn't defined (using the attrName arg as an anonymous object), and the `ignoreUnknownAttrs` config is set to `true`", function() {
+				var TestModel2 = TestModel.extend( { ignoreUnknownAttrs: true } );
+				var model = new TestModel2();
+				
+				// Following line simply should not throw an error
+				model.set( { 'nonExistentAttr': 1 } );
+			} );
+			
+			
+			it( "should *not* throw an error when trying to set an attribute that isn't defined (using the attrName arg as an anonymous object), and the `ignoreUnknownAttrs` method option is set to `true`", function() {
+				var model = new TestModel();
+				
+				// Following line simply should not throw an error
+				model.set( { 'nonExistentAttr': 1 }, { ignoreUnknownAttrs: true } );
+			} );
+			
+			
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attrName arg as an anonymous object), when the `ignoreUnknownAttrs` config is `true`, but the *method option* is passed explicitly as `false`", function() {
+				var TestModel2 = TestModel.extend( { ignoreUnknownAttrs: true } );
+				var model = new TestModel();
+				
+				expect( function() {
+					model.set( { 'nonExistentAttr': 1 }, { ignoreUnknownAttrs: false } );
+				} ).toThrow( "data.Model.set(): An attribute with the attributeName 'nonExistentAttr' was not found." );
+			} );
+			
+			
+			// ----------------------------------
 			
 			
 			it( "should accept all datatypes including falsy values", function() {

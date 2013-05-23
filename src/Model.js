@@ -197,6 +197,39 @@ define( [
 		 */
 		idAttribute : 'id',
 		
+		/**
+		 * @cfg {Boolean} ignoreUnknownAttrs
+		 * 
+		 * Set this to `true` to have the Model ignore unknown attributes when they are {@link #set} to the model. When this is `false` (the
+		 * default), an error is thrown when an attribute is set to the model that doesn't have a corresponding {@link #attributes attribute} 
+		 * definition. This helps to catch errors for incorrectly spelled attribute names, instead of simply allowing the code to continue along
+		 * unknowingly. Problems and bugs caused by un-set data may then be difficult to track down to the original source of the problem, 
+		 * especially in larger software systems. Therefore, it is **not recommended** that you set this configuration option.
+		 * 
+		 * However, it is possible that your original data source provides many data properties that you do not want to have corresponding 
+		 * {@link #attributes attribute} definitions for. It is also possible that your data source adds properties from time to time, where you
+		 * don't want your code throwing errors in production. In these cases, it may be useful to set this configuration option. Just note that 
+		 * you will be bypassing the check which can help you determine the source of a possible error immediately, rather than further down the 
+		 * line in the code's execution.
+		 * 
+		 * A possible option to get the best of both worlds is to leave this as the default (`false`) for "development" mode, and then set it to
+		 * `true` on a global level for "production" mode. You can overwrite the default value of this configuration in production mode using a 
+		 * snippet such at this:
+		 * 
+		 *     require( [
+		 *         'data/Model'
+		 *     ], function( Model ) {
+		 *         
+		 *         // Ignore unknown attributes if they come up from a data 
+		 *         // source when in "production" mode
+		 *         Model.prototype.ignoreUnknownAttrs = true;
+		 *         
+		 *     } );
+		 * 
+		 * Attributes retrieved with {@link #get} or {@link #raw} will still throw an error if the attribute name requested is unknown.
+		 */
+		ignoreUnknownAttrs : false,
+		
 		
 		/**
 		 * @private
@@ -598,9 +631,17 @@ define( [
 		 * When attributes are set, their {@link data.attribute.Attribute#cfg-set} method is run, if they have one defined.
 		 * 
 		 * @param {String/Object} attributeName The attribute name for the Attribute to set, or an object (hash) of name/value pairs.
-		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a hash). 
+		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a hash).
+		 * @param {Object} [options] Any options to pass to the method. This should be the second argument if providing an Object to the 
+		 *   first parameter. This should be an object which may contain the following properties:
+		 * @param {Boolean} [options.ignoreUnknownAttrs] Set to `true` if unknown attributes should be ignored in the data object provided
+		 *   to the first argument of this method. This is useful if you have an object which contains many properties, but your model does not
+		 *   define matching attributes for each one of them. This option is **not recommended**, as it bypasses the check which can help you 
+		 *   determine that you have possibly typed an attribute name incorrectly, and it may then be difficult at the time when a bug arises 
+		 *   because of it (especially in a large software system) to determine where the source of the problem was. Defaults to the value of the 
+		 *   {@link #ignoreUnknownAttrs} config.
 		 */
-		set : function( attributeName, newValue ) {
+		set : function( attributeName, newValue, options ) {
 			// If coming into the set() method for the first time (non-recursively, not from an attribute setter, not from a 'change' handler, etc),
 			// reset the maps which will hold the newValues and oldValues that will be provided to the 'changeset' event. These will be used by the
 			// `doSet()` method.
@@ -616,32 +657,40 @@ define( [
 			    changeSetOldValues = this.changeSetOldValues;
 			
 			if( typeof attributeName === 'string' ) {
-				this.doSet( attributeName, newValue, changeSetNewValues, changeSetOldValues );
+				options = options || {};
+				this.doSet( attributeName, newValue, options, changeSetNewValues, changeSetOldValues );
 				
-			} else {  // Map provided as first arg
+			} else {  // Object (map) provided as first arg
+				options = newValue || {};    // 2nd arg is the `options` object with this form
 				var values = attributeName,  // for clarity
 				    attributes = this.attributes,
-				    attrsWithSetters = [];
+				    attrsWithSetters = [],
+				    ignoreUnknownAttrs = ( options.ignoreUnknownAttrs === undefined ) ? this.ignoreUnknownAttrs : options.ignoreUnknownAttrs;
 				
 				for( attributeName in values ) {
 					if( values.hasOwnProperty( attributeName ) ) {
-						// <debug>
-						if( !attributes[ attributeName ] ) {
-							throw new Error( "data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
-						}
-						// </debug>
+						var attribute = attributes[ attributeName ];
 						
-						if( attributes[ attributeName ].hasUserDefinedSetter() ) {   // defer setting the values on attributes with user-defined setters until all attributes without user-defined setters have been set
+						if( !attribute ) {  // no matching attribute for the current attributeName (property name) in the data object
+							if( ignoreUnknownAttrs )
+								continue;
+							
+							// <debug>
+							throw new Error( "data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
+							// </debug>
+						}
+						
+						if( attribute.hasUserDefinedSetter() ) {   // defer setting the values on attributes with user-defined setters until all attributes without user-defined setters have been set
 							attrsWithSetters.push( attributeName );
 						} else {
-							this.doSet( attributeName, values[ attributeName ], changeSetNewValues, changeSetOldValues );
+							this.doSet( attributeName, values[ attributeName ], options, changeSetNewValues, changeSetOldValues );
 						}
 					}
 				}
 				
 				for( var i = 0, len = attrsWithSetters.length; i < len; i++ ) {
 					attributeName = attrsWithSetters[ i ];
-					this.doSet( attributeName, values[ attributeName ], changeSetNewValues, changeSetOldValues );
+					this.doSet( attributeName, values[ attributeName ], options, changeSetNewValues, changeSetOldValues );
 				}
 			}
 			
@@ -659,21 +708,25 @@ define( [
 		 * @protected
 		 * @param {String} attributeName The attribute name for the Attribute to set.
 		 * @param {Mixed} newValue The value to set to the attribute.
+		 * @param {Object} options The `options` object provided to {@link #set}. See {@link #set} for details.
 		 * @param {Object} changeSetNewValues A reference to the collector map which holds the current changeset's new values. This is
 		 *   an "output" parameter, and is modified by this method by storing the new value for a given attribute name.
 		 * @param {Object} changeSetOldValues A reference to the collector map which holds the current changeset's old values. This is
 		 *   an "output" parameter, and is modified by this method by storing the old value for a given attribute name.
 		 */
-		doSet : function( attributeName, newValue, changeSetNewValues, changeSetOldValues ) {
+		doSet : function( attributeName, newValue, options, changeSetNewValues, changeSetOldValues ) {
 			var attribute = this.attributes[ attributeName ],
 			    modelData = this.data,
-			    modelModifiedData = this.modifiedData;
+			    modelModifiedData = this.modifiedData,
+			    ignoreUnknownAttrs = ( options.ignoreUnknownAttrs === undefined ) ? this.ignoreUnknownAttrs : options.ignoreUnknownAttrs;
 			
-			// <debug>
 			if( !attribute ) {
+				if( ignoreUnknownAttrs ) return;  // simply return; nothing to do
+				
+				// <debug>
 				throw new Error( "data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
+				// </debug>
 			}
-			// </debug>
 			
 			// Get the current (old) value of the attribute, and its current "getter" value (to provide to the 'change' event as the oldValue)
 			var oldValue = modelData[ attributeName ],
