@@ -210,7 +210,7 @@ define( [
 			} );
 			
 			
-			it( "should *not* add the `pageParam` if it is not configured, even if a page of data to load is provided on a ReadOperation", function() {
+			it( "should *not* add the `pageParam` if it is *not* configured, even if a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl'
 					//pageParam : 'pageNum'  -- not configured
@@ -238,7 +238,7 @@ define( [
 			} );
 			
 			
-			it( "should *not* add the `pageSizeParam` if it is configured, but a page of data to load is not provided on a ReadOperation", function() {
+			it( "should add the `pageSizeParam` if it is configured, regardless of if a *page* of data to load is provided or not on the ReadOperation (which may be used to limit the number of records alone)", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					pageParam : 'pageNum',
@@ -249,11 +249,11 @@ define( [
 					//page : 0   -- no page configured
 					pageSize : 50
 				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl' );
+				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?pageSize=50' );
 			} );
 			
 			
-			it( "should *not* add the `pageSizeParam` if it is not configured, even if a page of data to load is provided on a ReadOperation", function() {
+			it( "should *not* add the `pageSizeParam` if it is *not* configured, even if a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					pageParam : 'pageNum'

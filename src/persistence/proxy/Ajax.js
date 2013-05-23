@@ -244,10 +244,9 @@ define( [
 				
 				if( page > 0 && pageParam ) {   // an actual page was requested, and there is a pageParam config defined
 					params[ pageParam ] = page;
-					
-					if( pageSize > 0 && pageSizeParam ) {
-						params[ pageSizeParam ] = pageSize;
-					}
+				}
+				if( pageSize > 0 && pageSizeParam ) {
+					params[ pageSizeParam ] = pageSize;
 				}
 			}
 			
