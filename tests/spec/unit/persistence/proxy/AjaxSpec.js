@@ -16,9 +16,9 @@ define( [
 	} );
 	
 	
-	describe( "data.persistence.proxy.Ajax", function() {
+	describe( 'data.persistence.proxy.Ajax', function() {
 		
-		describe( "Test read", function() {
+		describe( 'read()', function() {
 			
 			describe( "General read() tests", function() {
 				var thisSuite;
@@ -32,7 +32,7 @@ define( [
 				} );
 				
 				
-				it( "read() should call the ajax function with the correct url when a single model is being loaded", function() {
+				it( "should call the ajax function with the correct url when a single model is being loaded", function() {
 					JsMockito.when( thisSuite.operation ).getModelId().thenReturn( 1 );
 					var providedUrl;
 					
@@ -53,7 +53,7 @@ define( [
 				} );
 				
 				
-				it( "read() should populate the provided ReadOperation with a ResultSet upon a successful ajax request", function() {
+				it( "should populate the provided ReadOperation with a ResultSet upon a successful ajax request", function() {
 					var resultSet;
 					
 					JsMockito.when( thisSuite.operation ).getModelId().thenReturn( 1 );
@@ -85,9 +85,9 @@ define( [
 		} );
 		
 		
-		describe( "Test buildUrl()", function() {
+		describe( 'buildUrl()', function() {
 			
-			it( "buildUrl() should simply return the base url if no modelId is set on the ReadOperation", function() {
+			it( "should simply return the base url if no modelId is set on the ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl'
 				} );
@@ -97,7 +97,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should return the base url + the id param if a modelId is set on the ReadOperation", function() {
+			it( "should return the base url + the id param if a modelId is set on the ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl'
 				} );
@@ -107,7 +107,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should return the base url + any params passed on the Operation", function() {
+			it( "should return the base url + any params passed on the Operation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl'
 				} );
@@ -131,7 +131,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should return the base url + configured defaultParams + any params passed on the Operation, where params on the Operation override defaultParams of the same name", function() {
+			it( "should return the base url + configured defaultParams + any params passed on the Operation, where params on the Operation override defaultParams of the same name", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					defaultParams : {
@@ -159,7 +159,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should url encode both its defaultParams and Operation-level params' values", function() {
+			it( "should url encode both its defaultParams and Operation-level params' values", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					defaultParams : {
@@ -184,7 +184,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should add the `pageParam` if it is configured, and a page of data to load is provided on a ReadOperation", function() {
+			it( "should add the `pageParam` if it is configured, and a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					pageParam : 'pageNum'
@@ -197,7 +197,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should *not* add the `pageParam` if it is configured, but a page of data to load is not provided on a ReadOperation", function() {
+			it( "should *not* add the `pageParam` if it is configured, but a page of data to load is not provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					pageParam : 'pageNum'
@@ -210,7 +210,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should *not* add the `pageParam` if it is not configured, even if a page of data to load is provided on a ReadOperation", function() {
+			it( "should *not* add the `pageParam` if it is not configured, even if a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl'
 					//pageParam : 'pageNum'  -- not configured
@@ -223,7 +223,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should add the `pageSizeParam` if it is configured, and a page of data to load is provided on a ReadOperation", function() {
+			it( "should add the `pageSizeParam` if it is configured, and a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					pageParam : 'pageNum',
@@ -238,7 +238,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should *not* add the `pageSizeParam` if it is configured, but a page of data to load is not provided on a ReadOperation", function() {
+			it( "should *not* add the `pageSizeParam` if it is configured, but a page of data to load is not provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					pageParam : 'pageNum',
@@ -253,7 +253,7 @@ define( [
 			} );
 			
 			
-			it( "buildUrl() should *not* add the `pageSizeParam` if it is not configured, even if a page of data to load is provided on a ReadOperation", function() {
+			it( "should *not* add the `pageSizeParam` if it is not configured, even if a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
 					pageParam : 'pageNum'
@@ -265,6 +265,50 @@ define( [
 					pageSize : 50
 				} );
 				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?pageNum=5' );
+			} );
+			
+		} );
+		
+		
+		describe( 'urlAppend()', function() {
+			
+			it( "should simply return the `baseUrl` arg if no `queryString` is provided", function() {
+				var proxy = new AjaxProxy();
+
+				expect( proxy.urlAppend( 'http://www.yahoo.com/' /* no second arg */ ) ).toBe( 'http://www.yahoo.com/' );
+				expect( proxy.urlAppend( 'http://www.yahoo.com/', '' ) ).toBe( 'http://www.yahoo.com/' );
+			} );
+			
+			
+			it( "should append the `queryString` with a '?' as the separator character, if there is no '?' yet in the url", function() {
+				var proxy = new AjaxProxy();
+				
+				var result = proxy.urlAppend( 'http://www.yahoo.com/', 'x=1&y=2' );
+				expect( result ).toBe( 'http://www.yahoo.com/?x=1&y=2' );
+			} );
+			
+			
+			it( "should append the `queryString` with a '&' if there is already a '?' in the url string", function() {
+				var proxy = new AjaxProxy();
+				
+				var result = proxy.urlAppend( 'http://www.yahoo.com/?x=1', 'y=2&z=3' );
+				expect( result ).toBe( 'http://www.yahoo.com/?x=1&y=2&z=3' );
+			} );
+			
+			
+			it( "should handle the special case of a '?' being the last character in the `url`, by append the `queryString` with *no* separator character", function() {
+				var proxy = new AjaxProxy();
+				
+				var result = proxy.urlAppend( 'http://www.yahoo.com/?', 'x=1&y=2' );
+				expect( result ).toBe( 'http://www.yahoo.com/?x=1&y=2' );
+			} );
+			
+			
+			it( "should handle the special case of the url being an empty string, properly adding the '?' as the first character", function() {
+				var proxy = new AjaxProxy();
+				
+				var result = proxy.urlAppend( '', 'x=1&y=2' );
+				expect( result ).toBe( '?x=1&y=2' );
 			} );
 			
 		} );

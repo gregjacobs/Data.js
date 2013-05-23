@@ -306,17 +306,26 @@ define( [
 		 *     this.urlAppend( 'http://www.yahoo.com/?x=1', 'y=2&z=3' );
 		 *     // <- http://www.yahoo.com/?x=1&y=2&z=3
 		 *     
-		 * @param {String} baseUrl The base url to append to.
+		 * @param {String} url The url string to append to.
 		 * @param {String} queryString The query string to append.
-		 * @return The baseUrl + queryString, with the correct separator character.
+		 * @return The `url` + `queryString`, with the correct separator character.
 		 */
-		urlAppend : function( baseUrl, queryString ) {
-			var url = baseUrl;
-			
+		urlAppend : function( url, queryString ) {
 			if( queryString ) {
-				var sepChar = ( baseUrl.indexOf( '?' ) === -1 ) ? '?' : '&';
-				url += sepChar + queryString;
+				var indexOfQuestionMark = url.indexOf( '?' ),
+				    separatorChar = '';
+				
+				if( indexOfQuestionMark === -1 ) {
+					separatorChar = '?';
+				} else if( indexOfQuestionMark < url.length - 1 ) {
+					// Only adding the '&' separator char if the the '?' is in the string, but is *not* the last char (i.e. there is 
+					// no query string value yet, but the url already has the correct '?' separator char)
+					separatorChar = '&';
+				}
+				
+				url += separatorChar + queryString;
 			}
+			
 			return url;
 		}
 		
