@@ -1,5 +1,7 @@
 .project
 .settings
 .externalToolBuilders
-docs/
 web.config
+
+docs/
+node_modules/

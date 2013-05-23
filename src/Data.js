@@ -1,12 +1,3 @@
-/*!
- * Data.js
- * Version 0.1
- * 
- * Copyright(c) 2013 Gregory Jacobs.
- * MIT Licensed. http://www.opensource.org/licenses/mit-license.php
- * 
- * https://github.com/gregjacobs/Data.js
- */
 /*global define */
 define( function() {
 	
@@ -32,4 +23,5 @@ define( function() {
 	};
 	
 	return Data;
+	
 } );
