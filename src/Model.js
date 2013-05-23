@@ -602,7 +602,8 @@ define( [
 		 */
 		set : function( attributeName, newValue ) {
 			// If coming into the set() method for the first time (non-recursively, not from an attribute setter, not from a 'change' handler, etc),
-			// reset the maps which will hold the newValues and oldValues that will be provided to the 'changeset' event.
+			// reset the maps which will hold the newValues and oldValues that will be provided to the 'changeset' event. These will be used by the
+			// `doSet()` method.
 			if( this.setCallCount === 0 ) {
 				this.changeSetNewValues = {};
 				this.changeSetOldValues = {};
@@ -611,113 +612,36 @@ define( [
 			// Increment the setCallCount, for use with the 'changeset' event. The 'changeset' event only fires when all calls to set() have exited.
 			this.setCallCount++;
 			
-			var attributes = this.attributes,
-			    changeSetNewValues = this.changeSetNewValues,
+			var changeSetNewValues = this.changeSetNewValues,
 			    changeSetOldValues = this.changeSetOldValues;
 			
-			if( typeof attributeName === 'object' ) {
-				// Map provided
+			if( typeof attributeName === 'string' ) {
+				this.doSet( attributeName, newValue, changeSetNewValues, changeSetOldValues );
+				
+			} else {  // Map provided as first arg
 				var values = attributeName,  // for clarity
+				    attributes = this.attributes,
 				    attrsWithSetters = [];
 				
-				for( var fldName in values ) {  // a new variable, 'fldName' instead of 'attributeName', so that JSLint stops whining about "Bad for in variable 'attributeName'" (for whatever reason it does that...)
-					if( values.hasOwnProperty( fldName ) ) {
+				for( attributeName in values ) {
+					if( values.hasOwnProperty( attributeName ) ) {
 						// <debug>
-						if( !attributes[ fldName ] ) {
-							throw new Error( "data.Model.set(): An attribute with the attributeName '" + fldName + "' was not found." );
+						if( !attributes[ attributeName ] ) {
+							throw new Error( "data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
 						}
 						// </debug>
-						if( attributes[ fldName ].hasUserDefinedSetter() ) {   // defer setting the values on attributes with user-defined setters until all attributes without user-defined setters have been set
-							attrsWithSetters.push( fldName );
+						
+						if( attributes[ attributeName ].hasUserDefinedSetter() ) {   // defer setting the values on attributes with user-defined setters until all attributes without user-defined setters have been set
+							attrsWithSetters.push( attributeName );
 						} else {
-							this.set( fldName, values[ fldName ] );
+							this.doSet( attributeName, values[ attributeName ], changeSetNewValues, changeSetOldValues );
 						}
 					}
 				}
 				
 				for( var i = 0, len = attrsWithSetters.length; i < len; i++ ) {
-					fldName = attrsWithSetters[ i ];
-					this.set( fldName, values[ fldName ] );
-				}
-				
-			} else {
-				// `attributeName` and `newValue` args provided to method
-				var attribute = attributes[ attributeName ];
-				
-				// <debug>
-				if( !attribute ) {
-					throw new Error( "data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
-				}
-				// </debug>
-				
-				// Get the current (old) value of the attribute, and its current "getter" value (to provide to the 'change' event as the oldValue)
-				var oldValue = this.data[ attributeName ],
-				    oldGetterValue = this.get( attributeName );
-				
-				// Call the Attribute's set() method (or user-provided 'set' config function) to do any implemented conversion
-				newValue = attribute.set( this, newValue, oldValue );
-				
-				// *** Temporary workaround to get the 'change' event to fire on an Attribute whose set() config function does not
-				// return a new value to set to the underlying data. This will be resolved once dependencies are 
-				// automatically resolved in the Attribute's get() function. 
-				if( attribute.hasOwnProperty( 'set' ) && newValue === undefined ) {  // the attribute will only have a 'set' property of its own if the 'set' config was provided
-					// This is to make the following block below think that there is already data in for the attribute, and
-					// that it has the same value. If we don't have this, the change event will fire twice, the
-					// the model will be considered modified, and the old value will be put into the `modifiedData` hash.
-					if( !( attributeName in this.data ) ) {
-						this.data[ attributeName ] = undefined;
-					}
-					
-					// Fire the events with the value of the Attribute after it has been processed by any Attribute-specific `get()` function.
-					newValue = this.get( attributeName );
-					
-					// Store the 'change' in the 'changeset' maps
-					this.changeSetNewValues[ attributeName ] = newValue;
-					if( !( attributeName in changeSetOldValues ) ) {  // only store the "old" value if we don't have an "old" value for the attribute already. This leaves us with the real "old" value when multiple sets occur for an attribute during the changeset.
-						this.changeSetOldValues[ attributeName ] = oldGetterValue;
-					}
-					
-					// Now manually fire the events
-					this.fireEvent( 'change:' + attributeName, this, newValue, oldGetterValue );  // model, newValue, oldValue
-					this.fireEvent( 'change', this, attributeName, newValue, oldGetterValue );    // model, attributeName, newValue, oldValue
-				}
-				
-				// Allow the Attribute to post-process the newValue (the value returned from the Attribute's set() function)
-				newValue = attribute.afterSet( this, newValue );
-				
-				// Only change if there is no current value for the attribute, or if newValue is different from the current
-				if( !this.data.hasOwnProperty( attributeName ) || !attribute.valuesAreEqual( oldValue, newValue ) ) {   // let the Attribute itself determine if two values of its datatype are equal
-					// Store the attribute's *current* value (not the newValue) into the "modifiedData" attributes hash.
-					// This should only happen the first time the attribute is set, so that the attribute can be rolled back even if there are multiple
-					// set() calls to change it.
-					if( !this.modifiedData.hasOwnProperty( attributeName ) ) {
-						this.modifiedData[ attributeName ] = oldValue;
-					}
-					this.data[ attributeName ] = newValue;
-					
-					
-					// Now that we have set the new raw value to the internal `data` hash, we want to fire the events with the value
-					// of the Attribute after it has been processed by any Attribute-specific `get()` function.
-					newValue = this.get( attributeName );
-					
-					// If the attribute is the "idAttribute", set the `id` property on the model for compatibility with Backbone's Collection
-					if( attributeName === this.idAttribute ) {
-						this.id = newValue;
-	
-						// Re-submit to ModelCache, so new ID will be used.  This is particularly relevant on 'create', where the ID isn't known
-						// at the time the model is instantiated.
-						ModelCache.get( this, newValue );
-					}
-					
-					// Store the 'change' values in the changeset maps, for use when the 'changeset' event fires
-					changeSetNewValues[ attributeName ] = newValue;
-					if( !( attributeName in changeSetOldValues ) ) {  // Only store the "old" value if we don't have an "old" value for the attribute already. This leaves us with the real "old" value when multiple set()'s occur for an attribute during the changeset.
-						changeSetOldValues[ attributeName ] = oldGetterValue;
-					}
-					
-					// And finally, fire the 'change' events
-					this.fireEvent( 'change:' + attributeName, this, newValue, oldGetterValue );  // model, newValue, oldValue
-					this.fireEvent( 'change', this, attributeName, newValue, oldGetterValue );    // model, attributeName, newValue, oldValue
+					attributeName = attrsWithSetters[ i ];
+					this.doSet( attributeName, values[ attributeName ], changeSetNewValues, changeSetOldValues );
 				}
 			}
 			
@@ -725,6 +649,99 @@ define( [
 			this.setCallCount--;
 			if( this.setCallCount === 0 ) {
 				this.fireEvent( 'changeset', this, changeSetNewValues, changeSetOldValues );
+			}
+		},
+		
+		
+		/**
+		 * Called internally by the {@link #set} method, this method performs the actual setting of an attribute's value.
+		 * 
+		 * @protected
+		 * @param {String} attributeName The attribute name for the Attribute to set.
+		 * @param {Mixed} newValue The value to set to the attribute.
+		 * @param {Object} changeSetNewValues A reference to the collector map which holds the current changeset's new values. This is
+		 *   an "output" parameter, and is modified by this method by storing the new value for a given attribute name.
+		 * @param {Object} changeSetOldValues A reference to the collector map which holds the current changeset's old values. This is
+		 *   an "output" parameter, and is modified by this method by storing the old value for a given attribute name.
+		 */
+		doSet : function( attributeName, newValue, changeSetNewValues, changeSetOldValues ) {
+			var attribute = this.attributes[ attributeName ],
+			    modelData = this.data,
+			    modelModifiedData = this.modifiedData;
+			
+			// <debug>
+			if( !attribute ) {
+				throw new Error( "data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
+			}
+			// </debug>
+			
+			// Get the current (old) value of the attribute, and its current "getter" value (to provide to the 'change' event as the oldValue)
+			var oldValue = modelData[ attributeName ],
+			    oldGetterValue = this.get( attributeName );
+			
+			// Call the Attribute's set() method (or user-provided 'set' config function) to do any implemented conversion
+			newValue = attribute.set( this, newValue, oldValue );
+			
+			// ----------------------------------------------------------------------------------------------------------------------------
+			// *** Temporary workaround to get the 'change' event to fire on an Attribute whose set() config function does not
+			// return a new value to set to the underlying data. This will be resolved once dependencies are 
+			// automatically resolved in the Attribute's get() function.
+			if( attribute.hasUserDefinedSetter() && newValue === undefined ) {  // the attribute will only have a 'set' property of its own if the 'set' config was provided
+				// This is to make the following block below think that there is already data in for the attribute, and
+				// that it has the same value. If we don't have this, the change event will fire twice, the
+				// the model will be considered modified, and the old value will be put into the `modifiedData` hash.
+				if( !modelData.hasOwnProperty( attributeName ) ) {
+					modelData[ attributeName ] = undefined;
+				}
+				
+				// Fire the events with the value of the Attribute after it has been processed by any Attribute-specific `get()` function.
+				newValue = this.get( attributeName );
+				
+				// Store the 'change' in the 'changeset' maps
+				changeSetNewValues[ attributeName ] = newValue;
+				if( !changeSetOldValues.hasOwnProperty( attributeName ) ) {  // only store the "old" value if we don't have an "old" value for the attribute already. This leaves us with the real "old" value when multiple sets occur for an attribute during the changeset.
+					changeSetOldValues[ attributeName ] = oldGetterValue;
+				}
+				
+				// Now manually fire the events
+				this.fireEvent( 'change:' + attributeName, this, newValue, oldGetterValue );  // model, newValue, oldValue
+				this.fireEvent( 'change', this, attributeName, newValue, oldGetterValue );    // model, attributeName, newValue, oldValue
+			}
+			// ----------------------------------------------------------------------------------------------------------------------------
+			
+			// Allow the Attribute to post-process the newValue (the value returned from the Attribute's set() function)
+			newValue = attribute.afterSet( this, newValue );
+			
+			// Only change the underlying data if there is no current value for the attribute, or if newValue is different from the current
+			if( !modelData.hasOwnProperty( attributeName ) || !attribute.valuesAreEqual( oldValue, newValue ) ) {   // let the Attribute itself determine if two values of its datatype are equal
+				// Store the attribute's *current* value (not the newValue) into the "modifiedData" attributes hash.
+				// This should only happen the first time the attribute is set, so that the attribute can be rolled back even if there are multiple
+				// set() calls to change it.
+				if( !modelModifiedData.hasOwnProperty( attributeName ) ) {
+					modelModifiedData[ attributeName ] = oldValue;
+				}
+				modelData[ attributeName ] = newValue;
+				
+				
+				// Now that we have set the new raw value to the internal `data` hash, we want to fire the events with the value
+				// of the Attribute after it has been processed by any Attribute-specific `get()` function.
+				newValue = this.get( attributeName );
+				
+				// If the attribute is the `idAttribute`, update the ModelCache with the new ID. This is particularly relevant on model 'create', 
+				// where the ID isn't yet known at the time the model is instantiated.
+				if( attributeName === this.idAttribute ) {
+					ModelCache.get( this, newValue );  // Re-submit to ModelCache, so new ID will be used.  
+				}
+				
+				// Store the 'change' values in the changeset maps, for use when the 'changeset' event fires (from set() method)
+				changeSetNewValues[ attributeName ] = newValue;
+				if( !changeSetOldValues.hasOwnProperty( attributeName ) ) {  // Only store the "old" value if we don't have an "old" value for the attribute already. This leaves us with the real "old" value when multiple set()'s occur for an attribute during the changeset.
+					changeSetOldValues[ attributeName ] = oldGetterValue;
+				}
+				
+				// And finally, fire the 'change' events
+				this.fireEvent( 'change:' + attributeName, this, newValue, oldGetterValue );  // model, newValue, oldValue
+				this.fireEvent( 'change', this, attributeName, newValue, oldGetterValue );    // model, attributeName, newValue, oldValue
 			}
 		},
 		

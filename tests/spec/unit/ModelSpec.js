@@ -551,7 +551,7 @@ define( [
 			} );
 			
 			
-			function assertAttributeAcceptsAll( model, attributeName ) {
+			function assertMixedAttributeAcceptsAll( model, attributeName ) {
 				model.set( attributeName, undefined );
 				expect( _.isUndefined( model.get( attributeName ) ) ).toBe( true );  // orig YUI Test err msg: attributeName + "'s value should have the value set by set() (undefined)."
 				
@@ -594,7 +594,7 @@ define( [
 			} );
 			
 			
-			it( "should throw an error when trying to set an attribute that isn't defined (using the attr as an object literal arg)", function() {
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attr as an anonymous object arg)", function() {
 				expect( function() {
 					var model = new TestModel();
 					model.set( { 'nonExistentAttr': 1 } );
@@ -607,7 +607,7 @@ define( [
 			it( "should accept all datatypes including falsy values", function() {
 				var model = new TestModel();
 				
-				assertAttributeAcceptsAll( model, 'attribute1' );
+				assertMixedAttributeAcceptsAll( model, 'attribute1' );
 			} );
 			
 			
@@ -615,7 +615,7 @@ define( [
 				// Test with regular values, given a default value
 				var model = new TestModel();
 				
-				assertAttributeAcceptsAll( model, 'attribute2' );  // attribute2 has a default value
+				assertMixedAttributeAcceptsAll( model, 'attribute2' );  // attribute2 has a default value
 			} );
 			
 			
@@ -625,7 +625,7 @@ define( [
 					attribute2 : "initial value"
 				} );
 				
-				assertAttributeAcceptsAll( model, 'attribute2' );  // attribute2 has a given value in this test ("initial value")
+				assertMixedAttributeAcceptsAll( model, 'attribute2' );  // attribute2 has a given value in this test ("initial value")
 			} );
 			
 			
@@ -1213,27 +1213,6 @@ define( [
 				
 				expect( changeSetOldValues.b ).toBe( 22 );  // orig YUI Test err msg: "oldValue for 'b'"
 				expect( changeSetOldValues.c ).toBe( 33 );  // orig YUI Test err msg: "oldValue for 'c'"
-			} );
-			
-			
-			it( "for compatibility with Backbone's Collection, should set the id property to the Model object itself with the idAttribute is changed", function() {
-				var TestModel = Model.extend( {
-					attributes: [
-						{ name: 'attribute1' },
-						{ name: 'attribute2', set : function( model, value ) { return value + " " + model.get( 'attribute1' ); } }
-					],
-					idAttribute: 'attribute1'
-				} );
-				
-				var model = new TestModel( {
-					attribute1 : "attribute1val",
-					attribute2 : "attribute2val"
-				} );
-				
-				expect( model.id ).toBe( 'attribute1val' );  // orig YUI Test err msg: "The model's `id` property should have been set to attribute1's value, as that is the idAttribute."
-				
-				model.set( 'attribute1', 'newValue' );
-				expect( model.id ).toBe( 'newValue' );  // orig YUI Test err msg: "The model's `id` property should have been set to attribute1's value after another set(), as that is the idAttribute."
 			} );
 			
 		} );
