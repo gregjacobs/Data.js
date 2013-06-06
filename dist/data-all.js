@@ -4257,13 +4257,13 @@ define('data/Model', [
 		 * @cfg {Boolean} ignoreUnknownAttrs
 		 * 
 		 * Set this to `true` to have the Model ignore unknown attributes when they are {@link #set} to the model. When this is `false` (the
-		 * default), an error is thrown when an attribute is set to the model that doesn't have a corresponding {@link #attributes attribute} 
+		 * default), an error is thrown when an attribute is set to the model that doesn't have a corresponding {@link #cfg-attributes attribute} 
 		 * definition. This helps to catch errors for incorrectly spelled attribute names, instead of simply allowing the code to continue along
 		 * unknowingly. Problems and bugs caused by un-set data may then be difficult to track down to the original source of the problem, 
 		 * especially in larger software systems. Therefore, it is **not recommended** that you set this configuration option.
 		 * 
 		 * However, it is possible that your original data source provides many data properties that you do not want to have corresponding 
-		 * {@link #attributes attribute} definitions for. It is also possible that your data source adds properties from time to time, where you
+		 * {@link #cfg-attributes attribute} definitions for. It is also possible that your data source adds properties from time to time, where you
 		 * don't want your code throwing errors in production. In these cases, it may be useful to set this configuration option. Just note that 
 		 * you will be bypassing the check which can help you determine the source of a possible error immediately, rather than further down the 
 		 * line in the code's execution.
