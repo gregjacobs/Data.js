@@ -15,18 +15,14 @@ define( [
 	var FloatAttribute = Class.extend( NumberAttribute, {
 		
 		/**
-		 * Override of superclass method used to convert the provided data value into a float. If {@link #useNull} is true, 
-		 * undefined/null/empty string values will return `null`, or else will otherwise be converted to 0. If the number is 
-		 * simply not parsable, will return NaN.
+		 * Implementation of abstract superclass method, which parses the number as a float.
 		 * 
-		 * @param {Mixed} value The value to convert.
-		 * @return {Number} The converted value.
+		 * @protected
+		 * @param {String} input The input value to convert.
+		 * @return {Number} The converted value as a float, or NaN if the value was unparsable.
 		 */
-		convert : function( value ) {
-			value = this._super( arguments );
-			
-			var defaultValue = ( this.useNull ) ? null : 0;
-			return ( value !== undefined && value !== null && value !== '' ) ? parseFloat( String( value ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
+		parseNumber : function( value ) {
+			return parseFloat( value, 10 );
 		}
 		
 	} );

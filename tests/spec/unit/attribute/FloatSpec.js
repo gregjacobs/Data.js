@@ -34,51 +34,51 @@ define( [
 				
 				// Test with undefined and null
 				value = attribute.convert( undefined );
-				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: undefined"
+				expect( value ).toBe( 0 );
 				
 				value = attribute.convert( null );
-				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: null"
+				expect( value ).toBe( 0 );
 				
 				
 				// Test with booleans
 				value = attribute.convert( false );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: false"
+				expect( value ).toBe( 0 );
 				
 				value = attribute.convert( true );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: true"
+				expect( value ).toBe( 0 );
 				
 				
 				// Test with numbers
 				value = attribute.convert( 0 );
-				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: 0"
+				expect( value ).toBe( 0 );
 				
 				value = attribute.convert( 1 );
-				expect( value ).toBe( 1 );  // orig YUI Test err msg: "Test with value: 1"
+				expect( value ).toBe( 1 );
 				
 				value = attribute.convert( 1.42 );
-				expect( value ).toBe( 1.42 );  // orig YUI Test err msg: "Test with value: 1.42"
+				expect( value ).toBe( 1.42 );
 				
 				
 				// Test with actual strings
 				value = attribute.convert( "" );
-				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: ''"
+				expect( value ).toBe( 0 );
 				
 				value = attribute.convert( "hi" );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: 'hi'"
+				expect( value ).toBe( 0 );
 				
 				value = attribute.convert( "true" );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: 'true'"
+				expect( value ).toBe( 0 );
 				
 				value = attribute.convert( "1" );
-				expect( value ).toBe( 1 );  // orig YUI Test err msg: "Test with value: '1'"
+				expect( value ).toBe( 1 );
 				
 				value = attribute.convert( "1.11" );
-				expect( value ).toBe( 1.11 );  // orig YUI Test err msg: "Test with value: '1.11'"	
+				expect( value ).toBe( 1.11 );
 				
 				
 				// Test with an object
 				value = attribute.convert( {} );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: {}"
+				expect( value ).toBe( 0 );
 			} );
 			
 			
@@ -90,51 +90,51 @@ define( [
 				
 				// Test with undefined and null
 				value = attribute.convert( undefined );
-				expect( value ).toBe( null );  // orig YUI Test err msg: "Test with value: undefined"
+				expect( value ).toBe( null );
 				
 				value = attribute.convert( null );
-				expect( value ).toBe( null );  // orig YUI Test err msg: "Test with value: null"
+				expect( value ).toBe( null );
 				
 				
 				// Test with booleans
 				value = attribute.convert( false );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: false"
+				expect( value ).toBe( null );
 				
 				value = attribute.convert( true );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: true"
+				expect( value ).toBe( null );
 				
 				
 				// Test with numbers
 				value = attribute.convert( 0 );
-				expect( value ).toBe( 0 );  // orig YUI Test err msg: "Test with value: 0"
+				expect( value ).toBe( 0 );
 				
 				value = attribute.convert( 1 );
-				expect( value ).toBe( 1 );  // orig YUI Test err msg: "Test with value: 1"
+				expect( value ).toBe( 1 );
 				
 				value = attribute.convert( 1.42 );
-				expect( value ).toBe( 1.42 );  // orig YUI Test err msg: "Test with value: 1.42"
+				expect( value ).toBe( 1.42 );
 				
 				
 				// Test with actual strings
 				value = attribute.convert( "" );
-				expect( value ).toBe( null );  // orig YUI Test err msg: "Test with value: ''"
+				expect( value ).toBe( null );
 				
 				value = attribute.convert( "hi" );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: 'hi'"
+				expect( value ).toBe( null );
 				
 				value = attribute.convert( "true" );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: 'true'"
+				expect( value ).toBe( null );
 				
 				value = attribute.convert( "1" );
-				expect( value ).toBe( 1 );  // orig YUI Test err msg: "Test with value: '1'"
+				expect( value ).toBe( 1 );
 				
 				value = attribute.convert( "1.11" );
-				expect( value ).toBe( 1.11 );  // orig YUI Test err msg: "Test with value: '1.11'"
+				expect( value ).toBe( 1.11 );
 				
 				
 				// Test with an object
 				value = attribute.convert( {} );
-				expect( isNaN( value ) ).toBe( true );  // orig YUI Test err msg: "Test with value: {}"
+				expect( value ).toBe( null );
 			} );
 			
 			
@@ -145,7 +145,7 @@ define( [
 				    value;
 				
 				value = attribute.convert( "$1,000.32%" );
-				expect( value ).toBe( 1000.32 );  // orig YUI Test err msg: "Test with value: $1,000.32%"
+				expect( value ).toBe( 1000.32 );
 			} );
 			
 		} );

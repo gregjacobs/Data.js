@@ -16,18 +16,14 @@ define( [
 	var IntegerAttribute = Class.extend( NumberAttribute, {
 		
 		/**
-		 * Override of superclass method used to convert the provided data value into an integer. If {@link #useNull} is true, 
-		 * undefined/null/empty string values will return `null`, or else will otherwise be converted to 0. If the number is simply 
-		 * not parsable, will return NaN. 
+		 * Implementation of abstract superclass method, which parses the number as an integer.
 		 * 
-		 * @param {Mixed} value The value to convert.
-		 * @return {Number} The converted value.
+		 * @protected
+		 * @param {String} input The input value to convert.
+		 * @return {Number} The converted value as an integer, or NaN if the value was unparsable.
 		 */
-		convert : function( value ) {
-			value = this._super( arguments );
-			
-			var defaultValue = ( this.useNull ) ? null : 0;
-			return ( value !== undefined && value !== null && value !== '' ) ? parseInt( String( value ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
+		parseNumber : function( value ) {
+			return parseInt( value, 10 );
 		}
 		
 	} );

@@ -3837,7 +3837,7 @@ define('data/attribute/Number', [
 	 * 
 	 * Abstract base class for an Attribute that takes a number data value.
 	 */
-	var NumberAttribute = Class.extend( PrimitiveAttribute, {
+	var NumberAttribute = PrimitiveAttribute.extend( {
 		abstractClass: true,
 		
 		/**
@@ -3845,7 +3845,7 @@ define('data/attribute/Number', [
 		 * @inheritdoc
 		 * 
 		 * The Number Attribute defaults to 0, unless the {@link #useNull} config is 
-		 * set to `true`, in which case it defaults to `null` (to denote the Attribute being "unset").
+		 * set to `true`, in which case it defaults to `null`.
 		 */
 		defaultValue: function() {
 			return this.useNull ? null : 0;
@@ -3859,8 +3859,8 @@ define('data/attribute/Number', [
 		 * Attribute is "unset", and it shouldn't take an actual default value).
 		 * 
 		 * This is also used when parsing the provided value for the Attribute. If this config is true, and the value 
-		 * cannot be "easily" parsed into an integer (i.e. if it's undefined, null, or empty string), `null` will be used 
-		 * instead of converting to 0.
+		 * cannot be parsed into an integer (i.e. if it's undefined, null, empty string, string with alpha characters in it,
+		 * or other data type), `null` will be used instead of converting to 0.
 		 */
 		
 		
@@ -3875,7 +3875,34 @@ define('data/attribute/Number', [
 		 *         NumberAttribute.prototype.stripCharsRegex = /newRegexHere/g;
 		 *     } );
 		 */
-		stripCharsRegex : /[\$,%]/g
+		stripCharsRegex : /[\$,%]/g,
+		
+
+		/**
+		 * Override of superclass method used to convert the provided data value into a number. If {@link #useNull} is true, 
+		 * undefined/null/empty string/unparsable values will return `null`, or else will otherwise be converted to 0.
+		 * 
+		 * @param {Mixed} value The value to convert.
+		 * @return {Number} The converted value.
+		 */
+		convert : function( value ) {
+			value = this._super( arguments );
+			value = this.parseNumber( String( value ).replace( this.stripCharsRegex, '' ) );
+
+			return ( isNaN( value ) ) ? this.getDefaultValue() : value;
+		},
+		
+		
+		/**
+		 * Abstract method which should implement the parsing function for the number (ex: `parseInt()` or `parseFloat()`).
+		 * 
+		 * @protected
+		 * @abstract
+		 * @method parseNumber
+		 * @param {String} input The input value, as a string.
+		 * @return {Number} The parsed number, or NaN if the input string was unparsable.
+		 */
+		parseNumber : Class.abstractMethod
 		
 	} );
 	
@@ -3899,18 +3926,14 @@ define('data/attribute/Float', [
 	var FloatAttribute = Class.extend( NumberAttribute, {
 		
 		/**
-		 * Override of superclass method used to convert the provided data value into a float. If {@link #useNull} is true, 
-		 * undefined/null/empty string values will return `null`, or else will otherwise be converted to 0. If the number is 
-		 * simply not parsable, will return NaN.
+		 * Implementation of abstract superclass method, which parses the number as a float.
 		 * 
-		 * @param {Mixed} value The value to convert.
-		 * @return {Number} The converted value.
+		 * @protected
+		 * @param {String} input The input value to convert.
+		 * @return {Number} The converted value as a float, or NaN if the value was unparsable.
 		 */
-		convert : function( value ) {
-			value = this._super( arguments );
-			
-			var defaultValue = ( this.useNull ) ? null : 0;
-			return ( value !== undefined && value !== null && value !== '' ) ? parseFloat( String( value ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
+		parseNumber : function( value ) {
+			return parseFloat( value, 10 );
 		}
 		
 	} );
@@ -3941,18 +3964,14 @@ define('data/attribute/Integer', [
 	var IntegerAttribute = Class.extend( NumberAttribute, {
 		
 		/**
-		 * Override of superclass method used to convert the provided data value into an integer. If {@link #useNull} is true, 
-		 * undefined/null/empty string values will return `null`, or else will otherwise be converted to 0. If the number is simply 
-		 * not parsable, will return NaN. 
+		 * Implementation of abstract superclass method, which parses the number as an integer.
 		 * 
-		 * @param {Mixed} value The value to convert.
-		 * @return {Number} The converted value.
+		 * @protected
+		 * @param {String} input The input value to convert.
+		 * @return {Number} The converted value as an integer, or NaN if the value was unparsable.
 		 */
-		convert : function( value ) {
-			value = this._super( arguments );
-			
-			var defaultValue = ( this.useNull ) ? null : 0;
-			return ( value !== undefined && value !== null && value !== '' ) ? parseInt( String( value ).replace( this.stripCharsRegex, '' ), 10 ) : defaultValue;
+		parseNumber : function( value ) {
+			return parseInt( value, 10 );
 		}
 		
 	} );
