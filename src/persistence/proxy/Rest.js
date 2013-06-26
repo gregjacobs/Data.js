@@ -3,16 +3,17 @@ define( [
 	'jquery',
 	'lodash',
 	'Class',
-	'data/persistence/proxy/Proxy'
-], function( jQuery, _, Class, Proxy ) {
+	'data/persistence/proxy/Proxy',
+	'data/persistence/proxy/Ajax'
+], function( jQuery, _, Class, Proxy, AjaxProxy ) {
 	
 	/**
 	 * @class data.persistence.proxy.Rest
-	 * @extends data.persistence.proxy.Proxy
+	 * @extends data.persistence.proxy.Ajax
 	 * 
 	 * RestProxy is responsible for performing CRUD operations in a RESTful manner for a given Model on the server.
 	 */
-	var RestProxy = Class.extend( Proxy, {
+	var RestProxy = Class.extend( AjaxProxy, {
 		
 		/**
 		 * @cfg {String} urlRoot
@@ -49,25 +50,28 @@ define( [
 		rootProperty : "",
 		
 		/**
-		 * @cfg {Object} actionMethods
-		 * A mapping of the HTTP method to use for each action. This may be overridden for custom
-		 * server implementations.
+		 * @cfg
+		 * @inheritdoc
 		 */
-		actionMethods : {
-			create  : 'POST',
-			read    : 'GET',
-			update  : 'PUT',
-			destroy : 'DELETE'
-		},
-		
+		createMethod : 'POST',
+
 		/**
-		 * @private
-		 * @property {Function} ajax
-		 * A reference to the AJAX function to use for persistence. This is normally left as jQuery.ajax,
-		 * but is changed for the unit tests.
+		 * @cfg
+		 * @inheritdoc
 		 */
-		ajax : jQuery.ajax,
-		
+		readMethod : 'GET',
+
+		/**
+		 * @cfg
+		 * @inheritdoc
+		 */
+		updateMethod : 'PUT',
+
+		/**
+		 * @cfg
+		 * @inheritdoc
+		 */
+		destroyMethod : 'DELETE',
 		
 		
 		/**
@@ -107,7 +111,7 @@ define( [
 			
 			this.ajax( {
 				url         : this.buildUrl( 'create', model.getId() ),
-				type        : this.getMethod( 'create' ),
+				type        : this.getHttpMethod( 'create' ),
 				dataType    : 'text',
 				data        : JSON.stringify( dataToPersist ),
 				contentType : 'application/json'
@@ -145,7 +149,7 @@ define( [
 			
 			this.ajax( {
 				url      : this.buildUrl( 'read', operation.getModelId() ),
-				type     : this.getMethod( 'read' ),
+				type     : this.getHttpMethod( 'read' ),
 				dataType : 'json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
@@ -210,7 +214,7 @@ define( [
 			// Finally, persist to the server
 			this.ajax( {
 				url         : this.buildUrl( 'update', model.getId() ),
-				type        : this.getMethod( 'update' ),
+				type        : this.getHttpMethod( 'update' ),
 				dataType    : 'text',
 				data        : JSON.stringify( dataToPersist ),
 				contentType : 'application/json'
@@ -250,7 +254,7 @@ define( [
 			
 			this.ajax( {
 				url      : this.buildUrl( 'destroy', model.getId() ),
-				type     : this.getMethod( 'destroy' ),
+				type     : this.getHttpMethod( 'destroy' ),
 				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
 			} ).then(
 				function( data, textStatus, jqXHR ) {
@@ -295,20 +299,6 @@ define( [
 			}
 			
 			return url;
-		},
-		
-		
-		/**
-		 * Retrieves the HTTP method that should be used for a given action. This is, by default, done via 
-		 * a lookup to the {@link #actionMethods} config object.
-		 * 
-		 * @protected
-		 * @method getMethod
-		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @return {String} The HTTP method that should be used.
-		 */
-		getMethod : function( action ) {
-			return this.actionMethods[ action ];
 		}
 		
 	} );

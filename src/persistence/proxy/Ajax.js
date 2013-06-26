@@ -71,17 +71,36 @@ define( [
 		 */
 		
 		/**
-		 * @cfg {Object} actionMethods
+		 * @cfg {String} createMethod
 		 * 
-		 * A mapping of the HTTP method to use for each CRUD (create, read, update, destroy) action. This may be 
+		 * The HTTP method to use to when creating a {@link data.Model Model} on the server. This may be 
 		 * overridden for custom implementations.
 		 */
-		actionMethods : {
-			create  : 'POST',
-			read    : 'GET',
-			update  : 'POST',
-			destroy : 'POST'
-		},
+		createMethod : 'POST',
+		
+		/**
+		 * @cfg {String} readMethod
+		 * 
+		 * The HTTP method to use to when reading a {@link data.Model Model} or {@link data.Collection} 
+		 * from the server. This may be overridden for custom implementations.
+		 */
+		readMethod : 'GET',
+		
+		/**
+		 * @cfg {String} updateMethod
+		 * 
+		 * The HTTP method to use to when updating a {@link data.Model Model} on the server. This may be 
+		 * overridden for custom implementations.
+		 */
+		updateMethod : 'POST',
+		
+		/**
+		 * @cfg {String} destroyMethod
+		 * 
+		 * The HTTP method to use to when destroying a {@link data.Model Model} on the server. This may be 
+		 * overridden for custom implementations.
+		 */
+		destroyMethod : 'POST',
 		
 		/**
 		 * @cfg {String} idParam
@@ -280,15 +299,16 @@ define( [
 		
 		
 		/**
-		 * Retrieves the HTTP method that should be used for a given action. This is, by default, done via 
-		 * a lookup to the {@link #actionMethods} config object.
+		 * Retrieves the HTTP method that should be used for a given action ('create', 'read', 'update', or 'destroy'). 
+		 * The return value is dependent on the values of the {@link #createMethod}, {@link #readMethod}, 
+		 * {@link #updateMethod}, and {@link #destroyMethod} configs.
 		 * 
 		 * @protected
 		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @return {String} The HTTP method that should be used, based on the {@link #actionMethods} config.
+		 * @return {String} The HTTP method that should be used, based on the appropriate config (see above).
 		 */
 		getHttpMethod : function( action ) {
-			return this.actionMethods[ action ];
+			return this[ action + 'Method' ];  // ex: this.createMethod, this.readMethod, this.updateMethod, or this.destroyMethod
 		},
 		
 		

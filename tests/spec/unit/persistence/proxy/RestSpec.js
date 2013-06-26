@@ -88,7 +88,7 @@ define( [
 				} );
 				
 				
-				it( "The HTTP method should be overridable via the actionMethods config", function() {
+				it( "The HTTP method should be overridable via the `createMethod` config", function() {
 					JsMockito.when( thisSuite.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 					
 					var httpMethod = "";
@@ -98,9 +98,7 @@ define( [
 							return new jQuery.Deferred().promise();
 						},
 						
-						actionMethods : {
-							create : 'PUT'  // override
-						}
+						createMethod : 'PUT'  // override
 					} );
 					var proxy = new TestProxy();
 					
@@ -183,7 +181,7 @@ define( [
 				} );
 				
 				
-				it( "The HTTP method should be overridable via the actionMethods config", function() {
+				it( "The HTTP method should be overridable via the `readMethod` config", function() {
 					var httpMethod = "";
 					var TestProxy = Class.extend( RestProxy, {
 						ajax: function( options ) {
@@ -191,9 +189,7 @@ define( [
 							return new jQuery.Deferred().promise();
 						},
 						
-						actionMethods : {
-							read : 'POST'  // override
-						}
+						readMethod : 'POST'  // override
 					} );
 					
 					var proxy = new TestProxy();
@@ -372,7 +368,7 @@ define( [
 				} );
 				
 				
-				it( "The HTTP method should be overridable via the actionMethods config", function() {
+				it( "The HTTP method should be overridable via the `updateMethod` config", function() {
 					JsMockito.when( thisSuite.model ).getChanges( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 					
 					var httpMethod = "";
@@ -382,9 +378,7 @@ define( [
 							return new jQuery.Deferred().promise();
 						},
 						
-						actionMethods : {
-							update : 'POST'  // override
-						}
+						updateMethod : 'POST'  // override
 					} );
 					
 					var proxy = new TestProxy();
@@ -554,7 +548,7 @@ define( [
 				} );
 				
 				
-				it( "The HTTP method should be overridable via the actionMethods config", function() {
+				it( "The HTTP method should be overridable via the `destroyMethod` config", function() {
 					JsMockito.when( thisSuite.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 					
 					var httpMethod = "";
@@ -564,9 +558,7 @@ define( [
 							return new jQuery.Deferred().promise();
 						},
 						
-						actionMethods : {
-							destroy : 'POST'  // override
-						}
+						destroyMethod : 'POST'  // override
 					} );
 					
 					var proxy = new TestProxy();

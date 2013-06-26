@@ -7682,17 +7682,36 @@ define('data/persistence/proxy/Ajax', [
 		 */
 		
 		/**
-		 * @cfg {Object} actionMethods
+		 * @cfg {String} createMethod
 		 * 
-		 * A mapping of the HTTP method to use for each CRUD (create, read, update, destroy) action. This may be 
+		 * The HTTP method to use to when creating a {@link data.Model Model} on the server. This may be 
 		 * overridden for custom implementations.
 		 */
-		actionMethods : {
-			create  : 'POST',
-			read    : 'GET',
-			update  : 'POST',
-			destroy : 'POST'
-		},
+		createMethod : 'POST',
+		
+		/**
+		 * @cfg {String} readMethod
+		 * 
+		 * The HTTP method to use to when reading a {@link data.Model Model} or {@link data.Collection} 
+		 * from the server. This may be overridden for custom implementations.
+		 */
+		readMethod : 'GET',
+		
+		/**
+		 * @cfg {String} updateMethod
+		 * 
+		 * The HTTP method to use to when updating a {@link data.Model Model} on the server. This may be 
+		 * overridden for custom implementations.
+		 */
+		updateMethod : 'POST',
+		
+		/**
+		 * @cfg {String} destroyMethod
+		 * 
+		 * The HTTP method to use to when destroying a {@link data.Model Model} on the server. This may be 
+		 * overridden for custom implementations.
+		 */
+		destroyMethod : 'POST',
 		
 		/**
 		 * @cfg {String} idParam
@@ -7891,15 +7910,16 @@ define('data/persistence/proxy/Ajax', [
 		
 		
 		/**
-		 * Retrieves the HTTP method that should be used for a given action. This is, by default, done via 
-		 * a lookup to the {@link #actionMethods} config object.
+		 * Retrieves the HTTP method that should be used for a given action ('create', 'read', 'update', or 'destroy'). 
+		 * The return value is dependent on the values of the {@link #createMethod}, {@link #readMethod}, 
+		 * {@link #updateMethod}, and {@link #destroyMethod} configs.
 		 * 
 		 * @protected
 		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @return {String} The HTTP method that should be used, based on the {@link #actionMethods} config.
+		 * @return {String} The HTTP method that should be used, based on the appropriate config (see above).
 		 */
 		getHttpMethod : function( action ) {
-			return this.actionMethods[ action ];
+			return this[ action + 'Method' ];  // ex: this.createMethod, this.readMethod, this.updateMethod, or this.destroyMethod
 		},
 		
 		
@@ -7952,16 +7972,17 @@ define('data/persistence/proxy/Rest', [
 	'jquery',
 	'lodash',
 	'Class',
-	'data/persistence/proxy/Proxy'
-], function( jQuery, _, Class, Proxy ) {
+	'data/persistence/proxy/Proxy',
+	'data/persistence/proxy/Ajax'
+], function( jQuery, _, Class, Proxy, AjaxProxy ) {
 	
 	/**
 	 * @class data.persistence.proxy.Rest
-	 * @extends data.persistence.proxy.Proxy
+	 * @extends data.persistence.proxy.Ajax
 	 * 
 	 * RestProxy is responsible for performing CRUD operations in a RESTful manner for a given Model on the server.
 	 */
-	var RestProxy = Class.extend( Proxy, {
+	var RestProxy = Class.extend( AjaxProxy, {
 		
 		/**
 		 * @cfg {String} urlRoot
@@ -7998,25 +8019,28 @@ define('data/persistence/proxy/Rest', [
 		rootProperty : "",
 		
 		/**
-		 * @cfg {Object} actionMethods
-		 * A mapping of the HTTP method to use for each action. This may be overridden for custom
-		 * server implementations.
+		 * @cfg
+		 * @inheritdoc
 		 */
-		actionMethods : {
-			create  : 'POST',
-			read    : 'GET',
-			update  : 'PUT',
-			destroy : 'DELETE'
-		},
-		
+		createMethod : 'POST',
+
 		/**
-		 * @private
-		 * @property {Function} ajax
-		 * A reference to the AJAX function to use for persistence. This is normally left as jQuery.ajax,
-		 * but is changed for the unit tests.
+		 * @cfg
+		 * @inheritdoc
 		 */
-		ajax : jQuery.ajax,
-		
+		readMethod : 'GET',
+
+		/**
+		 * @cfg
+		 * @inheritdoc
+		 */
+		updateMethod : 'PUT',
+
+		/**
+		 * @cfg
+		 * @inheritdoc
+		 */
+		destroyMethod : 'DELETE',
 		
 		
 		/**
@@ -8056,7 +8080,7 @@ define('data/persistence/proxy/Rest', [
 			
 			this.ajax( {
 				url         : this.buildUrl( 'create', model.getId() ),
-				type        : this.getMethod( 'create' ),
+				type        : this.getHttpMethod( 'create' ),
 				dataType    : 'text',
 				data        : JSON.stringify( dataToPersist ),
 				contentType : 'application/json'
@@ -8094,7 +8118,7 @@ define('data/persistence/proxy/Rest', [
 			
 			this.ajax( {
 				url      : this.buildUrl( 'read', operation.getModelId() ),
-				type     : this.getMethod( 'read' ),
+				type     : this.getHttpMethod( 'read' ),
 				dataType : 'json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
@@ -8159,7 +8183,7 @@ define('data/persistence/proxy/Rest', [
 			// Finally, persist to the server
 			this.ajax( {
 				url         : this.buildUrl( 'update', model.getId() ),
-				type        : this.getMethod( 'update' ),
+				type        : this.getHttpMethod( 'update' ),
 				dataType    : 'text',
 				data        : JSON.stringify( dataToPersist ),
 				contentType : 'application/json'
@@ -8199,7 +8223,7 @@ define('data/persistence/proxy/Rest', [
 			
 			this.ajax( {
 				url      : this.buildUrl( 'destroy', model.getId() ),
-				type     : this.getMethod( 'destroy' ),
+				type     : this.getHttpMethod( 'destroy' ),
 				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
 			} ).then(
 				function( data, textStatus, jqXHR ) {
@@ -8244,20 +8268,6 @@ define('data/persistence/proxy/Rest', [
 			}
 			
 			return url;
-		},
-		
-		
-		/**
-		 * Retrieves the HTTP method that should be used for a given action. This is, by default, done via 
-		 * a lookup to the {@link #actionMethods} config object.
-		 * 
-		 * @protected
-		 * @method getMethod
-		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @return {String} The HTTP method that should be used.
-		 */
-		getMethod : function( action ) {
-			return this.actionMethods[ action ];
 		}
 		
 	} );
