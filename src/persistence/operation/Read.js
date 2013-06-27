@@ -20,8 +20,7 @@ define( [
 		/**
 		 * @cfg {Number/String} modelId
 		 * 
-		 * A single ID to load. This is used for loading a single {@link data.Model Model}.
-		 * This value will be converted to a String when retrieved by {@link #getModelId}.
+		 * A single model ID to load. This is only used for loading a single {@link data.Model Model}.
 		 * If this value is not provided, it will be assumed to load a collection of models.
 		 */
 		
@@ -58,13 +57,13 @@ define( [
 		
 		/**
 		 * Retrieves the value of the {@link #modelId} config, if it was provided.
-		 * If it was not provided, returns null.
+		 * If it was not provided, returns `null`.
 		 * 
-		 * @return {String} The {@link #modelId} provided as a config (converted to a string, if the config was provided
-		 *   as a number), or null if the config was not provided.
+		 * @return {Number/String} The {@link #modelId} provided as a config, or `null` if the config 
+		 *   was not provided.
 		 */
 		getModelId : function() {
-			return ( this.modelId !== undefined ) ? this.modelId + "" : null;
+			return ( this.modelId !== undefined ) ? this.modelId : null;
 		},
 		
 		
