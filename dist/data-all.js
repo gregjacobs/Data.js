@@ -2483,8 +2483,7 @@ define('data/persistence/operation/Read', [
 		/**
 		 * @cfg {Number/String} modelId
 		 * 
-		 * A single ID to load. This is used for loading a single {@link data.Model Model}.
-		 * This value will be converted to a String when retrieved by {@link #getModelId}.
+		 * A single model ID to load. This is only used for loading a single {@link data.Model Model}.
 		 * If this value is not provided, it will be assumed to load a collection of models.
 		 */
 		
@@ -2521,13 +2520,13 @@ define('data/persistence/operation/Read', [
 		
 		/**
 		 * Retrieves the value of the {@link #modelId} config, if it was provided.
-		 * If it was not provided, returns null.
+		 * If it was not provided, returns `null`.
 		 * 
-		 * @return {String} The {@link #modelId} provided as a config (converted to a string, if the config was provided
-		 *   as a number), or null if the config was not provided.
+		 * @return {Number/String} The {@link #modelId} provided as a config, or `null` if the config 
+		 *   was not provided.
 		 */
 		getModelId : function() {
-			return ( this.modelId !== undefined ) ? this.modelId + "" : null;
+			return ( this.modelId !== undefined ) ? this.modelId : null;
 		},
 		
 		
@@ -7678,7 +7677,8 @@ define('data/persistence/proxy/Ajax', [
 		 *         returnType : 'json'
 		 *     }
 		 *     
-		 * Note that the values of these parameters will be URL encoded.
+		 * Note that the values of these parameters will be URL encoded, if the default behavior of serializing the
+		 * parameters as a query string is not overridden by a new {@link #serializeParams} implementation.
 		 */
 		
 		/**
@@ -7793,11 +7793,13 @@ define('data/persistence/proxy/Ajax', [
 		 */
 		read : function( operation ) {
 			var me = this,  // for closures
+			    paramsObj = this.buildParams( 'read', operation ),
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
 				url      : this.buildUrl( 'read', operation ),
 				type     : this.getHttpMethod( 'read' ),
+				data     : this.serializeParams( paramsObj, 'read', operation ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
 				dataType : 'text'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
@@ -7850,6 +7852,33 @@ define('data/persistence/proxy/Ajax', [
 		
 		
 		/**
+		 * Sets the {@link #defaultParams} for the Proxy. Calling this method will overwrite any {@link #defaultParams}
+		 * which currently exist.
+		 * 
+		 * To set a single value in the {@link #defaultParams}, use {@link #setDefaultParam} instead.
+		 * 
+		 * @param {Object} defaultParams An Object (map) of the {@link #defaultParams default parameters} that the Proxy 
+		 *   should use for each request. Providing an empty Object or `null` will remove all current {@link #defaultParams}.
+		 */
+		setDefaultParams : function( defaultParams ) {
+			this.defaultParams = defaultParams || {};
+		},
+		
+		
+		/**
+		 * Sets an individual parameter in the {@link #defaultParams} map.
+		 * 
+		 * To reset all of the {@link #defaultParams}, use {@link #setDefaultParams} instead.
+		 * 
+		 * @param {String} name The parameter name to set in the {@link #defaultParams}.
+		 * @param {Mixed} value The value to set to the parameter.
+		 */
+		setDefaultParam : function( name, value ) {
+			this.defaultParams[ name ] = value;
+		},
+		
+		
+		/**
 		 * Builds the full URL that will be used for any given CRUD (create, read, update, destroy) request. This will
 		 * be the base url provided by either the {@link #api} or {@link #url} configs, plus any parameters that need
 		 * to be added based on the `operation` provided.
@@ -7860,8 +7889,30 @@ define('data/persistence/proxy/Ajax', [
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {
+			// Only add params explicitly to the URL when doing a create/update/destroy operation. For a 'read' 
+			// operation, params will be added conditionally to either the url or the post body based on the http 
+			// method being used ('GET' or 'POST', handled in the read() method itself).
+			var params = ( action === 'read' ) ? {} : this.buildParams( action, operation );
+			
+			return this.urlAppend( this.getUrl( action ), this.serializeParams( params ) );
+		},
+		
+		
+		/**
+		 * Builds the parameters for a given `operation`. By default, the `operation`'s params are combined
+		 * with the Proxy's {@link #defaultParams}, and then any additional parameters for paging and such are
+		 * added.
+		 * 
+		 * @protected
+		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
+		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @return {Object} An Object (map) of the parameters, where the keys are the parameter names,
+		 *   and the values are the parameter values.
+		 */
+		buildParams : function( action, operation ) {
 			var params = _.assign( {}, this.defaultParams, operation.getParams() || {} );   // build the params map
 			
+			// Add the model's `id` and the paging parameters for 'read' operations only
 			if( action === 'read' ) {
 				var modelId = operation.getModelId(),
 				    page = operation.getPage(),
@@ -7880,17 +7931,28 @@ define('data/persistence/proxy/Ajax', [
 				}
 			}
 			
-			// Map the params object to an array of query string params
-			params = _.map( params, function( value, prop ) {
-				return prop + '=' + encodeURIComponent( value );
-			} );
-			return this.urlAppend( this.getUrl( action ), params.join( '&' ) );
+			return params;
 		},
 		
 		
+		/**
+		 * Serializes the parameters for an operation. The default implementation of this method is to serialize
+		 * them into a query string, but may be overridden to support other formats.
+		 * 
+		 * @protected
+		 * @param {Object} params The Object (map) of parameters to serialize. The keys of this map are the parameter names,
+		 *   and the values are the parameter values.
+		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
+		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @return {String} The serialized string of parameters.
+		 */
+		serializeParams : function( params, action, operation ) {
+			return this.objToQueryString( params );
+		},
+		
 		
 		/**
-		 * Retrieves the base URL to use for the given CRUD (create, read, update, destroy) operation. This is based on 
+		 * Retrieves the URL to use for the given CRUD (create, read, update, destroy) operation. This is based on 
 		 * either the {@link #api} (if there is a URL defined for the given `action`), or otherwise, the {@link #url} config.
 		 * 
 		 * @protected
@@ -7921,6 +7983,9 @@ define('data/persistence/proxy/Ajax', [
 		getHttpMethod : function( action ) {
 			return this[ action + 'Method' ];  // ex: this.createMethod, this.readMethod, this.updateMethod, or this.destroyMethod
 		},
+		
+		
+		// -------------------------------------
 		
 		
 		/**
@@ -7957,6 +8022,22 @@ define('data/persistence/proxy/Ajax', [
 			}
 			
 			return url;
+		},
+		
+		
+		/**
+		 * Converts an Object (map) of properties and values into a query string.
+		 * 
+		 * @protected
+		 * @param {Object} obj
+		 * @return {String} The keys/values of the `obj` in the format "key=value&key2=value2".
+		 */
+		objToQueryString : function( obj ) {
+			// Map the object to an array of query string params
+			var arr = _.map( obj, function( value, prop ) {
+				return prop + '=' + encodeURIComponent( value );
+			} );
+			return arr.join( '&' );
 		}
 		
 	} );
