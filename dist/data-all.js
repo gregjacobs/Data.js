@@ -7850,32 +7850,8 @@ define('data/persistence/proxy/Ajax', [
 		
 		// -----------------------------------
 		
-		
-		/**
-		 * Sets the {@link #defaultParams} for the Proxy. Calling this method will overwrite any {@link #defaultParams}
-		 * which currently exist.
-		 * 
-		 * To set a single value in the {@link #defaultParams}, use {@link #setDefaultParam} instead.
-		 * 
-		 * @param {Object} defaultParams An Object (map) of the {@link #defaultParams default parameters} that the Proxy 
-		 *   should use for each request. Providing an empty Object or `null` will remove all current {@link #defaultParams}.
-		 */
-		setDefaultParams : function( defaultParams ) {
-			this.defaultParams = defaultParams || {};
-		},
-		
-		
-		/**
-		 * Sets an individual parameter in the {@link #defaultParams} map.
-		 * 
-		 * To reset all of the {@link #defaultParams}, use {@link #setDefaultParams} instead.
-		 * 
-		 * @param {String} name The parameter name to set in the {@link #defaultParams}.
-		 * @param {Mixed} value The value to set to the parameter.
-		 */
-		setDefaultParam : function( name, value ) {
-			this.defaultParams[ name ] = value;
-		},
+		// Note: No setDefaultParams() method so that the Proxy is immutable, and can be shared between many Model
+		//       and Collection instances.
 		
 		
 		/**
