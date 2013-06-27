@@ -182,11 +182,13 @@ define( [
 		 */
 		read : function( operation ) {
 			var me = this,  // for closures
+			    paramsObj = this.buildParams( 'read', operation ),
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
 				url      : this.buildUrl( 'read', operation ),
 				type     : this.getHttpMethod( 'read' ),
+				data     : this.serializeParams( paramsObj, 'read', operation ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
 				dataType : 'text'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
@@ -249,8 +251,30 @@ define( [
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {
+			// Only add params explicitly to the URL when doing a create/update/destroy operation. For a 'read' 
+			// operation, params will be added conditionally to either the url or the post body based on the http 
+			// method being used ('GET' or 'POST', handled in the read() method itself).
+			var params = ( action === 'read' ) ? {} : this.buildParams( action, operation );
+			
+			return this.urlAppend( this.getUrl( action ), this.serializeParams( params ) );
+		},
+		
+		
+		/**
+		 * Builds the parameters for a given `operation`. By default, the `operation`'s params are combined
+		 * with the Proxy's {@link #defaultParams}, and then any additional parameters for paging and such are
+		 * added.
+		 * 
+		 * @protected
+		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
+		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @return {Object} An Object (map) of the parameters, where the keys are the parameter names,
+		 *   and the values are the parameter values.
+		 */
+		buildParams : function( action, operation ) {
 			var params = _.assign( {}, this.defaultParams, operation.getParams() || {} );   // build the params map
 			
+			// Add the model's `id` and the paging parameters for 'read' operations only
 			if( action === 'read' ) {
 				var modelId = operation.getModelId(),
 				    page = operation.getPage(),
@@ -269,17 +293,28 @@ define( [
 				}
 			}
 			
-			// Map the params object to an array of query string params
-			params = _.map( params, function( value, prop ) {
-				return prop + '=' + encodeURIComponent( value );
-			} );
-			return this.urlAppend( this.getUrl( action ), params.join( '&' ) );
+			return params;
 		},
 		
 		
+		/**
+		 * Serializes the parameters for an operation. The default implementation of this method is to serialize
+		 * them into a query string, but may be overridden to support other formats.
+		 * 
+		 * @protected
+		 * @param {Object} params The Object (map) of parameters to serialize. The keys of this map are the parameter names,
+		 *   and the values are the parameter values.
+		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
+		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @return {String} The serialized string of parameters.
+		 */
+		serializeParams : function( params, action, operation ) {
+			return this.objToQueryString( params );
+		},
+		
 		
 		/**
-		 * Retrieves the base URL to use for the given CRUD (create, read, update, destroy) operation. This is based on 
+		 * Retrieves the URL to use for the given CRUD (create, read, update, destroy) operation. This is based on 
 		 * either the {@link #api} (if there is a URL defined for the given `action`), or otherwise, the {@link #url} config.
 		 * 
 		 * @protected
@@ -310,6 +345,9 @@ define( [
 		getHttpMethod : function( action ) {
 			return this[ action + 'Method' ];  // ex: this.createMethod, this.readMethod, this.updateMethod, or this.destroyMethod
 		},
+		
+		
+		// -------------------------------------
 		
 		
 		/**
@@ -346,6 +384,22 @@ define( [
 			}
 			
 			return url;
+		},
+		
+		
+		/**
+		 * Converts an Object (map) of properties and values into a query string.
+		 * 
+		 * @protected
+		 * @param {Object} obj
+		 * @return {String} The keys/values of the `obj` in the format "key=value&key2=value2".
+		 */
+		objToQueryString : function( obj ) {
+			// Map the object to an array of query string params
+			var arr = _.map( obj, function( value, prop ) {
+				return prop + '=' + encodeURIComponent( value );
+			} );
+			return arr.join( '&' );
 		}
 		
 	} );
