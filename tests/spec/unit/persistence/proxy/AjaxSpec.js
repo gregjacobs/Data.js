@@ -113,6 +113,30 @@ define( [
 				expect( proxy.buildUrl( 'update', writeOperation ) ).toBe( '/testUrl?param1=value1&param2=value2' );
 			} );
 			
+			
+			it( "should only append parameters to the url for create/update/destroy operations, as parameters for 'read' are handled differently in the read() method (not even calling the serializeParams method)", function() {
+				var proxy = new AjaxProxy( {
+					url : '/testUrl',
+					
+					defaultParams : {
+						param1: "value1",
+						param2: "value2"
+					},
+					
+					// Overridden serialize method, that always returns something. There was an issue where the code used to create
+					// an empty object for the params on a 'read' operation, but they were still being serialized as something when 
+					// serializeParams() was overridden. This fact was missed in a previous test, because the default serializeParams() 
+					// returns empty string if passed an empty object of params.
+					serializeParams : function() { return "asdf"; }
+				} );
+				
+				var readOperation = new ReadOperation();
+				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl' );
+				
+				var writeOperation = new WriteOperation();
+				expect( proxy.buildUrl( 'update', writeOperation ) ).toBe( '/testUrl?asdf' );
+			} );
+			
 		} );
 		
 		

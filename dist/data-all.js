@@ -7889,12 +7889,17 @@ define('data/persistence/proxy/Ajax', [
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( action, operation ) {
+			var url = this.getUrl( action );
+			
 			// Only add params explicitly to the URL when doing a create/update/destroy operation. For a 'read' 
 			// operation, params will be added conditionally to either the url or the post body based on the http 
-			// method being used ('GET' or 'POST', handled in the read() method itself).
-			var params = ( action === 'read' ) ? {} : this.buildParams( action, operation );
-			
-			return this.urlAppend( this.getUrl( action ), this.serializeParams( params ) );
+			// method being used ('GET' or 'POST', handled in the read() method itself). 
+			if( action !== 'read' ) {
+				var params = this.buildParams( action, operation );
+				
+				url = this.urlAppend( url, this.serializeParams( params, action, operation ) );
+			}
+			return url;
 		},
 		
 		
