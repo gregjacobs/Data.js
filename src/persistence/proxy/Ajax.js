@@ -67,7 +67,8 @@ define( [
 		 *         returnType : 'json'
 		 *     }
 		 *     
-		 * Note that the values of these parameters will be URL encoded.
+		 * Note that the values of these parameters will be URL encoded, if the default behavior of serializing the
+		 * parameters as a query string is not overridden by a new {@link #serializeParams} implementation.
 		 */
 		
 		/**
@@ -238,6 +239,33 @@ define( [
 		
 		
 		// -----------------------------------
+		
+		
+		/**
+		 * Sets the {@link #defaultParams} for the Proxy. Calling this method will overwrite any {@link #defaultParams}
+		 * which currently exist.
+		 * 
+		 * To set a single value in the {@link #defaultParams}, use {@link #setDefaultParam} instead.
+		 * 
+		 * @param {Object} defaultParams An Object (map) of the {@link #defaultParams default parameters} that the Proxy 
+		 *   should use for each request. Providing an empty Object or `null` will remove all current {@link #defaultParams}.
+		 */
+		setDefaultParams : function( defaultParams ) {
+			this.defaultParams = defaultParams || {};
+		},
+		
+		
+		/**
+		 * Sets an individual parameter in the {@link #defaultParams} map.
+		 * 
+		 * To reset all of the {@link #defaultParams}, use {@link #setDefaultParams} instead.
+		 * 
+		 * @param {String} name The parameter name to set in the {@link #defaultParams}.
+		 * @param {Mixed} value The value to set to the parameter.
+		 */
+		setDefaultParam : function( name, value ) {
+			this.defaultParams[ name ] = value;
+		},
 		
 		
 		/**
