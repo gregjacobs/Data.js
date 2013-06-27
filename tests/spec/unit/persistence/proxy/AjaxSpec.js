@@ -1,4 +1,4 @@
-/*global define, window, jQuery, _, describe, beforeEach, afterEach, it, expect, JsMockito */
+/*global define, window, jQuery, _, describe, beforeEach, afterEach, it, expect, spyOn */
 define( [
 	'lodash',
 	'Class',
@@ -19,67 +19,66 @@ define( [
 	describe( 'data.persistence.proxy.Ajax', function() {
 		
 		describe( 'read()', function() {
+			var reader,
+			    operation;
 			
-			describe( "General read() tests", function() {
-				var thisSuite;
+			beforeEach( function() {
+				reader = new ConcreteReader();
+				operation = new ReadOperation();
+			} );
+			
+			
+			it( "should call the ajax function with the correct url when a single model is being loaded", function() {
+				spyOn( operation, 'getModelId' ).andReturn( 1 );
 				
-				beforeEach( function() {
-					thisSuite = {};
-					
-					thisSuite.model = JsMockito.mock( Model );
-					thisSuite.reader = JsMockito.mock( ConcreteReader );
-					thisSuite.operation = JsMockito.mock( ReadOperation );
+				var providedUrl,
+				    providedData;  // this will be the params string in the case of 'read'
+				
+				var testData = { attribute1: 'value1', attribute2: 'value2' };
+				var TestProxy = AjaxProxy.extend( {
+					ajax : function( options ) {
+						providedUrl = options.url;
+						providedData = options.data;
+						return new jQuery.Deferred().promise();
+					}
 				} );
 				
-				
-				it( "should call the ajax function with the correct url when a single model is being loaded", function() {
-					JsMockito.when( thisSuite.operation ).getModelId().thenReturn( 1 );
-					var providedUrl;
-					
-					var testData = { attribute1: 'value1', attribute2: 'value2' };
-					var TestProxy = AjaxProxy.extend( {
-						ajax : function( options ) {
-							providedUrl = options.url;
-							return new jQuery.Deferred().promise();
-						}
-					} );
-					
-					var proxy = new TestProxy( {
-						url : '/testUrl',
-						idParam : 'id'
-					} );
-					proxy.read( thisSuite.operation );
-					expect( providedUrl ).toBe( '/testUrl?id=1' );
+				var proxy = new TestProxy( {
+					url : '/testUrl',
+					idParam : 'id'
+				} );
+				proxy.read( operation );
+				expect( providedUrl ).toBe( '/testUrl' );
+				expect( providedData ).toBe( 'id=1' );
+			} );
+			
+			
+			it( "should populate the provided ReadOperation with a ResultSet upon a successful ajax request", function() {
+				var resultSet;
+
+				spyOn( operation, 'getModelId' ).andReturn( 1 );
+				spyOn( operation, 'setResultSet' ).andCallThrough();
+				spyOn( reader, 'read' ).andCallFake( function( data ) {
+					return ( resultSet = new ResultSet( { records: data } ) );
 				} );
 				
+				var testData = { attribute1: 'value1', attribute2: 'value2' };
 				
-				it( "should populate the provided ReadOperation with a ResultSet upon a successful ajax request", function() {
-					var resultSet;
-					
-					JsMockito.when( thisSuite.operation ).getModelId().thenReturn( 1 );
-					JsMockito.when( thisSuite.reader ).read().then( function( data ) {
-						return ( resultSet = new ResultSet( { records: data } ) );
-					} );
-					
-					var testData = { attribute1: 'value1', attribute2: 'value2' };
-					
-					var TestProxy = AjaxProxy.extend( {
-						ajax : function( options ) {
-							return new jQuery.Deferred().resolve( testData ).promise();
-						},
-						reader : thisSuite.reader
-					} );
-					
-					var proxy = new TestProxy( {
-						url : '/testUrl'
-					} );
-					proxy.read( thisSuite.operation );
-					
-					expect( testData ).toBe( resultSet.getRecords()[ 0 ] );  // orig YUI Test err msg: "The records provided to the ResultSet should have been the testData"
-					
-					JsMockito.verify( thisSuite.operation ).setResultSet( resultSet );
+				var TestProxy = AjaxProxy.extend( {
+					ajax : function( options ) {
+						return new jQuery.Deferred().resolve( testData ).promise();
+					},
+					reader : reader
 				} );
 				
+				var proxy = new TestProxy( {
+					url : '/testUrl'
+				} );
+				proxy.read( operation );
+				
+				expect( testData ).toBe( resultSet.getRecords()[ 0 ] );  // orig YUI Test err msg: "The records provided to the ResultSet should have been the testData"
+				
+				expect( operation.setResultSet ).toHaveBeenCalledWith( resultSet );
 			} );
 			
 		} );
@@ -87,7 +86,7 @@ define( [
 		
 		describe( 'buildUrl()', function() {
 			
-			it( "should simply return the base url if no modelId is set on the ReadOperation", function() {
+			it( "should return the configured `url` for the Proxy", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl'
 				} );
@@ -97,135 +96,142 @@ define( [
 			} );
 			
 			
-			it( "should return the base url + the id param if a modelId is set on the ReadOperation", function() {
-				var proxy = new AjaxProxy( {
-					url : '/testUrl'
-				} );
-				var operation = new ReadOperation( { modelId: 1 } );
-				
-				expect( proxy.buildUrl( 'read', operation ) ).toBe( '/testUrl?id=1' );
-			} );
-			
-			
-			it( "should return the base url + any params passed on the Operation", function() {
-				var proxy = new AjaxProxy( {
-					url : '/testUrl'
-				} );
-				
-				var readOperation = new ReadOperation( { 
-					modelId: 1,
-					params : {
-						p1: "value1",
-						p2: 2
-					}
-				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?p1=value1&p2=2&id=1' );
-				
-				var writeOperation = new WriteOperation( { 
-					params : {
-						p1: "value1",
-						p2: 2
-					}
-				} );
-				expect( proxy.buildUrl( 'update', writeOperation ) ).toBe( '/testUrl?p1=value1&p2=2' );
-			} );
-			
-			
-			it( "should return the base url + configured defaultParams + any params passed on the Operation, where params on the Operation override defaultParams of the same name", function() {
+			it( "should only append parameters to the url for create/update/destroy operations, as parameters for 'read' are handled differently in the read() method", function() {
 				var proxy = new AjaxProxy( {
 					url : '/testUrl',
+					
 					defaultParams : {
-						p1: "value1",
-						p2: "value2"
+						param1: "value1",
+						param2: "value2"
 					}
 				} );
 				
-				var readOperation = new ReadOperation( { 
-					modelId: 1,
-					params : {
-						p1: "overridden_value1",
-						p3: "value3"
-					}
-				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?p1=overridden_value1&p2=value2&p3=value3&id=1' );
+				var readOperation = new ReadOperation();
+				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl' );
 				
-				var writeOperation = new WriteOperation( { 
-					params : {
-						p1: "overridden_value1",
-						p3: "value3"
-					}
-				} );
-				expect( proxy.buildUrl( 'update', writeOperation ) ).toBe( '/testUrl?p1=overridden_value1&p2=value2&p3=value3' );
+				var writeOperation = new WriteOperation();
+				expect( proxy.buildUrl( 'update', writeOperation ) ).toBe( '/testUrl?param1=value1&param2=value2' );
+			} );
+			
+		} );
+		
+		
+		describe( 'buildParams()', function() {
+				
+			it( "should return the id param if a `modelId` is set on the ReadOperation", function() {
+				var proxy = new AjaxProxy(),
+				    operation = new ReadOperation( { modelId: 1 } );
+				
+				expect( proxy.buildParams( 'read', operation ) ).toEqual( { id: 1 } );
 			} );
 			
 			
-			it( "should url encode both its defaultParams and Operation-level params' values", function() {
-				var proxy = new AjaxProxy( {
-					url : '/testUrl',
-					defaultParams : {
-						p1: "a b"
+			it( "should return any params passed on the Operation, as well as the `modelId` set on a ReadOperation", function() {
+				var proxy = new AjaxProxy();
+				var readOperation = new ReadOperation( {
+					modelId : 1,
+					params : {
+						param1: "value1",
+						param2: 2
 					}
 				} );
+				expect( proxy.buildParams( 'read', readOperation ) ).toEqual( {
+					id: 1,
+					param1: "value1",
+					param2: 2
+				} );
+				
+				
+				var writeOperation = new WriteOperation( { 
+					params : {
+						param1: "value1",
+						param2: 2
+					}
+				} );
+				expect( proxy.buildParams( 'update', writeOperation ) ).toEqual( {
+					param1: "value1",
+					param2: 2
+				} );
+			} );
+			
+			
+			it( "should return configured defaultParams + any params passed on the Operation, where params on the Operation override defaultParams of the same name", function() {
+				var proxy = new AjaxProxy( {
+					defaultParams : {
+						param1: "value1",
+						param2: "value2"
+					}
+				});
 				
 				var readOperation = new ReadOperation( { 
 					modelId: 1,
 					params : {
-						p2: "a@b"
+						param1: "overridden_value1",
+						param3: "value3"
 					}
 				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?p1=a%20b&p2=a%40b&id=1' );
+				expect( proxy.buildParams( 'read', readOperation ) ).toEqual( {
+					id     : 1,
+					param1 : "overridden_value1",
+					param2 : "value2",
+					param3 : "value3"
+				} );
+				
 				
 				var writeOperation = new WriteOperation( { 
 					params : {
-						p2: "a@b"
+						param1: "overridden_value1",
+						param3: "value3"
 					}
 				} );
-				expect( proxy.buildUrl( 'update', writeOperation ) ).toBe( '/testUrl?p1=a%20b&p2=a%40b' );
+				expect( proxy.buildParams( 'update', writeOperation ) ).toEqual( {
+					param1 : "overridden_value1",
+					param2 : "value2",
+					param3 : "value3"
+				} );
 			} );
 			
 			
 			it( "should add the `pageParam` if it is configured, and a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
-					url : '/testUrl',
 					pageParam : 'pageNum'
 				} );
 				
 				var readOperation = new ReadOperation( { 
 					page : 5
 				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?pageNum=5' );
+				expect( proxy.buildParams( 'read', readOperation ) ).toEqual( {
+					pageNum : 5
+				} );
 			} );
 			
 			
 			it( "should *not* add the `pageParam` if it is configured, but a page of data to load is not provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
-					url : '/testUrl',
 					pageParam : 'pageNum'
 				} );
 				
 				var readOperation = new ReadOperation( { 
 					//page : 0   -- no page configured
 				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl' );
+				expect( proxy.buildParams( 'read', readOperation ) ).toEqual( {} );
 			} );
 			
 			
 			it( "should *not* add the `pageParam` if it is *not* configured, even if a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
-					url : '/testUrl'
 					//pageParam : 'pageNum'  -- not configured
 				} );
 				
 				var readOperation = new ReadOperation( { 
 					page : 5
 				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl' );
+				expect( proxy.buildParams( 'read', readOperation ) ).toEqual( {} );
 			} );
 			
 			
 			it( "should add the `pageSizeParam` if it is configured, and a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
-					url : '/testUrl',
 					pageParam : 'pageNum',
 					pageSizeParam : 'pageSize'
 				} );
@@ -234,13 +240,15 @@ define( [
 					page  : 5,
 					pageSize : 50
 				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?pageNum=5&pageSize=50' );
+				expect( proxy.buildParams( 'read', readOperation ) ).toEqual( {
+					pageNum  : 5,
+					pageSize : 50
+				} );
 			} );
 			
 			
 			it( "should add the `pageSizeParam` if it is configured, regardless of if a *page* of data to load is provided or not on the ReadOperation (which may be used to limit the number of records alone)", function() {
 				var proxy = new AjaxProxy( {
-					url : '/testUrl',
 					pageParam : 'pageNum',
 					pageSizeParam : 'pageSize'
 				} );
@@ -249,13 +257,14 @@ define( [
 					//page : 0   -- no page configured
 					pageSize : 50
 				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?pageSize=50' );
+				expect( proxy.buildParams( 'read', readOperation ) ).toEqual( {
+					pageSize : 50
+				} );
 			} );
 			
 			
 			it( "should *not* add the `pageSizeParam` if it is *not* configured, even if a page of data to load is provided on a ReadOperation", function() {
 				var proxy = new AjaxProxy( {
-					url : '/testUrl',
 					pageParam : 'pageNum'
 					//pageSizeParam : 'pageSize'  -- not configured,
 				} );
@@ -264,10 +273,34 @@ define( [
 					page : 5,
 					pageSize : 50
 				} );
-				expect( proxy.buildUrl( 'read', readOperation ) ).toBe( '/testUrl?pageNum=5' );
+				expect( proxy.buildParams( 'read', readOperation ) ).toEqual( {
+					pageNum : 5
+				} );
+			} );
+				
+		} );
+		
+		
+		describe( 'getHttpMethod()', function() {
+			
+			it( "should return the configured HTTP method for each of the four actions: create, read, update, destroy", function() {
+				var proxy = new AjaxProxy( {
+					createMethod  : 'POST',
+					readMethod    : 'GET',
+					updateMethod  : 'PUT',
+					destroyMethod : 'DELETE'
+				} );
+
+				expect( proxy.getHttpMethod( 'create' ) ).toBe( 'POST' );
+				expect( proxy.getHttpMethod( 'read' ) ).toBe( 'GET' );
+				expect( proxy.getHttpMethod( 'update' ) ).toBe( 'PUT' );
+				expect( proxy.getHttpMethod( 'destroy' ) ).toBe( 'DELETE' );
 			} );
 			
 		} );
+		
+		
+		// --------------------------------------
 		
 		
 		describe( 'urlAppend()', function() {
@@ -309,6 +342,27 @@ define( [
 				
 				var result = proxy.urlAppend( '', 'x=1&y=2' );
 				expect( result ).toBe( '?x=1&y=2' );
+			} );
+			
+		} );
+		
+		
+		describe( 'objToQueryString()', function() {
+			var proxy;
+			
+			beforeEach( function() {
+				proxy = new AjaxProxy();
+			} );
+			
+
+			it( "should accept a map of simple key/value params, and convert them to a query string with the values URL encoded", function() {
+				var params = {
+					p1 : "a b",
+					p2 : "a@b",
+					p3 : "testing123"
+				};
+				
+				expect( proxy.objToQueryString( params ) ).toBe( "p1=a%20b&p2=a%40b&p3=testing123" );
 			} );
 			
 		} );
