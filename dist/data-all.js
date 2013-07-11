@@ -1433,67 +1433,6 @@ define('data/DataComponent', [
 	
 } );
 /*global define */
-define('data/ModelCache',[], function() {
-
-	/**
-	 * @private
-	 * @class data.ModelCache
-	 * @singleton
-	 * 
-	 * Singleton class which caches models by their type (subclass type), and id. This is used
-	 * to retrieve models, and not duplicate them when instantiating the same model type with the
-	 * same instance id. 
-	 * 
-	 * This is a class used internally by Data, and should not be used directly.
-	 */
-	var ModelCache = {
-		
-		/**
-		 * The hashmap of model references stored in the cache. This hashmap is a two-level hashmap, first keyed by the
-		 * {@link data.Model Model's} assigned `__Data_modelTypeId`, and then its instance id.
-		 * 
-		 * @private
-		 * @property {Object} models
-		 */
-		models : {},
-		
-		
-		/**
-		 * Returns a Model that is in the cache with the same model type (model subclass) and instance id, if one exists
-		 * that matches the type of the provided `model`, and the provided instance `id`. If a Model does not already exist, 
-		 * the provided `model` is simply returned.
-		 * 
-		 * @param {data.Model} model
-		 * @param {String} [id] The ID of the model (if it has one).
-		 * @return {data.Model}
-		 */
-		get : function( model, id ) {
-			var modelClass = model.constructor,
-			    modelTypeId = modelClass.__Data_modelTypeId,  // the current modelTypeId, defined when the Model is extended
-			    cachedModel;
-			
-			// If there is not a cache for this modelTypeId, create one now
-			if( !this.models[ modelTypeId ] ) {
-				this.models[ modelTypeId ] = {};
-			}
-			
-			// If the model has an id provided with it, pull the cached model with that id (if it exists), or otherwise cache it
-			if( typeof id !== 'undefined' ) {
-				cachedModel = this.models[ modelTypeId ][ id ];
-				if( !cachedModel ) {
-					this.models[ modelTypeId ][ id ] = model;
-				}
-			}
-			
-			return cachedModel || model;
-		}
-	
-	};
-	
-	return ModelCache;
-	
-} );
-/*global define */
 define('data/persistence/ResultSet', [
 	'lodash',
 	'Class'
@@ -4080,7 +4019,6 @@ define('data/Model', [
 	'lodash',
 	'Class',
 	'data/Data',
-	'data/ModelCache',
 	'data/DataComponent',
 	
 	'data/persistence/proxy/Proxy',
@@ -4112,7 +4050,6 @@ define('data/Model', [
 	_,
 	Class,
 	Data,
-	ModelCache,
 	DataComponent,
 	
 	Proxy,
@@ -4140,9 +4077,6 @@ define('data/Model', [
 		inheritedStatics : {
 			/**
 			 * A static property that is unique to each data.Model subclass, which uniquely identifies the subclass.
-			 * This is used as part of the Model cache, where it is determined if a Model instance already exists
-			 * if two models are of the same type (i.e. have the same __Data_modelTypeId), and instance id.
-			 * 
 			 * @private
 			 * @inheritable
 			 * @static
@@ -4420,24 +4354,6 @@ define('data/Model', [
 		constructor : function( data ) {
 			// Default the data to an empty object
 			data = data || {};
-			
-			
-			// --------------------------
-			
-			// Handle this new model being a duplicate of a model that already exists (with the same id)
-					
-			// If there already exists a model of the same type, with the same ID, update that instance,
-			// and return that instance from the constructor. We don't create duplicate Model instances
-			// with the same ID.
-			var existingInstance = ModelCache.get( this, data[ this.idAttribute ] );
-			if( existingInstance !== this ) {
-				existingInstance.set( data );   // set any provided initial data to the already-existing instance (as to combine them),
-				return existingInstance;        // and then return the already-existing instance
-			}
-			
-			
-			// --------------------------
-			
 			
 			// Call superclass constructor
 			this._super( arguments );
@@ -4853,12 +4769,6 @@ define('data/Model', [
 				// Now that we have set the new raw value to the internal `data` hash, we want to fire the events with the value
 				// of the Attribute after it has been processed by any Attribute-specific `get()` function.
 				newValue = this.get( attributeName );
-				
-				// If the attribute is the `idAttribute`, update the ModelCache with the new ID. This is particularly relevant on model 'create', 
-				// where the ID isn't yet known at the time the model is instantiated.
-				if( attributeName === this.idAttribute ) {
-					ModelCache.get( this, newValue );  // Re-submit to ModelCache, so new ID will be used.  
-				}
 				
 				// Store the 'change' values in the changeset maps, for use when the 'changeset' event fires (from set() method)
 				changeSetNewValues[ attributeName ] = newValue;
@@ -8340,4 +8250,4 @@ define('data/persistence/proxy/Rest', [
 	return RestProxy;
 	
 } );
-require(["data/Collection", "data/Data", "data/DataComponent", "data/Model", "data/ModelCache", "data/NativeObjectConverter", "data/attribute/Attribute", "data/attribute/Boolean", "data/attribute/Collection", "data/attribute/DataComponent", "data/attribute/Date", "data/attribute/Float", "data/attribute/Integer", "data/attribute/Mixed", "data/attribute/Model", "data/attribute/Number", "data/attribute/Object", "data/attribute/Primitive", "data/attribute/String", "data/persistence/ResultSet", "data/persistence/operation/Batch", "data/persistence/operation/Operation", "data/persistence/operation/Read", "data/persistence/operation/Write", "data/persistence/proxy/Ajax", "data/persistence/proxy/Proxy", "data/persistence/proxy/Rest", "data/persistence/reader/Json", "data/persistence/reader/Reader"]);
+require(["data/Collection", "data/Data", "data/DataComponent", "data/Model", "data/NativeObjectConverter", "data/attribute/Attribute", "data/attribute/Boolean", "data/attribute/Collection", "data/attribute/DataComponent", "data/attribute/Date", "data/attribute/Float", "data/attribute/Integer", "data/attribute/Mixed", "data/attribute/Model", "data/attribute/Number", "data/attribute/Object", "data/attribute/Primitive", "data/attribute/String", "data/persistence/ResultSet", "data/persistence/operation/Batch", "data/persistence/operation/Operation", "data/persistence/operation/Read", "data/persistence/operation/Write", "data/persistence/proxy/Ajax", "data/persistence/proxy/Proxy", "data/persistence/proxy/Rest", "data/persistence/reader/Json", "data/persistence/reader/Reader"]);

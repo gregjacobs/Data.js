@@ -54,10 +54,9 @@ define( [
 				var MyModel = Model.extend( {
 					attributes : [ 'id' ]
 				} );
-				
-				// NOTE: These should refer to the same object, as only one Model will be instantiated for two Models with the same ID 
+				 
 				var model1 = new MyModel( { id: 1 } ),
-				    model2 = new MyModel( { id: 1 } );
+				    model2 = model1;
 				
 				var result = thisSuite.attribute.valuesAreEqual( model1, model2 );
 				expect( result ).toBe( true );

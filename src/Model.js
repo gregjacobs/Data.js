@@ -6,7 +6,6 @@ define( [
 	'lodash',
 	'Class',
 	'data/Data',
-	'data/ModelCache',
 	'data/DataComponent',
 	
 	'data/persistence/proxy/Proxy',
@@ -38,7 +37,6 @@ define( [
 	_,
 	Class,
 	Data,
-	ModelCache,
 	DataComponent,
 	
 	Proxy,
@@ -66,9 +64,6 @@ define( [
 		inheritedStatics : {
 			/**
 			 * A static property that is unique to each data.Model subclass, which uniquely identifies the subclass.
-			 * This is used as part of the Model cache, where it is determined if a Model instance already exists
-			 * if two models are of the same type (i.e. have the same __Data_modelTypeId), and instance id.
-			 * 
 			 * @private
 			 * @inheritable
 			 * @static
@@ -346,24 +341,6 @@ define( [
 		constructor : function( data ) {
 			// Default the data to an empty object
 			data = data || {};
-			
-			
-			// --------------------------
-			
-			// Handle this new model being a duplicate of a model that already exists (with the same id)
-					
-			// If there already exists a model of the same type, with the same ID, update that instance,
-			// and return that instance from the constructor. We don't create duplicate Model instances
-			// with the same ID.
-			var existingInstance = ModelCache.get( this, data[ this.idAttribute ] );
-			if( existingInstance !== this ) {
-				existingInstance.set( data );   // set any provided initial data to the already-existing instance (as to combine them),
-				return existingInstance;        // and then return the already-existing instance
-			}
-			
-			
-			// --------------------------
-			
 			
 			// Call superclass constructor
 			this._super( arguments );
@@ -779,12 +756,6 @@ define( [
 				// Now that we have set the new raw value to the internal `data` hash, we want to fire the events with the value
 				// of the Attribute after it has been processed by any Attribute-specific `get()` function.
 				newValue = this.get( attributeName );
-				
-				// If the attribute is the `idAttribute`, update the ModelCache with the new ID. This is particularly relevant on model 'create', 
-				// where the ID isn't yet known at the time the model is instantiated.
-				if( attributeName === this.idAttribute ) {
-					ModelCache.get( this, newValue );  // Re-submit to ModelCache, so new ID will be used.  
-				}
 				
 				// Store the 'change' values in the changeset maps, for use when the 'changeset' event fires (from set() method)
 				changeSetNewValues[ attributeName ] = newValue;
