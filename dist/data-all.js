@@ -2371,7 +2371,7 @@ define('data/persistence/operation/Operation', [
 		 * Accessor for a Proxy to set a ResultSet which contains the data that is has read, 
 		 * once the operation completes.
 		 * 
-		 * @param {data.persistence.ResultSet} A ResultSet which contains the data and any metadata read by 
+		 * @param {data.persistence.ResultSet} resultSet A ResultSet which contains the data and any metadata read by 
 		 *   the Proxy.
 		 */
 		setResultSet : function( resultSet ) {
@@ -7923,7 +7923,7 @@ define('data/persistence/proxy/Ajax', [
 		 * @protected
 		 * @param {Object} params The Object (map) of parameters to serialize. The keys of this map are the parameter names,
 		 *   and the values are the parameter values.
-		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
+		 * @param {String} action The action that is being taken. One of: 'create', 'read', 'update', or 'destroy'.
 		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
 		 * @return {String} The serialized string of parameters.
 		 */

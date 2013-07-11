@@ -109,7 +109,7 @@ define( [
 		 * Accessor for a Proxy to set a ResultSet which contains the data that is has read, 
 		 * once the operation completes.
 		 * 
-		 * @param {data.persistence.ResultSet} A ResultSet which contains the data and any metadata read by 
+		 * @param {data.persistence.ResultSet} resultSet A ResultSet which contains the data and any metadata read by 
 		 *   the Proxy.
 		 */
 		setResultSet : function( resultSet ) {
