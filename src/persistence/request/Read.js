@@ -9,7 +9,7 @@ define( [
 	 * @class data.persistence.request.Read
 	 * @extends data.persistence.request.Request
 	 * 
-	 * Represents a read request from a persistent storage mechanism. 
+	 * Represents a "read" CRUD request to a persistent storage mechanism. 
 	 * 
 	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
@@ -53,6 +53,18 @@ define( [
 		 * Defaults to 0, for "no limit"
 		 */
 		limit : 0,
+		
+		
+		/**
+		 * Implementation of abstract method to return the {@link data.persistence.proxy.Proxy Proxy}
+		 * CRUD action name for the Request.
+		 * 
+		 * @protected
+		 * @return {String} Always returns 'read' for the ReadRequest.
+		 */
+		getAction : function() {
+			return 'read';
+		},
 		
 		
 		/**

@@ -11,28 +11,23 @@ define( [
 	'data/persistence/request/Read',
 	'data/persistence/request/Batch'
 ], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, AjaxProxy, ReadRequest, BatchRequest ) {
+	
 	describe( "data.Collection", function() {
 		
 		describe( "Test the constructor", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'attr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'attr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "The constructor should accept a configuration object to initialize the Collection with an initial set of data/models and any other custom configs", function() {
-				var model = new thisSuite.Model( { attr: 'value1' } );
+				var model = new MyModel( { attr: 'value1' } );
 				
-				var collection = new thisSuite.Collection( {
+				var collection = new MyCollection( {
 					data: model,
 					customConfig: 1
 				} );
@@ -47,9 +42,9 @@ define( [
 			
 			
 			it( "The constructor should accept an array of Models to initialize the Collection with", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    collection = new thisSuite.Collection( [ model1, model2 ] );
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    collection = new MyCollection( [ model1, model2 ] );
 				
 				var models = collection.getModels();
 				expect( models.length ).toBe( 2 );  // orig YUI Test err msg: "There should now be two models in the collection"
@@ -61,7 +56,7 @@ define( [
 			it( "The constructor should attach listeners provided by the `listeners` config", function() {
 				var addCallCount = 0;  // used for testing if the event was fired
 				
-				var collection = new thisSuite.Collection( {
+				var collection = new MyCollection( {
 					listeners : {
 						'add' : function() {
 							addCallCount++;
@@ -76,13 +71,13 @@ define( [
 			
 			it( "The constructor should not call the load() method if `autoLoad` is false", function() {
 				var loadCallCount = 0;
-				var MyCollection = thisSuite.Collection.extend( {
+				var MyCollection2 = MyCollection.extend( {
 					load : function() {  // redefine load() method
 						loadCallCount++;
 					}
 				} );
 				
-				var collection = new MyCollection( {
+				var collection = new MyCollection2( {
 					autoLoad : false
 				} );
 				expect( loadCallCount ).toBe( 0 );  // orig YUI Test err msg: "load() shouldn't have been called"
@@ -91,13 +86,13 @@ define( [
 			
 			it( "The constructor should call the load() method immediately if `autoLoad` is true, and no initial `data` config is specified", function() {
 				var loadCallCount = 0;
-				var MyCollection = thisSuite.Collection.extend( {
+				var MyCollection2 = MyCollection.extend( {
 					load : function() {  // redefine load() method
 						loadCallCount++;
 					}
 				} );
 				
-				var collection = new MyCollection( {
+				var collection = new MyCollection2( {
 					autoLoad : true
 				} );
 				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "load() should have been called"
@@ -106,16 +101,16 @@ define( [
 			
 			it( "The constructor should *not* call the load() method if `autoLoad` is true, but an initial `data` config has been specified", function() {
 				var loadCallCount = 0;
-				var MyCollection = thisSuite.Collection.extend( {
+				var MyCollection2 = MyCollection.extend( {
 					load : function() {  // redefine load() method
 						loadCallCount++;
 					}
 				} );
 				
-				var collection = new MyCollection( {
+				var collection = new MyCollection2( {
 					autoLoad : true,
 					data : [ 
-						new thisSuite.Model( { attr: 1 } )
+						new MyModel( { attr: 1 } )
 					]
 				} );
 				expect( loadCallCount ).toBe( 0 );  // orig YUI Test err msg: "load() shouldn't have been called"
@@ -146,24 +141,18 @@ define( [
 		
 		
 		describe( "Test add()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'attr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'attr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "add() should be able to add a single Model instance to the Collection", function() {
-				var collection = new thisSuite.Collection(),
-				    model = new thisSuite.Model( { attr: 'value' } ),
+				var collection = new MyCollection(),
+				    model = new MyModel( { attr: 'value' } ),
 				    models;
 				
 				models = collection.getModels();
@@ -178,9 +167,9 @@ define( [
 			
 			
 			it( "add() should be able to add an array of Model instances to the Collection", function() {
-				var collection = new thisSuite.Collection(),
-				    model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
+				var collection = new MyCollection(),
+				    model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
 				    models;
 				
 				models = collection.getModels();
@@ -196,9 +185,9 @@ define( [
 			
 			
 			it( "inserting (adding) one or more models should have the Collection considered as 'modified'", function() {
-				var collection = new thisSuite.Collection(),
-				    model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
+				var collection = new MyCollection(),
+				    model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
 				    models;
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be modified"
@@ -209,10 +198,10 @@ define( [
 			
 			
 			it( "add() should be able to add a single Model instance to the Collection at a specified index", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    model3 = new thisSuite.Model( { attr: 'value3' } ),
-				    collection = new thisSuite.Collection( [ model1, model2 ] ), // only inserting model1 and model2 for now
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    model3 = new MyModel( { attr: 'value3' } ),
+				    collection = new MyCollection( [ model1, model2 ] ), // only inserting model1 and model2 for now
 				    models;
 				
 				models = collection.getModels();
@@ -228,11 +217,11 @@ define( [
 			
 			
 			it( "add() should be able to add an array of Model instance to the Collection at a specified index", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    model3 = new thisSuite.Model( { attr: 'value3' } ),
-				    model4 = new thisSuite.Model( { attr: 'value4' } ),
-				    collection = new thisSuite.Collection( [ model1, model2 ] ), // only inserting model1 and model2 for now
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    model3 = new MyModel( { attr: 'value3' } ),
+				    model4 = new MyModel( { attr: 'value4' } ),
+				    collection = new MyCollection( [ model1, model2 ] ), // only inserting model1 and model2 for now
 				    models;
 				
 				models = collection.getModels();
@@ -248,8 +237,8 @@ define( [
 			
 			
 			it( "add() should fire the 'add' event for a single inserted model", function() {
-				var collection = new thisSuite.Collection(),
-				    model = new thisSuite.Model( { attr: 'value' } ),
+				var collection = new MyCollection(),
+				    model = new MyModel( { attr: 'value' } ),
 				    models;
 				
 				var addEventCount = 0,
@@ -267,9 +256,9 @@ define( [
 			
 			
 			it( "add() should fire the 'add' event one time for each of multiple inserted models", function() {
-				var collection = new thisSuite.Collection(),
-				    model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
+				var collection = new MyCollection(),
+				    model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
 				    models;
 				
 				
@@ -289,8 +278,8 @@ define( [
 			
 			
 			it( "add() should *not* fire the 'add' event for a model that is already in the Collection", function() {
-				var model = new thisSuite.Model( { attr: 'value1' } ),
-				    collection = new thisSuite.Collection( [ model ] );  // initally add the model
+				var model = new MyModel( { attr: 'value1' } ),
+				    collection = new MyCollection( [ model ] );  // initally add the model
 				
 				var addEventFired = false;
 				collection.on( 'add', function( collection, model ) {
@@ -303,9 +292,9 @@ define( [
 			
 			
 			it( "add() should *not* fire the 'add' event for models that are already in the Collection when multiple models are inserted, and only some exist already", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    collection = new thisSuite.Collection( [ model1 ] );  // initally add model1
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    collection = new MyCollection( [ model1 ] );  // initally add model1
 				
 				var addEventCount = 0,
 				    addedModels = [];
@@ -322,8 +311,8 @@ define( [
 			
 			
 			it( "add() should fire the 'addset' event with the array of inserted models, even if only one model is inserted", function() {
-				var collection = new thisSuite.Collection(),
-				    model = new thisSuite.Model( { attr: 'value' } ),
+				var collection = new MyCollection(),
+				    model = new MyModel( { attr: 'value' } ),
 				    models;
 				
 				var addedModels;
@@ -338,9 +327,9 @@ define( [
 			
 			
 			it( "add() should fire the 'addset' event with the array of inserted models when multiple models are inserted", function() {
-				var collection = new thisSuite.Collection(),
-				    model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
+				var collection = new MyCollection(),
+				    model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
 				    models;
 				
 				var addedModels;
@@ -356,8 +345,8 @@ define( [
 			
 			
 			it( "add() should *not* fire the 'addset' event for a model that is already in the Collection", function() {
-				var model = new thisSuite.Model( { attr: 'value1' } ),
-				    collection = new thisSuite.Collection( [ model ] );  // initally add the model
+				var model = new MyModel( { attr: 'value1' } ),
+				    collection = new MyCollection( [ model ] );  // initally add the model
 				
 				var addEventFired = false;
 				collection.on( 'addset', function( collection, models ) {
@@ -370,9 +359,9 @@ define( [
 			
 			
 			it( "add() should *not* fire the 'addset' event for models that are already in the Collection when multiple models are inserted, and only some exist already", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    collection = new thisSuite.Collection( [ model1 ] );  // initally add model1
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    collection = new MyCollection( [ model1 ] );  // initally add model1
 				
 				var addedModels;
 				collection.on( 'addset', function( collection, models ) {
@@ -385,10 +374,10 @@ define( [
 			
 			
 			it( "add() should reorder models when they already exist in the Collection", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    model3 = new thisSuite.Model( { attr: 'value3' } ),
-				    collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    model3 = new MyModel( { attr: 'value3' } ),
+				    collection = new MyCollection( [ model1, model2, model3 ] ),
 				    models;
 				
 				collection.add( model3, { at: 0 } );
@@ -411,10 +400,10 @@ define( [
 			
 			
 			it( "add() should fire the 'reorder' event when reordering models", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    model3 = new thisSuite.Model( { attr: 'value3' } ),
-				    collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    model3 = new MyModel( { attr: 'value3' } ),
+				    collection = new MyCollection( [ model1, model2, model3 ] ),
 				    models;
 				
 				var reorderEventCallCount = 0,
@@ -453,10 +442,10 @@ define( [
 			
 			
 			it( "in a 'reorder' event handler, the new order of the models should be present immediately (getModels should return the models in the new order, inside a handler)", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    model3 = new thisSuite.Model( { attr: 'value3' } ),
-				    collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    model3 = new MyModel( { attr: 'value3' } ),
+				    collection = new MyCollection( [ model1, model2, model3 ] ),
 				    models;
 				
 				var modelsInReorderHandler;
@@ -473,10 +462,10 @@ define( [
 			
 			
 			it( "After a reorder, the Collection should be considered 'modified'", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    model3 = new thisSuite.Model( { attr: 'value3' } ),
-				    collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    model3 = new MyModel( { attr: 'value3' } ),
+				    collection = new MyCollection( [ model1, model2, model3 ] ),
 				    models;
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not yet be considered 'modified'"
@@ -487,10 +476,10 @@ define( [
 			
 			
 			it( "add() should *not* reorder models when calling add() without the `index` argument (which would be the case as well if add() was called)", function() {
-				var model1 = new thisSuite.Model( { attr: 'value1' } ),
-				    model2 = new thisSuite.Model( { attr: 'value2' } ),
-				    model3 = new thisSuite.Model( { attr: 'value3' } ),
-				    collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var model1 = new MyModel( { attr: 'value1' } ),
+				    model2 = new MyModel( { attr: 'value2' } ),
+				    model3 = new MyModel( { attr: 'value3' } ),
+				    collection = new MyCollection( [ model1, model2, model3 ] ),
 				    models;
 				
 				collection.add( model1 );  // supposed append, but model1 is already in the Collection, and an index was not given
@@ -499,7 +488,7 @@ define( [
 			
 			
 			it( "add() should transform anonymous data objects to Model instances, based on the 'model' config", function() {
-				var collection = new thisSuite.Collection(),  // note: thisSuite.Collection is configured with thisSuite.Model as the 'model'
+				var collection = new MyCollection(),  // note: MyCollection is configured with MyModel as the 'model'
 				    modelData1 = { attr: 'value1' },
 				    modelData2 = { attr: 'value2' },
 				    models;
@@ -517,7 +506,7 @@ define( [
 			
 			
 			it( "add() should fire the 'addset' event with instantiated models for any anonymous config objects", function() {
-				var collection = new thisSuite.Collection(),  // note: thisSuite.Collection is configured with thisSuite.Model as the 'model'
+				var collection = new MyCollection(),  // note: MyCollection is configured with MyModel as the 'model'
 				    modelData1 = { attr: 'value1' },
 				    modelData2 = { attr: 'value2' };
 				
@@ -600,8 +589,8 @@ define( [
 			
 			
 			it( "add() should not allow duplicate models (at this time. config option to come)", function() {
-				var model = new thisSuite.Model(),
-				    collection = new thisSuite.Collection();
+				var model = new MyModel(),
+				    collection = new MyCollection();
 				
 				collection.add( [ model, model ] );  // try to add the model twice
 				expect( collection.getModels() ).toEqual( [ model ] );  // orig YUI Test err msg: "There should only be the one model in the collection at this time"
@@ -656,28 +645,22 @@ define( [
 		
 		
 		describe( "Test remove()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "remove() should be able to remove a single Model from the Collection", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
-				    model3 = new thisSuite.Model( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } ),
-				    model4 = new thisSuite.Model( { boolAttr: true, numberAttr: 3, stringAttr: "value3" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
+				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } ),
+				    model4 = new MyModel( { boolAttr: true, numberAttr: 3, stringAttr: "value3" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3, model4 ] ),
+				var collection = new MyCollection( [ model1, model2, model3, model4 ] ),
 				    models;
 				
 				// Test initial condition
@@ -706,12 +689,12 @@ define( [
 			
 			
 			it( "remove() should be able to remove an array of Models from the Collection", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
-				    model3 = new thisSuite.Model( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } ),
-				    model4 = new thisSuite.Model( { boolAttr: true, numberAttr: 3, stringAttr: "value3" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
+				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } ),
+				    model4 = new MyModel( { boolAttr: true, numberAttr: 3, stringAttr: "value3" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3, model4 ] ),
+				var collection = new MyCollection( [ model1, model2, model3, model4 ] ),
 				    models;
 				
 				// Test initial condition
@@ -725,10 +708,10 @@ define( [
 			
 			
 			it( "remove() should fire the 'remove' event for a single model that is removed", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
 				
-				var collection = new thisSuite.Collection( [ model1, model2 ] );
+				var collection = new MyCollection( [ model1, model2 ] );
 				
 				var removeEventCount = 0,
 				    removedModel,
@@ -748,10 +731,10 @@ define( [
 			
 			
 			it( "remove() should fire the 'remove' event once for each of the removed models when multiple models are removed", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2 ] );
+				var collection = new MyCollection( [ model1, model2 ] );
 				
 				var removeEventCount = 0,
 				    removedModels = [],
@@ -772,10 +755,10 @@ define( [
 			
 			
 			it( "remove() should *not* fire the 'remove' event if no models are actually removed", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
 				    
-				var collection = new thisSuite.Collection( [ model1 ] );  // only putting model1 on the collection
+				var collection = new MyCollection( [ model1 ] );  // only putting model1 on the collection
 				
 				var removeEventCalled = false;
 				collection.on( 'removeset', function( collection, models ) {
@@ -788,10 +771,10 @@ define( [
 			
 			
 			it( "remove() should fire the 'removeset' event with the array of removed models, even if only one model has been removed", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2 ] );
+				var collection = new MyCollection( [ model1, model2 ] );
 				
 				var removedModels;
 				collection.on( 'removeset', function( collection, models ) {
@@ -804,10 +787,10 @@ define( [
 			
 			
 			it( "remove() should fire the 'removeset' event with the array of removed models when multiple models are removed", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2 ] );
+				var collection = new MyCollection( [ model1, model2 ] );
 				
 				var removedModels;
 				collection.on( 'removeset', function( collection, models ) {
@@ -820,10 +803,10 @@ define( [
 			
 			
 			it( "remove() should *not* fire the 'removeset' event if no models are actually removed", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
 				    
-				var collection = new thisSuite.Collection( [ model1 ] );
+				var collection = new MyCollection( [ model1 ] );
 				
 				var removeEventCallCount = 0;
 				collection.on( 'removeset', function( collection, models ) {
@@ -910,29 +893,23 @@ define( [
 		
 		
 		describe( "Test removeAll()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes  : [ 'id' ],
+				idAttribute : 'id'
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes  : [ 'id' ],
-					idAttribute : 'id'
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "removeAll() should be able to remove all Models from the Collection", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model(),
-				    model3 = new thisSuite.Model(),
-				    model4 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel(),
+				    model3 = new MyModel(),
+				    model4 = new MyModel();
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3, model4 ] ),
+				var collection = new MyCollection( [ model1, model2, model3, model4 ] ),
 				    models;
 				
 				// Test initial condition
@@ -946,12 +923,12 @@ define( [
 			
 			
 			it( "removeAll() should fire the 'remove' event for each of the removed models", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model(),
-				    model3 = new thisSuite.Model(),
-				    model4 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel(),
+				    model3 = new MyModel(),
+				    model4 = new MyModel();
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3, model4 ] );
+				var collection = new MyCollection( [ model1, model2, model3, model4 ] );
 				
 				var removedModels = [];
 				collection.on( 'remove', function( collection, model ) {
@@ -964,12 +941,12 @@ define( [
 			
 			
 			it( "removeAll() should fire the 'removeset' event with the array of removed models when multiple models are removed", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model(),
-				    model3 = new thisSuite.Model(),
-				    model4 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel(),
+				    model3 = new MyModel(),
+				    model4 = new MyModel();
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3, model4 ] );
+				var collection = new MyCollection( [ model1, model2, model3, model4 ] );
 				
 				var removedModels;
 				collection.on( 'removeset', function( collection, models ) {
@@ -982,7 +959,7 @@ define( [
 			
 			
 			it( "removeAll() should *not* fire the 'removeset' event if no models are actually removed", function() {
-				var collection = new thisSuite.Collection();  // no models
+				var collection = new MyCollection();  // no models
 				
 				var removeEventCallCount = 0;
 				collection.on( 'removeset', function( collection, models ) {
@@ -995,9 +972,9 @@ define( [
 			
 			
 			it( "removeAll() should clear the `modelsByClientId` and `modelsById` hashmaps", function() {
-				var model1 = new thisSuite.Model( { id: 1 } ),
-				    model2 = new thisSuite.Model( { id: 2 } );
-				var collection = new thisSuite.Collection( [ model1, model2 ] );
+				var model1 = new MyModel( { id: 1 } ),
+				    model2 = new MyModel( { id: 2 } );
+				var collection = new MyCollection( [ model1, model2 ] );
 				
 				expect( collection.getByClientId( model1.getClientId() ) ).toBe( model1 );  // orig YUI Test err msg: "Initial condition: should be able to retrieve model1 by clientId"
 				expect( collection.getById( model1.getId() ) ).toBe( model1 );  // orig YUI Test err msg: "Initial condition: should be able to retrieve model1 by id"
@@ -1016,27 +993,21 @@ define( [
 		
 		
 		describe( "Test getAt()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes: [ 'id' ],
+				idAttribute: 'id'
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes: [ 'id' ],
-					idAttribute: 'id'
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "getAt() should return the model at a given index", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel();
 				    
-				var collection = new thisSuite.Collection( [ model1, model2 ] );
+				var collection = new MyCollection( [ model1, model2 ] );
 				
 				expect( collection.getAt( 0 ) ).toBe( model1 );  // orig YUI Test err msg: "model1 should be at index 0"
 				expect( collection.getAt( 1 ) ).toBe( model2 );  // orig YUI Test err msg: "model2 should be at index 1"
@@ -1044,10 +1015,10 @@ define( [
 			
 			
 			it( "getAt() should return null for an index that is out of bounds", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel();
 				    
-				var collection = new thisSuite.Collection( [ model1, model2 ] );
+				var collection = new MyCollection( [ model1, model2 ] );
 				
 				expect( collection.getAt( -1 ) ).toBe( null );  // orig YUI Test err msg: "Should be null for a negative index"
 				expect( collection.getAt( 2 ) ).toBe( null );  // orig YUI Test err msg: "Should be null for an index greater than the number of models"
@@ -1057,32 +1028,26 @@ define( [
 		
 		
 		describe( "Test getFirst()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "getFirst() should retrieve the first Model in the Collection", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
-				    collection = new thisSuite.Collection( [ model1, model2 ] );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
+				    collection = new MyCollection( [ model1, model2 ] );
 				    
 				expect( collection.getFirst() ).toBe( model1 );
 			} );
 			
 			
 			it( "getFirst() should return null if there are no models in the Collection", function() {
-				var collection = new thisSuite.Collection();
+				var collection = new MyCollection();
 				
 				expect( collection.getFirst() ).toBe( null );
 			} );
@@ -1091,32 +1056,26 @@ define( [
 		
 		
 		describe( "Test getLast()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "getLast() should retrieve the first Model in the Collection", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
-				    collection = new thisSuite.Collection( [ model1, model2 ] );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
+				    collection = new MyCollection( [ model1, model2 ] );
 				    
 				expect( collection.getLast() ).toBe( model2 );
 			} );
 			
 			
 			it( "getLast() should return null if there are no models in the Collection", function() {
-				var collection = new thisSuite.Collection();
+				var collection = new MyCollection();
 				
 				expect( collection.getLast() ).toBe( null );
 			} );
@@ -1125,27 +1084,21 @@ define( [
 		
 		
 		describe( "Test getRange()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'attr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'attr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "getRange() should retrieve all models when no arguments are provided", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model(),
-				    model3 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel(),
+				    model3 = new MyModel();
 				
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var collection = new MyCollection( [ model1, model2, model3 ] ),
 				    models = collection.getRange();
 				
 				expect( models ).toEqual( [ model1, model2, model3 ] );
@@ -1153,11 +1106,11 @@ define( [
 			
 			
 			it( "getRange() should retrieve models based on just the startIndex argument, defaulting endIndex to the last model in the Collection", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model(),
-				    model3 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel(),
+				    model3 = new MyModel();
 				
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var collection = new MyCollection( [ model1, model2, model3 ] ),
 				    models;
 				
 				models = collection.getRange( 0 );  // attempt to get all models starting at position 0
@@ -1176,11 +1129,11 @@ define( [
 			
 			
 			it( "getRange() should retrieve models based on the startIndex and endIndex arguments", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model(),
-				    model3 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel(),
+				    model3 = new MyModel();
 				
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var collection = new MyCollection( [ model1, model2, model3 ] ),
 				    models;
 				
 				models = collection.getRange( 0, 0 );
@@ -1207,37 +1160,31 @@ define( [
 		
 		
 		describe( "Test hasRange()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'attr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'attr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "hasRange() should return true when the Collection has the range of models specified", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model(),
-				    model3 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel(),
+				    model3 = new MyModel();
 				
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] );
+				var collection = new MyCollection( [ model1, model2, model3 ] );
 				expect( collection.hasRange( 0, 2 ) ).toBe( true );
 			} );
 			
 			
 			it( "hasRange() should return false when the collection does not have the range of models specified", function() {
-				var model1 = new thisSuite.Model(),
-				    model2 = new thisSuite.Model(),
-				    model3 = new thisSuite.Model();
+				var model1 = new MyModel(),
+				    model2 = new MyModel(),
+				    model3 = new MyModel();
 				
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] );
+				var collection = new MyCollection( [ model1, model2, model3 ] );
 				expect( collection.hasRange( 0, 3 ) ).toBe( false );  // looking for 4 models
 			} );
 			
@@ -1343,18 +1290,12 @@ define( [
 		
 		
 		describe( "Test getById()", function() {
-			var thisSuite;
-			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( { attributes: [ 'id' ], idAttribute: 'id' } );
-			} );
+			var MyModel = Model.extend( { attributes: [ 'id' ], idAttribute: 'id' } );
 			
 			
 			it( "getById() should retrieve a model by its id attribute", function() {
-				var model1 = new thisSuite.Model( { id: 1 } ),
-				    model2 = new thisSuite.Model( { id: 2 } );
+				var model1 = new MyModel( { id: 1 } ),
+				    model2 = new MyModel( { id: 2 } );
 				
 				var collection = new Collection( [ model1, model2 ] );
 				
@@ -1364,8 +1305,8 @@ define( [
 			
 			
 			it( "getById() should return null for a model id that doesn't exist within its collection", function() {
-				var model1 = new thisSuite.Model( { id: 1 } ),
-				    model2 = new thisSuite.Model( { id: 2 } );
+				var model1 = new MyModel( { id: 1 } ),
+				    model2 = new MyModel( { id: 2 } );
 				
 				var collection = new Collection();
 				
@@ -1379,7 +1320,7 @@ define( [
 			
 			
 			it( "getById() should retreive a model by its id attribute, even if it doesn't yet have an id when it is added to the collection (the id is added later)", function() {
-				var model = new thisSuite.Model(),  // no id yet
+				var model = new MyModel(),  // no id yet
 				    collection = new Collection( [ model ] );  // add the model
 				
 				// Now change the model's id
@@ -1468,7 +1409,8 @@ define( [
 		
 		
 		describe( "Test isModified()", function() {
-			var thisSuite;
+			var thisSuite,
+			    MyCollection;
 			
 			beforeEach( function() {
 				thisSuite = {};
@@ -1489,26 +1431,26 @@ define( [
 				JsMockito.when( thisSuite.modifiedModel2 ).getClientId().thenReturn( 4 );
 				JsMockito.when( thisSuite.modifiedModel2 ).isModified().thenReturn( true );
 								
-				thisSuite.Collection = Collection.extend( {} );
+				MyCollection = Collection.extend( {} );
 			} );
 			
 			
 			it( "isModified() should return false if no Models within the collection have been modified", function() {
-				var collection = new thisSuite.Collection( [ thisSuite.unmodifiedModel1 ] );
+				var collection = new MyCollection( [ thisSuite.unmodifiedModel1 ] );
 				
 				expect( collection.isModified() ).toBe( false );
 			} );
 			
 			
 			it( "isModified() should return true if a Model within the collection has been modified", function() {
-				var collection = new thisSuite.Collection( [ thisSuite.unmodifiedModel1, thisSuite.modifiedModel1 ] );
+				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.modifiedModel1 ] );
 				
 				expect( collection.isModified() ).toBe( true );
 			} );
 			
 			
 			it( "isModified() should return true if a model has been added to the Collection since the last commit/rollback", function() {
-				var collection = new thisSuite.Collection();
+				var collection = new MyCollection();
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
@@ -1518,7 +1460,7 @@ define( [
 			
 			
 			it( "isModified() should return true if a model has been removed from the Collection since the last commit/rollback", function() {
-				var collection = new thisSuite.Collection( [ thisSuite.unmodifiedModel1, thisSuite.unmodifiedModel2 ] );
+				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.unmodifiedModel2 ] );
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
@@ -1528,7 +1470,7 @@ define( [
 			
 			
 			it( "isModified() should return true if a model has been reordered in the Collection since the last commit/rollback", function() {
-				var collection = new thisSuite.Collection( [ thisSuite.unmodifiedModel1, thisSuite.unmodifiedModel2 ] );
+				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.unmodifiedModel2 ] );
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
@@ -1538,7 +1480,7 @@ define( [
 			
 			
 			it( "isModified() should return false when there is a change, but commit()/rollback() has been called", function() {
-				var collection = new thisSuite.Collection();
+				var collection = new MyCollection();
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
@@ -1557,26 +1499,20 @@ define( [
 		
 		
 		describe( "Test find()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "find() should find a Model by attribute and value", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2 ] ),
+				var collection = new MyCollection( [ model1, model2 ] ),
 				    foundModel;
 				
 				foundModel = collection.find( 'boolAttr', false );
@@ -1604,11 +1540,11 @@ define( [
 			
 			
 			it( "find() should start at a given startIndex when provided", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
-				    model3 = new thisSuite.Model( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
+				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var collection = new MyCollection( [ model1, model2, model3 ] ),
 				    foundModel;
 				
 				// Start at index 1 (position 2), which should match model3 instead of model1
@@ -1620,27 +1556,21 @@ define( [
 		
 		
 		describe( "Test findBy()", function() {
-			var thisSuite;
+			var MyModel = Model.extend( {
+				attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
+			} );
 			
-			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.Model = Model.extend( {
-					attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
-				} );
-				
-				thisSuite.Collection = Collection.extend( {
-					model : thisSuite.Model
-				} );
+			var MyCollection = Collection.extend( {
+				model : MyModel
 			} );
 			
 			
 			it( "findBy should accept a function that when it returns true, it considers the Model the match", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
-				    model3 = new thisSuite.Model( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
+				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var collection = new MyCollection( [ model1, model2, model3 ] ),
 				    foundModel;
 				
 				foundModel = collection.findBy( function( model, index ) {
@@ -1653,11 +1583,11 @@ define( [
 			
 			
 			it( "findBy should return null when there is no match", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
-				    model3 = new thisSuite.Model( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
+				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var collection = new MyCollection( [ model1, model2, model3 ] ),
 				    foundModel;
 				
 				foundModel = collection.findBy( function( model, index ) {
@@ -1668,11 +1598,11 @@ define( [
 			
 			
 			it( "findBy should start at the given startIndex", function() {
-				var model1 = new thisSuite.Model( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
-				    model2 = new thisSuite.Model( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
-				    model3 = new thisSuite.Model( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
+				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
+				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
+				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
 				    
-				var collection = new thisSuite.Collection( [ model1, model2, model3 ] ),
+				var collection = new MyCollection( [ model1, model2, model3 ] ),
 				    foundModel;
 				
 				foundModel = collection.findBy( function( model, index ) {
@@ -1715,12 +1645,11 @@ define( [
 		
 		
 		describe( "Test load()", function() {
-			var thisSuite;
+			var proxy,
+			    MyModel;
 			
 			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.proxy = JsMockito.mock( Proxy.extend( {
+				proxy = JsMockito.mock( Proxy.extend( {
 					// Implementation of abstract interface
 					create : Data.emptyFn,
 					read : Data.emptyFn,
@@ -1730,14 +1659,14 @@ define( [
 				
 				// For the base case for tests. If needing to do something different, override the particular method of interest.
 				var deferred = new jQuery.Deferred();
-				JsMockito.when( thisSuite.proxy ).create().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).update().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).destroy().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).create().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).read().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).update().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).destroy().then( function( req ) { return deferred.promise(); } );
 				
-				thisSuite.Model = Model.extend( {
+				MyModel = Model.extend( {
 					attributes : [ 'id', 'name' ],
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 			} );
 			
@@ -1774,7 +1703,7 @@ define( [
 				var params = { a : 1 };
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 25,
 					
 					// Override loadPage, just to see that it's called. loadPage() tests are done elsewhere
@@ -1792,36 +1721,36 @@ define( [
 			
 			it( "load() should call the proxy's read() method, when the proxy is configured on the Collection", function() {
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 				
 				new MyCollection().load();
 				
-				JsMockito.verify( thisSuite.proxy ).read();
+				JsMockito.verify( proxy ).read();
 			} );
 			
 			
 			it( "load() should call the proxy's read() method, when the proxy is configured on the Collection's Model", function() {
 				var MyCollection = Collection.extend( {
 					// note: no proxy of its own
-					model : thisSuite.Model  // Note: a proxy is defined on the model
+					model : MyModel  // Note: a proxy is defined on the model
 				} );
 				
 				new MyCollection().load();
 				
-				JsMockito.verify( thisSuite.proxy ).read();
+				JsMockito.verify( proxy ).read();
 			} );
 			
 			
 			it( "load() should call the proxy's read() method with any `params` option provided to the method", function() {
 				var request;
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					return new jQuery.Deferred().promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 				
 				
@@ -1839,7 +1768,7 @@ define( [
 				var request, 
 				    deferred;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
 					deferred = new jQuery.Deferred();
@@ -1849,7 +1778,7 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				
@@ -1866,7 +1795,7 @@ define( [
 				var request, 
 				    deferred;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
 					deferred = new jQuery.Deferred();
@@ -1876,7 +1805,7 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				
@@ -1890,7 +1819,7 @@ define( [
 			
 			
 			it( "load() should load the models returned by the data in the proxy", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -1902,8 +1831,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				collection.load();
@@ -1913,7 +1842,7 @@ define( [
 			
 			
 			it( "load() should add the models returned by the data in the proxy, when the 'addModels' option is set to true", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
@@ -1925,8 +1854,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection( {
 					data : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ]
@@ -1945,7 +1874,7 @@ define( [
 			
 			it( "load() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
 				var deferred, request;
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					req.setResultSet( new ResultSet( {
 						records : []
 					} ) );
@@ -1956,8 +1885,8 @@ define( [
 				} );
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				
 				var loadbeginCallCount = 0,
@@ -2035,13 +1964,13 @@ define( [
 			
 			
 			it( "load() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					return new jQuery.Deferred().reject( request ).promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				
 				var successCallCount = 0,
@@ -2108,7 +2037,7 @@ define( [
 			
 			
 			it( "load() should set the totalCount property on the Collection if the property is available on the resulting ResultSet", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2121,8 +2050,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				
@@ -2133,7 +2062,7 @@ define( [
 			
 			
 			it( "load() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2146,8 +2075,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				
@@ -2160,12 +2089,11 @@ define( [
 		
 		
 		describe( "Test loadRange()", function() {
-			var thisSuite;
+			var proxy,
+			    MyModel;
 			
 			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.proxy = JsMockito.mock( Proxy.extend( {
+				proxy = JsMockito.mock( Proxy.extend( {
 					// Implementation of abstract interface
 					create : Data.emptyFn,
 					read : Data.emptyFn,
@@ -2175,14 +2103,14 @@ define( [
 				
 				// For the base case for tests. If needing to do something different, override the particular method of interest.
 				var deferred = new jQuery.Deferred();
-				JsMockito.when( thisSuite.proxy ).create().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).update().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).destroy().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).create().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).read().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).update().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).destroy().then( function( req ) { return deferred.promise(); } );
 				
-				thisSuite.Model = Model.extend( {
+				MyModel = Model.extend( {
 					attributes : [ 'id', 'name' ],
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 			} );
 			
@@ -2216,24 +2144,24 @@ define( [
 			
 			it( "loadRange() should call the proxy's read() method, when the proxy is configured on the Collection (non-paged loading)", function() {
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 				
 				new MyCollection().loadRange( 0, 9 );
 				
-				JsMockito.verify( thisSuite.proxy ).read();
+				JsMockito.verify( proxy ).read();
 			} );
 			
 			
 			it( "loadRange() should call the proxy's read() method, when the proxy is configured on the Collection's Model (non-paged loading)", function() {
 				var MyCollection = Collection.extend( {
 					// note: no proxy of its own
-					model : thisSuite.Model  // Note: a proxy is defined on the model
+					model : MyModel  // Note: a proxy is defined on the model
 				} );
 				
 				new MyCollection().loadRange( 0, 9 );
 				
-				JsMockito.verify( thisSuite.proxy ).read();
+				JsMockito.verify( proxy ).read();
 			} );
 			
 			
@@ -2241,7 +2169,7 @@ define( [
 				var request, 
 				    deferred;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
 					deferred = new jQuery.Deferred();
@@ -2251,7 +2179,7 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				
@@ -2268,7 +2196,7 @@ define( [
 				var request, 
 				    deferred;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
 					deferred = new jQuery.Deferred();
@@ -2278,7 +2206,7 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				
@@ -2294,7 +2222,7 @@ define( [
 			it( "loadRange() should delegate to the loadPageRange() method when the Collection is configured to load paged data.", function() {
 				var loadPageRangeCallCount = 0;
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 5,
 					
 					loadPageRange : function( startPage, endPage ) {
@@ -2311,13 +2239,13 @@ define( [
 			
 			it( "loadRange() should call the proxy's read() method with any `params` option provided to the method", function() {
 				var request;
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					return new jQuery.Deferred().promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 				
 				
@@ -2332,7 +2260,7 @@ define( [
 			
 			
 			it( "loadRange() should load the models returned by the data in the proxy", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2344,8 +2272,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				collection.loadRange( 0, 1 );
@@ -2355,7 +2283,7 @@ define( [
 			
 			
 			it( "loadRange() should add the models returned by the data in the proxy, when the 'addModels' option is set to true", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
@@ -2367,8 +2295,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection( {
 					data : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ]
@@ -2386,7 +2314,7 @@ define( [
 			
 			
 			it( "loadRange() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : []
 					} ) );
@@ -2394,8 +2322,8 @@ define( [
 				} );
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				
 				var successCallCount = 0,
@@ -2462,13 +2390,13 @@ define( [
 			
 			
 			it( "loadRange() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					return new jQuery.Deferred().reject( request ).promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				
 				var successCallCount = 0,
@@ -2535,7 +2463,7 @@ define( [
 			
 			
 			it( "loadRange() should set the totalCount property on the Collection if the property is available on the resulting ResultSet", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2548,8 +2476,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				
@@ -2560,7 +2488,7 @@ define( [
 			
 			
 			it( "loadRange() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2573,8 +2501,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection();
 				
@@ -2587,12 +2515,11 @@ define( [
 		
 		
 		describe( "Test loadPage()", function() {
-			var thisSuite;
+			var proxy,
+			    MyModel;
 			
 			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.proxy = JsMockito.mock( Proxy.extend( {
+				proxy = JsMockito.mock( Proxy.extend( {
 					// Implementation of abstract interface
 					create : Data.emptyFn,
 					read : Data.emptyFn,
@@ -2602,14 +2529,14 @@ define( [
 				
 				// For the base case for tests. If needing to do something different, override the particular method of interest.
 				var deferred = new jQuery.Deferred();
-				JsMockito.when( thisSuite.proxy ).create().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).update().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).destroy().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).create().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).read().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).update().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).destroy().then( function( req ) { return deferred.promise(); } );
 				
-				thisSuite.Model = Model.extend( {
+				MyModel = Model.extend( {
 					attributes : [ 'id', 'name' ],
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 			} );
 			
@@ -2617,7 +2544,7 @@ define( [
 			it( "loadPage() should throw an error if no `page` argument is provided to the method", function() {
 				expect( function() {
 					var MyCollection = Collection.extend( {
-						proxy : thisSuite.proxy,
+						proxy : proxy,
 						pageSize : 25
 					} );
 					
@@ -2631,7 +2558,7 @@ define( [
 			it( "loadPage() should throw an error if no `pageSize` config is set on the Collection", function() {
 				expect( function() {
 					var MyCollection = Collection.extend( {
-						proxy : thisSuite.proxy
+						proxy : proxy
 					} );
 					
 					new MyCollection().loadPage( 1 );
@@ -2672,26 +2599,26 @@ define( [
 			
 			it( "loadPage() should call the proxy's read() method, when the proxy is configured on the Collection", function() {
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				
 				new MyCollection().loadPage( 1 );
 				
-				JsMockito.verify( thisSuite.proxy ).read();
+				JsMockito.verify( proxy ).read();
 			} );
 			
 			
 			it( "loadPage() should call the proxy's read() method, when the proxy is configured on the Collection's Model", function() {
 				var MyCollection = Collection.extend( {
 					// note: no proxy of its own
-					model : thisSuite.Model,  // Note: a proxy is defined on the model
+					model : MyModel,  // Note: a proxy is defined on the model
 					pageSize : 25
 				} );
 				
 				new MyCollection().loadPage( 1 );
 				
-				JsMockito.verify( thisSuite.proxy ).read();
+				JsMockito.verify( proxy ).read();
 			} );
 			
 			
@@ -2699,7 +2626,7 @@ define( [
 				var request, 
 				    deferred;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
 					deferred = new jQuery.Deferred();
@@ -2709,7 +2636,7 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();
@@ -2727,7 +2654,7 @@ define( [
 				var request, 
 				    deferred;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
 					deferred = new jQuery.Deferred();
@@ -2737,7 +2664,7 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();
@@ -2753,13 +2680,13 @@ define( [
 			
 			it( "loadPage() should call the proxy's read() method with the proper paging configs, and any `params` option provided to the method", function() {
 				var request;
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					request = req;
 					return new jQuery.Deferred().promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 50
 				} );
 				
@@ -2779,7 +2706,7 @@ define( [
 			
 			
 			it( "loadPage() should load the models returned by the data in the proxy", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2791,8 +2718,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();
@@ -2803,7 +2730,7 @@ define( [
 			
 			
 			it( "loadPage() should add the models returned by the data in the proxy, when the 'addModels' option is set to true", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
@@ -2815,8 +2742,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection( {
 					data : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ],
@@ -2835,7 +2762,7 @@ define( [
 			
 			
 			it( "loadPage() should add the models returned by the data in the proxy by default, when the Collection's `clearOnPageLoad` config is false", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
@@ -2847,8 +2774,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection( {
 					data : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ],
@@ -2866,7 +2793,7 @@ define( [
 			
 			
 			it( "loadPage() should replace the existing models in the Collection upon load when the Collection's `clearOnPageLoad` config is true", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
@@ -2878,8 +2805,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection( {
 					data : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ],
@@ -2895,7 +2822,7 @@ define( [
 			
 			
 			it( "loadPage() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : []
 					} ) );
@@ -2903,8 +2830,8 @@ define( [
 				} );
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				
@@ -2972,13 +2899,13 @@ define( [
 			
 			
 			it( "loadPage() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					return new jQuery.Deferred().reject( request ).promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				
@@ -3046,7 +2973,7 @@ define( [
 			
 			
 			it( "loadPage() should set the totalCount property on the Collection if the property is available on the resulting ResultSet", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -3059,8 +2986,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();
@@ -3072,7 +2999,7 @@ define( [
 			
 			
 			it( "loadPage() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -3085,8 +3012,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();
@@ -3100,12 +3027,11 @@ define( [
 		
 		
 		describe( "Test loadPageRange()", function() {
-			var thisSuite;
+			var proxy,
+			    MyModel;
 			
 			beforeEach( function() {
-				thisSuite = {};
-				
-				thisSuite.proxy = JsMockito.mock( Proxy.extend( {
+				proxy = JsMockito.mock( Proxy.extend( {
 					// Implementation of abstract interface
 					create : Data.emptyFn,
 					read : Data.emptyFn,
@@ -3115,14 +3041,14 @@ define( [
 				
 				// For the base case for tests. If needing to do something different, override the particular method of interest.
 				var deferred = new jQuery.Deferred();
-				JsMockito.when( thisSuite.proxy ).create().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).update().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( thisSuite.proxy ).destroy().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).create().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).read().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).update().then( function( req ) { return deferred.promise(); } );
+				JsMockito.when( proxy ).destroy().then( function( req ) { return deferred.promise(); } );
 				
-				thisSuite.Model = Model.extend( {
+				MyModel = Model.extend( {
 					attributes : [ 'id', 'name' ],
-					proxy : thisSuite.proxy
+					proxy : proxy
 				} );
 			} );
 			
@@ -3130,7 +3056,7 @@ define( [
 			it( "loadPageRange() should throw an error if no `startPage` argument is provided to the method", function() {
 				expect( function() {
 					var MyCollection = Collection.extend( {
-						proxy : thisSuite.proxy,
+						proxy : proxy,
 						pageSize : 25
 					} );
 					
@@ -3144,7 +3070,7 @@ define( [
 			it( "loadPageRange() should throw an error if no `endPage` argument is provided to the method", function() {
 				expect( function() {
 					var MyCollection = Collection.extend( {
-						proxy : thisSuite.proxy,
+						proxy : proxy,
 						pageSize : 25
 					} );
 					
@@ -3158,7 +3084,7 @@ define( [
 			it( "loadPageRange() should throw an error if no `pageSize` config is set on the Collection", function() {
 				expect( function() {
 					var MyCollection = Collection.extend( {
-						proxy : thisSuite.proxy
+						proxy : proxy
 					} );
 					
 					new MyCollection().loadPageRange( 1, 2 );
@@ -3199,26 +3125,26 @@ define( [
 			
 			it( "loadPageRange() should call the proxy's read() method, once for each page that needs to be loaded, when the proxy is configured on the Collection", function() {
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				
 				new MyCollection().loadPageRange( 1, 3 );
 				
-				JsMockito.verify( thisSuite.proxy, JsMockito.Verifiers.times( 3 ) ).read();
+				JsMockito.verify( proxy, JsMockito.Verifiers.times( 3 ) ).read();
 			} );
 			
 			
 			it( "loadPageRange() should call the proxy's read() method, once for each page that needs to be loaded, when the proxy is configured on the Collection's Model", function() {
 				var MyCollection = Collection.extend( {
 					// note: no proxy of its own
-					model : thisSuite.Model,  // Note: a proxy is defined on the model
+					model : MyModel,  // Note: a proxy is defined on the model
 					pageSize : 25
 				} );
 				
 				new MyCollection().loadPageRange( 1, 3 );
 				
-				JsMockito.verify( thisSuite.proxy, JsMockito.Verifiers.times( 3 ) ).read();
+				JsMockito.verify( proxy, JsMockito.Verifiers.times( 3 ) ).read();
 			} );
 			
 			
@@ -3226,7 +3152,7 @@ define( [
 				var requests = [], 
 				    deferreds = [];
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet() );
 					requests.push( request );
 					
@@ -3238,7 +3164,7 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();
@@ -3261,7 +3187,7 @@ define( [
 				var requests = [], 
 				    deferreds = [];
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet() );
 					requests.push( request );
 					
@@ -3273,7 +3199,7 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();
@@ -3290,13 +3216,13 @@ define( [
 			
 			it( "loadPageRange() should call the proxy's read() method with the proper paging configs, and any `params` option provided to the method", function() {
 				var requests = [];
-				JsMockito.when( thisSuite.proxy ).read().then( function( req ) {
+				JsMockito.when( proxy ).read().then( function( req ) {
 					requests.push( req );
 					return new jQuery.Deferred().promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
-					proxy : thisSuite.proxy,
+					proxy : proxy,
 					pageSize : 10
 				} );
 				
@@ -3339,7 +3265,7 @@ define( [
 				];
 				var opNum = -1;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					opNum++;
 					request.setResultSet( new ResultSet( {
 						records : recordSets[ opNum ]
@@ -3354,8 +3280,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 2
 				} );
 				var collection = new MyCollection();
@@ -3385,7 +3311,7 @@ define( [
 				];
 				var opNum = -1;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					opNum++;
 					request.setResultSet( new ResultSet( {
 						records : recordSets[ opNum ]
@@ -3400,8 +3326,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection( {
 					data : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ],
@@ -3434,7 +3360,7 @@ define( [
 				];
 				var opNum = -1;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					opNum++;
 					request.setResultSet( new ResultSet( {
 						records : recordSets[ opNum ]
@@ -3449,8 +3375,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection( {
 					data : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ],
@@ -3482,7 +3408,7 @@ define( [
 				];
 				var opNum = -1;
 				
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					opNum++;
 					request.setResultSet( new ResultSet( {
 						records : recordSets[ opNum ]
@@ -3497,8 +3423,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy
+					model : MyModel,
+					proxy : proxy
 				} );
 				var collection = new MyCollection( {
 					data : [ { id: 1, name: "Fred" }, { id: 2, name: "Felicia" } ],
@@ -3522,7 +3448,7 @@ define( [
 			it( "loadPageRange() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
 				var deferreds = [], 
 				    requests = [];
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : []
 					} ) );
@@ -3534,8 +3460,8 @@ define( [
 				} );
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				
@@ -3617,13 +3543,13 @@ define( [
 			
 			
 			it( "loadPageRange() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					return new jQuery.Deferred().reject( request ).promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				
@@ -3693,7 +3619,7 @@ define( [
 			
 			
 			it( "loadPageRange() should set the totalCount property on the Collection if the property is available on the resulting ResultSet from the first Request (the sampling Request)", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -3706,8 +3632,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();
@@ -3719,7 +3645,7 @@ define( [
 			
 			
 			it( "loadPageRange() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet from the first Request (the sampling Request)", function() {
-				JsMockito.when( thisSuite.proxy ).read().then( function( request ) {
+				JsMockito.when( proxy ).read().then( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -3732,8 +3658,8 @@ define( [
 				
 				
 				var MyCollection = Collection.extend( {
-					model : thisSuite.Model,
-					proxy : thisSuite.proxy,
+					model : MyModel,
+					proxy : proxy,
 					pageSize : 25
 				} );
 				var collection = new MyCollection();

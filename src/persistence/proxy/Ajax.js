@@ -161,8 +161,8 @@ define( [
 		/**
 		 * Creates the Model on the server.
 		 * 
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
-		 *   to be created on the REST server.
+		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
+		 *   to be created on the server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
@@ -187,7 +187,7 @@ define( [
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
-				url      : this.buildUrl( 'read', request ),
+				url      : this.buildUrl( request ),
 				type     : this.getHttpMethod( 'read' ),
 				data     : this.serializeParams( paramsObj, 'read', request ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
 				dataType : 'text'
@@ -211,13 +211,13 @@ define( [
 		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
 		 * are persisted.
 		 * 
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
-		 *   to be updated on the REST server.
+		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
+		 *   to be updated on the server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		update : function( request, options ) {
+		update : function( request ) {
 			throw new Error( "update() not yet implemented" );
 		},
 		
@@ -227,8 +227,8 @@ define( [
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
-		 *   to be destroyed on the REST server.
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
+		 *   to be destroyed on the server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
@@ -250,12 +250,12 @@ define( [
 		 * to be added based on the `request` provided.
 		 * 
 		 * @protected
-		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
+		 * @param {data.persistence.request.Request} request The Request being made.
 		 * @return {String} The full URL, with all parameters.
 		 */
-		buildUrl : function( action, request ) {
-			var url = this.getUrl( action );
+		buildUrl : function( request ) {
+			var action = request.getAction(),  // The CRUD action name. Ex: 'create', 'read', 'update', 'destroy'
+			    url = this.getUrl( action );
 			
 			// Only add params explicitly to the URL when doing a create/update/destroy request. For a 'read' 
 			// request, params will be added conditionally to either the url or the post body based on the http 

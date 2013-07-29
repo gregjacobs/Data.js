@@ -6,9 +6,11 @@ define( [
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Ajax',
 	'data/persistence/reader/Reader',
+	'data/persistence/request/Create',
 	'data/persistence/request/Read',
-	'data/persistence/request/Write'
-], function( _, Class, Model, ResultSet, AjaxProxy, Reader, ReadRequest, WriteRequest ) {
+	'data/persistence/request/Update',
+	'data/persistence/request/Destroy'
+], function( _, Class, Model, ResultSet, AjaxProxy, Reader, CreateRequest, ReadRequest, UpdateRequest, DestroyRequest ) {
 	
 	// Used in the tests
 	var ConcreteReader = Reader.extend( {
@@ -92,7 +94,7 @@ define( [
 				} );
 				var request = new ReadRequest();
 				
-				expect( proxy.buildUrl( 'read', request ) ).toBe( '/testUrl' );
+				expect( proxy.buildUrl( request ) ).toBe( '/testUrl' );
 			} );
 			
 			
@@ -107,10 +109,16 @@ define( [
 				} );
 				
 				var readRequest = new ReadRequest();
-				expect( proxy.buildUrl( 'read', readRequest ) ).toBe( '/testUrl' );
+				expect( proxy.buildUrl( readRequest ) ).toBe( '/testUrl' );
 				
-				var writeRequest = new WriteRequest();
-				expect( proxy.buildUrl( 'update', writeRequest ) ).toBe( '/testUrl?param1=value1&param2=value2' );
+				// Check the Write requests
+				var createRequest = new CreateRequest(),
+				    updateRequest = new UpdateRequest(),
+				    destroyRequest = new DestroyRequest();
+				
+				expect( proxy.buildUrl( createRequest ) ).toBe( '/testUrl?param1=value1&param2=value2' );
+				expect( proxy.buildUrl( updateRequest ) ).toBe( '/testUrl?param1=value1&param2=value2' );
+				expect( proxy.buildUrl( destroyRequest ) ).toBe( '/testUrl?param1=value1&param2=value2' );
 			} );
 			
 			
@@ -131,10 +139,16 @@ define( [
 				} );
 				
 				var readRequest = new ReadRequest();
-				expect( proxy.buildUrl( 'read', readRequest ) ).toBe( '/testUrl' );
+				expect( proxy.buildUrl( readRequest ) ).toBe( '/testUrl' );
 				
-				var writeRequest = new WriteRequest();
-				expect( proxy.buildUrl( 'update', writeRequest ) ).toBe( '/testUrl?asdf' );
+				// Check the Write requests
+				var createRequest = new CreateRequest(),
+				    updateRequest = new UpdateRequest(),
+				    destroyRequest = new DestroyRequest();
+				
+				expect( proxy.buildUrl( createRequest ) ).toBe( '/testUrl?asdf' );
+				expect( proxy.buildUrl( updateRequest ) ).toBe( '/testUrl?asdf' );
+				expect( proxy.buildUrl( destroyRequest ) ).toBe( '/testUrl?asdf' );
 			} );
 			
 		} );
@@ -152,6 +166,8 @@ define( [
 			
 			it( "should return any params passed on the Request, as well as the `modelId` set on a ReadRequest", function() {
 				var proxy = new AjaxProxy();
+				
+				// Check the Read request
 				var readRequest = new ReadRequest( {
 					modelId : 1,
 					params : {
@@ -166,16 +182,16 @@ define( [
 				} );
 				
 				
-				var writeRequest = new WriteRequest( { 
-					params : {
-						param1: "value1",
-						param2: 2
-					}
-				} );
-				expect( proxy.buildParams( 'update', writeRequest ) ).toEqual( {
-					param1: "value1",
-					param2: 2
-				} );
+				// Check the Write requests
+				var inputParams = { param1: "value1", param2: 2 },
+				    expectedParams = { param1: "value1", param2: 2 },
+				    createRequest = new CreateRequest( { params: inputParams } ),
+				    updateRequest = new UpdateRequest( { params: inputParams } ),
+				    destroyRequest = new DestroyRequest( { params: inputParams } );
+				
+				expect( proxy.buildParams( 'create', createRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( 'update', updateRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( 'destroy', destroyRequest ) ).toEqual( expectedParams );
 			} );
 			
 			
@@ -187,6 +203,7 @@ define( [
 					}
 				});
 				
+				// Check the Read request
 				var readRequest = new ReadRequest( { 
 					modelId: 1,
 					params : {
@@ -202,17 +219,16 @@ define( [
 				} );
 				
 				
-				var writeRequest = new WriteRequest( { 
-					params : {
-						param1: "overridden_value1",
-						param3: "value3"
-					}
-				} );
-				expect( proxy.buildParams( 'update', writeRequest ) ).toEqual( {
-					param1 : "overridden_value1",
-					param2 : "value2",
-					param3 : "value3"
-				} );
+				// Check the Write requests
+				var inputParams = { param1: "overridden_value1", param3: "value3" },
+				    expectedParams = { param1: "overridden_value1", param2: "value2", param3: "value3" },
+				    createRequest = new CreateRequest( { params: inputParams } ),
+				    updateRequest = new UpdateRequest( { params: inputParams } ),
+				    destroyRequest = new DestroyRequest( { params: inputParams } );
+				
+				expect( proxy.buildParams( 'create', createRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( 'update', updateRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( 'destroy', destroyRequest ) ).toEqual( expectedParams );
 			} );
 			
 			

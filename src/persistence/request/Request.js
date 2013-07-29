@@ -10,7 +10,13 @@ define( [
 	 * 
 	 * Represents an request for a {@link data.persistence.proxy.Proxy} to carry out. This class basically represents 
 	 * any CRUD request to be performed, passes along any options needed for that request, and accepts any data/state
-	 * as a result of that request. 
+	 * as a result of that request from the configured {@link #proxy}. 
+	 * 
+	 * Note: This class does not (necessarily) represent an HTTP request. It represents a request to a 
+	 * {@link data.persistence.proxy.Proxy Proxy}, which will in turn create/read/update/destroy the data wherever the 
+	 * Proxy is written/configured to do so. This may be a server, local storage, etc.
+	 * 
+	 * ## Subclasses
 	 * 
 	 * Request's subclasses are split into two distinct implementations:
 	 * 
@@ -18,11 +24,20 @@ define( [
 	 * - {@link data.persistence.request.Write}: Represents an Request to write (store) data to persistence storage.
 	 *   This includes destroying (deleting) models as well.
 	 * 
-	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
+	 * This class is used internally by the framework for making requests to {@link data.persistence.proxy.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
 	 * complete, so information can be obtained about the request that took place.
 	 */
 	var Request = Class.extend( Object, {
+		abstractClass : true,
+		
+		
+		/**
+		 * @cfg {data.persistence.proxy.Proxy} proxy
+		 * 
+		 * The Proxy that the Request should be made to. Running the {@link #execute} method will make the
+		 * request to this Proxy.
+		 */
 		
 		/**
 		 * @cfg {Object} params
@@ -95,6 +110,16 @@ define( [
 		
 		
 		/**
+		 * Sets the {@link #proxy} that this Request will use when {@link #execute executed}.
+		 * 
+		 * @param {data.persistence.proxy.Proxy} proxy
+		 */
+		setProxy : function( proxy ) {
+			this.proxy = proxy;
+		},
+		
+		
+		/**
 		 * Retrieves the {@link #params} for this Request. Returns an empty
 		 * object if no params were provided.
 		 * 
@@ -103,6 +128,28 @@ define( [
 		getParams : function() {
 			return ( this.params || (this.params = {}) );
 		},
+		
+		
+		/**
+		 * Executes the Request using the configured {@link #proxy}.
+		 * 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the Request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with this Request object provided 
+		 *   as the first argument.
+		 */
+		execute : function() {
+			return this.proxy[ this.getAction() ]( this );  // getAction() returns 'create', 'read', 'update', or 'destroy'
+		},
+		
+		
+		/**
+		 * Retrieves the CRUD action name for the Request.
+		 * 
+		 * @protected
+		 * @abstract
+		 * @return {String} One of: 'create', 'read', 'update', 'destroy'
+		 */
+		getAction : Class.abstractMethod,
 		
 		
 		/**

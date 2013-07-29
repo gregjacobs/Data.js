@@ -6,9 +6,11 @@ define( [
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Rest',
 	'data/persistence/reader/Reader',
+	'data/persistence/request/Create',
 	'data/persistence/request/Read',
-	'data/persistence/request/Write'
-], function( _, Class, Model, ResultSet, RestProxy, Reader, ReadRequest, WriteRequest ) {
+	'data/persistence/request/Update',
+	'data/persistence/request/Destroy'
+], function( _, Class, Model, ResultSet, RestProxy, Reader, CreateRequest, ReadRequest, UpdateRequest, DestroyRequest ) {
 	
 	// Used in the tests
 	var ConcreteReader = Reader.extend( {
@@ -28,7 +30,7 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					thisSuite.reader = JsMockito.mock( ConcreteReader );
-					thisSuite.request = JsMockito.mock( WriteRequest );
+					thisSuite.request = JsMockito.mock( CreateRequest );
 				} );
 				
 				
@@ -66,7 +68,7 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.request = JsMockito.mock( WriteRequest );
+					thisSuite.request = JsMockito.mock( CreateRequest );
 					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
@@ -213,7 +215,7 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.request = JsMockito.mock( WriteRequest );
+					thisSuite.request = JsMockito.mock( UpdateRequest );
 					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
@@ -275,7 +277,7 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.request = JsMockito.mock( WriteRequest );
+					thisSuite.request = JsMockito.mock( UpdateRequest );
 					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
@@ -345,7 +347,7 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.request = JsMockito.mock( WriteRequest );
+					thisSuite.request = JsMockito.mock( UpdateRequest );
 					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
@@ -400,7 +402,7 @@ define( [
 					JsMockito.when( thisSuite.mockModel ).getData( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1', attribute2: 'value2' } );
 					JsMockito.when( thisSuite.mockModel ).getChanges( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute2: 'value2' } );  // 'attribute2' is the "change"
 					
-					thisSuite.request = JsMockito.mock( WriteRequest );
+					thisSuite.request = JsMockito.mock( UpdateRequest );
 					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.mockModel ] );
 				} );
 				
@@ -460,7 +462,7 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.request = JsMockito.mock( WriteRequest );
+					thisSuite.request = JsMockito.mock( DestroyRequest );
 					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
@@ -525,7 +527,7 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.request = JsMockito.mock( WriteRequest );
+					thisSuite.request = JsMockito.mock( DestroyRequest );
 					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				

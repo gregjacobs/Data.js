@@ -6,7 +6,8 @@ define( [
 ], function( Class, RequestBatch, Request ) {
 	
 	var ConcreteRequest = Class.extend( Request, {
-		// no abstract methods
+		// Implementation of abstract interface
+		getAction : function() {}
 	} );
 	
 	

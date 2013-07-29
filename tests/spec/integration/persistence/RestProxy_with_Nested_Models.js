@@ -3,8 +3,8 @@ define( [
 	'lodash',
 	'data/Model',
 	'data/persistence/proxy/Rest',
-	'data/persistence/request/Write'
-], function( _, Model, RestProxy, WriteRequest ) {
+	'data/persistence/request/Update'
+], function( _, Model, RestProxy, UpdateRequest ) {
 
 	describe( "Integration: persistence.RestProxy with Nested Models", function() {
 		
@@ -48,7 +48,7 @@ define( [
 				childModel.set( 'unpersistedAttr', 'newValue' );
 				
 				var proxy = new thisSuite.RestProxy(),
-				    request = new WriteRequest( { models: [ parentModel ] } );
+				    request = new UpdateRequest( { models: [ parentModel ] } );
 				
 				proxy.update( request );
 				

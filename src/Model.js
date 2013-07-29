@@ -9,8 +9,10 @@ define( [
 	'data/DataComponent',
 	
 	'data/persistence/proxy/Proxy',
+	'data/persistence/request/Create',
 	'data/persistence/request/Read',
-	'data/persistence/request/Write',
+	'data/persistence/request/Update',
+	'data/persistence/request/Destroy',
 	
 	'data/attribute/Attribute',
 	'data/attribute/DataComponent',
@@ -40,8 +42,10 @@ define( [
 	DataComponent,
 	
 	Proxy,
+	CreateRequest,
 	ReadRequest,
-	WriteRequest,
+	UpdateRequest,
+	DestroyRequest,
 	
 	Attribute,
 	DataComponentAttribute,
@@ -455,7 +459,9 @@ define( [
 				 * 
 				 * @event save
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.request.Write} request The WriteRequest object for the save request.
+				 * @param {data.persistence.request.Write} request The WriteRequest object for the save. This will
+				 *   either be a {@link data.persistence.request.Create CreateRequest} or 
+				 *   {@link data.persistence.request.Update UpdateRequest}.
 				 */
 				'save',
 				
@@ -474,7 +480,7 @@ define( [
 				 * 
 				 * @event destroy
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.request.Write} request The WriteRequest object for the destroy request.
+				 * @param {data.persistence.request.Write} request The DestroyRequest object for the destroy request.
 				 */
 				'destroy'
 			);
@@ -1217,8 +1223,9 @@ define( [
 			
 			// Make a request to load the data from the proxy
 			var me = this,  // for closures
-			    request = new ReadRequest( { modelId: this.getId(), params: options.params } );
-			this.proxy.read( request ).then(
+			    request = new ReadRequest( { proxy: this.proxy, modelId: this.getId(), params: options.params } );
+			
+			request.execute().then(
 				function( request ) { me.onLoadSuccess( deferred, request ); },
 				function( request ) { me.onLoadError( deferred, request ); }
 			);
@@ -1437,11 +1444,13 @@ define( [
 			
 			
 			// Make a request to create or update the data on the server
-			var writeRequest = new WriteRequest( {
+			var RequestClass = this.isNew() ? CreateRequest : UpdateRequest;
+			var writeRequest = new RequestClass( {
+				proxy  : this.proxy,
 				models : [ this ],
 				params : options.params
 			} );
-			this.proxy[ this.isNew() ? 'create' : 'update' ]( writeRequest ).then(
+			writeRequest.execute().then(
 				function( request ) { handleServerUpdate( request.getResultSet() ); me.onSaveSuccess( deferred, request ); },
 				function( request ) { me.onSaveError( deferred, request ); }
 			);
@@ -1495,7 +1504,7 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link data.Model} This Model instance.
-		 * - `request` : {@link data.persistence.request.Write} The WriteRequest that was executed.
+		 * - `request` : {@link data.persistence.request.Destroy} The DestroyRequest that was executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
@@ -1536,7 +1545,8 @@ define( [
 			this.destroying = true;
 			this.fireEvent( 'destroybegin', this );
 			
-			var request = new WriteRequest( {
+			var request = new DestroyRequest( {
+				proxy  : this.proxy,
 				models : [ this ],
 				params : options.params
 			} );
@@ -1548,7 +1558,7 @@ define( [
 				
 			} else {
 				// Make a request to destroy the data on the server
-				this.proxy.destroy( request ).then(
+				request.execute().then(
 					function( request ) { me.onDestroySuccess( deferred, request ); },
 					function( request ) { me.onDestroyError( deferred, request ); }
 				);
@@ -1567,7 +1577,7 @@ define( [
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
 		 *   Deferred will be resolved after post-processing of the successful destroy is complete.
-		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the destroy.
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest object which represents the destroy.
 		 */
 		onDestroySuccess : function( deferred, request ) {
 			this.destroying = false;
@@ -1587,7 +1597,7 @@ define( [
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
 		 *   Deferred will be rejected after post-processing of the successful destroy is complete.
-		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the destroy.
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest object which represents the destroy.
 		 */
 		onDestroyError : function( deferred, request ) {
 			this.destroying = false;

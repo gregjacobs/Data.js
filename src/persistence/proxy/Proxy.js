@@ -3,7 +3,7 @@ define( [
 	'lodash',
 	'Class',
 	'Observable',
-	'data/persistence/reader/Json'
+	'data/persistence/reader/Json'  // default `reader` type
 ], function( _, Class, Observable, JsonReader ) {
 	
 	/**
@@ -121,7 +121,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method create
-		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
+		 * @param {data.persistence.request.Create} request The CreateRequest instance to represent
 		 *   the creation on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -149,7 +149,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method update
-		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
+		 * @param {data.persistence.request.Update} request The UpdateRequest instance to represent
 		 *   the update on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -163,7 +163,7 @@ define( [
 		 * 
 		 * @abstract
 		 * @method destroy
-		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance to represent
 		 *   the destruction (deletion) on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 

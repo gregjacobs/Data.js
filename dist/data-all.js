@@ -2026,7 +2026,7 @@ define( 'data/persistence/proxy/Proxy',[
 	'lodash',
 	'Class',
 	'Observable',
-	'data/persistence/reader/Json'
+	'data/persistence/reader/Json'  // default `reader` type
 ], function( _, Class, Observable, JsonReader ) {
 	
 	/**
@@ -2144,7 +2144,7 @@ define( 'data/persistence/proxy/Proxy',[
 		 * 
 		 * @abstract
 		 * @method create
-		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
+		 * @param {data.persistence.request.Create} request The CreateRequest instance to represent
 		 *   the creation on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -2172,7 +2172,7 @@ define( 'data/persistence/proxy/Proxy',[
 		 * 
 		 * @abstract
 		 * @method update
-		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
+		 * @param {data.persistence.request.Update} request The UpdateRequest instance to represent
 		 *   the update on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -2186,7 +2186,7 @@ define( 'data/persistence/proxy/Proxy',[
 		 * 
 		 * @abstract
 		 * @method destroy
-		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance to represent
 		 *   the destruction (deletion) on the persistent storage.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -2211,7 +2211,13 @@ define( 'data/persistence/request/Request',[
 	 * 
 	 * Represents an request for a {@link data.persistence.proxy.Proxy} to carry out. This class basically represents 
 	 * any CRUD request to be performed, passes along any options needed for that request, and accepts any data/state
-	 * as a result of that request. 
+	 * as a result of that request from the configured {@link #proxy}. 
+	 * 
+	 * Note: This class does not (necessarily) represent an HTTP request. It represents a request to a 
+	 * {@link data.persistence.proxy.Proxy Proxy}, which will in turn create/read/update/destroy the data wherever the 
+	 * Proxy is written/configured to do so. This may be a server, local storage, etc.
+	 * 
+	 * ## Subclasses
 	 * 
 	 * Request's subclasses are split into two distinct implementations:
 	 * 
@@ -2219,11 +2225,20 @@ define( 'data/persistence/request/Request',[
 	 * - {@link data.persistence.request.Write}: Represents an Request to write (store) data to persistence storage.
 	 *   This includes destroying (deleting) models as well.
 	 * 
-	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
+	 * This class is used internally by the framework for making requests to {@link data.persistence.proxy.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
 	 * complete, so information can be obtained about the request that took place.
 	 */
 	var Request = Class.extend( Object, {
+		abstractClass : true,
+		
+		
+		/**
+		 * @cfg {data.persistence.proxy.Proxy} proxy
+		 * 
+		 * The Proxy that the Request should be made to. Running the {@link #execute} method will make the
+		 * request to this Proxy.
+		 */
 		
 		/**
 		 * @cfg {Object} params
@@ -2296,6 +2311,16 @@ define( 'data/persistence/request/Request',[
 		
 		
 		/**
+		 * Sets the {@link #proxy} that this Request will use when {@link #execute executed}.
+		 * 
+		 * @param {data.persistence.proxy.Proxy} proxy
+		 */
+		setProxy : function( proxy ) {
+			this.proxy = proxy;
+		},
+		
+		
+		/**
 		 * Retrieves the {@link #params} for this Request. Returns an empty
 		 * object if no params were provided.
 		 * 
@@ -2304,6 +2329,28 @@ define( 'data/persistence/request/Request',[
 		getParams : function() {
 			return ( this.params || (this.params = {}) );
 		},
+		
+		
+		/**
+		 * Executes the Request using the configured {@link #proxy}.
+		 * 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the Request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with this Request object provided 
+		 *   as the first argument.
+		 */
+		execute : function() {
+			return this.proxy[ this.getAction() ]( this );  // getAction() returns 'create', 'read', 'update', or 'destroy'
+		},
+		
+		
+		/**
+		 * Retrieves the CRUD action name for the Request.
+		 * 
+		 * @protected
+		 * @abstract
+		 * @return {String} One of: 'create', 'read', 'update', 'destroy'
+		 */
+		getAction : Class.abstractMethod,
 		
 		
 		/**
@@ -2401,6 +2448,79 @@ define( 'data/persistence/request/Request',[
 	
 } );
 /*global define */
+define( 'data/persistence/request/Write',[
+	'lodash',
+	'Class',
+	'data/persistence/request/Request'
+], function( _, Class, Request ) {
+	
+	/**
+	 * @abstract
+	 * @class data.persistence.request.Write
+	 * @extends data.persistence.request.Request
+	 * 
+	 * Abstract base class which represents a write request to a persistent storage mechanism. This includes creating, updating, 
+	 * or destroying (deleting) models on the persistent storage.
+	 * 
+	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
+	 * complete.
+	 */
+	var WriteRequest = Class.extend( Request, {
+		abstractClass : true,
+		
+		
+		/**
+		 * @cfg {data.Model[]} models
+		 * 
+		 * The models to write during the WriteRequest.
+		 */
+		
+		
+		/**
+		 * Retrieves the {@link #models} provided for this WriteRequest.
+		 * 
+		 * @return {data.Model[]}
+		 */
+		getModels : function() {
+			return ( this.models || (this.models = []) );
+		}
+		
+	} );
+	
+	return WriteRequest;
+	
+} );
+/*global define */
+define( 'data/persistence/request/Create',[
+	'data/persistence/request/Write'
+], function( WriteRequest ) {
+	
+	/**
+	 * @class data.persistence.request.Create
+	 * @extends data.persistence.request.Write
+	 * 
+	 * Represents a "create" CRUD request to a persistent storage mechanism. 
+	 */
+	var CreateRequest = WriteRequest.extend( {
+		
+		/**
+		 * Implementation of abstract method to return the {@link data.persistence.proxy.Proxy Proxy}
+		 * CRUD action name for the Request.
+		 * 
+		 * @protected
+		 * @return {String} Always returns 'create' for the CreateRequest.
+		 */
+		getAction : function() {
+			return 'create';
+		}
+		
+	} );
+	
+	return CreateRequest;
+	
+} );
+/*global define */
 define( 'data/persistence/request/Read',[
 	'lodash',
 	'Class',
@@ -2411,7 +2531,7 @@ define( 'data/persistence/request/Read',[
 	 * @class data.persistence.request.Read
 	 * @extends data.persistence.request.Request
 	 * 
-	 * Represents a read request from a persistent storage mechanism. 
+	 * Represents a "read" CRUD request to a persistent storage mechanism. 
 	 * 
 	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
@@ -2455,6 +2575,18 @@ define( 'data/persistence/request/Read',[
 		 * Defaults to 0, for "no limit"
 		 */
 		limit : 0,
+		
+		
+		/**
+		 * Implementation of abstract method to return the {@link data.persistence.proxy.Proxy Proxy}
+		 * CRUD action name for the Request.
+		 * 
+		 * @protected
+		 * @return {String} Always returns 'read' for the ReadRequest.
+		 */
+		getAction : function() {
+			return 'read';
+		},
 		
 		
 		/**
@@ -2516,44 +2648,61 @@ define( 'data/persistence/request/Read',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Write',[
-	'lodash',
-	'Class',
-	'data/persistence/request/Request'
-], function( _, Class, Request ) {
+define( 'data/persistence/request/Update',[
+	'data/persistence/request/Write'
+], function( WriteRequest ) {
 	
 	/**
-	 * @class data.persistence.request.Write
-	 * @extends data.persistence.request.Request
+	 * @class data.persistence.request.Update
+	 * @extends data.persistence.request.Write
 	 * 
-	 * Represents a write request to a persistent storage mechanism. This includes creating, updating, or destroying
-	 * (deleting) models on the persistent storage.
-	 * 
-	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
-	 * complete.
+	 * Represents an "update" CRUD request to a persistent storage mechanism. 
 	 */
-	var WriteRequest = Class.extend( Request, {
+	var UpdateRequest = WriteRequest.extend( {
 		
 		/**
-		 * @cfg {data.Model[]} models
+		 * Implementation of abstract method to return the {@link data.persistence.proxy.Proxy Proxy}
+		 * CRUD action name for the Request.
 		 * 
-		 * The models to write during the WriteRequest.
+		 * @protected
+		 * @return {String} Always returns 'update' for the UpdateRequest.
 		 */
-		
-		
-		/**
-		 * Retrieves the {@link #models} provided for this WriteRequest.
-		 * 
-		 * @return {data.Model[]}
-		 */
-		getModels : function() {
-			return ( this.models || (this.models = []) );
+		getAction : function() {
+			return 'update';
 		}
 		
 	} );
 	
-	return WriteRequest;
+	return UpdateRequest;
+	
+} );
+/*global define */
+define( 'data/persistence/request/Destroy',[
+	'data/persistence/request/Write'
+], function( WriteRequest ) {
+	
+	/**
+	 * @class data.persistence.request.Destroy
+	 * @extends data.persistence.request.Write
+	 * 
+	 * Represents a "destroy" (delete) CRUD request to a persistent storage mechanism.
+	 */
+	var DestroyRequest = WriteRequest.extend( {
+		
+		/**
+		 * Implementation of abstract method to return the {@link data.persistence.proxy.Proxy Proxy}
+		 * CRUD action name for the Request.
+		 * 
+		 * @protected
+		 * @return {String} Always returns 'destroy' for the DestroyRequest.
+		 */
+		getAction : function() {
+			return 'destroy';
+		}
+		
+	} );
+	
+	return DestroyRequest;
 	
 } );
 /*global define */
@@ -4022,8 +4171,10 @@ define( 'data/Model',[
 	'data/DataComponent',
 	
 	'data/persistence/proxy/Proxy',
+	'data/persistence/request/Create',
 	'data/persistence/request/Read',
-	'data/persistence/request/Write',
+	'data/persistence/request/Update',
+	'data/persistence/request/Destroy',
 	
 	'data/attribute/Attribute',
 	'data/attribute/DataComponent',
@@ -4053,8 +4204,10 @@ define( 'data/Model',[
 	DataComponent,
 	
 	Proxy,
+	CreateRequest,
 	ReadRequest,
-	WriteRequest,
+	UpdateRequest,
+	DestroyRequest,
 	
 	Attribute,
 	DataComponentAttribute,
@@ -4468,7 +4621,9 @@ define( 'data/Model',[
 				 * 
 				 * @event save
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.request.Write} request The WriteRequest object for the save request.
+				 * @param {data.persistence.request.Write} request The WriteRequest object for the save. This will
+				 *   either be a {@link data.persistence.request.Create CreateRequest} or 
+				 *   {@link data.persistence.request.Update UpdateRequest}.
 				 */
 				'save',
 				
@@ -4487,7 +4642,7 @@ define( 'data/Model',[
 				 * 
 				 * @event destroy
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.request.Write} request The WriteRequest object for the destroy request.
+				 * @param {data.persistence.request.Write} request The DestroyRequest object for the destroy request.
 				 */
 				'destroy'
 			);
@@ -5230,8 +5385,9 @@ define( 'data/Model',[
 			
 			// Make a request to load the data from the proxy
 			var me = this,  // for closures
-			    request = new ReadRequest( { modelId: this.getId(), params: options.params } );
-			this.proxy.read( request ).then(
+			    request = new ReadRequest( { proxy: this.proxy, modelId: this.getId(), params: options.params } );
+			
+			request.execute().then(
 				function( request ) { me.onLoadSuccess( deferred, request ); },
 				function( request ) { me.onLoadError( deferred, request ); }
 			);
@@ -5450,11 +5606,13 @@ define( 'data/Model',[
 			
 			
 			// Make a request to create or update the data on the server
-			var writeRequest = new WriteRequest( {
+			var RequestClass = this.isNew() ? CreateRequest : UpdateRequest;
+			var writeRequest = new RequestClass( {
+				proxy  : this.proxy,
 				models : [ this ],
 				params : options.params
 			} );
-			this.proxy[ this.isNew() ? 'create' : 'update' ]( writeRequest ).then(
+			writeRequest.execute().then(
 				function( request ) { handleServerUpdate( request.getResultSet() ); me.onSaveSuccess( deferred, request ); },
 				function( request ) { me.onSaveError( deferred, request ); }
 			);
@@ -5508,7 +5666,7 @@ define( 'data/Model',[
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link data.Model} This Model instance.
-		 * - `request` : {@link data.persistence.request.Write} The WriteRequest that was executed.
+		 * - `request` : {@link data.persistence.request.Destroy} The DestroyRequest that was executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
@@ -5549,7 +5707,8 @@ define( 'data/Model',[
 			this.destroying = true;
 			this.fireEvent( 'destroybegin', this );
 			
-			var request = new WriteRequest( {
+			var request = new DestroyRequest( {
+				proxy  : this.proxy,
 				models : [ this ],
 				params : options.params
 			} );
@@ -5561,7 +5720,7 @@ define( 'data/Model',[
 				
 			} else {
 				// Make a request to destroy the data on the server
-				this.proxy.destroy( request ).then(
+				request.execute().then(
 					function( request ) { me.onDestroySuccess( deferred, request ); },
 					function( request ) { me.onDestroyError( deferred, request ); }
 				);
@@ -5580,7 +5739,7 @@ define( 'data/Model',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
 		 *   Deferred will be resolved after post-processing of the successful destroy is complete.
-		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the destroy.
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest object which represents the destroy.
 		 */
 		onDestroySuccess : function( deferred, request ) {
 			this.destroying = false;
@@ -5600,7 +5759,7 @@ define( 'data/Model',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
 		 *   Deferred will be rejected after post-processing of the successful destroy is complete.
-		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the destroy.
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest object which represents the destroy.
 		 */
 		onDestroyError : function( deferred, request ) {
 			this.destroying = false;
@@ -5992,7 +6151,6 @@ define( 'data/Collection',[
 	'data/DataComponent',
 	'data/NativeObjectConverter',
 	'data/persistence/request/Read',
-	'data/persistence/request/Write',
 	'data/persistence/request/Batch',
 	'data/persistence/proxy/Proxy',
 	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
@@ -6005,7 +6163,6 @@ define( 'data/Collection',[
 	DataComponent,
 	NativeObjectConverter,
 	ReadRequest,
-	WriteRequest,
 	RequestBatch,
 	Proxy
 ) {
@@ -7363,7 +7520,8 @@ define( 'data/Collection',[
 			
 			// Make a request to read the data from the persistent storage, and return a Promise object
 			// which is resolved or rejected with the `request` object
-			return proxy.read( request );
+			request.setProxy( proxy );
+			return request.execute();
 		},
 		
 		
@@ -7718,8 +7876,8 @@ define( 'data/persistence/proxy/Ajax',[
 		/**
 		 * Creates the Model on the server.
 		 * 
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
-		 *   to be created on the REST server.
+		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
+		 *   to be created on the server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
@@ -7744,7 +7902,7 @@ define( 'data/persistence/proxy/Ajax',[
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
-				url      : this.buildUrl( 'read', request ),
+				url      : this.buildUrl( request ),
 				type     : this.getHttpMethod( 'read' ),
 				data     : this.serializeParams( paramsObj, 'read', request ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
 				dataType : 'text'
@@ -7768,13 +7926,13 @@ define( 'data/persistence/proxy/Ajax',[
 		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
 		 * are persisted.
 		 * 
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
-		 *   to be updated on the REST server.
+		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
+		 *   to be updated on the server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		update : function( request, options ) {
+		update : function( request ) {
 			throw new Error( "update() not yet implemented" );
 		},
 		
@@ -7784,8 +7942,8 @@ define( 'data/persistence/proxy/Ajax',[
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
-		 *   to be destroyed on the REST server.
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
+		 *   to be destroyed on the server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
@@ -7807,12 +7965,12 @@ define( 'data/persistence/proxy/Ajax',[
 		 * to be added based on the `request` provided.
 		 * 
 		 * @protected
-		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
+		 * @param {data.persistence.request.Request} request The Request being made.
 		 * @return {String} The full URL, with all parameters.
 		 */
-		buildUrl : function( action, request ) {
-			var url = this.getUrl( action );
+		buildUrl : function( request ) {
+			var action = request.getAction(),  // The CRUD action name. Ex: 'create', 'read', 'update', 'destroy'
+			    url = this.getUrl( action );
 			
 			// Only add params explicitly to the URL when doing a create/update/destroy request. For a 'read' 
 			// request, params will be added conditionally to either the url or the post body based on the http 
@@ -7995,6 +8153,7 @@ define( 'data/persistence/proxy/Rest',[
 		
 		/**
 		 * @cfg {String} urlRoot
+		 * 
 		 * The url to use in a RESTful manner to perform CRUD requests. Ex: `/tasks`.
 		 * 
 		 * The {@link data.Model#idAttribute id} of the {@link data.Model} being read/updated/deleted
@@ -8004,6 +8163,7 @@ define( 'data/persistence/proxy/Rest',[
 		
 		/**
 		 * @cfg {Boolean} incremental
+		 * 
 		 * True to have the RestProxy only provide data that has changed to the server when
 		 * updating a model. By using this, it isn't exactly following REST per se, but can
 		 * optimize requests by only providing a subset of the full model data. Only enable
@@ -8013,6 +8173,7 @@ define( 'data/persistence/proxy/Rest',[
 		
 		/**
 		 * @cfg {String} rootProperty
+		 * 
 		 * If the server requires the data to be wrapped in a property of its own, use this config
 		 * to specify it. For example, if PUT'ing a Task's data needs to look like this, use this config:
 		 * 
@@ -8055,7 +8216,6 @@ define( 'data/persistence/proxy/Rest',[
 		/**
 		 * Accessor to set the {@link #rootProperty} after instantiation.
 		 * 
-		 * @method setRootProperty
 		 * @param {String} rootProperty The new {@link #rootProperty} value. This can be set to an empty string 
 		 *   to remove the {@link #rootProperty}.
 		 */
@@ -8067,8 +8227,7 @@ define( 'data/persistence/proxy/Rest',[
 		/**
 		 * Creates the Model on the server.
 		 * 
-		 * @method create
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
+		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -8114,7 +8273,6 @@ define( 'data/persistence/proxy/Rest',[
 		/**
 		 * Reads the Model from the server.
 		 * 
-		 * @method read
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that holds the model(s) 
 		 *   to be read from the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
@@ -8149,17 +8307,14 @@ define( 'data/persistence/proxy/Rest',[
 		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
 		 * are persisted.
 		 * 
-		 * @method update
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
+		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		update : function( request, options ) {
-			options = options || {};
+		update : function( request ) {
 			var me = this,  // for closures
-			    scope = options.scope || options.context || this,
 			    model = request.getModels()[ 0 ],
 			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
 			    deferred = new jQuery.Deferred();
@@ -8219,8 +8374,7 @@ define( 'data/persistence/proxy/Rest',[
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
-		 * @method destroy
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -8256,7 +8410,6 @@ define( 'data/persistence/proxy/Rest',[
 		 * Builds the URL to use to do CRUD requests.
 		 * 
 		 * @protected
-		 * @method buildUrl
 		 * @param {String} action The action being taken. Must be one of: 'create', 'read', 'update', or 'destroy'.
 		 * @param {String} modelId The ID for the model that a url is being built for.
 		 * @return {String} The url to use.
@@ -8287,4 +8440,4 @@ define( 'data/persistence/proxy/Rest',[
 	return RestProxy;
 	
 } );
-require(["data/Collection", "data/Data", "data/DataComponent", "data/Model", "data/NativeObjectConverter", "data/attribute/Attribute", "data/attribute/Boolean", "data/attribute/Collection", "data/attribute/DataComponent", "data/attribute/Date", "data/attribute/Float", "data/attribute/Integer", "data/attribute/Mixed", "data/attribute/Model", "data/attribute/Number", "data/attribute/Object", "data/attribute/Primitive", "data/attribute/String", "data/persistence/ResultSet", "data/persistence/proxy/Ajax", "data/persistence/proxy/Proxy", "data/persistence/proxy/Rest", "data/persistence/reader/Json", "data/persistence/reader/Reader", "data/persistence/request/Batch", "data/persistence/request/Read", "data/persistence/request/Request", "data/persistence/request/Write"]);
+require(["data/Collection", "data/Data", "data/DataComponent", "data/Model", "data/NativeObjectConverter", "data/attribute/Attribute", "data/attribute/Boolean", "data/attribute/Collection", "data/attribute/DataComponent", "data/attribute/Date", "data/attribute/Float", "data/attribute/Integer", "data/attribute/Mixed", "data/attribute/Model", "data/attribute/Number", "data/attribute/Object", "data/attribute/Primitive", "data/attribute/String", "data/persistence/ResultSet", "data/persistence/proxy/Ajax", "data/persistence/proxy/Proxy", "data/persistence/proxy/Rest", "data/persistence/reader/Json", "data/persistence/reader/Reader", "data/persistence/request/Batch", "data/persistence/request/Create", "data/persistence/request/Destroy", "data/persistence/request/Read", "data/persistence/request/Request", "data/persistence/request/Update", "data/persistence/request/Write"]);

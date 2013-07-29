@@ -17,6 +17,7 @@ define( [
 		
 		/**
 		 * @cfg {String} urlRoot
+		 * 
 		 * The url to use in a RESTful manner to perform CRUD requests. Ex: `/tasks`.
 		 * 
 		 * The {@link data.Model#idAttribute id} of the {@link data.Model} being read/updated/deleted
@@ -26,6 +27,7 @@ define( [
 		
 		/**
 		 * @cfg {Boolean} incremental
+		 * 
 		 * True to have the RestProxy only provide data that has changed to the server when
 		 * updating a model. By using this, it isn't exactly following REST per se, but can
 		 * optimize requests by only providing a subset of the full model data. Only enable
@@ -35,6 +37,7 @@ define( [
 		
 		/**
 		 * @cfg {String} rootProperty
+		 * 
 		 * If the server requires the data to be wrapped in a property of its own, use this config
 		 * to specify it. For example, if PUT'ing a Task's data needs to look like this, use this config:
 		 * 
@@ -77,7 +80,6 @@ define( [
 		/**
 		 * Accessor to set the {@link #rootProperty} after instantiation.
 		 * 
-		 * @method setRootProperty
 		 * @param {String} rootProperty The new {@link #rootProperty} value. This can be set to an empty string 
 		 *   to remove the {@link #rootProperty}.
 		 */
@@ -89,8 +91,7 @@ define( [
 		/**
 		 * Creates the Model on the server.
 		 * 
-		 * @method create
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
+		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -136,7 +137,6 @@ define( [
 		/**
 		 * Reads the Model from the server.
 		 * 
-		 * @method read
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that holds the model(s) 
 		 *   to be read from the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
@@ -171,17 +171,14 @@ define( [
 		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
 		 * are persisted.
 		 * 
-		 * @method update
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
+		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		update : function( request, options ) {
-			options = options || {};
+		update : function( request ) {
 			var me = this,  // for closures
-			    scope = options.scope || options.context || this,
 			    model = request.getModels()[ 0 ],
 			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
 			    deferred = new jQuery.Deferred();
@@ -241,8 +238,7 @@ define( [
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
-		 * @method destroy
-		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
+		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
@@ -278,7 +274,6 @@ define( [
 		 * Builds the URL to use to do CRUD requests.
 		 * 
 		 * @protected
-		 * @method buildUrl
 		 * @param {String} action The action being taken. Must be one of: 'create', 'read', 'update', or 'destroy'.
 		 * @param {String} modelId The ID for the model that a url is being built for.
 		 * @return {String} The url to use.

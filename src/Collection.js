@@ -8,7 +8,6 @@ define( [
 	'data/DataComponent',
 	'data/NativeObjectConverter',
 	'data/persistence/request/Read',
-	'data/persistence/request/Write',
 	'data/persistence/request/Batch',
 	'data/persistence/proxy/Proxy',
 	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
@@ -21,7 +20,6 @@ define( [
 	DataComponent,
 	NativeObjectConverter,
 	ReadRequest,
-	WriteRequest,
 	RequestBatch,
 	Proxy
 ) {
@@ -1379,7 +1377,8 @@ define( [
 			
 			// Make a request to read the data from the persistent storage, and return a Promise object
 			// which is resolved or rejected with the `request` object
-			return proxy.read( request );
+			request.setProxy( proxy );
+			return request.execute();
 		},
 		
 		

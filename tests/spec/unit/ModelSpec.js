@@ -4,40 +4,52 @@ define( [
 	'jquery',
 	'lodash',
 	'Class',
+	
 	'data/Data',
 	'data/NativeObjectConverter',
 	'data/DataComponent',
 	'data/Model',
 	'data/Collection',
+	
 	'data/attribute/Attribute',
 	'data/attribute/Boolean',
 	'data/attribute/Number',
 	'data/attribute/String',
 	'data/attribute/DataComponent',
+	
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Proxy',
 	'data/persistence/proxy/Rest',
+	'data/persistence/request/Write',
+	'data/persistence/request/Create',
 	'data/persistence/request/Read',
-	'data/persistence/request/Write'
+	'data/persistence/request/Update',
+	'data/persistence/request/Destroy'
 ], function( 
 	jQuery,
 	_,
 	Class,
+	
 	Data,
 	NativeObjectConverter,
 	DataComponent,
 	Model,
 	Collection,
+	
 	Attribute,
 	BooleanAttribute,
 	NumberAttribute,
 	StringAttribute,
 	DataComponentAttribute,
+	
 	ResultSet,
 	Proxy,
 	RestProxy,
+	WriteRequest,
+	CreateRequest,
 	ReadRequest,
-	WriteRequest
+	UpdateRequest,
+	DestroyRequest
 ) {
 
 	describe( 'data.Model', function() {
@@ -2576,7 +2588,7 @@ define( [
 					
 					
 					// State after parent model has saved
-					var request = new WriteRequest();
+					var request = new CreateRequest();
 					request.setResultSet( new ResultSet() );
 					deferreds[ 'parentModelProxy' ].resolve( request );
 					
@@ -2614,7 +2626,7 @@ define( [
 					expect( alwaysCount ).toBe( 0 );
 					
 					// State after parent model has saved
-					var request = new WriteRequest();
+					var request = new CreateRequest();
 					request.setResultSet( new ResultSet() );
 					deferreds[ 'parentModelProxy' ].resolve( request );
 					
@@ -2750,7 +2762,7 @@ define( [
 					
 					
 					// State after parent model itself has failed to save
-					var request = new WriteRequest();
+					var request = new CreateRequest();
 					deferreds[ 'parentModelProxy' ].reject( request );
 					
 					expect( doneCount ).toBe( 0 );
