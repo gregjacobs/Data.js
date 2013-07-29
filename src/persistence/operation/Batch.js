@@ -10,19 +10,44 @@ define( [
 	 * Represents one or more {@link data.persistence.operation.Operation Operations} which were executed in a logical
 	 * group.
 	 * 
-	 * The Batch object provides access to each {@link data.persistence.operation.Operation Operation}, and also provides
-	 * methods for determining the overall success or failure (error) state of the Operations within it.
+	 * The Batch object provides access to each internal {@link data.persistence.operation.Operation Operation}, and provides
+	 * methods for determining the overall success or failure (error) state of the Operations within it. 
 	 * 
-	 * This class is mainly used internally by the library, and is provided to client code at the times when multiple
-	 * {@link data.persistence.operation.Operation Operations} were needed to satisfy a request, so that it may be inspected
-	 * for any needed information.
+	 * The Batch object is also itself a Promise object, where {@link #done}, {@link #fail}, and {@link #always} callbacks may 
+	 * be attached to listen for the completion or failure of the Batch of Operations as a whole.
 	 */
 	var OperationBatch = Class.extend( Object, {
+		
+		statics : {
+			
+			/**
+			 * @private
+			 * @static
+			 * @property {Number} idCounter
+			 * 
+			 * The counter used to create unique, increasing IDs for OperationBatch instances. 
+			 */
+			idCounter : 0
+			
+		},
+		
 		
 		/**
 		 * @cfg {data.persistence.operation.Operation/data.persistence.operation.Operation[]} operations
 		 * 
 		 * One or more Operation(s) that make up the Batch.
+		 */
+		
+		
+		/**
+		 * @private
+		 * @property {Number} id
+		 * 
+		 * The OperationBatch's ID. This is a unique number for each OperationBatch that is created, and its value
+		 * is ever-increasing. This means that an OperationBatch object created after another OperationBatch
+		 * will have a higher ID value than the first OperationBatch. 
+		 * 
+		 * This property of the ID value is used to determine when an older request has completed after a newer one.
 		 */
 		
 		
@@ -33,8 +58,20 @@ define( [
 		constructor : function( cfg ) {
 			_.assign( this, cfg );
 			
+			this.id = ++OperationBatch.idCounter;
+			
 			// normalize the `operations` config to an array
 			this.operations = ( this.operations ) ? [].concat( this.operations ) : [];
+		},
+		
+		
+		/**
+		 * Retrieves the OperationBatch's {@link #id}.
+		 * 
+		 * @return {Number}
+		 */
+		getId : function() {
+			return this.id;
 		},
 		
 		

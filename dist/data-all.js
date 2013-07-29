@@ -91,7 +91,7 @@
 // If no AMD loader, injects browser global `Class`
 (function( root, factory ) {
 	if( typeof define === 'function' && define.amd ) {
-		define('Class', factory );       // Handle availability of AMD loader
+		define( 'Class',factory );       // Handle availability of AMD loader
 	} else {
 		root.Class = factory();  // Browser global (root == window)
 	}
@@ -717,7 +717,7 @@
 
 
 /*global define */
-define('data/Data',[], function() {
+define( 'data/Data',[],function() {
 	
 	/**
 	 * @class data.Data
@@ -748,7 +748,7 @@ define('data/Data',[], function() {
 /*jslint forin: true */
 (function( root, factory ) {
 	if( typeof define === 'function' && define.amd ) {
-		define('Observable', [ 'lodash', 'Class' ], factory );  // AMD (such as RequireJS). Register as module.
+		define( 'Observable',[ 'lodash', 'Class' ], factory );  // AMD (such as RequireJS). Register as module.
 	} else {
 		root.Observable = factory( root._, root.Class );  // Browser global. root == window
 	}
@@ -1313,7 +1313,7 @@ define('data/Data',[], function() {
 	
 } ) );
 /*global define */
-define('data/DataComponent', [
+define( 'data/DataComponent',[
 	'lodash',
 	'Class',
 	'Observable'
@@ -1433,7 +1433,7 @@ define('data/DataComponent', [
 	
 } );
 /*global define */
-define('data/persistence/ResultSet', [
+define( 'data/persistence/ResultSet',[
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -1530,7 +1530,7 @@ define('data/persistence/ResultSet', [
 } );
 /*global define */
 /*jshint boss:true */
-define('data/persistence/reader/Reader', [
+define( 'data/persistence/reader/Reader',[
 	'lodash',
 	'Class',
 	'data/persistence/ResultSet'
@@ -1976,7 +1976,7 @@ define('data/persistence/reader/Reader', [
 	
 } );
 /*global define */
-define('data/persistence/reader/Json', [
+define( 'data/persistence/reader/Json',[
 	'jquery',
 	'lodash',
 	'Class',
@@ -2022,7 +2022,7 @@ define('data/persistence/reader/Json', [
 	
 } );
 /*global define */
-define('data/persistence/proxy/Proxy', [
+define( 'data/persistence/proxy/Proxy',[
 	'lodash',
 	'Class',
 	'Observable',
@@ -2200,7 +2200,7 @@ define('data/persistence/proxy/Proxy', [
 	
 } );
 /*global define */
-define('data/persistence/operation/Operation', [
+define( 'data/persistence/operation/Operation',[
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -2401,7 +2401,7 @@ define('data/persistence/operation/Operation', [
 	
 } );
 /*global define */
-define('data/persistence/operation/Read', [
+define( 'data/persistence/operation/Read',[
 	'lodash',
 	'Class',
 	'data/persistence/operation/Operation'
@@ -2516,7 +2516,7 @@ define('data/persistence/operation/Read', [
 	
 } );
 /*global define */
-define('data/persistence/operation/Write', [
+define( 'data/persistence/operation/Write',[
 	'lodash',
 	'Class',
 	'data/persistence/operation/Operation'
@@ -2557,7 +2557,7 @@ define('data/persistence/operation/Write', [
 	
 } );
 /*global define */
-define('data/attribute/Attribute', [
+define( 'data/attribute/Attribute',[
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -3068,7 +3068,7 @@ define('data/attribute/Attribute', [
 } );
 
 /*global define */
-define('data/attribute/Object', [
+define( 'data/attribute/Object',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -3117,7 +3117,7 @@ define('data/attribute/Object', [
 } );
 /*global define */
 /*jshint browser:true */
-define('data/attribute/DataComponent', [
+define( 'data/attribute/DataComponent',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3204,7 +3204,7 @@ define('data/attribute/DataComponent', [
 
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new collectionClass( ... );
-define('data/attribute/Collection', [
+define( 'data/attribute/Collection',[
 	'require',
 	'lodash',
 	'Class',
@@ -3417,7 +3417,7 @@ define('data/attribute/Collection', [
 } );
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new modelClass( ... );
-define('data/attribute/Model', [
+define( 'data/attribute/Model',[
 	'require',
 	'lodash',
 	'Class',
@@ -3615,7 +3615,7 @@ define('data/attribute/Model', [
 	
 } );
 /*global define */
-define('data/attribute/Primitive', [
+define( 'data/attribute/Primitive',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -3651,7 +3651,7 @@ define('data/attribute/Primitive', [
 } );
 /*global define */
 /*jshint eqnull:true */
-define('data/attribute/Boolean', [
+define( 'data/attribute/Boolean',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3717,7 +3717,7 @@ define('data/attribute/Boolean', [
 	
 } );
 /*global define */
-define('data/attribute/Date', [
+define( 'data/attribute/Date',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3761,7 +3761,7 @@ define('data/attribute/Date', [
 	
 } );
 /*global define */
-define('data/attribute/Number', [
+define( 'data/attribute/Number',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3848,7 +3848,7 @@ define('data/attribute/Number', [
 	
 } );
 /*global define */
-define('data/attribute/Float', [
+define( 'data/attribute/Float',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3885,7 +3885,7 @@ define('data/attribute/Float', [
 	
 } );
 /*global define */
-define('data/attribute/Integer', [
+define( 'data/attribute/Integer',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3923,7 +3923,7 @@ define('data/attribute/Integer', [
 	
 } );
 /*global define */
-define('data/attribute/Mixed', [
+define( 'data/attribute/Mixed',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -3950,7 +3950,7 @@ define('data/attribute/Mixed', [
 } );
 /*global define */
 /*jshint eqnull:true */
-define('data/attribute/String', [
+define( 'data/attribute/String',[
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -4013,7 +4013,7 @@ define('data/attribute/String', [
 } );
 /*global define */
 /*jshint forin:true, eqnull:true */
-define('data/Model', [
+define( 'data/Model',[
 	'require',
 	'jquery',
 	'lodash',
@@ -5692,7 +5692,7 @@ define('data/Model', [
 } );
 
 /*global define */
-define('data/NativeObjectConverter', [
+define( 'data/NativeObjectConverter',[
 	'require',
 	'lodash',
 	'data/DataComponent',
@@ -5838,7 +5838,7 @@ define('data/NativeObjectConverter', [
 	
 } );
 /*global define */
-define('data/persistence/operation/Batch', [
+define( 'data/persistence/operation/Batch',[
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -5849,19 +5849,44 @@ define('data/persistence/operation/Batch', [
 	 * Represents one or more {@link data.persistence.operation.Operation Operations} which were executed in a logical
 	 * group.
 	 * 
-	 * The Batch object provides access to each {@link data.persistence.operation.Operation Operation}, and also provides
-	 * methods for determining the overall success or failure (error) state of the Operations within it.
+	 * The Batch object provides access to each internal {@link data.persistence.operation.Operation Operation}, and provides
+	 * methods for determining the overall success or failure (error) state of the Operations within it. 
 	 * 
-	 * This class is mainly used internally by the library, and is provided to client code at the times when multiple
-	 * {@link data.persistence.operation.Operation Operations} were needed to satisfy a request, so that it may be inspected
-	 * for any needed information.
+	 * The Batch object is also itself a Promise object, where {@link #done}, {@link #fail}, and {@link #always} callbacks may 
+	 * be attached to listen for the completion or failure of the Batch of Operations as a whole.
 	 */
 	var OperationBatch = Class.extend( Object, {
+		
+		statics : {
+			
+			/**
+			 * @private
+			 * @static
+			 * @property {Number} idCounter
+			 * 
+			 * The counter used to create unique, increasing IDs for OperationBatch instances. 
+			 */
+			idCounter : 0
+			
+		},
+		
 		
 		/**
 		 * @cfg {data.persistence.operation.Operation/data.persistence.operation.Operation[]} operations
 		 * 
 		 * One or more Operation(s) that make up the Batch.
+		 */
+		
+		
+		/**
+		 * @private
+		 * @property {Number} id
+		 * 
+		 * The OperationBatch's ID. This is a unique number for each OperationBatch that is created, and its value
+		 * is ever-increasing. This means that an OperationBatch object created after another OperationBatch
+		 * will have a higher ID value than the first OperationBatch. 
+		 * 
+		 * This property of the ID value is used to determine when an older request has completed after a newer one.
 		 */
 		
 		
@@ -5872,8 +5897,20 @@ define('data/persistence/operation/Batch', [
 		constructor : function( cfg ) {
 			_.assign( this, cfg );
 			
+			this.id = ++OperationBatch.idCounter;
+			
 			// normalize the `operations` config to an array
 			this.operations = ( this.operations ) ? [].concat( this.operations ) : [];
+		},
+		
+		
+		/**
+		 * Retrieves the OperationBatch's {@link #id}.
+		 * 
+		 * @return {Number}
+		 */
+		getId : function() {
+			return this.id;
 		},
 		
 		
@@ -5946,7 +5983,7 @@ define('data/persistence/operation/Batch', [
 	
 } );
 /*global define */
-define('data/Collection', [
+define( 'data/Collection',[
 	'require',
 	'jquery',
 	'lodash',
@@ -7519,7 +7556,7 @@ define('data/Collection', [
 	
 } );
 /*global define */
-define('data/persistence/proxy/Ajax', [
+define( 'data/persistence/proxy/Ajax',[
 	'jquery',
 	'lodash',
 	'Class',
@@ -7940,7 +7977,7 @@ define('data/persistence/proxy/Ajax', [
 	
 } );
 /*global define */
-define('data/persistence/proxy/Rest', [
+define( 'data/persistence/proxy/Rest',[
 	'jquery',
 	'lodash',
 	'Class',
