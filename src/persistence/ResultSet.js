@@ -10,7 +10,7 @@ define( [
 	 * @extends Object
 	 * 
 	 * Simple wrapper which holds the data returned by any {@link data.persistence.proxy.Proxy Proxy} 
-	 * operation, along with any metadata such as the total number of data records in a windowed 
+	 * request, along with any metadata such as the total number of data records in a windowed 
 	 * data set.
 	 */
 	var Reader = Class.extend( Object, {

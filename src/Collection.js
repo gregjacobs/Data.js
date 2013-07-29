@@ -7,9 +7,9 @@ define( [
 	'data/Data',
 	'data/DataComponent',
 	'data/NativeObjectConverter',
-	'data/persistence/operation/Read',
-	'data/persistence/operation/Write',
-	'data/persistence/operation/Batch',
+	'data/persistence/request/Read',
+	'data/persistence/request/Write',
+	'data/persistence/request/Batch',
 	'data/persistence/proxy/Proxy',
 	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
 ], function(
@@ -20,9 +20,9 @@ define( [
 	Data,
 	DataComponent,
 	NativeObjectConverter,
-	ReadOperation,
-	WriteOperation,
-	OperationBatch,
+	ReadRequest,
+	WriteRequest,
+	RequestBatch,
 	Proxy
 ) {
 
@@ -358,16 +358,16 @@ define( [
 				/**
 				 * Fires when the Collection is loaded from an external data source, through its {@link #proxy}.
 				 * 
-				 * This event fires for both successful and failed "load" requests. Success of the load request may 
-				 * be determined using the `batch`'s {@link data.persistence.operation.Batch#wasSuccessful wasSuccessful} 
-				 * method. Note that all Operations may not be {@link data.persistence.operation.Operation#isComplete complete}
-				 * when this event fires if one or more Operations in the `batch` have errored.
+				 * This event fires for both successful and failed "load" operations. Success of the load operation may 
+				 * be determined using the `batch`'s {@link data.persistence.request.Batch#wasSuccessful wasSuccessful} 
+				 * method. Note that all Requests may not be {@link data.persistence.request.Request#isComplete complete}
+				 * when this event fires if one or more Requests in the `batch` have errored.
 				 * 
 				 * @event load
 				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.persistence.operation.Batch} batch The Batch object which holds the 
-				 *   {@link data.persistence.operation.Operation Operations} that were required to execute the load request. 
-				 *   In most cases, this object will hold just one Operation.
+				 * @param {data.persistence.request.Batch} batch The Batch object which holds the 
+				 *   {@link data.persistence.request.Request Requests} that were required to execute the load request. 
+				 *   In most cases, this object will hold just one Request.
 				 */
 				'load'
 			);
@@ -1116,12 +1116,12 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `batch` : {@link data.persistence.operation.Batch} The Batch of {@link data.persistence.operation.Read Read Operation(s)}
+		 * - `batch` : {@link data.persistence.request.Batch} The Batch of {@link data.persistence.request.Read Read Request(s)}
 		 *   that were executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels=false] `true` to add the loaded models to the Collection instead of 
 		 *   replacing the existing ones. 
 		 * @param {Function} [options.success] Function to call if the loading is successful.
@@ -1142,15 +1142,15 @@ define( [
 				options = this.normalizeLoadOptions( options );
 				var me = this,  // for closures
 				    deferred = new jQuery.Deferred(),
-				    operation = new ReadOperation( { params: options.params } ),
-				    batch = new OperationBatch( { operations: operation } );
+				    request = new ReadRequest( { params: options.params } ),
+				    batch = new RequestBatch( { requests: request } );
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
 				deferred.done( options.success ).fail( options.error ).always( options.complete );
 				
-				this.doLoad( operation ).then(
-					function( operation ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
-					function( operation ) { me.onLoadError( deferred, batch ); }
+				this.doLoad( request ).then(
+					function( request ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
+					function( request ) { me.onLoadError( deferred, batch ); }
 				);
 				return deferred.promise();
 			}
@@ -1172,14 +1172,14 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `batch` : {@link data.persistence.operation.Batch} The Batch of {@link data.persistence.operation.Read Read Operation(s)}
+		 * - `batch` : {@link data.persistence.request.Batch} The Batch of {@link data.persistence.request.Read Read Request(s)}
 		 *   that were executed.
 		 * 
 		 * @param {Number} startIdx The starting index of the range of models to load.
 		 * @param {Number} endIdx The ending index of the range of models to load.
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request(s). See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
 		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config
 		 *   if page-based loading is being used (i.e. there is a {@link #pageSize} config), or defaults to false otherwise.
@@ -1204,7 +1204,7 @@ define( [
 				
 			} else {
 				options = this.normalizeLoadOptions( options );
-				var operation = new ReadOperation( {
+				var request = new ReadRequest( {
 					params : options.params,
 					
 					start : startIdx,
@@ -1213,14 +1213,14 @@ define( [
 				
 				var me = this,  // for closures
 				    deferred = new jQuery.Deferred(),
-				    batch = new OperationBatch( { operations: operation } );
+				    batch = new RequestBatch( { requests: request } );
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
 				deferred.done( options.success ).fail( options.error ).always( options.complete );
 				
-				this.doLoad( operation ).then(
-					function( operation ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
-					function( operation ) { me.onLoadError( deferred, batch ); }
+				this.doLoad( request ).then(
+					function( request ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
+					function( request ) { me.onLoadError( deferred, batch ); }
 				);
 				return deferred.promise();
 			}
@@ -1238,13 +1238,13 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `batch` : {@link data.persistence.operation.Batch} The Batch of {@link data.persistence.operation.Read Read Operation(s)}
+		 * - `batch` : {@link data.persistence.request.Batch} The Batch of {@link data.persistence.request.Read Read Request(s)}
 		 *   that were executed.
 		 * 
 		 * @param {Number} page The 1-based page number of data to load. Page `1` is the first page.
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
 		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
@@ -1278,14 +1278,14 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `batch` : {@link data.persistence.operation.Batch} The Batch of {@link data.persistence.operation.Read Read Operation(s)}
+		 * - `batch` : {@link data.persistence.request.Batch} The Batch of {@link data.persistence.request.Read Read Request(s)}
 		 *   that were executed.
 		 * 
 		 * @param {Number} startPage The 1-based page number of the first page of data to load. Page `1` is the first page.
 		 * @param {Number} endPage The 1-based page number of the last page of data to load. Page `1` is the first page.
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request(s). See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
 		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
@@ -1312,12 +1312,12 @@ define( [
 			options = this.normalizeLoadOptions( options );
 			var me = this,  // for closures
 			    deferred = new jQuery.Deferred(),
-			    operations = [],
+			    requests = [],
 			    loadPromises = [],
 			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad;
 			
 			for( var page = startPage; page <= endPage; page++ ) {
-				var operation = new ReadOperation( {
+				var request = new ReadRequest( {
 					params    : options.params,
 					
 					page     : page,
@@ -1326,24 +1326,24 @@ define( [
 					limit    : pageSize   // in this case, the `limit` is the pageSize
 				} );
 				
-				operations.push( operation );  // for populating the Batch that represents all Operations
-				loadPromises.push( this.doLoad( operation ) );  // load the page of data, and store its returned Promise
+				requests.push( request );  // for populating the Batch that represents all Requests
+				loadPromises.push( this.doLoad( request ) );  // load the page of data, and store its returned Promise
 			}
 			
-			var batch = new OperationBatch( { operations: operations } ),
+			var batch = new RequestBatch( { requests: requests } ),
 			    masterPromise = jQuery.when.apply( null, loadPromises );
 			
 			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
 			deferred.done( options.success ).fail( options.error ).always( options.complete );
 			
 			masterPromise.then(
-				function( operation ) {
+				function( request ) {
 					var loadedPages = _.range( startPage, endPage+1 );  // second arg needs +1 because it is "up to but not included"
 					me.loadedPages = ( addModels ) ? me.loadedPages.concat( loadedPages ) : loadedPages;
 					
 					me.onLoadSuccess( deferred, batch, { addModels: addModels } ); 
 				},
-				function( operation ) { 
+				function( request ) { 
 					me.onLoadError( deferred, batch );
 				}
 			);
@@ -1352,15 +1352,15 @@ define( [
 		
 		
 		/**
-		 * Performs the actual load operation for a request to {@link #method-load} or {@link #method-loadPage}, given the
-		 * `operation` object.
+		 * Performs an actual load request for {@link #method-load} or {@link #method-loadPage}, given the
+		 * `request` object.
 		 * 
 		 * @protected
-		 * @param {data.persistence.operation.Read} operation The Read operation for the load.
+		 * @param {data.persistence.request.Read} request The Read request for the load.
 		 * @return {jQuery.Promise} A Promise object which is resolved if the load completes successfully, or rejected
-		 *   otherwise. The Promise is resolved or rejected with the argument: `operation`.
+		 *   otherwise. The Promise is resolved or rejected with the argument: `request`.
 		 */
-		doLoad : function( operation ) {
+		doLoad : function( request ) {
 			var me = this,  // for closures
 			    proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 			
@@ -1378,8 +1378,8 @@ define( [
 			}
 			
 			// Make a request to read the data from the persistent storage, and return a Promise object
-			// which is resolved or rejected with the `operation` object
-			return proxy.read( operation );
+			// which is resolved or rejected with the `request` object
+			return proxy.read( request );
 		},
 		
 		
@@ -1390,18 +1390,18 @@ define( [
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the "load" method. This Deferred will be
 		 *   resolved after post-processing of the successful load is complete.
-		 * @param {data.persistence.operation.Batch} batch The Batch object which holds all of the 
-		 *   {@link data.persistence.operation.Operation Operations} which were required to complete the load request.
+		 * @param {data.persistence.request.Batch} batch The Batch object which holds all of the 
+		 *   {@link data.persistence.request.Request Requests} which were required to complete the load request.
 		 * @param {Object} options An Object (map) with options for this method. Note that this is not the same as the `options`
 		 *   object provided to each of the "load" methods. This object may contain the following properties:
 		 * @param {Boolean} [options.addModels=false] `true` to add the loaded models to the Collection instead of 
 		 *   replacing the existing ones. 
 		 */
 		onLoadSuccess : function( deferred, batch, options ) {
-			var operations = batch.getOperations();
+			var requests = batch.getRequests();
 			
-			// Sample the first load Operation for a totalCount
-			var totalCount = operations[ 0 ].getResultSet().getTotalCount();
+			// Sample the first load Request for a totalCount
+			var totalCount = requests[ 0 ].getResultSet().getTotalCount();
 			if( totalCount !== undefined ) {
 				this.totalCount = totalCount;
 			}
@@ -1411,10 +1411,10 @@ define( [
 				this.removeAll();
 			}
 			
-			// Create a single array of all of the loaded records, put together in order of the operations, and then
+			// Create a single array of all of the loaded records, put together in order of the requests, and then
 			// add them to the Collection.
 			var records = _.flatten(
-				_.map( operations, function( op ) { return op.getResultSet().getRecords(); } )  // create an array of the arrays of result sets (to be flattened after)
+				_.map( requests, function( op ) { return op.getResultSet().getRecords(); } )  // create an array of the arrays of result sets (to be flattened after)
 			);
 			this.add( records );
 			
@@ -1434,9 +1434,9 @@ define( [
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the "load" method. This Deferred will 
 		 *   be rejected after any post-processing.
-		 * @param {data.persistence.operation.Batch} batch The Batch object which holds all of the 
-		 *   {@link data.persistence.operation.Operation Operations} which were required to complete the load request.
-		 *   One or more of these Operations has errored. Note that all Operations may not be complete.
+		 * @param {data.persistence.request.Batch} batch The Batch object which holds all of the 
+		 *   {@link data.persistence.request.Request Requests} which were required to complete the load request.
+		 *   One or more of these Requests has errored. Note that all Requests may not be complete.
 		 */
 		onLoadError : function( deferred, batch ) {
 			this.loading = false;
@@ -1487,7 +1487,7 @@ define( [
 		 * existing Models are modified, and removed Models are deleted.
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
+		 * - `request` : {@link data.persistence.request.Write} The WriteRequest that was executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Function} [options.success] Function to call if the synchronization is successful.

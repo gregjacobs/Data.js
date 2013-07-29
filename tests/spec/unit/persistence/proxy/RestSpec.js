@@ -6,9 +6,9 @@ define( [
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Rest',
 	'data/persistence/reader/Reader',
-	'data/persistence/operation/Read',
-	'data/persistence/operation/Write'
-], function( _, Class, Model, ResultSet, RestProxy, Reader, ReadOperation, WriteOperation ) {
+	'data/persistence/request/Read',
+	'data/persistence/request/Write'
+], function( _, Class, Model, ResultSet, RestProxy, Reader, ReadRequest, WriteRequest ) {
 	
 	// Used in the tests
 	var ConcreteReader = Reader.extend( {
@@ -28,11 +28,11 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					thisSuite.reader = JsMockito.mock( ConcreteReader );
-					thisSuite.operation = JsMockito.mock( WriteOperation );
+					thisSuite.request = JsMockito.mock( WriteRequest );
 				} );
 				
 				
-				it( "create() should populate the provided WriteOperation with any response data upon a successful ajax request", function() {
+				it( "create() should populate the provided WriteRequest with any response data upon a successful ajax request", function() {
 					var testData = { attribute1: 'value1', attribute2: 'value2' };
 					var TestProxy = RestProxy.extend( {
 						ajax : function( options ) { 
@@ -42,17 +42,17 @@ define( [
 					} );
 					var proxy = new TestProxy();
 					
-					JsMockito.when( thisSuite.operation ).getModels().thenReturn( [ thisSuite.model ] );
+					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 					
 					var resultSet;
 					JsMockito.when( thisSuite.reader ).read().then( function( data ) {
 						return ( resultSet = new ResultSet( { records: data } ) );
 					} );
-					proxy.create( thisSuite.operation );
+					proxy.create( thisSuite.request );
 					
 					expect( testData ).toBe( resultSet.getRecords()[ 0 ] );  // orig YUI Test err msg: "The records provided to the ResultSet should have been the testData"
 					
-					JsMockito.verify( thisSuite.operation ).setResultSet( resultSet );
+					JsMockito.verify( thisSuite.request ).setResultSet( resultSet );
 				} );
 				
 			} );
@@ -66,8 +66,8 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.operation = JsMockito.mock( WriteOperation );
-					JsMockito.when( thisSuite.operation ).getModels().thenReturn( [ thisSuite.model ] );
+					thisSuite.request = JsMockito.mock( WriteRequest );
+					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
 				
@@ -83,7 +83,7 @@ define( [
 					} );
 					var proxy = new TestProxy();
 					
-					proxy.create( thisSuite.operation );
+					proxy.create( thisSuite.request );
 					expect( httpMethod ).toBe( 'POST' );
 				} );
 				
@@ -102,7 +102,7 @@ define( [
 					} );
 					var proxy = new TestProxy();
 					
-					proxy.create( thisSuite.operation );
+					proxy.create( thisSuite.request );
 					expect( httpMethod ).toBe( 'PUT' );
 				} );
 				
@@ -122,12 +122,12 @@ define( [
 					thisSuite.model = JsMockito.mock( Model );
 					thisSuite.reader = JsMockito.mock( ConcreteReader );
 					
-					thisSuite.operation = JsMockito.mock( ReadOperation );
-					JsMockito.when( thisSuite.operation ).getModelId().thenReturn( 1 );
+					thisSuite.request = JsMockito.mock( ReadRequest );
+					JsMockito.when( thisSuite.request ).getModelId().thenReturn( 1 );
 				} );
 				
 				
-				it( "read() should populate the provided ReadOperation with the data upon a successful ajax request", function() {
+				it( "read() should populate the provided ReadRequest with the data upon a successful ajax request", function() {
 					var testData = { attribute1: 'value1', attribute2: 'value2' };
 					var TestProxy = RestProxy.extend( {
 						ajax : function( options ) { 
@@ -142,11 +142,11 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.read( thisSuite.operation );
+					proxy.read( thisSuite.request );
 					
 					expect( testData ).toBe( resultSet.getRecords()[ 0 ] );  // orig YUI Test err msg: "The records provided to the ResultSet should have been the testData"
 					
-					JsMockito.verify( thisSuite.operation ).setResultSet( resultSet );
+					JsMockito.verify( thisSuite.request ).setResultSet( resultSet );
 				} );
 				
 			} );
@@ -160,8 +160,8 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.operation = JsMockito.mock( ReadOperation );
-					JsMockito.when( thisSuite.operation ).getModelId().thenReturn( 1 );
+					thisSuite.request = JsMockito.mock( ReadRequest );
+					JsMockito.when( thisSuite.request ).getModelId().thenReturn( 1 );
 				} );
 				
 				
@@ -175,7 +175,7 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.read( thisSuite.operation );
+					proxy.read( thisSuite.request );
 					
 					expect( httpMethod ).toBe( 'GET' );
 				} );
@@ -193,7 +193,7 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.read( thisSuite.operation );
+					proxy.read( thisSuite.request );
 					
 					expect( httpMethod ).toBe( 'POST' );
 				} );
@@ -213,8 +213,8 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.operation = JsMockito.mock( WriteOperation );
-					JsMockito.when( thisSuite.operation ).getModels().thenReturn( [ thisSuite.model ] );
+					thisSuite.request = JsMockito.mock( WriteRequest );
+					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
 				
@@ -230,7 +230,7 @@ define( [
 					JsMockito.when( thisSuite.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( {} );
 					
 					var proxy = new TestProxy();
-					proxy.update( thisSuite.operation );
+					proxy.update( thisSuite.request );
 					
 					expect( ajaxCallCount ).toBe( 0 );  // orig YUI Test err msg: "The proxy's ajax() method should not have not been called, since there are no changes"
 				} );
@@ -248,7 +248,7 @@ define( [
 					JsMockito.when( thisSuite.model ).getChanges( /*{ persistedOnly: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1' } );
 					
 					var proxy = new TestProxy();
-					proxy.update( thisSuite.operation );
+					proxy.update( thisSuite.request );
 					
 					expect( ajaxCallCount ).toBe( 1 );  // orig YUI Test err msg: "The proxy's ajax() method should have been called, since there are changes to persist"
 				} );
@@ -275,8 +275,8 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.operation = JsMockito.mock( WriteOperation );
-					JsMockito.when( thisSuite.operation ).getModels().thenReturn( [ thisSuite.model ] );
+					thisSuite.request = JsMockito.mock( WriteRequest );
+					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
 				
@@ -287,7 +287,7 @@ define( [
 					    completeCallCount = 0;
 					    
 					var proxy = new thisSuite.TestProxy();
-					proxy.update( thisSuite.operation )
+					proxy.update( thisSuite.request )
 						.done( function() { successCallCount++; } )
 						.always( function() { completeCallCount++; } );
 					
@@ -304,12 +304,12 @@ define( [
 					    completeCallCount = 0;
 					    
 					var proxy = new thisSuite.TestProxy();
-					proxy.update( thisSuite.operation )
+					proxy.update( thisSuite.request )
 						.done( function() { successCallCount++; } )
 						.always( function() { completeCallCount++; } );
 					
 					// Pretend the ajax request is successful
-					thisSuite.deferred.resolve( thisSuite.operation );
+					thisSuite.deferred.resolve( thisSuite.request );
 					
 					expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "The promise should have been resolved"
 					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "The promise should have been resolved"
@@ -323,12 +323,12 @@ define( [
 					    completeCallCount = 0;
 					
 					var proxy = new thisSuite.TestProxy();
-					proxy.update( thisSuite.operation )
+					proxy.update( thisSuite.request )
 						.fail( function() { errorCallCount++; } )
 						.always( function() { completeCallCount++; } );
 					
 					// Pretend the ajax request failed
-					thisSuite.deferred.reject( thisSuite.operation );
+					thisSuite.deferred.reject( thisSuite.request );
 					
 					expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "The promise should have been rejected"
 					expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "The promise should have been rejected"
@@ -345,8 +345,8 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.operation = JsMockito.mock( WriteOperation );
-					JsMockito.when( thisSuite.operation ).getModels().thenReturn( [ thisSuite.model ] );
+					thisSuite.request = JsMockito.mock( WriteRequest );
+					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
 				
@@ -362,7 +362,7 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.update( thisSuite.operation );
+					proxy.update( thisSuite.request );
 					
 					expect( httpMethod ).toBe( 'PUT' );
 				} );
@@ -382,7 +382,7 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.update( thisSuite.operation );
+					proxy.update( thisSuite.request );
 					
 					expect( httpMethod ).toBe( 'POST' );
 				} );
@@ -400,8 +400,8 @@ define( [
 					JsMockito.when( thisSuite.mockModel ).getData( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute1: 'value1', attribute2: 'value2' } );
 					JsMockito.when( thisSuite.mockModel ).getChanges( /*{ persistedOnly: true, raw: true, raw: true } Unfortunately, JsMockito won't match this*/ ).thenReturn( { attribute2: 'value2' } );  // 'attribute2' is the "change"
 					
-					thisSuite.operation = JsMockito.mock( WriteOperation );
-					JsMockito.when( thisSuite.operation ).getModels().thenReturn( [ thisSuite.mockModel ] );
+					thisSuite.request = JsMockito.mock( WriteRequest );
+					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.mockModel ] );
 				} );
 				
 				
@@ -417,7 +417,7 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.update( thisSuite.operation );
+					proxy.update( thisSuite.request );
 					
 					expect( _.keys( dataPersisted ).length ).toEqual( 2 );  // orig YUI Test err msg: "The dataPersisted have exactly 2 keys, one for each of the attributes in the model"
 					expect( dataPersisted.hasOwnProperty( 'attribute1' ) ).toBe( true );expect( dataPersisted.hasOwnProperty( 'attribute2' ) ).toBe( true );
@@ -438,7 +438,7 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.update( thisSuite.operation );
+					proxy.update( thisSuite.request );
 					
 					expect( _.keys( dataPersisted ).length ).toEqual( 1 );  // orig YUI Test err msg: "The dataPersisted have exactly 1 key, the one that was changed"
 					expect( dataPersisted.hasOwnProperty( 'attribute2' ) ).toBe( true );
@@ -460,15 +460,15 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.operation = JsMockito.mock( WriteOperation );
-					JsMockito.when( thisSuite.operation ).getModels().thenReturn( [ thisSuite.model ] );
+					thisSuite.request = JsMockito.mock( WriteRequest );
+					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
 				
 				it( "The promise returned by the proxy should be resolved if the ajax request is successful", function() {
-					var operation = thisSuite.operation;
+					var request = thisSuite.request;
 					var ajaxFn = function( options ) { 
-						return new jQuery.Deferred().resolve( operation ).promise();
+						return new jQuery.Deferred().resolve( request ).promise();
 					};
 					var TestProxy = Class.extend( RestProxy, {
 						ajax: ajaxFn
@@ -481,7 +481,7 @@ define( [
 					    completeCallCount = 0;
 					
 					var proxy = new TestProxy();
-					proxy.destroy( operation )
+					proxy.destroy( request )
 						.done( function() { successCallCount++; } )
 						.always( function() { completeCallCount++; } );
 						
@@ -491,9 +491,9 @@ define( [
 				
 				
 				it( "The promise returned by the proxy should be rejected if the ajax request fails", function() {
-					var operation = thisSuite.operation;
+					var request = thisSuite.request;
 					var ajaxFn = function( options ) { 
-						return new jQuery.Deferred().reject( operation ).promise();
+						return new jQuery.Deferred().reject( request ).promise();
 					};
 					var TestProxy = Class.extend( RestProxy, {
 						ajax: ajaxFn
@@ -506,7 +506,7 @@ define( [
 					    completeCallCount = 0;
 					
 					var proxy = new TestProxy();
-					proxy.destroy( operation )
+					proxy.destroy( request )
 						.fail( function() { errorCallCount++; } )
 						.always( function() { completeCallCount++; } );
 					
@@ -525,8 +525,8 @@ define( [
 					
 					thisSuite.model = JsMockito.mock( Model );
 					
-					thisSuite.operation = JsMockito.mock( WriteOperation );
-					JsMockito.when( thisSuite.operation ).getModels().thenReturn( [ thisSuite.model ] );
+					thisSuite.request = JsMockito.mock( WriteRequest );
+					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
 				} );
 				
 				
@@ -542,7 +542,7 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.destroy( thisSuite.operation );
+					proxy.destroy( thisSuite.request );
 					
 					expect( httpMethod ).toBe( 'DELETE' );
 				} );
@@ -562,7 +562,7 @@ define( [
 					} );
 					
 					var proxy = new TestProxy();
-					proxy.destroy( thisSuite.operation );
+					proxy.destroy( thisSuite.request );
 					
 					expect( httpMethod ).toBe( 'POST' );
 				} );

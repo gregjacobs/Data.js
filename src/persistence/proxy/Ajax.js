@@ -11,7 +11,7 @@ define( [
 	 * @class data.persistence.proxy.Ajax
 	 * @extends data.persistence.proxy.Proxy
 	 * 
-	 * Ajax proxy is responsible for performing CRUD operations through standard AJAX, using the url(s) configured,
+	 * Ajax proxy is responsible for performing CRUD requests through standard AJAX, using the url(s) configured,
 	 * and providing any parameters and such which are required for the backend service.
 	 * 
 	 * The Ajax proxy must be configured with the appropriate parameter names in order for it to automatically supply
@@ -161,13 +161,13 @@ define( [
 		/**
 		 * Creates the Model on the server.
 		 * 
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be created on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		create : function( operation ) {
+		create : function( request ) {
 			throw new Error( "create() not yet implemented" );
 		},
 		
@@ -175,31 +175,31 @@ define( [
 		/**
 		 * Reads one or more {@link data.Model Models} from the server.
 		 * 
-		 * @param {data.persistence.operation.Read} operation The ReadOperation instance that describes the 
+		 * @param {data.persistence.request.Read} request The ReadRequest instance that describes the 
 		 *   model(s) to be read from the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		read : function( operation ) {
+		read : function( request ) {
 			var me = this,  // for closures
-			    paramsObj = this.buildParams( 'read', operation ),
+			    paramsObj = this.buildParams( 'read', request ),
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
-				url      : this.buildUrl( 'read', operation ),
+				url      : this.buildUrl( 'read', request ),
 				type     : this.getHttpMethod( 'read' ),
-				data     : this.serializeParams( paramsObj, 'read', operation ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
+				data     : this.serializeParams( paramsObj, 'read', request ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
 				dataType : 'text'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					operation.setResultSet( me.reader.read( data ) );
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setResultSet( me.reader.read( data ) );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -211,13 +211,13 @@ define( [
 		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
 		 * are persisted.
 		 * 
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be updated on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		update : function( operation, options ) {
+		update : function( request, options ) {
 			throw new Error( "update() not yet implemented" );
 		},
 		
@@ -227,13 +227,13 @@ define( [
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		destroy : function( operation ) {
+		destroy : function( request ) {
 			throw new Error( "destroy() not yet implemented" );
 		},
 		
@@ -247,47 +247,47 @@ define( [
 		/**
 		 * Builds the full URL that will be used for any given CRUD (create, read, update, destroy) request. This will
 		 * be the base url provided by either the {@link #api} or {@link #url} configs, plus any parameters that need
-		 * to be added based on the `operation` provided.
+		 * to be added based on the `request` provided.
 		 * 
 		 * @protected
 		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {String} The full URL, with all parameters.
 		 */
-		buildUrl : function( action, operation ) {
+		buildUrl : function( action, request ) {
 			var url = this.getUrl( action );
 			
-			// Only add params explicitly to the URL when doing a create/update/destroy operation. For a 'read' 
-			// operation, params will be added conditionally to either the url or the post body based on the http 
+			// Only add params explicitly to the URL when doing a create/update/destroy request. For a 'read' 
+			// request, params will be added conditionally to either the url or the post body based on the http 
 			// method being used ('GET' or 'POST', handled in the read() method itself). 
 			if( action !== 'read' ) {
-				var params = this.buildParams( action, operation );
+				var params = this.buildParams( action, request );
 				
-				url = this.urlAppend( url, this.serializeParams( params, action, operation ) );
+				url = this.urlAppend( url, this.serializeParams( params, action, request ) );
 			}
 			return url;
 		},
 		
 		
 		/**
-		 * Builds the parameters for a given `operation`. By default, the `operation`'s params are combined
+		 * Builds the parameters for a given `request`. By default, the `request`'s params are combined
 		 * with the Proxy's {@link #defaultParams}, and then any additional parameters for paging and such are
 		 * added.
 		 * 
 		 * @protected
 		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {Object} An Object (map) of the parameters, where the keys are the parameter names,
 		 *   and the values are the parameter values.
 		 */
-		buildParams : function( action, operation ) {
-			var params = _.assign( {}, this.defaultParams, operation.getParams() || {} );   // build the params map
+		buildParams : function( action, request ) {
+			var params = _.assign( {}, this.defaultParams, request.getParams() || {} );   // build the params map
 			
-			// Add the model's `id` and the paging parameters for 'read' operations only
+			// Add the model's `id` and the paging parameters for 'read' requests only
 			if( action === 'read' ) {
-				var modelId = operation.getModelId(),
-				    page = operation.getPage(),
-				    pageSize = operation.getPageSize(),
+				var modelId = request.getModelId(),
+				    page = request.getPage(),
+				    pageSize = request.getPageSize(),
 				    pageParam = this.pageParam,
 				    pageSizeParam = this.pageSizeParam;
 				
@@ -307,23 +307,23 @@ define( [
 		
 		
 		/**
-		 * Serializes the parameters for an operation. The default implementation of this method is to serialize
+		 * Serializes the parameters for an request. The default implementation of this method is to serialize
 		 * them into a query string, but may be overridden to support other formats.
 		 * 
 		 * @protected
 		 * @param {Object} params The Object (map) of parameters to serialize. The keys of this map are the parameter names,
 		 *   and the values are the parameter values.
 		 * @param {String} action The action that is being taken. One of: 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {String} The serialized string of parameters.
 		 */
-		serializeParams : function( params, action, operation ) {
+		serializeParams : function( params, action, request ) {
 			return this.objToQueryString( params );
 		},
 		
 		
 		/**
-		 * Retrieves the URL to use for the given CRUD (create, read, update, destroy) operation. This is based on 
+		 * Retrieves the URL to use for the given CRUD (create, read, update, destroy) request. This is based on 
 		 * either the {@link #api} (if there is a URL defined for the given `action`), or otherwise, the {@link #url} config.
 		 * 
 		 * @protected

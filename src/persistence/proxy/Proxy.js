@@ -11,7 +11,7 @@ define( [
 	 * @class data.persistence.proxy.Proxy
 	 * @extends Observable
 	 * 
-	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) operations on
+	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) requests on
 	 * some sort of persistence medium. This can be a backend server, a webservice, or a local storage data store,
 	 * to name a few examples.
 	 */
@@ -121,10 +121,10 @@ define( [
 		 * 
 		 * @abstract
 		 * @method create
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
 		 *   the creation on the persistent storage.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
 		create : Class.abstractMethod,
@@ -135,10 +135,10 @@ define( [
 		 * 
 		 * @abstract
 		 * @method read
-		 * @param {data.persistence.operation.Read} operation The ReadOperation instance to represent
+		 * @param {data.persistence.request.Read} request The ReadRequest instance to represent
 		 *   the reading of data from the persistent storage.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
 		read : Class.abstractMethod,
@@ -149,10 +149,10 @@ define( [
 		 * 
 		 * @abstract
 		 * @method update
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
 		 *   the update on the persistent storage.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
 		update : Class.abstractMethod,
@@ -163,10 +163,10 @@ define( [
 		 * 
 		 * @abstract
 		 * @method destroy
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
 		 *   the destruction (deletion) on the persistent storage.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
 		destroy : Class.abstractMethod

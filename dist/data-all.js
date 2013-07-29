@@ -1444,7 +1444,7 @@ define( 'data/persistence/ResultSet',[
 	 * @extends Object
 	 * 
 	 * Simple wrapper which holds the data returned by any {@link data.persistence.proxy.Proxy Proxy} 
-	 * operation, along with any metadata such as the total number of data records in a windowed 
+	 * request, along with any metadata such as the total number of data records in a windowed 
 	 * data set.
 	 */
 	var Reader = Class.extend( Object, {
@@ -2034,7 +2034,7 @@ define( 'data/persistence/proxy/Proxy',[
 	 * @class data.persistence.proxy.Proxy
 	 * @extends Observable
 	 * 
-	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) operations on
+	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) requests on
 	 * some sort of persistence medium. This can be a backend server, a webservice, or a local storage data store,
 	 * to name a few examples.
 	 */
@@ -2144,10 +2144,10 @@ define( 'data/persistence/proxy/Proxy',[
 		 * 
 		 * @abstract
 		 * @method create
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
 		 *   the creation on the persistent storage.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
 		create : Class.abstractMethod,
@@ -2158,10 +2158,10 @@ define( 'data/persistence/proxy/Proxy',[
 		 * 
 		 * @abstract
 		 * @method read
-		 * @param {data.persistence.operation.Read} operation The ReadOperation instance to represent
+		 * @param {data.persistence.request.Read} request The ReadRequest instance to represent
 		 *   the reading of data from the persistent storage.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
 		read : Class.abstractMethod,
@@ -2172,10 +2172,10 @@ define( 'data/persistence/proxy/Proxy',[
 		 * 
 		 * @abstract
 		 * @method update
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
 		 *   the update on the persistent storage.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
 		update : Class.abstractMethod,
@@ -2186,10 +2186,10 @@ define( 'data/persistence/proxy/Proxy',[
 		 * 
 		 * @abstract
 		 * @method destroy
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance to represent
+		 * @param {data.persistence.request.Write} request The WriteRequest instance to represent
 		 *   the destruction (deletion) on the persistent storage.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
 		destroy : Class.abstractMethod
@@ -2200,35 +2200,35 @@ define( 'data/persistence/proxy/Proxy',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Operation',[
+define( 'data/persistence/request/Request',[
 	'lodash',
 	'Class'
 ], function( _, Class ) {
 	
 	/**
 	 * @abstract
-	 * @class data.persistence.operation.Operation
+	 * @class data.persistence.request.Request
 	 * 
-	 * Represents an operation for a {@link data.persistence.proxy.Proxy} to carry out. This class basically represents 
-	 * any CRUD operation to be performed, passes along any options needed for that operation, and accepts any data/state
-	 * as a result of that operation. 
+	 * Represents an request for a {@link data.persistence.proxy.Proxy} to carry out. This class basically represents 
+	 * any CRUD request to be performed, passes along any options needed for that request, and accepts any data/state
+	 * as a result of that request. 
 	 * 
-	 * Operation's subclasses are split into two distinct implementations:
+	 * Request's subclasses are split into two distinct implementations:
 	 * 
-	 * - {@link data.persistence.operation.Read}: Represents an Operation to read (load) data from persistence storage.
-	 * - {@link data.persistence.operation.Write}: Represents an Operation to write (store) data to persistence storage.
+	 * - {@link data.persistence.request.Read}: Represents an Request to read (load) data from persistence storage.
+	 * - {@link data.persistence.request.Write}: Represents an Request to write (store) data to persistence storage.
 	 *   This includes destroying (deleting) models as well.
 	 * 
 	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} operations 
-	 * complete, so information can be obtained about the operation that took place.
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
+	 * complete, so information can be obtained about the request that took place.
 	 */
-	var Operation = Class.extend( Object, {
+	var Request = Class.extend( Object, {
 		
 		/**
 		 * @cfg {Object} params
 		 * 
-		 * A map of any parameters to pass along for the Operation. These parameters will be interpreted by the
+		 * A map of any parameters to pass along for the Request. These parameters will be interpreted by the
 		 * particular {@link data.persistence.proxy.Proxy} that is being used. For example, the 
 		 * {@link data.persistence.proxy.Ajax Ajax} proxy appends them as URL parameters for the request.
 		 * 
@@ -2245,13 +2245,13 @@ define( 'data/persistence/operation/Operation',[
 		 * @protected
 		 * @property {data.persistence.ResultSet} resultSet
 		 * 
-		 * A ResultSet object which contains any data read by the Operation. This object contains any 
+		 * A ResultSet object which contains any data read by the Request. This object contains any 
 		 * returned data, as well as any metadata (such as the total number of records in a paged data set).
 		 * This object is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine, and can be 
 		 * retrieved via {@link #getResultSet}. Some notes:
 		 * 
-		 * - For cases of read operations, this object will contain the data that is read by the operation.
-		 * - For cases of write operations, this object will contain any "update" data that is returned to the
+		 * - For cases of read requests, this object will contain the data that is read by the request.
+		 * - For cases of write requests, this object will contain any "update" data that is returned to the
 		 *   Proxy when it completes its routine. For example, if a REST server returns the updated
 		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
 		 *   id attribute), then the ResultSet will contain that data.
@@ -2262,7 +2262,7 @@ define( 'data/persistence/operation/Operation',[
 		 * @private
 		 * @property {Boolean} success
 		 * 
-		 * Property which is set to true upon successful completion of the Operation. Read
+		 * Property which is set to true upon successful completion of the Request. Read
 		 * this value with {@link #wasSuccessful}.
 		 */
 		success : false,
@@ -2271,7 +2271,7 @@ define( 'data/persistence/operation/Operation',[
 		 * @private
 		 * @property {Boolean} error
 		 * 
-		 * Property which is set to true upon failure to complete the Operation. Read this value
+		 * Property which is set to true upon failure to complete the Request. Read this value
 		 * with {@link #hasErrored}.
 		 */
 		error : false,
@@ -2296,7 +2296,7 @@ define( 'data/persistence/operation/Operation',[
 		
 		
 		/**
-		 * Retrieves the {@link #params} for this Operation. Returns an empty
+		 * Retrieves the {@link #params} for this Request. Returns an empty
 		 * object if no params were provided.
 		 * 
 		 * @return {Object}
@@ -2308,7 +2308,7 @@ define( 'data/persistence/operation/Operation',[
 		
 		/**
 		 * Accessor for a Proxy to set a ResultSet which contains the data that is has read, 
-		 * once the operation completes.
+		 * once the request completes.
 		 * 
 		 * @param {data.persistence.ResultSet} resultSet A ResultSet which contains the data and any metadata read by 
 		 *   the Proxy.
@@ -2320,10 +2320,10 @@ define( 'data/persistence/operation/Operation',[
 		
 		/**
 		 * Retrieves the {@link data.persistence.ResultSet} containing any data and metadata read by the 
-		 * Operation. This is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine.  
+		 * Request. This is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine.  
 		 * 
-		 * - For cases of read operations, this object will contain the data that is read by the operation.
-		 * - For cases of write operations, this object will contain any "update" data that is returned to the
+		 * - For cases of read requests, this object will contain the data that is read by the request.
+		 * - For cases of write requests, this object will contain any "update" data that is returned to the
 		 *   Proxy when it completes its routine. For example, if a REST server returns the updated
 		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
 		 *   id attribute), then the ResultSet will contain that data.
@@ -2336,7 +2336,7 @@ define( 'data/persistence/operation/Operation',[
 		
 		
 		/**
-		 * Marks the Operation as successful.
+		 * Marks the Request as successful.
 		 */
 		setSuccess : function() {
 			this.success = true;
@@ -2344,7 +2344,7 @@ define( 'data/persistence/operation/Operation',[
 		
 		
 		/**
-		 * Determines if the Operation completed successfully.
+		 * Determines if the Request completed successfully.
 		 * 
 		 * @return {Boolean}
 		 */
@@ -2354,7 +2354,7 @@ define( 'data/persistence/operation/Operation',[
 		
 		
 		/**
-		 * Marks the Operation as having errored, and sets an exception object that describes the exception
+		 * Marks the Request as having errored, and sets an exception object that describes the exception
 		 * that has occurred.
 		 * 
 		 * @param {String/Object} exception An object or string describing the exception that occurred.
@@ -2366,10 +2366,10 @@ define( 'data/persistence/operation/Operation',[
 		
 		
 		/**
-		 * Retrieves any exception object attached for an errored Operation.
+		 * Retrieves any exception object attached for an errored Request.
 		 * 
 		 * @return {String/Object} The {@link #exception} object or string which describes
-		 *   the exception that occurred for an errored Operation.
+		 *   the exception that occurred for an errored Request.
 		 */
 		getException : function() {
 			return this.exception;
@@ -2377,7 +2377,7 @@ define( 'data/persistence/operation/Operation',[
 		
 		
 		/**
-		 * Determines if the Operation failed to complete successfully.
+		 * Determines if the Request failed to complete successfully.
 		 * 
 		 * @return {Boolean}
 		 */
@@ -2387,7 +2387,7 @@ define( 'data/persistence/operation/Operation',[
 		
 		
 		/**
-		 * Determines if the Operation is complete.
+		 * Determines if the Request is complete.
 		 * 
 		 * @return {Boolean}
 		 */
@@ -2397,27 +2397,27 @@ define( 'data/persistence/operation/Operation',[
 		
 	} );
 	
-	return Operation;
+	return Request;
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Read',[
+define( 'data/persistence/request/Read',[
 	'lodash',
 	'Class',
-	'data/persistence/operation/Operation'
-], function( _, Class, Operation ) {
+	'data/persistence/request/Request'
+], function( _, Class, Request ) {
 	
 	/**
-	 * @class data.persistence.operation.Read
-	 * @extends data.persistence.operation.Operation
+	 * @class data.persistence.request.Read
+	 * @extends data.persistence.request.Request
 	 * 
-	 * Represents a read operation from a persistent storage mechanism. 
+	 * Represents a read request from a persistent storage mechanism. 
 	 * 
 	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} operations 
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
 	 * complete.
 	 */
-	var ReadOperation = Class.extend( Operation, {
+	var ReadRequest = Class.extend( Request, {
 		
 		/**
 		 * @cfg {Number/String} modelId
@@ -2512,38 +2512,38 @@ define( 'data/persistence/operation/Read',[
 		
 	} );
 	
-	return ReadOperation;
+	return ReadRequest;
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Write',[
+define( 'data/persistence/request/Write',[
 	'lodash',
 	'Class',
-	'data/persistence/operation/Operation'
-], function( _, Class, Operation ) {
+	'data/persistence/request/Request'
+], function( _, Class, Request ) {
 	
 	/**
-	 * @class data.persistence.operation.Write
-	 * @extends data.persistence.operation.Operation
+	 * @class data.persistence.request.Write
+	 * @extends data.persistence.request.Request
 	 * 
-	 * Represents a write operation to a persistent storage mechanism. This includes creating, updating, or destroying
+	 * Represents a write request to a persistent storage mechanism. This includes creating, updating, or destroying
 	 * (deleting) models on the persistent storage.
 	 * 
 	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} operations 
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
 	 * complete.
 	 */
-	var WriteOperation = Class.extend( Operation, {
+	var WriteRequest = Class.extend( Request, {
 		
 		/**
 		 * @cfg {data.Model[]} models
 		 * 
-		 * The models to write during the WriteOperation.
+		 * The models to write during the WriteRequest.
 		 */
 		
 		
 		/**
-		 * Retrieves the {@link #models} provided for this WriteOperation.
+		 * Retrieves the {@link #models} provided for this WriteRequest.
 		 * 
 		 * @return {data.Model[]}
 		 */
@@ -2553,7 +2553,7 @@ define( 'data/persistence/operation/Write',[
 		
 	} );
 	
-	return WriteOperation;
+	return WriteRequest;
 	
 } );
 /*global define */
@@ -4022,8 +4022,8 @@ define( 'data/Model',[
 	'data/DataComponent',
 	
 	'data/persistence/proxy/Proxy',
-	'data/persistence/operation/Read',
-	'data/persistence/operation/Write',
+	'data/persistence/request/Read',
+	'data/persistence/request/Write',
 	
 	'data/attribute/Attribute',
 	'data/attribute/DataComponent',
@@ -4053,8 +4053,8 @@ define( 'data/Model',[
 	DataComponent,
 	
 	Proxy,
-	ReadOperation,
-	WriteOperation,
+	ReadRequest,
+	WriteRequest,
 	
 	Attribute,
 	DataComponentAttribute,
@@ -4440,12 +4440,12 @@ define( 'data/Model',[
 				 * through its {@link #proxy}.
 				 * 
 				 * This event fires for both successful and failed "load" requests. Success of the load request may 
-				 * be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful} 
+				 * be determined using the `request`'s {@link data.persistence.request.Request#wasSuccessful wasSuccessful} 
 				 * method.
 				 * 
 				 * @event load
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.operation.Read} operation The ReadOperation object for the load request.
+				 * @param {data.persistence.request.Read} request The ReadRequest object for the load request.
 				 */
 				'load',
 				
@@ -4463,12 +4463,12 @@ define( 'data/Model',[
 				 * through its {@link #proxy}.
 				 * 
 				 * This event fires for both successful and failed "save" requests. Success of the save request may 
-				 * be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful} 
+				 * be determined using the `request`'s {@link data.persistence.request.Request#wasSuccessful wasSuccessful} 
 				 * method.
 				 * 
 				 * @event save
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.operation.Write} operation The WriteOperation object for the save request.
+				 * @param {data.persistence.request.Write} request The WriteRequest object for the save request.
 				 */
 				'save',
 				
@@ -4487,7 +4487,7 @@ define( 'data/Model',[
 				 * 
 				 * @event destroy
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.operation.Write} operation The WriteOperation object for the destroy request.
+				 * @param {data.persistence.request.Write} request The WriteRequest object for the destroy request.
 				 */
 				'destroy'
 			);
@@ -5187,11 +5187,11 @@ define( 'data/Model',[
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link data.Model} This Model instance.
-		 * - `operation` : {@link data.persistence.operation.Read} The ReadOperation that was executed.
+		 * - `request` : {@link data.persistence.request.Read} The ReadRequest that was executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.failure] Function to call if the save fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
@@ -5230,10 +5230,10 @@ define( 'data/Model',[
 			
 			// Make a request to load the data from the proxy
 			var me = this,  // for closures
-			    operation = new ReadOperation( { modelId: this.getId(), params: options.params } );
-			this.proxy.read( operation ).then(
-				function( operation ) { me.onLoadSuccess( deferred, operation ); },
-				function( operation ) { me.onLoadError( deferred, operation ); }
+			    request = new ReadRequest( { modelId: this.getId(), params: options.params } );
+			this.proxy.read( request ).then(
+				function( request ) { me.onLoadSuccess( deferred, request ); },
+				function( request ) { me.onLoadError( deferred, request ); }
 			);
 			
 			return deferred.promise();
@@ -5249,16 +5249,16 @@ define( 'data/Model',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-load} method. This 
 		 *   Deferred will be resolved after post-processing of the successful load is complete.
-		 * @param {data.persistence.operation.Read} operation The ReadOperation object which represents the load.
+		 * @param {data.persistence.request.Read} request The ReadRequest object which represents the load.
 		 */
-		onLoadSuccess : function( deferred, operation ) {
-			this.set( operation.getResultSet().getRecords()[ 0 ] );
+		onLoadSuccess : function( deferred, request ) {
+			this.set( request.getResultSet().getRecords()[ 0 ] );
 			this.loading = false;
 			
 			this.commit();
 			
-			deferred.resolve( this, operation ); 
-			this.fireEvent( 'load', this, operation );
+			deferred.resolve( this, request ); 
+			this.fireEvent( 'load', this, request );
 		},
 		
 		
@@ -5271,13 +5271,13 @@ define( 'data/Model',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-load} method. This 
 		 *   Deferred will be rejected after any post-processing.
-		 * @param {data.persistence.operation.Read} operation The ReadOperation object which represents the load.
+		 * @param {data.persistence.request.Read} request The ReadRequest object which represents the load.
 		 */
-		onLoadError : function( deferred, operation ) {
+		onLoadError : function( deferred, request ) {
 			this.loading = false;
 			
-			deferred.reject( this, operation );
-			this.fireEvent( 'load', this, operation );
+			deferred.reject( this, request );
+			this.fireEvent( 'load', this, request );
 		},
 		
 		
@@ -5288,7 +5288,7 @@ define( 'data/Model',[
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link data.Model} This Model instance.
-		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
+		 * - `request` : {@link data.persistence.request.Write} The WriteRequest that was executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Boolean} [options.syncRelated=true] `true` to synchronize (persist) the "related" child models/collections 
@@ -5300,7 +5300,7 @@ define( 'data/Model',[
 		 *   Set to `false` to only save the data in this Model, leaving any related child models/collections to be persisted 
 		 *   individually, at another time.
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.error] Function to call if the save fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
@@ -5423,7 +5423,7 @@ define( 'data/Model',[
 			var me = this,   // for closures
 			    deferred = new jQuery.Deferred();
 			
-			// Store a "snapshot" of the data that is being persisted. This is used to compare against the Model's current data at the time of when the persistence operation 
+			// Store a "snapshot" of the data that is being persisted. This is used to compare against the Model's current data at the time of when the persistence operation
 			// completes. Anything that does not match this persisted snapshot data must have been updated while the persistence operation was in progress, and the Model must 
 			// be considered modified for those attributes after its commit() runs. This is a bit roundabout that a commit() operation runs when the persistence operation is complete
 			// and then data is manually modified, but this is also the correct time to run the commit() operation, as we still want to see the changes if the request fails. 
@@ -5450,13 +5450,13 @@ define( 'data/Model',[
 			
 			
 			// Make a request to create or update the data on the server
-			var writeOperation = new WriteOperation( {
+			var writeRequest = new WriteRequest( {
 				models : [ this ],
 				params : options.params
 			} );
-			this.proxy[ this.isNew() ? 'create' : 'update' ]( writeOperation ).then(
-				function( operation ) { handleServerUpdate( operation.getResultSet() ); me.onSaveSuccess( deferred, operation ); },
-				function( operation ) { me.onSaveError( deferred, operation ); }
+			this.proxy[ this.isNew() ? 'create' : 'update' ]( writeRequest ).then(
+				function( request ) { handleServerUpdate( request.getResultSet() ); me.onSaveSuccess( deferred, request ); },
+				function( request ) { me.onSaveError( deferred, request ); }
 			);
 			
 			return deferred.promise();  // return only the observable Promise object of the Deferred
@@ -5472,13 +5472,13 @@ define( 'data/Model',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-save} method. This 
 		 *   Deferred will be resolved after post-processing of the successful save is complete.
-		 * @param {data.persistence.operation.Write} operation The WriteOperation object which represents the save.
+		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the save.
 		 */
-		onSaveSuccess : function( deferred, operation ) {
+		onSaveSuccess : function( deferred, request ) {
 			this.saving = false;
 			
-			deferred.resolve( this, operation ); 
-			this.fireEvent( 'save', this, operation );
+			deferred.resolve( this, request ); 
+			this.fireEvent( 'save', this, request );
 		},
 		
 		
@@ -5491,13 +5491,13 @@ define( 'data/Model',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-save} method. This 
 		 *   Deferred will be rejected after post-processing of the successful save is complete.
-		 * @param {data.persistence.operation.Write} operation The WriteOperation object which represents the save.
+		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the save.
 		 */
-		onSaveError : function( deferred, operation ) {
+		onSaveError : function( deferred, request ) {
 			this.saving = false;
 			
-			deferred.reject( this, operation );
-			this.fireEvent( 'save', this, operation );
+			deferred.reject( this, request );
+			this.fireEvent( 'save', this, request );
 		},
 		
 		
@@ -5508,11 +5508,11 @@ define( 'data/Model',[
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link data.Model} This Model instance.
-		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
+		 * - `request` : {@link data.persistence.request.Write} The WriteRequest that was executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Function} [options.success] Function to call if the destroy (deletion) is successful.
 		 * @param {Function} [options.error] Function to call if the destroy (deletion) fails.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
@@ -5549,21 +5549,21 @@ define( 'data/Model',[
 			this.destroying = true;
 			this.fireEvent( 'destroybegin', this );
 			
-			var operation = new WriteOperation( {
+			var request = new WriteRequest( {
 				models : [ this ],
 				params : options.params
 			} );
 			
 			if( this.isNew() ) {
 				// If it is a new model, there is nothing on the server to destroy. Simply fire the event and call the callback.
-				operation.setSuccess();  // would normally be set by the proxy if we were making a request to it
-				this.onDestroySuccess( deferred, operation );
+				request.setSuccess();  // would normally be set by the proxy if we were making a request to it
+				this.onDestroySuccess( deferred, request );
 				
 			} else {
 				// Make a request to destroy the data on the server
-				this.proxy.destroy( operation ).then(
-					function( operation ) { me.onDestroySuccess( deferred, operation ); },
-					function( operation ) { me.onDestroyError( deferred, operation ); }
+				this.proxy.destroy( request ).then(
+					function( request ) { me.onDestroySuccess( deferred, request ); },
+					function( request ) { me.onDestroyError( deferred, request ); }
 				);
 			}
 			
@@ -5580,14 +5580,14 @@ define( 'data/Model',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
 		 *   Deferred will be resolved after post-processing of the successful destroy is complete.
-		 * @param {data.persistence.operation.Write} operation The WriteOperation object which represents the destroy.
+		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the destroy.
 		 */
-		onDestroySuccess : function( deferred, operation ) {
+		onDestroySuccess : function( deferred, request ) {
 			this.destroying = false;
 			this.destroyed = true;
 			
-			deferred.resolve( this, operation ); 
-			this.fireEvent( 'destroy', this, operation );
+			deferred.resolve( this, request ); 
+			this.fireEvent( 'destroy', this, request );
 		},
 		
 		
@@ -5600,13 +5600,13 @@ define( 'data/Model',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
 		 *   Deferred will be rejected after post-processing of the successful destroy is complete.
-		 * @param {data.persistence.operation.Write} operation The WriteOperation object which represents the destroy.
+		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the destroy.
 		 */
-		onDestroyError : function( deferred, operation ) {
+		onDestroyError : function( deferred, request ) {
 			this.destroying = false;
 			
-			deferred.reject( this, operation );
-			this.fireEvent( 'destroy', this, operation );
+			deferred.reject( this, request );
+			this.fireEvent( 'destroy', this, request );
 		},
 		
 		
@@ -5838,24 +5838,24 @@ define( 'data/NativeObjectConverter',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Batch',[
+define( 'data/persistence/request/Batch',[
 	'lodash',
 	'Class'
 ], function( _, Class ) {
 	
 	/**
-	 * @class data.persistence.operation.Batch
+	 * @class data.persistence.request.Batch
 	 * 
-	 * Represents one or more {@link data.persistence.operation.Operation Operations} which were executed in a logical
+	 * Represents one or more {@link data.persistence.request.Request Requests} which were executed in a logical
 	 * group.
 	 * 
-	 * The Batch object provides access to each internal {@link data.persistence.operation.Operation Operation}, and provides
-	 * methods for determining the overall success or failure (error) state of the Operations within it. 
+	 * The Batch object provides access to each internal {@link data.persistence.request.Request Request}, and provides
+	 * methods for determining the overall success or failure (error) state of the Requests within it. 
 	 * 
 	 * The Batch object is also itself a Promise object, where {@link #done}, {@link #fail}, and {@link #always} callbacks may 
-	 * be attached to listen for the completion or failure of the Batch of Operations as a whole.
+	 * be attached to listen for the completion or failure of the Batch of Requests as a whole.
 	 */
-	var OperationBatch = Class.extend( Object, {
+	var RequestBatch = Class.extend( Object, {
 		
 		statics : {
 			
@@ -5864,7 +5864,7 @@ define( 'data/persistence/operation/Batch',[
 			 * @static
 			 * @property {Number} idCounter
 			 * 
-			 * The counter used to create unique, increasing IDs for OperationBatch instances. 
+			 * The counter used to create unique, increasing IDs for RequestBatch instances. 
 			 */
 			idCounter : 0
 			
@@ -5872,9 +5872,9 @@ define( 'data/persistence/operation/Batch',[
 		
 		
 		/**
-		 * @cfg {data.persistence.operation.Operation/data.persistence.operation.Operation[]} operations
+		 * @cfg {data.persistence.request.Request/data.persistence.request.Request[]} requests
 		 * 
-		 * One or more Operation(s) that make up the Batch.
+		 * One or more Request(s) that make up the Batch.
 		 */
 		
 		
@@ -5882,9 +5882,9 @@ define( 'data/persistence/operation/Batch',[
 		 * @private
 		 * @property {Number} id
 		 * 
-		 * The OperationBatch's ID. This is a unique number for each OperationBatch that is created, and its value
-		 * is ever-increasing. This means that an OperationBatch object created after another OperationBatch
-		 * will have a higher ID value than the first OperationBatch. 
+		 * The RequestBatch's ID. This is a unique number for each RequestBatch that is created, and its value
+		 * is ever-increasing. This means that an RequestBatch object created after another RequestBatch
+		 * will have a higher ID value than the first RequestBatch. 
 		 * 
 		 * This property of the ID value is used to determine when an older request has completed after a newer one.
 		 */
@@ -5897,15 +5897,15 @@ define( 'data/persistence/operation/Batch',[
 		constructor : function( cfg ) {
 			_.assign( this, cfg );
 			
-			this.id = ++OperationBatch.idCounter;
+			this.id = ++RequestBatch.idCounter;
 			
-			// normalize the `operations` config to an array
-			this.operations = ( this.operations ) ? [].concat( this.operations ) : [];
+			// normalize the `requests` config to an array
+			this.requests = ( this.requests ) ? [].concat( this.requests ) : [];
 		},
 		
 		
 		/**
-		 * Retrieves the OperationBatch's {@link #id}.
+		 * Retrieves the RequestBatch's {@link #id}.
 		 * 
 		 * @return {Number}
 		 */
@@ -5915,28 +5915,28 @@ define( 'data/persistence/operation/Batch',[
 		
 		
 		/**
-		 * Retrieves all of the {@link #operations} for this Batch. 
+		 * Retrieves all of the {@link #requests} for this Batch. 
 		 * 
-		 * @return {data.persistence.operation.Operation[]}
+		 * @return {data.persistence.request.Request[]}
 		 */
-		getOperations : function() {
-			return this.operations;
+		getRequests : function() {
+			return this.requests;
 		},
 		
 		
 		/**
-		 * Determines if the Batch of {@link #operations} completed successfully. All {@link #operations}
+		 * Determines if the Batch of {@link #requests} completed successfully. All {@link #requests}
 		 * must have completed successfully for the Batch to be considered successful.
 		 * 
 		 * @return {Boolean}
 		 */
 		wasSuccessful : function() {
-			return !_.find( this.operations, function( op ) { return op.hasErrored(); } );  // _.find() returns `undefined` if no errored operations are found
+			return !_.find( this.requests, function( op ) { return op.hasErrored(); } );  // _.find() returns `undefined` if no errored requests are found
 		},
 		
 		
 		/**
-		 * Determines if the Batch failed to complete successfully. If any of the {@link #operations}
+		 * Determines if the Batch failed to complete successfully. If any of the {@link #requests}
 		 * has errored, this method returns true.
 		 * 
 		 * @return {Boolean}
@@ -5947,39 +5947,39 @@ define( 'data/persistence/operation/Batch',[
 		
 		
 		/**
-		 * Retrieves each {@link data.persistence.operation.Operation Operation} object that has completed
+		 * Retrieves each {@link data.persistence.request.Request Request} object that has completed
 		 * successfully.
 		 * 
-		 * @return {data.persistence.operation.Operation[]} An array of the Operations which have completed
+		 * @return {data.persistence.request.Request[]} An array of the Requests which have completed
 		 *   successfully.
 		 */
-		getSuccessfulOperations : function() {
-			return _.filter( this.operations, function( op ) { return !op.hasErrored(); } );
+		getSuccessfulRequests : function() {
+			return _.filter( this.requests, function( op ) { return !op.hasErrored(); } );
 		},
 		
 		
 		/**
-		 * Retrieves each {@link data.persistence.operation.Operation Operation} object that has errored.
+		 * Retrieves each {@link data.persistence.request.Request Request} object that has errored.
 		 * 
-		 * @return {data.persistence.operation.Operation[]} An array of the Operations which have errored.
+		 * @return {data.persistence.request.Request[]} An array of the Requests which have errored.
 		 */
-		getErroredOperations : function() {
-			return _.filter( this.operations, function( op ) { return op.hasErrored(); } );
+		getErroredRequests : function() {
+			return _.filter( this.requests, function( op ) { return op.hasErrored(); } );
 		},
 		
 		
 		/**
-		 * Determines if all {@link data.persistence.operation.Operation Operations} in the batch are complete.
+		 * Determines if all {@link data.persistence.request.Request Requests} in the batch are complete.
 		 * 
-		 * @return {Boolean} `true` if all Operations are complete, `false` if any are not yet complete.
+		 * @return {Boolean} `true` if all Requests are complete, `false` if any are not yet complete.
 		 */
 		isComplete : function() {
-			return _.all( this.operations, function( op ) { return op.isComplete(); } );
+			return _.all( this.requests, function( op ) { return op.isComplete(); } );
 		}
 		
 	} );
 	
-	return OperationBatch;
+	return RequestBatch;
 	
 } );
 /*global define */
@@ -5991,9 +5991,9 @@ define( 'data/Collection',[
 	'data/Data',
 	'data/DataComponent',
 	'data/NativeObjectConverter',
-	'data/persistence/operation/Read',
-	'data/persistence/operation/Write',
-	'data/persistence/operation/Batch',
+	'data/persistence/request/Read',
+	'data/persistence/request/Write',
+	'data/persistence/request/Batch',
 	'data/persistence/proxy/Proxy',
 	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
 ], function(
@@ -6004,9 +6004,9 @@ define( 'data/Collection',[
 	Data,
 	DataComponent,
 	NativeObjectConverter,
-	ReadOperation,
-	WriteOperation,
-	OperationBatch,
+	ReadRequest,
+	WriteRequest,
+	RequestBatch,
 	Proxy
 ) {
 
@@ -6342,16 +6342,16 @@ define( 'data/Collection',[
 				/**
 				 * Fires when the Collection is loaded from an external data source, through its {@link #proxy}.
 				 * 
-				 * This event fires for both successful and failed "load" requests. Success of the load request may 
-				 * be determined using the `batch`'s {@link data.persistence.operation.Batch#wasSuccessful wasSuccessful} 
-				 * method. Note that all Operations may not be {@link data.persistence.operation.Operation#isComplete complete}
-				 * when this event fires if one or more Operations in the `batch` have errored.
+				 * This event fires for both successful and failed "load" operations. Success of the load operation may 
+				 * be determined using the `batch`'s {@link data.persistence.request.Batch#wasSuccessful wasSuccessful} 
+				 * method. Note that all Requests may not be {@link data.persistence.request.Request#isComplete complete}
+				 * when this event fires if one or more Requests in the `batch` have errored.
 				 * 
 				 * @event load
 				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.persistence.operation.Batch} batch The Batch object which holds the 
-				 *   {@link data.persistence.operation.Operation Operations} that were required to execute the load request. 
-				 *   In most cases, this object will hold just one Operation.
+				 * @param {data.persistence.request.Batch} batch The Batch object which holds the 
+				 *   {@link data.persistence.request.Request Requests} that were required to execute the load request. 
+				 *   In most cases, this object will hold just one Request.
 				 */
 				'load'
 			);
@@ -7100,12 +7100,12 @@ define( 'data/Collection',[
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `batch` : {@link data.persistence.operation.Batch} The Batch of {@link data.persistence.operation.Read Read Operation(s)}
+		 * - `batch` : {@link data.persistence.request.Batch} The Batch of {@link data.persistence.request.Read Read Request(s)}
 		 *   that were executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels=false] `true` to add the loaded models to the Collection instead of 
 		 *   replacing the existing ones. 
 		 * @param {Function} [options.success] Function to call if the loading is successful.
@@ -7126,15 +7126,15 @@ define( 'data/Collection',[
 				options = this.normalizeLoadOptions( options );
 				var me = this,  // for closures
 				    deferred = new jQuery.Deferred(),
-				    operation = new ReadOperation( { params: options.params } ),
-				    batch = new OperationBatch( { operations: operation } );
+				    request = new ReadRequest( { params: options.params } ),
+				    batch = new RequestBatch( { requests: request } );
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
 				deferred.done( options.success ).fail( options.error ).always( options.complete );
 				
-				this.doLoad( operation ).then(
-					function( operation ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
-					function( operation ) { me.onLoadError( deferred, batch ); }
+				this.doLoad( request ).then(
+					function( request ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
+					function( request ) { me.onLoadError( deferred, batch ); }
 				);
 				return deferred.promise();
 			}
@@ -7156,14 +7156,14 @@ define( 'data/Collection',[
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `batch` : {@link data.persistence.operation.Batch} The Batch of {@link data.persistence.operation.Read Read Operation(s)}
+		 * - `batch` : {@link data.persistence.request.Batch} The Batch of {@link data.persistence.request.Read Read Request(s)}
 		 *   that were executed.
 		 * 
 		 * @param {Number} startIdx The starting index of the range of models to load.
 		 * @param {Number} endIdx The ending index of the range of models to load.
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request(s). See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
 		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config
 		 *   if page-based loading is being used (i.e. there is a {@link #pageSize} config), or defaults to false otherwise.
@@ -7188,7 +7188,7 @@ define( 'data/Collection',[
 				
 			} else {
 				options = this.normalizeLoadOptions( options );
-				var operation = new ReadOperation( {
+				var request = new ReadRequest( {
 					params : options.params,
 					
 					start : startIdx,
@@ -7197,14 +7197,14 @@ define( 'data/Collection',[
 				
 				var me = this,  // for closures
 				    deferred = new jQuery.Deferred(),
-				    batch = new OperationBatch( { operations: operation } );
+				    batch = new RequestBatch( { requests: request } );
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
 				deferred.done( options.success ).fail( options.error ).always( options.complete );
 				
-				this.doLoad( operation ).then(
-					function( operation ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
-					function( operation ) { me.onLoadError( deferred, batch ); }
+				this.doLoad( request ).then(
+					function( request ) { me.onLoadSuccess( deferred, batch, { addModels: !!options.addModels } ); },
+					function( request ) { me.onLoadError( deferred, batch ); }
 				);
 				return deferred.promise();
 			}
@@ -7222,13 +7222,13 @@ define( 'data/Collection',[
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `batch` : {@link data.persistence.operation.Batch} The Batch of {@link data.persistence.operation.Read Read Operation(s)}
+		 * - `batch` : {@link data.persistence.request.Batch} The Batch of {@link data.persistence.request.Read Read Request(s)}
 		 *   that were executed.
 		 * 
 		 * @param {Number} page The 1-based page number of data to load. Page `1` is the first page.
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
 		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
@@ -7262,14 +7262,14 @@ define( 'data/Collection',[
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `batch` : {@link data.persistence.operation.Batch} The Batch of {@link data.persistence.operation.Read Read Operation(s)}
+		 * - `batch` : {@link data.persistence.request.Batch} The Batch of {@link data.persistence.request.Read Read Request(s)}
 		 *   that were executed.
 		 * 
 		 * @param {Number} startPage The 1-based page number of the first page of data to load. Page `1` is the first page.
 		 * @param {Number} endPage The 1-based page number of the last page of data to load. Page `1` is the first page.
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the operation. See {@link data.persistence.operation.Operation#params} for details.
+		 *   for the request(s). See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
 		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
@@ -7296,12 +7296,12 @@ define( 'data/Collection',[
 			options = this.normalizeLoadOptions( options );
 			var me = this,  // for closures
 			    deferred = new jQuery.Deferred(),
-			    operations = [],
+			    requests = [],
 			    loadPromises = [],
 			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad;
 			
 			for( var page = startPage; page <= endPage; page++ ) {
-				var operation = new ReadOperation( {
+				var request = new ReadRequest( {
 					params    : options.params,
 					
 					page     : page,
@@ -7310,24 +7310,24 @@ define( 'data/Collection',[
 					limit    : pageSize   // in this case, the `limit` is the pageSize
 				} );
 				
-				operations.push( operation );  // for populating the Batch that represents all Operations
-				loadPromises.push( this.doLoad( operation ) );  // load the page of data, and store its returned Promise
+				requests.push( request );  // for populating the Batch that represents all Requests
+				loadPromises.push( this.doLoad( request ) );  // load the page of data, and store its returned Promise
 			}
 			
-			var batch = new OperationBatch( { operations: operations } ),
+			var batch = new RequestBatch( { requests: requests } ),
 			    masterPromise = jQuery.when.apply( null, loadPromises );
 			
 			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
 			deferred.done( options.success ).fail( options.error ).always( options.complete );
 			
 			masterPromise.then(
-				function( operation ) {
+				function( request ) {
 					var loadedPages = _.range( startPage, endPage+1 );  // second arg needs +1 because it is "up to but not included"
 					me.loadedPages = ( addModels ) ? me.loadedPages.concat( loadedPages ) : loadedPages;
 					
 					me.onLoadSuccess( deferred, batch, { addModels: addModels } ); 
 				},
-				function( operation ) { 
+				function( request ) { 
 					me.onLoadError( deferred, batch );
 				}
 			);
@@ -7336,15 +7336,15 @@ define( 'data/Collection',[
 		
 		
 		/**
-		 * Performs the actual load operation for a request to {@link #method-load} or {@link #method-loadPage}, given the
-		 * `operation` object.
+		 * Performs an actual load request for {@link #method-load} or {@link #method-loadPage}, given the
+		 * `request` object.
 		 * 
 		 * @protected
-		 * @param {data.persistence.operation.Read} operation The Read operation for the load.
+		 * @param {data.persistence.request.Read} request The Read request for the load.
 		 * @return {jQuery.Promise} A Promise object which is resolved if the load completes successfully, or rejected
-		 *   otherwise. The Promise is resolved or rejected with the argument: `operation`.
+		 *   otherwise. The Promise is resolved or rejected with the argument: `request`.
 		 */
-		doLoad : function( operation ) {
+		doLoad : function( request ) {
 			var me = this,  // for closures
 			    proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 			
@@ -7362,8 +7362,8 @@ define( 'data/Collection',[
 			}
 			
 			// Make a request to read the data from the persistent storage, and return a Promise object
-			// which is resolved or rejected with the `operation` object
-			return proxy.read( operation );
+			// which is resolved or rejected with the `request` object
+			return proxy.read( request );
 		},
 		
 		
@@ -7374,18 +7374,18 @@ define( 'data/Collection',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the "load" method. This Deferred will be
 		 *   resolved after post-processing of the successful load is complete.
-		 * @param {data.persistence.operation.Batch} batch The Batch object which holds all of the 
-		 *   {@link data.persistence.operation.Operation Operations} which were required to complete the load request.
+		 * @param {data.persistence.request.Batch} batch The Batch object which holds all of the 
+		 *   {@link data.persistence.request.Request Requests} which were required to complete the load request.
 		 * @param {Object} options An Object (map) with options for this method. Note that this is not the same as the `options`
 		 *   object provided to each of the "load" methods. This object may contain the following properties:
 		 * @param {Boolean} [options.addModels=false] `true` to add the loaded models to the Collection instead of 
 		 *   replacing the existing ones. 
 		 */
 		onLoadSuccess : function( deferred, batch, options ) {
-			var operations = batch.getOperations();
+			var requests = batch.getRequests();
 			
-			// Sample the first load Operation for a totalCount
-			var totalCount = operations[ 0 ].getResultSet().getTotalCount();
+			// Sample the first load Request for a totalCount
+			var totalCount = requests[ 0 ].getResultSet().getTotalCount();
 			if( totalCount !== undefined ) {
 				this.totalCount = totalCount;
 			}
@@ -7395,10 +7395,10 @@ define( 'data/Collection',[
 				this.removeAll();
 			}
 			
-			// Create a single array of all of the loaded records, put together in order of the operations, and then
+			// Create a single array of all of the loaded records, put together in order of the requests, and then
 			// add them to the Collection.
 			var records = _.flatten(
-				_.map( operations, function( op ) { return op.getResultSet().getRecords(); } )  // create an array of the arrays of result sets (to be flattened after)
+				_.map( requests, function( op ) { return op.getResultSet().getRecords(); } )  // create an array of the arrays of result sets (to be flattened after)
 			);
 			this.add( records );
 			
@@ -7418,9 +7418,9 @@ define( 'data/Collection',[
 		 * @protected
 		 * @param {jQuery.Deferred} deferred The Deferred object created in the "load" method. This Deferred will 
 		 *   be rejected after any post-processing.
-		 * @param {data.persistence.operation.Batch} batch The Batch object which holds all of the 
-		 *   {@link data.persistence.operation.Operation Operations} which were required to complete the load request.
-		 *   One or more of these Operations has errored. Note that all Operations may not be complete.
+		 * @param {data.persistence.request.Batch} batch The Batch object which holds all of the 
+		 *   {@link data.persistence.request.Request Requests} which were required to complete the load request.
+		 *   One or more of these Requests has errored. Note that all Requests may not be complete.
 		 */
 		onLoadError : function( deferred, batch ) {
 			this.loading = false;
@@ -7471,7 +7471,7 @@ define( 'data/Collection',[
 		 * existing Models are modified, and removed Models are deleted.
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `operation` : {@link data.persistence.operation.Write} The WriteOperation that was executed.
+		 * - `request` : {@link data.persistence.request.Write} The WriteRequest that was executed.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Function} [options.success] Function to call if the synchronization is successful.
@@ -7568,7 +7568,7 @@ define( 'data/persistence/proxy/Ajax',[
 	 * @class data.persistence.proxy.Ajax
 	 * @extends data.persistence.proxy.Proxy
 	 * 
-	 * Ajax proxy is responsible for performing CRUD operations through standard AJAX, using the url(s) configured,
+	 * Ajax proxy is responsible for performing CRUD requests through standard AJAX, using the url(s) configured,
 	 * and providing any parameters and such which are required for the backend service.
 	 * 
 	 * The Ajax proxy must be configured with the appropriate parameter names in order for it to automatically supply
@@ -7718,13 +7718,13 @@ define( 'data/persistence/proxy/Ajax',[
 		/**
 		 * Creates the Model on the server.
 		 * 
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be created on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		create : function( operation ) {
+		create : function( request ) {
 			throw new Error( "create() not yet implemented" );
 		},
 		
@@ -7732,31 +7732,31 @@ define( 'data/persistence/proxy/Ajax',[
 		/**
 		 * Reads one or more {@link data.Model Models} from the server.
 		 * 
-		 * @param {data.persistence.operation.Read} operation The ReadOperation instance that describes the 
+		 * @param {data.persistence.request.Read} request The ReadRequest instance that describes the 
 		 *   model(s) to be read from the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		read : function( operation ) {
+		read : function( request ) {
 			var me = this,  // for closures
-			    paramsObj = this.buildParams( 'read', operation ),
+			    paramsObj = this.buildParams( 'read', request ),
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
-				url      : this.buildUrl( 'read', operation ),
+				url      : this.buildUrl( 'read', request ),
 				type     : this.getHttpMethod( 'read' ),
-				data     : this.serializeParams( paramsObj, 'read', operation ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
+				data     : this.serializeParams( paramsObj, 'read', request ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
 				dataType : 'text'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					operation.setResultSet( me.reader.read( data ) );
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setResultSet( me.reader.read( data ) );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -7768,13 +7768,13 @@ define( 'data/persistence/proxy/Ajax',[
 		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
 		 * are persisted.
 		 * 
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be updated on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		update : function( operation, options ) {
+		update : function( request, options ) {
 			throw new Error( "update() not yet implemented" );
 		},
 		
@@ -7784,13 +7784,13 @@ define( 'data/persistence/proxy/Ajax',[
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		destroy : function( operation ) {
+		destroy : function( request ) {
 			throw new Error( "destroy() not yet implemented" );
 		},
 		
@@ -7804,47 +7804,47 @@ define( 'data/persistence/proxy/Ajax',[
 		/**
 		 * Builds the full URL that will be used for any given CRUD (create, read, update, destroy) request. This will
 		 * be the base url provided by either the {@link #api} or {@link #url} configs, plus any parameters that need
-		 * to be added based on the `operation` provided.
+		 * to be added based on the `request` provided.
 		 * 
 		 * @protected
 		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {String} The full URL, with all parameters.
 		 */
-		buildUrl : function( action, operation ) {
+		buildUrl : function( action, request ) {
 			var url = this.getUrl( action );
 			
-			// Only add params explicitly to the URL when doing a create/update/destroy operation. For a 'read' 
-			// operation, params will be added conditionally to either the url or the post body based on the http 
+			// Only add params explicitly to the URL when doing a create/update/destroy request. For a 'read' 
+			// request, params will be added conditionally to either the url or the post body based on the http 
 			// method being used ('GET' or 'POST', handled in the read() method itself). 
 			if( action !== 'read' ) {
-				var params = this.buildParams( action, operation );
+				var params = this.buildParams( action, request );
 				
-				url = this.urlAppend( url, this.serializeParams( params, action, operation ) );
+				url = this.urlAppend( url, this.serializeParams( params, action, request ) );
 			}
 			return url;
 		},
 		
 		
 		/**
-		 * Builds the parameters for a given `operation`. By default, the `operation`'s params are combined
+		 * Builds the parameters for a given `request`. By default, the `request`'s params are combined
 		 * with the Proxy's {@link #defaultParams}, and then any additional parameters for paging and such are
 		 * added.
 		 * 
 		 * @protected
 		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {Object} An Object (map) of the parameters, where the keys are the parameter names,
 		 *   and the values are the parameter values.
 		 */
-		buildParams : function( action, operation ) {
-			var params = _.assign( {}, this.defaultParams, operation.getParams() || {} );   // build the params map
+		buildParams : function( action, request ) {
+			var params = _.assign( {}, this.defaultParams, request.getParams() || {} );   // build the params map
 			
-			// Add the model's `id` and the paging parameters for 'read' operations only
+			// Add the model's `id` and the paging parameters for 'read' requests only
 			if( action === 'read' ) {
-				var modelId = operation.getModelId(),
-				    page = operation.getPage(),
-				    pageSize = operation.getPageSize(),
+				var modelId = request.getModelId(),
+				    page = request.getPage(),
+				    pageSize = request.getPageSize(),
 				    pageParam = this.pageParam,
 				    pageSizeParam = this.pageSizeParam;
 				
@@ -7864,23 +7864,23 @@ define( 'data/persistence/proxy/Ajax',[
 		
 		
 		/**
-		 * Serializes the parameters for an operation. The default implementation of this method is to serialize
+		 * Serializes the parameters for an request. The default implementation of this method is to serialize
 		 * them into a query string, but may be overridden to support other formats.
 		 * 
 		 * @protected
 		 * @param {Object} params The Object (map) of parameters to serialize. The keys of this map are the parameter names,
 		 *   and the values are the parameter values.
 		 * @param {String} action The action that is being taken. One of: 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.operation.Read/data.persistence.operation.Write} operation
+		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {String} The serialized string of parameters.
 		 */
-		serializeParams : function( params, action, operation ) {
+		serializeParams : function( params, action, request ) {
 			return this.objToQueryString( params );
 		},
 		
 		
 		/**
-		 * Retrieves the URL to use for the given CRUD (create, read, update, destroy) operation. This is based on 
+		 * Retrieves the URL to use for the given CRUD (create, read, update, destroy) request. This is based on 
 		 * either the {@link #api} (if there is a URL defined for the given `action`), or otherwise, the {@link #url} config.
 		 * 
 		 * @protected
@@ -7989,13 +7989,13 @@ define( 'data/persistence/proxy/Rest',[
 	 * @class data.persistence.proxy.Rest
 	 * @extends data.persistence.proxy.Ajax
 	 * 
-	 * RestProxy is responsible for performing CRUD operations in a RESTful manner for a given Model on the server.
+	 * RestProxy is responsible for performing CRUD requests in a RESTful manner for a given Model on the server.
 	 */
 	var RestProxy = Class.extend( AjaxProxy, {
 		
 		/**
 		 * @cfg {String} urlRoot
-		 * The url to use in a RESTful manner to perform CRUD operations. Ex: `/tasks`.
+		 * The url to use in a RESTful manner to perform CRUD requests. Ex: `/tasks`.
 		 * 
 		 * The {@link data.Model#idAttribute id} of the {@link data.Model} being read/updated/deleted
 		 * will automatically be appended to this url. Ex: `/tasks/12`
@@ -8068,16 +8068,16 @@ define( 'data/persistence/proxy/Rest',[
 		 * Creates the Model on the server.
 		 * 
 		 * @method create
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be created on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		create : function( operation ) {
+		create : function( request ) {
 			var me = this,  // for closures
 			    deferred = new jQuery.Deferred(),
-			    model = operation.getModels()[ 0 ],
+			    model = request.getModels()[ 0 ],
 			    dataToPersist = model.getData( { persistedOnly: true, raw: true } );
 			
 			// Handle needing a different "root" wrapper object for the data
@@ -8096,14 +8096,14 @@ define( 'data/persistence/proxy/Rest',[
 			} ).then(
 				function( data, textStatus, jqXHR ) {
 					if( data ) {  // data may or may not be returned by a server on a 'create' request
-						operation.setResultSet( me.reader.read( data ) );
+						request.setResultSet( me.reader.read( data ) );
 					}
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -8115,29 +8115,29 @@ define( 'data/persistence/proxy/Rest',[
 		 * Reads the Model from the server.
 		 * 
 		 * @method read
-		 * @param {data.persistence.operation.Read} operation The ReadOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Read} request The ReadRequest instance that holds the model(s) 
 		 *   to be read from the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		read : function( operation ) {
+		read : function( request ) {
 			var me = this,  // for closures
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
-				url      : this.buildUrl( 'read', operation.getModelId() ),
+				url      : this.buildUrl( 'read', request.getModelId() ),
 				type     : this.getHttpMethod( 'read' ),
 				dataType : 'json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					operation.setResultSet( me.reader.read( data ) );
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setResultSet( me.reader.read( data ) );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -8150,24 +8150,24 @@ define( 'data/persistence/proxy/Rest',[
 		 * are persisted.
 		 * 
 		 * @method update
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be updated on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		update : function( operation, options ) {
+		update : function( request, options ) {
 			options = options || {};
 			var me = this,  // for closures
 			    scope = options.scope || options.context || this,
-			    model = operation.getModels()[ 0 ],
+			    model = request.getModels()[ 0 ],
 			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
 			    deferred = new jQuery.Deferred();
 			
 			// Short Circuit: If there is no changed data in any of the attributes that are to be persisted, there is no need to make a 
 			// request. Resolves the deferred and return out.
 			if( _.isEmpty( changedData ) ) {
-				deferred.resolve( operation );
+				deferred.resolve( request );
 				return deferred.promise();
 			}
 			
@@ -8199,14 +8199,14 @@ define( 'data/persistence/proxy/Rest',[
 			} ).then(
 				function( data, textStatus, jqXHR ) {
 					if( data ) {  // data may or may not be returned by a server on an 'update' request
-						operation.setResultSet( me.reader.read( data ) );
+						request.setResultSet( me.reader.read( data ) );
 					}
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -8220,15 +8220,15 @@ define( 'data/persistence/proxy/Rest',[
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
 		 * @method destroy
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		destroy : function( operation ) {
+		destroy : function( request ) {
 			var deferred = new jQuery.Deferred(),
-			    model = operation.getModels()[ 0 ];
+			    model = request.getModels()[ 0 ];
 			
 			this.ajax( {
 				url      : this.buildUrl( 'destroy', model.getId() ),
@@ -8236,12 +8236,12 @@ define( 'data/persistence/proxy/Rest',[
 				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -8253,7 +8253,7 @@ define( 'data/persistence/proxy/Rest',[
 		
 		
 		/**
-		 * Builds the URL to use to do CRUD operations.
+		 * Builds the URL to use to do CRUD requests.
 		 * 
 		 * @protected
 		 * @method buildUrl
@@ -8287,4 +8287,4 @@ define( 'data/persistence/proxy/Rest',[
 	return RestProxy;
 	
 } );
-require(["data/Collection", "data/Data", "data/DataComponent", "data/Model", "data/NativeObjectConverter", "data/attribute/Attribute", "data/attribute/Boolean", "data/attribute/Collection", "data/attribute/DataComponent", "data/attribute/Date", "data/attribute/Float", "data/attribute/Integer", "data/attribute/Mixed", "data/attribute/Model", "data/attribute/Number", "data/attribute/Object", "data/attribute/Primitive", "data/attribute/String", "data/persistence/ResultSet", "data/persistence/operation/Batch", "data/persistence/operation/Operation", "data/persistence/operation/Read", "data/persistence/operation/Write", "data/persistence/proxy/Ajax", "data/persistence/proxy/Proxy", "data/persistence/proxy/Rest", "data/persistence/reader/Json", "data/persistence/reader/Reader"]);
+require(["data/Collection", "data/Data", "data/DataComponent", "data/Model", "data/NativeObjectConverter", "data/attribute/Attribute", "data/attribute/Boolean", "data/attribute/Collection", "data/attribute/DataComponent", "data/attribute/Date", "data/attribute/Float", "data/attribute/Integer", "data/attribute/Mixed", "data/attribute/Model", "data/attribute/Number", "data/attribute/Object", "data/attribute/Primitive", "data/attribute/String", "data/persistence/ResultSet", "data/persistence/proxy/Ajax", "data/persistence/proxy/Proxy", "data/persistence/proxy/Rest", "data/persistence/reader/Json", "data/persistence/reader/Reader", "data/persistence/request/Batch", "data/persistence/request/Read", "data/persistence/request/Request", "data/persistence/request/Write"]);

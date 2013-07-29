@@ -2,20 +2,20 @@
 define( [
 	'lodash',
 	'Class',
-	'data/persistence/operation/Operation'
-], function( _, Class, Operation ) {
+	'data/persistence/request/Request'
+], function( _, Class, Request ) {
 	
 	/**
-	 * @class data.persistence.operation.Read
-	 * @extends data.persistence.operation.Operation
+	 * @class data.persistence.request.Read
+	 * @extends data.persistence.request.Request
 	 * 
-	 * Represents a read operation from a persistent storage mechanism. 
+	 * Represents a read request from a persistent storage mechanism. 
 	 * 
 	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} operations 
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
 	 * complete.
 	 */
-	var ReadOperation = Class.extend( Operation, {
+	var ReadRequest = Class.extend( Request, {
 		
 		/**
 		 * @cfg {Number/String} modelId
@@ -110,6 +110,6 @@ define( [
 		
 	} );
 	
-	return ReadOperation;
+	return ReadRequest;
 	
 } );

@@ -11,13 +11,13 @@ define( [
 	 * @class data.persistence.proxy.Rest
 	 * @extends data.persistence.proxy.Ajax
 	 * 
-	 * RestProxy is responsible for performing CRUD operations in a RESTful manner for a given Model on the server.
+	 * RestProxy is responsible for performing CRUD requests in a RESTful manner for a given Model on the server.
 	 */
 	var RestProxy = Class.extend( AjaxProxy, {
 		
 		/**
 		 * @cfg {String} urlRoot
-		 * The url to use in a RESTful manner to perform CRUD operations. Ex: `/tasks`.
+		 * The url to use in a RESTful manner to perform CRUD requests. Ex: `/tasks`.
 		 * 
 		 * The {@link data.Model#idAttribute id} of the {@link data.Model} being read/updated/deleted
 		 * will automatically be appended to this url. Ex: `/tasks/12`
@@ -90,16 +90,16 @@ define( [
 		 * Creates the Model on the server.
 		 * 
 		 * @method create
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be created on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		create : function( operation ) {
+		create : function( request ) {
 			var me = this,  // for closures
 			    deferred = new jQuery.Deferred(),
-			    model = operation.getModels()[ 0 ],
+			    model = request.getModels()[ 0 ],
 			    dataToPersist = model.getData( { persistedOnly: true, raw: true } );
 			
 			// Handle needing a different "root" wrapper object for the data
@@ -118,14 +118,14 @@ define( [
 			} ).then(
 				function( data, textStatus, jqXHR ) {
 					if( data ) {  // data may or may not be returned by a server on a 'create' request
-						operation.setResultSet( me.reader.read( data ) );
+						request.setResultSet( me.reader.read( data ) );
 					}
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -137,29 +137,29 @@ define( [
 		 * Reads the Model from the server.
 		 * 
 		 * @method read
-		 * @param {data.persistence.operation.Read} operation The ReadOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Read} request The ReadRequest instance that holds the model(s) 
 		 *   to be read from the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		read : function( operation ) {
+		read : function( request ) {
 			var me = this,  // for closures
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
-				url      : this.buildUrl( 'read', operation.getModelId() ),
+				url      : this.buildUrl( 'read', request.getModelId() ),
 				type     : this.getHttpMethod( 'read' ),
 				dataType : 'json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					operation.setResultSet( me.reader.read( data ) );
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setResultSet( me.reader.read( data ) );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -172,24 +172,24 @@ define( [
 		 * are persisted.
 		 * 
 		 * @method update
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be updated on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		update : function( operation, options ) {
+		update : function( request, options ) {
 			options = options || {};
 			var me = this,  // for closures
 			    scope = options.scope || options.context || this,
-			    model = operation.getModels()[ 0 ],
+			    model = request.getModels()[ 0 ],
 			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
 			    deferred = new jQuery.Deferred();
 			
 			// Short Circuit: If there is no changed data in any of the attributes that are to be persisted, there is no need to make a 
 			// request. Resolves the deferred and return out.
 			if( _.isEmpty( changedData ) ) {
-				deferred.resolve( operation );
+				deferred.resolve( request );
 				return deferred.promise();
 			}
 			
@@ -221,14 +221,14 @@ define( [
 			} ).then(
 				function( data, textStatus, jqXHR ) {
 					if( data ) {  // data may or may not be returned by a server on an 'update' request
-						operation.setResultSet( me.reader.read( data ) );
+						request.setResultSet( me.reader.read( data ) );
 					}
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -242,15 +242,15 @@ define( [
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
 		 * @method destroy
-		 * @param {data.persistence.operation.Write} operation The WriteOperation instance that holds the model(s) 
+		 * @param {data.persistence.request.Write} request The WriteRequest instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the operation is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `operation` object provided to 
+		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
+		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		destroy : function( operation ) {
+		destroy : function( request ) {
 			var deferred = new jQuery.Deferred(),
-			    model = operation.getModels()[ 0 ];
+			    model = request.getModels()[ 0 ];
 			
 			this.ajax( {
 				url      : this.buildUrl( 'destroy', model.getId() ),
@@ -258,12 +258,12 @@ define( [
 				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					operation.setSuccess();
-					deferred.resolve( operation );
+					request.setSuccess();
+					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					operation.setException( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( operation );
+					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					deferred.reject( request );
 				}
 			);
 			
@@ -275,7 +275,7 @@ define( [
 		
 		
 		/**
-		 * Builds the URL to use to do CRUD operations.
+		 * Builds the URL to use to do CRUD requests.
 		 * 
 		 * @protected
 		 * @method buildUrl

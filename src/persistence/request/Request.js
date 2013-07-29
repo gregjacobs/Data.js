@@ -6,28 +6,28 @@ define( [
 	
 	/**
 	 * @abstract
-	 * @class data.persistence.operation.Operation
+	 * @class data.persistence.request.Request
 	 * 
-	 * Represents an operation for a {@link data.persistence.proxy.Proxy} to carry out. This class basically represents 
-	 * any CRUD operation to be performed, passes along any options needed for that operation, and accepts any data/state
-	 * as a result of that operation. 
+	 * Represents an request for a {@link data.persistence.proxy.Proxy} to carry out. This class basically represents 
+	 * any CRUD request to be performed, passes along any options needed for that request, and accepts any data/state
+	 * as a result of that request. 
 	 * 
-	 * Operation's subclasses are split into two distinct implementations:
+	 * Request's subclasses are split into two distinct implementations:
 	 * 
-	 * - {@link data.persistence.operation.Read}: Represents an Operation to read (load) data from persistence storage.
-	 * - {@link data.persistence.operation.Write}: Represents an Operation to write (store) data to persistence storage.
+	 * - {@link data.persistence.request.Read}: Represents an Request to read (load) data from persistence storage.
+	 * - {@link data.persistence.request.Write}: Represents an Request to write (store) data to persistence storage.
 	 *   This includes destroying (deleting) models as well.
 	 * 
 	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} operations 
-	 * complete, so information can be obtained about the operation that took place.
+	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
+	 * complete, so information can be obtained about the request that took place.
 	 */
-	var Operation = Class.extend( Object, {
+	var Request = Class.extend( Object, {
 		
 		/**
 		 * @cfg {Object} params
 		 * 
-		 * A map of any parameters to pass along for the Operation. These parameters will be interpreted by the
+		 * A map of any parameters to pass along for the Request. These parameters will be interpreted by the
 		 * particular {@link data.persistence.proxy.Proxy} that is being used. For example, the 
 		 * {@link data.persistence.proxy.Ajax Ajax} proxy appends them as URL parameters for the request.
 		 * 
@@ -44,13 +44,13 @@ define( [
 		 * @protected
 		 * @property {data.persistence.ResultSet} resultSet
 		 * 
-		 * A ResultSet object which contains any data read by the Operation. This object contains any 
+		 * A ResultSet object which contains any data read by the Request. This object contains any 
 		 * returned data, as well as any metadata (such as the total number of records in a paged data set).
 		 * This object is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine, and can be 
 		 * retrieved via {@link #getResultSet}. Some notes:
 		 * 
-		 * - For cases of read operations, this object will contain the data that is read by the operation.
-		 * - For cases of write operations, this object will contain any "update" data that is returned to the
+		 * - For cases of read requests, this object will contain the data that is read by the request.
+		 * - For cases of write requests, this object will contain any "update" data that is returned to the
 		 *   Proxy when it completes its routine. For example, if a REST server returns the updated
 		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
 		 *   id attribute), then the ResultSet will contain that data.
@@ -61,7 +61,7 @@ define( [
 		 * @private
 		 * @property {Boolean} success
 		 * 
-		 * Property which is set to true upon successful completion of the Operation. Read
+		 * Property which is set to true upon successful completion of the Request. Read
 		 * this value with {@link #wasSuccessful}.
 		 */
 		success : false,
@@ -70,7 +70,7 @@ define( [
 		 * @private
 		 * @property {Boolean} error
 		 * 
-		 * Property which is set to true upon failure to complete the Operation. Read this value
+		 * Property which is set to true upon failure to complete the Request. Read this value
 		 * with {@link #hasErrored}.
 		 */
 		error : false,
@@ -95,7 +95,7 @@ define( [
 		
 		
 		/**
-		 * Retrieves the {@link #params} for this Operation. Returns an empty
+		 * Retrieves the {@link #params} for this Request. Returns an empty
 		 * object if no params were provided.
 		 * 
 		 * @return {Object}
@@ -107,7 +107,7 @@ define( [
 		
 		/**
 		 * Accessor for a Proxy to set a ResultSet which contains the data that is has read, 
-		 * once the operation completes.
+		 * once the request completes.
 		 * 
 		 * @param {data.persistence.ResultSet} resultSet A ResultSet which contains the data and any metadata read by 
 		 *   the Proxy.
@@ -119,10 +119,10 @@ define( [
 		
 		/**
 		 * Retrieves the {@link data.persistence.ResultSet} containing any data and metadata read by the 
-		 * Operation. This is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine.  
+		 * Request. This is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine.  
 		 * 
-		 * - For cases of read operations, this object will contain the data that is read by the operation.
-		 * - For cases of write operations, this object will contain any "update" data that is returned to the
+		 * - For cases of read requests, this object will contain the data that is read by the request.
+		 * - For cases of write requests, this object will contain any "update" data that is returned to the
 		 *   Proxy when it completes its routine. For example, if a REST server returns the updated
 		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
 		 *   id attribute), then the ResultSet will contain that data.
@@ -135,7 +135,7 @@ define( [
 		
 		
 		/**
-		 * Marks the Operation as successful.
+		 * Marks the Request as successful.
 		 */
 		setSuccess : function() {
 			this.success = true;
@@ -143,7 +143,7 @@ define( [
 		
 		
 		/**
-		 * Determines if the Operation completed successfully.
+		 * Determines if the Request completed successfully.
 		 * 
 		 * @return {Boolean}
 		 */
@@ -153,7 +153,7 @@ define( [
 		
 		
 		/**
-		 * Marks the Operation as having errored, and sets an exception object that describes the exception
+		 * Marks the Request as having errored, and sets an exception object that describes the exception
 		 * that has occurred.
 		 * 
 		 * @param {String/Object} exception An object or string describing the exception that occurred.
@@ -165,10 +165,10 @@ define( [
 		
 		
 		/**
-		 * Retrieves any exception object attached for an errored Operation.
+		 * Retrieves any exception object attached for an errored Request.
 		 * 
 		 * @return {String/Object} The {@link #exception} object or string which describes
-		 *   the exception that occurred for an errored Operation.
+		 *   the exception that occurred for an errored Request.
 		 */
 		getException : function() {
 			return this.exception;
@@ -176,7 +176,7 @@ define( [
 		
 		
 		/**
-		 * Determines if the Operation failed to complete successfully.
+		 * Determines if the Request failed to complete successfully.
 		 * 
 		 * @return {Boolean}
 		 */
@@ -186,7 +186,7 @@ define( [
 		
 		
 		/**
-		 * Determines if the Operation is complete.
+		 * Determines if the Request is complete.
 		 * 
 		 * @return {Boolean}
 		 */
@@ -196,6 +196,6 @@ define( [
 		
 	} );
 	
-	return Operation;
+	return Request;
 	
 } );

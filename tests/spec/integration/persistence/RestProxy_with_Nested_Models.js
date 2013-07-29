@@ -3,8 +3,8 @@ define( [
 	'lodash',
 	'data/Model',
 	'data/persistence/proxy/Rest',
-	'data/persistence/operation/Write'
-], function( _, Model, RestProxy, WriteOperation ) {
+	'data/persistence/request/Write'
+], function( _, Model, RestProxy, WriteRequest ) {
 
 	describe( "Integration: persistence.RestProxy with Nested Models", function() {
 		
@@ -48,9 +48,9 @@ define( [
 				childModel.set( 'unpersistedAttr', 'newValue' );
 				
 				var proxy = new thisSuite.RestProxy(),
-				    operation = new WriteOperation( { models: [ parentModel ] } );
+				    request = new WriteRequest( { models: [ parentModel ] } );
 				
-				proxy.update( operation );
+				proxy.update( request );
 				
 				expect( 0 ).toBe( thisSuite.ajaxCallCount );  // orig YUI Test err msg: "The update() method should not have made an ajax request, because there should have been nothing to persist"
 			} );
