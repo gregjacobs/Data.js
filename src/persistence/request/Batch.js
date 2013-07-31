@@ -12,9 +12,6 @@ define( [
 	 * 
 	 * The Batch object provides access to each internal {@link data.persistence.request.Request Request}, and provides
 	 * methods for determining the overall success or failure (error) state of the Requests within it. 
-	 * 
-	 * The Batch object is also itself a Promise object, where {@link #done}, {@link #fail}, and {@link #always} callbacks may 
-	 * be attached to listen for the completion or failure of the Batch of Requests as a whole.
 	 */
 	var RequestBatch = Class.extend( Object, {
 		

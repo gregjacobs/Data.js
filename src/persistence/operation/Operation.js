@@ -29,10 +29,11 @@ define( [
 	 * The Operation implements the jQuery-style Deferred interface, and is controlled by the DataComponent (Model or Collection)
 	 * which instantiates it. The interface, while not the full jQuery Deferred implementation, includes:
 	 * 
-	 * 1. The ability to attach {@link #done}, {@link #fail}, {@link #then}, and {@link #always} handlers, to detect when 
-	 *    the Operation has completed successfully or has failed, and
-	 * 2. {@link #resolve} and {@link #reject} methods for setting the completion state of the Operation. These are called
-	 *    by the DataComponent (Model or Collection) which instantiated the Operation.
+	 * 1. The ability to attach {@link #done}, {@link #fail}, {@link #cancel}, {@link #then}, and {@link #always} handlers, 
+	 *    to detect when the Operation has completed successfully, has failed, or has been canceled, and
+	 * 2. {@link #resolve}, {@link #reject}, and {@link #abort} methods for setting the completion state of the Operation. 
+	 *    These are called by the DataComponent (Model or Collection) which instantiated the Operation, with the exception
+	 *    of {@link #abort} which may be called by client code of the {@link #dataComponent} to cancel an Operation.
 	 * 
 	 * 
 	 * ## The OperationPromise
@@ -42,7 +43,8 @@ define( [
 	 * {@link data.Collection Collections}, so that they can respond to the Operation's completion. 
 	 * 
 	 * This Object supports the same interface as standard jQuery promises, but adds the extra method 
-	 * {@link data.persistence.operation.Promise#abort abort}, which can cancel the Operation.
+	 * {@link data.persistence.operation.Promise#abort abort}, which can cancel the Operation, and the {@link #cancel}
+	 * method which is used to subscribe handlers for if the Operation is canceled.
 	 * 
 	 * 
 	 * ## Subclasses
@@ -112,7 +114,16 @@ define( [
 		 * 
 		 * The Operation's internal Deferred object, which is resolved or rejected based on the successful completion or 
 		 * failure of the Operation. Handlers for this Deferred are attached via the {@link #done}, {@link #fail}, 
-		 * {@link #then}, {@link #progress} or {@link #always} methods of the Operation itself.
+		 * {@link #then}, or {@link #always} methods of the Operation itself. The {@link #cancel} method is handled
+		 * separately by the {@link #cancelDeferred}.
+		 */
+		
+		/**
+		 * @protected
+		 * @property {jQuery.Deferred} cancelDeferred
+		 * 
+		 * The Operation's internal Deferred object which is solely responsible for keeping track of {@link #cancel}
+		 * handlers, and will be resolved if the Operation has been {@link #abort aborted}.
 		 */
 		
 		/**
@@ -140,10 +151,22 @@ define( [
 		 * @property {Boolean} completed
 		 * 
 		 * Set to `true` when the Operation has been completed. Note that the Operation's {@link #requests} may have
-		 * been completed, but the Operation itself is not necessarily completed until it is marked as such with
-		 * {@link setCompleted}, after its {@link #dataComponent} has processed the results of the request(s).
+		 * been completed, but the Operation itself is not necessarily completed until after its {@link #dataComponent} 
+		 * has processed the results of the request(s).
+		 * 
+		 * This flag is also set to `true` if the Operation errored, or has been canceled.
 		 */
 		completed : false,
+		
+		/**
+		 * @protected
+		 * @property {Boolean} canceled
+		 * 
+		 * Set to `true` if the Operation has been canceled ({@link #abort aborted}) while still in progress. Note that 
+		 * its {@link #requests} may still complete, but the {@link #dataComponent} associated with this Operation will 
+		 * ignore their results.
+		 */
+		canceled : false,
 		
 		/**
 		 * @private
@@ -185,6 +208,7 @@ define( [
 			
 			this.id = ++Operation.idCounter;
 			this.deferred = new jQuery.Deferred();
+			this.cancelDeferred = new jQuery.Deferred();  // need a separate Deferred to keep track of "cancel" handlers
 			this.requestsDeferred = new jQuery.Deferred();
 			
 			// normalize the `requests` config to an array
@@ -255,7 +279,7 @@ define( [
 		
 		
 		/**
-		 * Returns the {@link jQuery.Promise} object that is resolved when all of the Operation's {@link #requests}
+		 * Returns the `jQuery.Promise` object that is resolved when all of the Operation's {@link #requests}
 		 * have completed, or is rejected if any of the requests failed. This Operation object is provided as the
 		 * first argument to Promise handlers.
 		 * 
@@ -361,12 +385,19 @@ define( [
 		/**
 		 * Marks the Operation as successful, and calls all {@link #done} handlers of the Operation's deferred.
 		 * This includes `done` handlers set using the {@link #then} method.
+		 * 
+		 * {@link #done} handlers are called with two arguments:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
 		 */
 		resolve : function() {
-			this.success = true;
-			this.completed = true;
-			
-			this.deferred.resolve( this.dataComponent, this );
+			if( !this.completed ) {
+				this.success = true;
+				this.completed = true;
+				
+				this.deferred.resolve( this.dataComponent, this );
+			}
 		},
 		
 		
@@ -384,12 +415,19 @@ define( [
 		/**
 		 * Marks the Operation as having errored, and calls all {@link #fail} handlers of the Operation's deferred.
 		 * This includes `fail` handlers set using the {@link #then} method.
+		 * 
+		 * {@link #fail} handlers are called with two arguments:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
 		 */
 		reject : function() {
-			this.error = true;
-			this.completed = true;
-			
-			this.deferred.reject( this.dataComponent, this );
+			if( !this.completed ) {
+				this.error = true;
+				this.completed = true;
+				
+				this.deferred.reject( this.dataComponent, this );
+			}
 		},
 		
 		
@@ -401,6 +439,39 @@ define( [
 		 */
 		hasErrored : function() {
 			return this.error;
+		},
+		
+		
+		/**
+		 * Attempts to cancel (abort) the Operation, if it is still in progress. 
+		 * 
+		 * This may only be useful for {@link data.persistence.operation.Load LoadOperations}, as it may cause 
+		 * {@link data.persistence.operation.Save Save} and {@link data.persistence.operation.Destroy Destroy}
+		 * operations to leave the backing persistence medium in an inconsistent state. However, it is provided
+		 * if say, a retry is going to be performed and the previous operation should be canceled on the client-side.
+		 * 
+		 * {@link #cancel} handlers are called with two arguments:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 */
+		abort : function() {
+			if( !this.completed ) {
+				this.completed = true;
+				this.canceled = true;
+				
+				this.cancelDeferred.resolve( this.dataComponent, this );
+			}
+		},
+		
+		
+		/**
+		 * Determines if the Operation was {@link #canceled} (via the {@link #abort} method).
+		 * 
+		 * @return {Boolean}
+		 */
+		wasCanceled : function() {
+			return this.canceled;
 		},
 		
 		
@@ -431,6 +502,11 @@ define( [
 		/**
 		 * Adds a handler for when the Operation has completed successfully.
 		 * 
+		 * Handlers are called with the following two arguments when the Operation completes successfully:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
 		 * @param {Function} handlerFn
 		 * @chainable
 		 */
@@ -443,6 +519,11 @@ define( [
 		/**
 		 * Adds a handler for if the Operation fails to complete successfully.
 		 * 
+		 * Handlers are called with the following two arguments when the Operation fails to complete successfully:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
 		 * @param {Function} handlerFn
 		 * @chainable
 		 */
@@ -453,9 +534,31 @@ define( [
 		
 		
 		/**
+		 * Adds a handler for if the Operation has been canceled, via the {@link #abort} method.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has been canceled (aborted):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		cancel : function( handlerFn ) {
+			this.cancelDeferred.done( handlerFn );
+			return this;
+		},
+		
+		
+		/**
 		 * Adds handler functions for if the Operation completes successfully, or fails to complete successfully.
 		 * 
-		 * Note: This method does not support jQuery's "then filtering" functionality.
+		 * Note: This method does not support jQuery's "filtering" functionality.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has completed successfully or has failed:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} successHandlerFn
 		 * @param {Function} failureHandlerFn
@@ -468,25 +571,20 @@ define( [
 		
 		
 		/**
-		 * Adds a handler for when the Operation progresses.
-		 * 
-		 * @param {Function} handlerFn
-		 * @chainable
-		 */
-		progress : function( handlerFn ) {
-			this.deferred.progress( handlerFn );
-			return this;
-		},
-		
-		
-		/**
 		 * Adds a handler for when the Operation completes, regardless of success or failure.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has completed successfully, has failed,
+		 * or has been canceled (aborted):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} handlerFn
 		 * @chainable
 		 */
 		always : function( handlerFn ) {
 			this.deferred.always( handlerFn );
+			this.cancelDeferred.always( handlerFn );
 			return this;
 		}
 		

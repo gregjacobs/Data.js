@@ -15,6 +15,9 @@ define( [
 	 * the interface that is available to client code, which is a "view" of the parent Operation. This interface includes 
 	 * most of the jQuery Promise interface, which includes: {@link #done}, {@link #fail}, {@link #then}, and {@link #always}.
 	 * See http://api.jquery.com/deferred.promise/ for details on these methods.
+	 * 
+	 * This class also includes an extra method, {@link #abort}, which may be used to abort (cancel) the parent Operation.
+	 * Handlers for the Operation being canceled may be added with the {@link #cancel} method.
 	 */
 	var OperationPromise = Class.create( {
 		
@@ -40,12 +43,25 @@ define( [
 		},
 		
 		
+		/**
+		 * Aborts the parent Operation of this OperationPromise, if it is still in progress.
+		 */
+		abort : function() {
+			this.operation.abort();
+		},
+		
+		
 		// -----------------------------------
 		
 		// Promise interface
 		
 		/**
 		 * Adds a handler for when the Operation has completed successfully.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation completes successfully:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} handlerFn
 		 * @chainable
@@ -59,6 +75,11 @@ define( [
 		/**
 		 * Adds a handler for if the Operation fails to complete successfully.
 		 * 
+		 * Handlers are called with the following two arguments when the Operation fails to complete successfully:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
 		 * @param {Function} handlerFn
 		 * @chainable
 		 */
@@ -69,7 +90,31 @@ define( [
 		
 		
 		/**
+		 * Adds a handler for if the Operation has been canceled, via the {@link #abort} method.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has been canceled (aborted):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		cancel : function( handlerFn ) {
+			this.operation.cancel( handlerFn );
+			return this;
+		},
+		
+		
+		/**
 		 * Adds handler functions for if the Operation completes successfully, or fails to complete successfully.
+		 * 
+		 * Note: This method does not support jQuery's "filtering" functionality.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has completed successfully or has failed:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} successHandlerFn
 		 * @param {Function} failureHandlerFn
@@ -83,6 +128,12 @@ define( [
 		
 		/**
 		 * Adds a handler for when the Operation completes, regardless of success or failure.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has completed successfully, has failed,
+		 * or has been canceled (aborted):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} handlerFn
 		 * @chainable

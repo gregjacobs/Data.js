@@ -268,7 +268,7 @@ define( [
 		
 		/**
 		 * @protected
-		 * @property {data.persistence.operation.Batch[]} activeLoadOperations
+		 * @property {data.persistence.operation.Load[]} activeLoadOperations
 		 * 
 		 * This array stores any {@link data.persistence.operation.Load LoadOperation} objects that are 
 		 * currently in the process of loading data. When an Operation completes, it is removed from this 
@@ -387,7 +387,17 @@ define( [
 				 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and 
 				 *   the {@link data.persistence.request.Request Request(s)} that were required to execute the load operation.
 				 */
-				'load'
+				'load',
+				
+				/**
+				 * Fires when one of the Collection's {@link data.persistence.operation.Load LoadOperation's} has been canceled 
+				 * by client code.
+				 * 
+				 * @event loadcancel
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation object which was canceled (aborted).
+				 */
+				'loadcancel'
 			);
 			
 			
@@ -1146,9 +1156,11 @@ define( [
 		 *   replacing the existing ones. 
 		 * @param {Function} [options.success] Function to call if the loading is successful.
 		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
 		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
 		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
 		 *   the load completes. The Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1172,14 +1184,14 @@ define( [
 				// </debug>
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
-				operation.done( options.success ).fail( options.error ).always( options.complete );
+				operation.done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 				
-				this.activeLoadOperations.push( operation );
-				if( this.activeLoadOperations.length === 1 )  // if this Operation began the Collection's "loading" state, fire 'loadbegin'
-					this.fireEvent( 'loadbegin', this );
+				// Add the Operation to the list of active load operations (which fires the 
+				// 'loadbegin' event if it begins overall Collection loading)
+				this.addActiveLoadOperation( operation );
 				
-				operation.executeRequests()
-					.always( _.bind( this.handleLoadRequestsComplete, this ) );
+				operation.executeRequests().always( _.bind( this.handleLoadRequestsComplete, this ) );
+				operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
 				
 				return operation.promise();  // returns the OperationPromise object
 			}
@@ -1216,9 +1228,11 @@ define( [
 		 *   if page-based loading is being used (i.e. there is a {@link #pageSize} config), or defaults to false otherwise.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
 		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
 		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
 		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
 		 *   the load completes. The Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1247,14 +1261,14 @@ define( [
 				// </debug>
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
-				operation.done( options.success ).fail( options.error ).always( options.complete );
+				operation.done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 				
-				this.activeLoadOperations.push( operation );
-				if( this.activeLoadOperations.length === 1 )  // if this Operation began the Collection's "loading" state, fire 'loadbegin'
-					this.fireEvent( 'loadbegin', this );
+				// Add the Operation to the list of active load operations (which fires the 
+				// 'loadbegin' event if it begins overall Collection loading)
+				this.addActiveLoadOperation( operation );
 				
-				operation.executeRequests()
-					.always( _.bind( this.handleLoadRequestsComplete, this ) );
+				operation.executeRequests().always( _.bind( this.handleLoadRequestsComplete, this ) );
+				operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
 				
 				return operation.promise();  // returns the OperationPromise object
 			}
@@ -1284,9 +1298,11 @@ define( [
 		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
 		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
 		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
 		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
 		 *   the load completes. The Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1326,9 +1342,11 @@ define( [
 		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
 		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
 		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
 		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
 		 *   the load completes. The Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1373,23 +1391,20 @@ define( [
 			}
 			
 			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
-			operation.done( options.success ).fail( options.error ).always( options.complete );
+			operation.done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 			
-			this.activeLoadOperations.push( operation );
-			if( this.activeLoadOperations.length === 1 )  // if this Operation began the Collection's "loading" state, fire 'loadbegin'
-				this.fireEvent( 'loadbegin', this );
+			// Add the Operation to the list of active load operations (which fires the 
+			// 'loadbegin' event if it begins overall Collection loading)
+			this.addActiveLoadOperation( operation );
 			
-			operation.executeRequests().then(
-				function( operation ) {
+			operation.executeRequests()
+				.done( function( operation ) {
 					var loadedPages = _.range( startPage, endPage + 1 );  // second arg needs +1 because it is "up to but not included"
 					me.loadedPages = ( addModels ) ? me.loadedPages.concat( loadedPages ) : loadedPages;
-					
-					me.handleLoadRequestsComplete( operation );
-				},
-				function( operation ) { 
-					me.handleLoadRequestsComplete( operation );
-				}
-			);
+				} )
+				.always( _.bind( this.handleLoadRequestsComplete, this ) );
+			
+			operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
 			
 			return operation.promise();  // returns the OperationPromise object
 		},
@@ -1406,6 +1421,12 @@ define( [
 		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
 		 */
 		handleLoadRequestsComplete : function( loadOperation ) {
+			// If this LoadOperation has been removed from the queue previously, such as from the Operation being
+			// manually canceled (aborted), then simply return out. The LoadOperation got here from its requests completing,
+			// but we shouldn't take any further action.
+			if( !_.contains( this.activeLoadOperations, loadOperation ) )
+				return;
+			
 			if( loadOperation.requestsWereSuccessful() ) {
 				this.onLoadSuccess( loadOperation );
 			} else {
@@ -1447,10 +1468,7 @@ define( [
 			
 			// Remove the Operation from the `activeLoadOperations`. Note: If removing the last one,
 			// the Collection will no longer be considered 'loading'.
-			var idx = _.indexOf( this.activeLoadOperations, operation );
-			if( idx !== -1 ) {
-				this.activeLoadOperations.splice( idx, 1 );
-			}
+			this.removeActiveLoadOperation( operation );
 			
 			operation.resolve();
 			this.fireEvent( 'load', this, operation );
@@ -1470,13 +1488,64 @@ define( [
 		onLoadError : function( operation ) {
 			// Remove the Operation from the `activeLoadOperations`. Note: If removing the last one,
 			// the Collection will no longer be considered 'loading'.
+			this.removeActiveLoadOperation( operation );
+			
+			operation.reject();
+			this.fireEvent( 'load', this, operation );
+		},
+		
+		
+		/**
+		 * Handles a {@link data.persistence.operation.Load LoadOperation} being canceled (aborted) by a client of 
+		 * the Collection.
+		 * 
+		 * Removes the LoadOperation from the {@link #activeLoadOperations} queue, which causes any future requests'
+		 * completion to be ignored.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which hold metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
+		 */
+		onLoadCancel : function( operation ) {
+			// Request was canceled (aborted), simply remove it from the activeLoadOperations and ignore its results
+			this.removeActiveLoadOperation( operation );
+			
+			// Note: operation was already aborted. No need to call operation.abort() here.
+			this.fireEvent( 'loadcancel', this, operation );
+		},
+		
+		
+		/**
+		 * Utility method used to add a LoadOperation to the {@link #activeLoadOperations} array.
+		 * 
+		 * If the `operation` provided to this method is the first to be placed into the array, this method
+		 * fires the {@link #loadbegin} event, as the Collection is now in a "loading" state.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation A LoadOperation which is currently active.
+		 *   If the Operation is not currently active, the call to this method will have no effect.
+		 */
+		addActiveLoadOperation : function( operation ) {
+			this.activeLoadOperations.push( operation );
+			
+			// if this Operation began the Collection's "loading" state, fire 'loadbegin'
+			if( this.activeLoadOperations.length === 1 )
+				this.fireEvent( 'loadbegin', this );
+		},
+		
+		
+		/**
+		 * Utility method used to remove a LoadOperation from the {@link #activeLoadOperations} array.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation A LoadOperation which is currently active.
+		 *   If the Operation is not currently active, the call to this method will have no effect.
+		 */
+		removeActiveLoadOperation : function( operation ) {
 			var idx = _.indexOf( this.activeLoadOperations, operation );
 			if( idx !== -1 ) {
 				this.activeLoadOperations.splice( idx, 1 );
 			}
-			
-			operation.reject();
-			this.fireEvent( 'load', this, operation );
 		},
 		
 		
@@ -1495,9 +1564,11 @@ define( [
 		 *   empty function as part of this method's normalization process.
 		 * @param {Function} [options.error] Function to call if the loading fails. Will be defaulted to an
 		 *   empty function as part of this method's normalization process.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure. Will be defaulted to an empty function as part of this method's normalization process.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
 		 *   This may also be provided as the property `context`. Defaults to this Collection. This method binds each of
 		 *   the callbacks to this object.
 		 * @return {Object} The normalize `options` object.
@@ -1510,6 +1581,7 @@ define( [
 			
 			options.success  = _.bind( options.success  || emptyFn, scope );
 			options.error    = _.bind( options.error    || emptyFn, scope );
+			options.cancel   = _.bind( options.cancel   || emptyFn, scope );
 			options.complete = _.bind( options.complete || emptyFn, scope );
 			
 			return options;

@@ -2062,6 +2062,138 @@ define( [
 			} );
 			
 			
+			it( "load() should call the 'cancel' callback, and fire the 'loadcancel' event with the arguments [collection, operation] when a LoadOperation is aborted", function() {
+				var deferred, request;  // for testing that if the request completes after it has been aborted, it is ignored
+				proxy.read.andCallFake( function( req ) {
+					request = req;
+					deferred = new jQuery.Deferred();
+					return deferred.promise();
+				} );
+				
+				var MyCollection = Collection.extend( {
+					model : MyModel,
+					proxy : proxy
+				} );
+				
+				var successCbCallCount = 0,
+				    errorCbCallCount = 0,
+				    cancelCbCallCount = 0,
+				    completeCbCallCount = 0,
+				    doneCallCount = 0,
+				    failCallCount = 0,
+				    cancelCallCount = 0,
+				    alwaysCallCount = 0,
+				    loadbeginCallCount = 0,
+				    loadCallCount = 0,
+				    loadcancelCallCount = 0;
+				
+				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
+				function checkCbArgs( collection, operation ) {
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 1 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
+				}
+				
+				// Instantiate and run the load() method
+				var collectionInstance = new MyCollection( {
+					listeners : {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
+						'load' : function( collection, operation ) {
+							loadCallCount++;
+							checkCbArgs( collection, operation );
+						},
+						'loadcancel' : function( collection, operation ) {
+							loadcancelCallCount++;
+							checkCbArgs( collection, operation );
+						}
+					}
+				} );
+				var operationPromise = collectionInstance.load( {
+					success : function( collection, operation ) {
+						successCbCallCount++;
+						checkCbArgs( collection, operation );
+					},
+					error : function( collection, operation ) {
+						errorCbCallCount++;
+						checkCbArgs( collection, operation );
+					},
+					cancel : function( collection, operation ) {
+						cancelCbCallCount++;
+						checkCbArgs( collection, operation );
+					},
+					complete : function( collection, operation ) {
+						completeCbCallCount++;
+						checkCbArgs( collection, operation );
+					}
+				} )
+					.done( function( collection, operation ) {
+						doneCallCount++;
+						checkCbArgs( collection, operation );
+					} )
+					.fail( function( collection, operation ) {
+						failCallCount++;
+						checkCbArgs( collection, operation );
+					} )
+					.cancel( function( collection, operation ) {
+						cancelCallCount++;
+						checkCbArgs( collection, operation );
+					} )
+					.always( function( collection, operation ) {
+						alwaysCallCount++;
+						checkCbArgs( collection, operation );
+					} );
+				
+				// Abort (cancel) the LoadOperation (from the OperationPromise)
+				operationPromise.abort();
+				
+				// Make sure the appropriate callbacks executed
+				expect( successCbCallCount ).toBe( 0 );
+				expect( errorCbCallCount ).toBe( 0 );
+				expect( cancelCbCallCount ).toBe( 1 );
+				expect( completeCbCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 0 );
+				expect( loadcancelCallCount ).toBe( 1 );
+				
+				
+				// -----------------------------
+				
+				// Test that if the requests complete after the LoadOperation has been aborted, that they have no effect
+				request.setResultSet( new ResultSet( {
+					records : [ 
+						{ id: 1, name: "John" },
+						{ id: 2, name: "Jane" }
+					],
+					totalCount : 100
+				} ) );
+				request.setSuccess();
+				deferred.resolve( request );
+				
+				expect( collectionInstance.getCount() ).toBe( 0 );
+				
+				// Callback counts should all still be the same
+				expect( successCbCallCount ).toBe( 0 );
+				expect( errorCbCallCount ).toBe( 0 );
+				expect( cancelCbCallCount ).toBe( 1 );
+				expect( completeCbCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 0 );
+				expect( loadcancelCallCount ).toBe( 1 );
+			} );
+			
+			
 			it( "load() should set the totalCount property on the Collection if the property is available on the resulting ResultSet", function() {
 				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {

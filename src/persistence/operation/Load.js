@@ -10,7 +10,7 @@ define( [
 	 * Represents a high level Load operation performed on a {@link data.Model Model} or {@link data.Collection Collection}.
 	 * See the superclass for details.
 	 */
-	var ReadOperation = Operation.extend( {
+	var LoadOperation = Operation.extend( {
 		
 		/**
 		 * @cfg {Boolean} addModels
@@ -33,6 +33,6 @@ define( [
 		
 	} );
 	
-	return ReadOperation;
+	return LoadOperation;
 	
 } );
