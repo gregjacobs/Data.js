@@ -13,9 +13,7 @@ define( [
 	 * Abstract base class which represents a write request to a persistent storage mechanism. This includes creating, updating, 
 	 * or destroying (deleting) models on the persistent storage.
 	 * 
-	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
-	 * complete.
+	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies}.
 	 */
 	var WriteRequest = Class.extend( Request, {
 		abstractClass : true,

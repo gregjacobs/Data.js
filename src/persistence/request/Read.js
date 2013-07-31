@@ -11,9 +11,7 @@ define( [
 	 * 
 	 * Represents a "read" CRUD request to a persistent storage mechanism. 
 	 * 
-	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies},
-	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
-	 * complete.
+	 * This class is used internally by the framework when making requests to {@link data.persistence.proxy.Proxy Proxies}.
 	 */
 	var ReadRequest = Class.extend( Request, {
 		

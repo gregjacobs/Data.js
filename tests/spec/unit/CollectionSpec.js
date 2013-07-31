@@ -1,4 +1,4 @@
-/*global define, window, _, describe, beforeEach, afterEach, it, xit, expect, JsMockito */
+/*global define, window, _, describe, beforeEach, afterEach, it, xit, expect, spyOn, JsMockito */
 define( [
 	'jquery',
 	'data/Data',
@@ -9,10 +9,20 @@ define( [
 	'data/persistence/proxy/Proxy',
 	'data/persistence/proxy/Ajax',
 	'data/persistence/request/Read',
-	'data/persistence/request/Batch'
-], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, AjaxProxy, ReadRequest, BatchRequest ) {
+	'data/persistence/operation/Load',
+	'data/persistence/operation/Promise'
+], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, AjaxProxy, ReadRequest, LoadOperation, OperationPromise ) {
 	
 	describe( "data.Collection", function() {
+		
+		// Concrete proxy implementation which simply implements the abstract interface
+		var ConcreteProxy = Proxy.extend( {
+			create : Data.emptyFn,
+			read : Data.emptyFn,
+			update : Data.emptyFn,
+			destroy : Data.emptyFn
+		} );
+		
 		
 		describe( "Test the constructor", function() {
 			var MyModel = Model.extend( {
@@ -1649,20 +1659,14 @@ define( [
 			    MyModel;
 			
 			beforeEach( function() {
-				proxy = JsMockito.mock( Proxy.extend( {
-					// Implementation of abstract interface
-					create : Data.emptyFn,
-					read : Data.emptyFn,
-					update : Data.emptyFn,
-					destroy : Data.emptyFn
-				} ) );
+				proxy = new ConcreteProxy();
 				
 				// For the base case for tests. If needing to do something different, override the particular method of interest.
 				var deferred = new jQuery.Deferred();
-				JsMockito.when( proxy ).create().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).read().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).update().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).destroy().then( function( req ) { return deferred.promise(); } );
+				spyOn( proxy, 'create' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'read' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'update' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'destroy' ).andReturn( deferred.promise() );
 				
 				MyModel = Model.extend( {
 					attributes : [ 'id', 'name' ],
@@ -1672,29 +1676,39 @@ define( [
 			
 			
 			it( "load() should throw an error if no proxy is configured", function() {
+				var MyCollection = Collection.extend( {
+					// note: no proxy, and no model
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						// note: no proxy, and no model
-					} );
-					
-					new MyCollection().load();
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a proxy configured"
+					myCollection.load();
 				} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 			} );
 			
 			
 			it( "load() should throw an error if it has no proxy but has a Model, but that model has no proxy configured", function() {
+				var MyCollection = Collection.extend( {
+					// note: no proxy, and a model that doesn't have a proxy
+					model : Model.extend( { /* no proxy on model */ } )
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						// note: no proxy, and a model that doesn't have a proxy
-						model : Model.extend( { /* no proxy on model */ } )
-					} );
-					
-					new MyCollection().load();
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a proxy configured"
+					myCollection.load();
 				} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+			} );
+			
+			
+			it( "load() should return an OperationPromise object", function() {
+				var MyCollection = Collection.extend( {
+					proxy : proxy
+				} );
+				
+				var myCollection = new MyCollection(),
+				    operationPromise = myCollection.load();
+				
+				expect( operationPromise instanceof OperationPromise ).toBe( true );
 			} );
 			
 			
@@ -1709,13 +1723,15 @@ define( [
 					// Override loadPage, just to see that it's called. loadPage() tests are done elsewhere
 					loadPage : function( pageNum, options ) {
 						loadPageCallCount++;  // just to make sure that the method is called
-						expect( pageNum ).toBe( 1 );  // orig YUI Test err msg: "The pageNum should be 1"
-						expect( options.params ).toBe( params );  // orig YUI Test err msg: "The params should have been passed along from the call to load()"
+						expect( pageNum ).toBe( 1 );
+						expect( options.params ).toBe( params );
 					}
 				} );
 				
-				new MyCollection().load( { params: params } );
-				expect( loadPageCallCount ).toBe( 1 );  // orig YUI Test err msg: "The loadPage() method should have been called with a configured `pageSize` on the Collection"
+				var myCollection = new MyCollection();
+				myCollection.load( { params: params } );
+				
+				expect( loadPageCallCount ).toBe( 1 );
 			} );
 			
 			
@@ -1725,8 +1741,7 @@ define( [
 				} );
 				
 				new MyCollection().load();
-				
-				JsMockito.verify( proxy ).read();
+				expect( proxy.read ).toHaveBeenCalled();
 			} );
 			
 			
@@ -1737,16 +1752,15 @@ define( [
 				} );
 				
 				new MyCollection().load();
-				
-				JsMockito.verify( proxy ).read();
+				expect( proxy.read ).toHaveBeenCalled();
 			} );
 			
 			
 			it( "load() should call the proxy's read() method with any `params` option provided to the method", function() {
 				var request;
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
-					return new jQuery.Deferred().promise();
+					return (new jQuery.Deferred()).promise();
 				} );
 				
 				var MyCollection = Collection.extend( {
@@ -1764,15 +1778,16 @@ define( [
 			} );
 			
 			
-			it( "load() should set the 'loading' flag to true when loading data, and back to false when finished with a successful load", function() {
+			it( "load() should cause isLoading() to return `true` while loading data, and back to false when finished with a successful load", function() {
 				var request, 
 				    deferred;
 				
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
-					deferred = new jQuery.Deferred();
+					request.setSuccess();
 					
+					deferred = new jQuery.Deferred();
 					return deferred.promise();
 				} );
 				
@@ -1782,24 +1797,24 @@ define( [
 				} );
 				var collection = new MyCollection();
 				
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be loading"
+				expect( collection.isLoading() ).toBe( false );
 				collection.load();
-				expect( collection.isLoading() ).toBe( true );  // orig YUI Test err msg: "The collection should be loading now"
+				expect( collection.isLoading() ).toBe( true );
 				
 				deferred.resolve( request );
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered loading after the proxy finishes its load"
+				expect( collection.isLoading() ).toBe( false );
 			} );
 			
 			
-			it( "load() should set the 'loading' flag to true when loading data, and back to false when finished with an errored load", function() {
+			it( "load() should cause isLoading() to return `true` while loading data, and back to false when finished with an errored load", function() {
 				var request, 
 				    deferred;
 				
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
-					request.setResultSet( new ResultSet() );
-					deferred = new jQuery.Deferred();
+					request.setException( "exception" );
 					
+					deferred = new jQuery.Deferred();
 					return deferred.promise();
 				} );
 				
@@ -1809,23 +1824,24 @@ define( [
 				} );
 				var collection = new MyCollection();
 				
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be loading"
+				expect( collection.isLoading() ).toBe( false );
 				collection.load();
-				expect( collection.isLoading() ).toBe( true );  // orig YUI Test err msg: "The collection should be loading now"
+				expect( collection.isLoading() ).toBe( true );
 				
 				deferred.reject( request );
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered loading after the proxy finishes its load"
+				expect( collection.isLoading() ).toBe( false );
 			} );
 			
 			
 			it( "load() should load the models returned by the data in the proxy", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
-						records : [ 
+						records : [
 							{ id: 1, name: "John" },
 							{ id: 2, name: "Jane" }
 						]
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -1842,13 +1858,15 @@ define( [
 			
 			
 			it( "load() should add the models returned by the data in the proxy, when the 'addModels' option is set to true", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
 							{ id: 4, name: "Jane" }
 						]
 					} ) );
+					request.setSuccess();
+					
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -1872,12 +1890,13 @@ define( [
 			} );
 			
 			
-			it( "load() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
+			it( "load() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, operation", function() {
 				var deferred, request;
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					req.setResultSet( new ResultSet( {
 						records : []
 					} ) );
+					req.setSuccess();
 					
 					deferred = new jQuery.Deferred();
 					request = req;
@@ -1899,11 +1918,11 @@ define( [
 				    loadCallCount = 0;
 				
 				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
-				function checkCbArgs( collection, batch, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
-					expect( collection ).toBe( collectionInstance );  // orig YUI Test err msg: "the collection should have been arg 1 in " + cbName
-					expect( batch instanceof BatchRequest ).toBe( true );  // orig YUI Test err msg: "Batch should have been arg 2 in " + cbName
-					expect( batch.getRequests().length ).toBe( 1 );  // orig YUI Test err msg: "Batch should only have 1 Request in " + cbName
-					expect( batch.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's only request in " + cbName
+				function checkCbArgs( collection, operation, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 1 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
 				}
 				
 				// Instantiate and run the load() method
@@ -1913,37 +1932,37 @@ define( [
 							loadbeginCallCount++;
 							expect( collection ).toBe( collectionInstance );
 						},
-						'load' : function( collection, batch ) {
+						'load' : function( collection, operation ) {
 							loadCallCount++;
-							checkCbArgs( collection, batch, "load event cb" );
+							checkCbArgs( collection, operation, "load event cb" );
 						}
 					}
 				} );
-				var promise = collectionInstance.load( {
-					success : function( collection, batch ) {
+				var operationPromise = collectionInstance.load( {
+					success : function( collection, operation ) {
 						successCallCount++;
-						checkCbArgs( collection, batch, "success cb" );
+						checkCbArgs( collection, operation, "success cb" );
 					},
-					error : function( collection, batch ) {
+					error : function( collection, operation ) {
 						errorCallCount++;
-						checkCbArgs( collection, batch, "error cb" );
+						checkCbArgs( collection, operation, "error cb" );
 					},
-					complete : function( collection, batch ) {
+					complete : function( collection, operation ) {
 						completeCallCount++;
-						checkCbArgs( collection, batch, "complete cb" );
+						checkCbArgs( collection, operation, "complete cb" );
 					}
 				} )
-					.done( function( collection, batch ) {
+					.done( function( collection, operation ) {
 						doneCallCount++;
-						checkCbArgs( collection, batch, "done cb" );
+						checkCbArgs( collection, operation, "done cb" );
 					} )
-					.fail( function( collection, batch ) {
+					.fail( function( collection, operation ) {
 						failCallCount++;
-						checkCbArgs( collection, batch, "fail cb" );
+						checkCbArgs( collection, operation, "fail cb" );
 					} )
-					.always( function( collection, batch ) {
+					.always( function( collection, operation ) {
 						alwaysCallCount++;
-						checkCbArgs( collection, batch, "always cb" );
+						checkCbArgs( collection, operation, "always cb" );
 					} );
 
 				// First check the loadbegin event
@@ -1953,18 +1972,19 @@ define( [
 				deferred.resolve( request );
 				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 0 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "loadCallCount"
+				expect( successCallCount ).toBe( 1 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 1 );
+				expect( failCallCount ).toBe( 0 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 1 );
 			} );
 			
 			
-			it( "load() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+			it( "load() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, operation", function() {
+				proxy.read.andCallFake( function( request ) {
+					request.setException( "exception" );
 					return new jQuery.Deferred().reject( request ).promise();
 				} );
 				
@@ -1979,65 +1999,71 @@ define( [
 				    doneCallCount = 0,
 				    failCallCount = 0,
 				    alwaysCallCount = 0,
+				    loadbeginCallCount = 0,
 				    loadCallCount = 0;
 				
 				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
-				function checkCbArgs( collection, batch, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
-					expect( collection ).toBe( collectionInstance );  // orig YUI Test err msg: "the collection should have been arg 1 in " + cbName
-					expect( batch instanceof BatchRequest ).toBe( true );  // orig YUI Test err msg: "Batch should have been arg 2 in " + cbName
-					expect( batch.getRequests().length ).toBe( 1 );  // orig YUI Test err msg: "Batch should only have 1 Request in " + cbName
-					expect( batch.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's only request in " + cbName
+				function checkCbArgs( collection, operation, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 1 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
 				}
 				
 				// Instantiate and run the load() method
-								    var collectionInstance = new MyCollection( {
+				var collectionInstance = new MyCollection( {
 					listeners : {
-						'load' : function( collection, batch ) {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
+						'load' : function( collection, operation ) {
 							loadCallCount++;
-							checkCbArgs( collection, batch, "load event cb" );
+							checkCbArgs( collection, operation, "load event cb" );
 						}
 					}
 				} );
-				var promise = collectionInstance.load( {
-					success : function( collection, batch ) {
+				var operationPromise = collectionInstance.load( {
+					success : function( collection, operation ) {
 						successCallCount++;
-						checkCbArgs( collection, batch, "success cb" );
+						checkCbArgs( collection, operation, "success cb" );
 					},
-					error : function( collection, batch ) {
+					error : function( collection, operation ) {
 						errorCallCount++;
-						checkCbArgs( collection, batch, "error cb" );
+						checkCbArgs( collection, operation, "error cb" );
 					},
-					complete : function( collection, batch ) {
+					complete : function( collection, operation ) {
 						completeCallCount++;
-						checkCbArgs( collection, batch, "complete cb" );
+						checkCbArgs( collection, operation, "complete cb" );
 					}
 				} )
-					.done( function( collection, batch ) {
+					.done( function( collection, operation ) {
 						doneCallCount++;
-						checkCbArgs( collection, batch, "done cb" );
+						checkCbArgs( collection, operation, "done cb" );
 					} )
-					.fail( function( collection, batch ) {
+					.fail( function( collection, operation ) {
 						failCallCount++;
-						checkCbArgs( collection, batch, "fail cb" );
+						checkCbArgs( collection, operation, "fail cb" );
 					} )
-					.always( function( collection, batch ) {
+					.always( function( collection, operation ) {
 						alwaysCallCount++;
-						checkCbArgs( collection, batch, "always cb" );
+						checkCbArgs( collection, operation, "always cb" );
 					} );
 				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 0 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "loadCallCount"
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 1 );
 			} );
 			
 			
 			it( "load() should set the totalCount property on the Collection if the property is available on the resulting ResultSet", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2045,6 +2071,7 @@ define( [
 						],
 						totalCount : 100
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2062,7 +2089,7 @@ define( [
 			
 			
 			it( "load() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2070,6 +2097,8 @@ define( [
 						]
 						//totalCount : 100  -- not providing totalCount config
 					} ) );
+					request.setSuccess();
+					
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2093,20 +2122,14 @@ define( [
 			    MyModel;
 			
 			beforeEach( function() {
-				proxy = JsMockito.mock( Proxy.extend( {
-					// Implementation of abstract interface
-					create : Data.emptyFn,
-					read : Data.emptyFn,
-					update : Data.emptyFn,
-					destroy : Data.emptyFn
-				} ) );
+				proxy = new ConcreteProxy();
 				
 				// For the base case for tests. If needing to do something different, override the particular method of interest.
 				var deferred = new jQuery.Deferred();
-				JsMockito.when( proxy ).create().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).read().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).update().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).destroy().then( function( req ) { return deferred.promise(); } );
+				spyOn( proxy, 'create' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'read' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'update' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'destroy' ).andReturn( deferred.promise() );
 				
 				MyModel = Model.extend( {
 					attributes : [ 'id', 'name' ],
@@ -2116,29 +2139,39 @@ define( [
 			
 			
 			it( "loadRange() should throw an error if no proxy is configured", function() {
+				var MyCollection = Collection.extend( {
+					// note: no proxy, and no model
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						// note: no proxy, and no model
-					} );
-					
-					new MyCollection().loadRange( 0, 9 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a proxy configured"
+					myCollection.loadRange( 0, 9 );
 				} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 			} );
 			
 			
 			it( "loadRange() should throw an error if it has no proxy but has a Model, but that model has no proxy configured", function() {
+				var MyCollection = Collection.extend( {
+					// note: no proxy, and a model that doesn't have a proxy
+					model : Model.extend( { /* no proxy on model */ } )
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						// note: no proxy, and a model that doesn't have a proxy
-						model : Model.extend( { /* no proxy on model */ } )
-					} );
-					
-					new MyCollection().load( 0, 9 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a proxy configured"
+					myCollection.load( 0, 9 );
 				} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+			} );
+			
+			
+			it( "loadRange() should return an OperationPromise object", function() {
+				var MyCollection = Collection.extend( {
+					proxy : proxy
+				} );
+				
+				var myCollection = new MyCollection(),
+				    operationPromise = myCollection.loadRange( 0, 9 );
+				
+				expect( operationPromise instanceof OperationPromise ).toBe( true );
 			} );
 			
 			
@@ -2148,8 +2181,7 @@ define( [
 				} );
 				
 				new MyCollection().loadRange( 0, 9 );
-				
-				JsMockito.verify( proxy ).read();
+				expect( proxy.read ).toHaveBeenCalled();
 			} );
 			
 			
@@ -2160,20 +2192,20 @@ define( [
 				} );
 				
 				new MyCollection().loadRange( 0, 9 );
-				
-				JsMockito.verify( proxy ).read();
+				expect( proxy.read ).toHaveBeenCalled();
 			} );
 			
 			
-			it( "loadRange() should set the 'loading' flag to true when loading data, and back to false when finished with a successful load", function() {
+			it( "loadRange() should cause isLoading() to return `true` while loading data, and back to false when finished with a successful load", function() {
 				var request, 
 				    deferred;
 				
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
-					deferred = new jQuery.Deferred();
+					request.setSuccess();
 					
+					deferred = new jQuery.Deferred();
 					return deferred.promise();
 				} );
 				
@@ -2183,24 +2215,24 @@ define( [
 				} );
 				var collection = new MyCollection();
 				
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be loading"
+				expect( collection.isLoading() ).toBe( false );
 				collection.loadRange( 0, 9 );
-				expect( collection.isLoading() ).toBe( true );  // orig YUI Test err msg: "The collection should be loading now"
+				expect( collection.isLoading() ).toBe( true );
 				
 				deferred.resolve( request );
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered loading after the proxy finishes its load"
+				expect( collection.isLoading() ).toBe( false );
 			} );
 			
 			
-			it( "loadRange() should set the 'loading' flag to true when loading data, and back to false when finished with an errored load", function() {
+			it( "loadRange() should cause isLoading() to return `true` while loading data, and back to false when finished with an errored load", function() {
 				var request, 
 				    deferred;
 				
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
-					request.setResultSet( new ResultSet() );
-					deferred = new jQuery.Deferred();
+					request.setException( "exception" );
 					
+					deferred = new jQuery.Deferred();
 					return deferred.promise();
 				} );
 				
@@ -2239,7 +2271,7 @@ define( [
 			
 			it( "loadRange() should call the proxy's read() method with any `params` option provided to the method", function() {
 				var request;
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
 					return new jQuery.Deferred().promise();
 				} );
@@ -2260,13 +2292,14 @@ define( [
 			
 			
 			it( "loadRange() should load the models returned by the data in the proxy", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
 							{ id: 2, name: "Jane" }
 						]
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2283,13 +2316,14 @@ define( [
 			
 			
 			it( "loadRange() should add the models returned by the data in the proxy, when the 'addModels' option is set to true", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
 							{ id: 4, name: "Jane" }
 						]
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2313,11 +2347,12 @@ define( [
 			} );
 			
 			
-			it( "loadRange() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+			it( "loadRange() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, operation", function() {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : []
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2332,65 +2367,72 @@ define( [
 				    doneCallCount = 0,
 				    failCallCount = 0,
 				    alwaysCallCount = 0,
+				    loadbeginCallCount = 0,
 				    loadCallCount = 0;
 				
 				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
-				function checkCbArgs( collection, batch, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
-					expect( collection ).toBe( collectionInstance );  // orig YUI Test err msg: "the collection should have been arg 1 in " + cbName
-					expect( batch instanceof BatchRequest ).toBe( true );  // orig YUI Test err msg: "Batch should have been arg 2 in " + cbName
-					expect( batch.getRequests().length ).toBe( 1 );  // orig YUI Test err msg: "Batch should only have 1 Request in " + cbName
-					expect( batch.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's only request in " + cbName
+				function checkCbArgs( collection, operation, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 1 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
 				}
 				
 				// Instantiate and run the load() method
 				var collectionInstance = new MyCollection( {
 					listeners : {
-						'load' : function( collection, batch ) {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
+						'load' : function( collection, operation ) {
 							loadCallCount++;
-							checkCbArgs( collection, batch, "load event cb" );
+							checkCbArgs( collection, operation, "load event cb" );
 						}
 					}
 				} );
-				var promise = collectionInstance.loadRange( 0, 9, {
-					success : function( collection, batch ) {
+				var operationPromise = collectionInstance.loadRange( 0, 9, {
+					success : function( collection, operation ) {
 						successCallCount++;
-						checkCbArgs( collection, batch, "success cb" );
+						checkCbArgs( collection, operation, "success cb" );
 					},
-					error : function( collection, batch ) {
+					error : function( collection, operation ) {
 						errorCallCount++;
-						checkCbArgs( collection, batch, "error cb" );
+						checkCbArgs( collection, operation, "error cb" );
 					},
-					complete : function( collection, batch ) {
+					complete : function( collection, operation ) {
 						completeCallCount++;
-						checkCbArgs( collection, batch, "complete cb" );
+						checkCbArgs( collection, operation, "complete cb" );
 					}
 				} )
-					.done( function( collection, batch ) {
+					.done( function( collection, operation ) {
 						doneCallCount++;
-						checkCbArgs( collection, batch, "done cb" );
+						checkCbArgs( collection, operation, "done cb" );
 					} )
-					.fail( function( collection, batch ) {
+					.fail( function( collection, operation ) {
 						failCallCount++;
-						checkCbArgs( collection, batch, "fail cb" );
+						checkCbArgs( collection, operation, "fail cb" );
 					} )
-					.always( function( collection, batch ) {
+					.always( function( collection, operation ) {
 						alwaysCallCount++;
-						checkCbArgs( collection, batch, "always cb" );
+						checkCbArgs( collection, operation, "always cb" );
 					} );
 				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 0 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "loadCallCount"
+				expect( successCallCount ).toBe( 1 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 1 );
+				expect( failCallCount ).toBe( 0 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 1 );
 			} );
 			
 			
-			it( "loadRange() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+			it( "loadRange() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, operation", function() {
+				proxy.read.andCallFake( function( request ) {
+					request.setException( "exception" );
 					return new jQuery.Deferred().reject( request ).promise();
 				} );
 				
@@ -2405,65 +2447,71 @@ define( [
 				    doneCallCount = 0,
 				    failCallCount = 0,
 				    alwaysCallCount = 0,
+				    loadbeginCallCount = 0,
 				    loadCallCount = 0;
 				
 				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
-				function checkCbArgs( collection, batch, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
-					expect( collection ).toBe( collectionInstance );  // orig YUI Test err msg: "the collection should have been arg 1 in " + cbName
-					expect( batch instanceof BatchRequest ).toBe( true );  // orig YUI Test err msg: "Batch should have been arg 2 in " + cbName
-					expect( batch.getRequests().length ).toBe( 1 );  // orig YUI Test err msg: "Batch should only have 1 Request in " + cbName
-					expect( batch.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's only request in " + cbName
+				function checkCbArgs( collection, operation, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 1 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
 				}
 				
 				// Instantiate and run the load() method
-								    var collectionInstance = new MyCollection( {
+				var collectionInstance = new MyCollection( {
 					listeners : {
-						'load' : function( collection, batch ) {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
+						'load' : function( collection, operation ) {
 							loadCallCount++;
-							checkCbArgs( collection, batch, "load event cb" );
+							checkCbArgs( collection, operation, "load event cb" );
 						}
 					}
 				} );
-				var promise = collectionInstance.loadRange( 0, 9, {
-					success : function( collection, batch ) {
+				var operationPromise = collectionInstance.loadRange( 0, 9, {
+					success : function( collection, operation ) {
 						successCallCount++;
-						checkCbArgs( collection, batch, "success cb" );
+						checkCbArgs( collection, operation, "success cb" );
 					},
-					error : function( collection, batch ) {
+					error : function( collection, operation ) {
 						errorCallCount++;
-						checkCbArgs( collection, batch, "error cb" );
+						checkCbArgs( collection, operation, "error cb" );
 					},
-					complete : function( collection, batch ) {
+					complete : function( collection, operation ) {
 						completeCallCount++;
-						checkCbArgs( collection, batch, "complete cb" );
+						checkCbArgs( collection, operation, "complete cb" );
 					}
 				} )
-					.done( function( collection, batch ) {
+					.done( function( collection, operation ) {
 						doneCallCount++;
-						checkCbArgs( collection, batch, "done cb" );
+						checkCbArgs( collection, operation, "done cb" );
 					} )
-					.fail( function( collection, batch ) {
+					.fail( function( collection, operation ) {
 						failCallCount++;
-						checkCbArgs( collection, batch, "fail cb" );
+						checkCbArgs( collection, operation, "fail cb" );
 					} )
-					.always( function( collection, batch ) {
+					.always( function( collection, operation ) {
 						alwaysCallCount++;
-						checkCbArgs( collection, batch, "always cb" );
+						checkCbArgs( collection, operation, "always cb" );
 					} );
 				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 0 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "loadCallCount"
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 1 );
 			} );
 			
 			
 			it( "loadRange() should set the totalCount property on the Collection if the property is available on the resulting ResultSet", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2488,7 +2536,7 @@ define( [
 			
 			
 			it( "loadRange() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2519,20 +2567,14 @@ define( [
 			    MyModel;
 			
 			beforeEach( function() {
-				proxy = JsMockito.mock( Proxy.extend( {
-					// Implementation of abstract interface
-					create : Data.emptyFn,
-					read : Data.emptyFn,
-					update : Data.emptyFn,
-					destroy : Data.emptyFn
-				} ) );
+				proxy = new ConcreteProxy();
 				
 				// For the base case for tests. If needing to do something different, override the particular method of interest.
 				var deferred = new jQuery.Deferred();
-				JsMockito.when( proxy ).create().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).read().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).update().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).destroy().then( function( req ) { return deferred.promise(); } );
+				spyOn( proxy, 'create' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'read' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'update' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'destroy' ).andReturn( deferred.promise() );
 				
 				MyModel = Model.extend( {
 					attributes : [ 'id', 'name' ],
@@ -2556,44 +2598,54 @@ define( [
 			
 			
 			it( "loadPage() should throw an error if no `pageSize` config is set on the Collection", function() {
+				var MyCollection = Collection.extend( {
+					proxy : proxy
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						proxy : proxy
-					} );
-					
-					new MyCollection().loadPage( 1 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a `pageSize` config"
+					myCollection.loadPage( 1 );
 				} ).toThrow( "The `pageSize` config must be set on the Collection to load paged data." );
 			} );
 			
 			
 			it( "loadPage() should throw an error if no proxy is configured", function() {
+				var MyCollection = Collection.extend( {
+					// note: no proxy, and no model
+					pageSize : 25
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						// note: no proxy, and no model
-						pageSize : 25
-					} );
-					
-					new MyCollection().loadPage( 1 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a proxy configured"
+					myCollection.loadPage( 1 );
 				} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 			} );
 			
 			
 			it( "loadPage() should throw an error if it has no proxy but has a Model, but that model has no proxy configured", function() {
+				var MyCollection = Collection.extend( {
+					// note: no proxy, and a model that doesn't have a proxy
+					model : Model.extend( { /* no proxy on model */ } ),
+					pageSize : 25
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						// note: no proxy, and a model that doesn't have a proxy
-						model : Model.extend( { /* no proxy on model */ } ),
-						pageSize : 25
-					} );
-					
-					new MyCollection().loadPage( 1 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a proxy configured"
+					myCollection.loadPage( 1 );
 				} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+			} );
+			
+			
+			it( "loadPage() should return an OperationPromise object", function() {
+				var MyCollection = Collection.extend( {
+					proxy : proxy,
+					pageSize : 25
+				} );
+				
+				var myCollection = new MyCollection(),
+				    operationPromise = myCollection.loadPage( 1 );
+				
+				expect( operationPromise instanceof OperationPromise ).toBe( true );
 			} );
 			
 			
@@ -2604,8 +2656,7 @@ define( [
 				} );
 				
 				new MyCollection().loadPage( 1 );
-				
-				JsMockito.verify( proxy ).read();
+				expect( proxy.read ).toHaveBeenCalled();
 			} );
 			
 			
@@ -2617,20 +2668,20 @@ define( [
 				} );
 				
 				new MyCollection().loadPage( 1 );
-				
-				JsMockito.verify( proxy ).read();
+				expect( proxy.read ).toHaveBeenCalled();
 			} );
 			
 			
-			it( "loadPage() should set the 'loading' flag to true when loading data, and back to false when finished with a successful load", function() {
+			it( "loadPage() should cause isLoading() to return `true` while loading data, and back to false when finished with a successful load", function() {
 				var request, 
 				    deferred;
 				
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
 					request.setResultSet( new ResultSet() );
-					deferred = new jQuery.Deferred();
+					request.setSuccess();
 					
+					deferred = new jQuery.Deferred();
 					return deferred.promise();
 				} );
 				
@@ -2641,24 +2692,24 @@ define( [
 				} );
 				var collection = new MyCollection();
 				
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be loading"
+				expect( collection.isLoading() ).toBe( false );
 				collection.loadPage( 1 );
-				expect( collection.isLoading() ).toBe( true );  // orig YUI Test err msg: "The collection should be loading now"
+				expect( collection.isLoading() ).toBe( true );
 				
 				deferred.resolve( request );
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered loading after the proxy finishes its load"
+				expect( collection.isLoading() ).toBe( false );
 			} );
 			
 			
-			it( "loadPage() should set the 'loading' flag to true when loading data, and back to false when finished with an errored load", function() {
+			it( "loadPage() should cause isLoading() to return `true` while loading data, and back to false when finished with an errored load", function() {
 				var request, 
 				    deferred;
 				
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
-					request.setResultSet( new ResultSet() );
-					deferred = new jQuery.Deferred();
+					request.setException( "exception" );
 					
+					deferred = new jQuery.Deferred();
 					return deferred.promise();
 				} );
 				
@@ -2669,18 +2720,18 @@ define( [
 				} );
 				var collection = new MyCollection();
 				
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be loading"
+				expect( collection.isLoading() ).toBe( false );
 				collection.loadPage( 1 );
-				expect( collection.isLoading() ).toBe( true );  // orig YUI Test err msg: "The collection should be loading now"
+				expect( collection.isLoading() ).toBe( true );
 				
 				deferred.reject( request );
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered loading after the proxy finishes its load"
+				expect( collection.isLoading() ).toBe( false );
 			} );
 			
 			
 			it( "loadPage() should call the proxy's read() method with the proper paging configs, and any `params` option provided to the method", function() {
 				var request;
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					request = req;
 					return new jQuery.Deferred().promise();
 				} );
@@ -2706,13 +2757,14 @@ define( [
 			
 			
 			it( "loadPage() should load the models returned by the data in the proxy", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
 							{ id: 2, name: "Jane" }
 						]
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2730,13 +2782,14 @@ define( [
 			
 			
 			it( "loadPage() should add the models returned by the data in the proxy, when the 'addModels' option is set to true", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
 							{ id: 4, name: "Jane" }
 						]
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2762,13 +2815,14 @@ define( [
 			
 			
 			it( "loadPage() should add the models returned by the data in the proxy by default, when the Collection's `clearOnPageLoad` config is false", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
 							{ id: 4, name: "Jane" }
 						]
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2793,13 +2847,14 @@ define( [
 			
 			
 			it( "loadPage() should replace the existing models in the Collection upon load when the Collection's `clearOnPageLoad` config is true", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 3, name: "John" },
 							{ id: 4, name: "Jane" }
 						]
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2821,11 +2876,12 @@ define( [
 			} );
 			
 			
-			it( "loadPage() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+			it( "loadPage() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, operation", function() {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : []
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2841,65 +2897,72 @@ define( [
 				    doneCallCount = 0,
 				    failCallCount = 0,
 				    alwaysCallCount = 0,
+				    loadbeginCallCount = 0,
 				    loadCallCount = 0;
 				
 				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
-				function checkCbArgs( collection, batch, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
-					expect( collection ).toBe( collectionInstance );  // orig YUI Test err msg: "the collection should have been arg 1 in " + cbName
-					expect( batch instanceof BatchRequest ).toBe( true );  // orig YUI Test err msg: "Batch should have been arg 2 in " + cbName
-					expect( batch.getRequests().length ).toBe( 1 );  // orig YUI Test err msg: "Batch should only have 1 Request in " + cbName
-					expect( batch.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's only request in " + cbName
+				function checkCbArgs( collection, operation, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 1 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
 				}
 				
 				// Instantiate and run the loadPage() method
 				var collectionInstance = new MyCollection( {
 					listeners : {
-						'load' : function( collection, batch ) {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
+						'load' : function( collection, operation ) {
 							loadCallCount++;
-							checkCbArgs( collection, batch, "load event cb" );
+							checkCbArgs( collection, operation, "load event cb" );
 						}
 					}
 				} );
-				var promise = collectionInstance.loadPage( 1, {
-					success : function( collection, batch ) {
+				var operationPromise = collectionInstance.loadPage( 1, {
+					success : function( collection, operation ) {
 						successCallCount++;
-						checkCbArgs( collection, batch, "success cb" );
+						checkCbArgs( collection, operation, "success cb" );
 					},
-					error : function( collection, batch ) {
+					error : function( collection, operation ) {
 						errorCallCount++;
-						checkCbArgs( collection, batch, "error cb" );
+						checkCbArgs( collection, operation, "error cb" );
 					},
-					complete : function( collection, batch ) {
+					complete : function( collection, operation ) {
 						completeCallCount++;
-						checkCbArgs( collection, batch, "complete cb" );
+						checkCbArgs( collection, operation, "complete cb" );
 					}
 				} )
-					.done( function( collection, batch ) {
+					.done( function( collection, operation ) {
 						doneCallCount++;
-						checkCbArgs( collection, batch, "done cb" );
+						checkCbArgs( collection, operation, "done cb" );
 					} )
-					.fail( function( collection, batch ) {
+					.fail( function( collection, operation ) {
 						failCallCount++;
-						checkCbArgs( collection, batch, "fail cb" );
+						checkCbArgs( collection, operation, "fail cb" );
 					} )
-					.always( function( collection, batch ) {
+					.always( function( collection, operation ) {
 						alwaysCallCount++;
-						checkCbArgs( collection, batch, "always cb" );
+						checkCbArgs( collection, operation, "always cb" );
 					} );
 				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 0 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "loadCallCount"
+				expect( successCallCount ).toBe( 1 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 1 );
+				expect( failCallCount ).toBe( 0 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 1 );
 			} );
 			
 			
-			it( "loadPage() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+			it( "loadPage() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, operation", function() {
+				proxy.read.andCallFake( function( request ) {
+					request.setException( "exception" );
 					return new jQuery.Deferred().reject( request ).promise();
 				} );
 				
@@ -2915,65 +2978,71 @@ define( [
 				    doneCallCount = 0,
 				    failCallCount = 0,
 				    alwaysCallCount = 0,
+				    loadbeginCallCount = 0,
 				    loadCallCount = 0;
 				
 				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
-				function checkCbArgs( collection, batch, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
-					expect( collection ).toBe( collectionInstance );  // orig YUI Test err msg: "the collection should have been arg 1 in " + cbName
-					expect( batch instanceof BatchRequest ).toBe( true );  // orig YUI Test err msg: "Batch should have been arg 2 in " + cbName
-					expect( batch.getRequests().length ).toBe( 1 );  // orig YUI Test err msg: "Batch should only have 1 Request in " + cbName
-					expect( batch.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's only request in " + cbName
+				function checkCbArgs( collection, operation, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 1 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
 				}
 				
 				// Instantiate and run the loadPage() method
 				var collectionInstance = new MyCollection( {
 					listeners : {
-						'load' : function( collection, batch ) {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
+						'load' : function( collection, operation ) {
 							loadCallCount++;
-							checkCbArgs( collection, batch, "load event cb" );
+							checkCbArgs( collection, operation, "load event cb" );
 						}
 					}
 				} );
-				var promise = collectionInstance.loadPage( 1, {
-					success : function( collection, batch ) {
+				var operationPromise = collectionInstance.loadPage( 1, {
+					success : function( collection, operation ) {
 						successCallCount++;
-						checkCbArgs( collection, batch, "success cb" );
+						checkCbArgs( collection, operation, "success cb" );
 					},
-					error : function( collection, batch ) {
+					error : function( collection, operation ) {
 						errorCallCount++;
-						checkCbArgs( collection, batch, "error cb" );
+						checkCbArgs( collection, operation, "error cb" );
 					},
-					complete : function( collection, batch ) {
+					complete : function( collection, operation ) {
 						completeCallCount++;
-						checkCbArgs( collection, batch, "complete cb" );
+						checkCbArgs( collection, operation, "complete cb" );
 					}
 				} )
-					.done( function( collection, batch ) {
+					.done( function( collection, operation ) {
 						doneCallCount++;
-						checkCbArgs( collection, batch, "done cb" );
+						checkCbArgs( collection, operation, "done cb" );
 					} )
-					.fail( function( collection, batch ) {
+					.fail( function( collection, operation ) {
 						failCallCount++;
-						checkCbArgs( collection, batch, "fail cb" );
+						checkCbArgs( collection, operation, "fail cb" );
 					} )
-					.always( function( collection, batch ) {
+					.always( function( collection, operation ) {
 						alwaysCallCount++;
-						checkCbArgs( collection, batch, "always cb" );
+						checkCbArgs( collection, operation, "always cb" );
 					} );
 				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 0 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "loadCallCount"
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 1 );
 			} );
 			
 			
 			it( "loadPage() should set the totalCount property on the Collection if the property is available on the resulting ResultSet", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -2981,6 +3050,7 @@ define( [
 						],
 						totalCount : 100
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -2999,7 +3069,7 @@ define( [
 			
 			
 			it( "loadPage() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -3031,20 +3101,14 @@ define( [
 			    MyModel;
 			
 			beforeEach( function() {
-				proxy = JsMockito.mock( Proxy.extend( {
-					// Implementation of abstract interface
-					create : Data.emptyFn,
-					read : Data.emptyFn,
-					update : Data.emptyFn,
-					destroy : Data.emptyFn
-				} ) );
+				proxy = new ConcreteProxy();
 				
 				// For the base case for tests. If needing to do something different, override the particular method of interest.
 				var deferred = new jQuery.Deferred();
-				JsMockito.when( proxy ).create().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).read().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).update().then( function( req ) { return deferred.promise(); } );
-				JsMockito.when( proxy ).destroy().then( function( req ) { return deferred.promise(); } );
+				spyOn( proxy, 'create' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'read' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'update' ).andReturn( deferred.promise() );
+				spyOn( proxy, 'destroy' ).andReturn( deferred.promise() );
 				
 				MyModel = Model.extend( {
 					attributes : [ 'id', 'name' ],
@@ -3054,72 +3118,81 @@ define( [
 			
 			
 			it( "loadPageRange() should throw an error if no `startPage` argument is provided to the method", function() {
+				var MyCollection = Collection.extend( {
+					proxy : proxy,
+					pageSize : 25
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						proxy : proxy,
-						pageSize : 25
-					} );
-					
-					new MyCollection().loadPageRange();  // missing startPage arg
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a page number provided to it"
+					myCollection.loadPageRange();  // missing startPage arg
 				} ).toThrow( "`startPage` and `endPage` arguments required for loadPageRange() method, and must be > 0" );
 			} );
 			
 			
 			it( "loadPageRange() should throw an error if no `endPage` argument is provided to the method", function() {
+				var MyCollection = Collection.extend( {
+					proxy : proxy,
+					pageSize : 25
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						proxy : proxy,
-						pageSize : 25
-					} );
-					
-					new MyCollection().loadPageRange( 1 );  // missing endPage arg
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a page number provided to it"
+					myCollection.loadPageRange( 1 );  // missing endPage arg
 				} ).toThrow( "`startPage` and `endPage` arguments required for loadPageRange() method, and must be > 0" );
 			} );
 			
 			
 			it( "loadPageRange() should throw an error if no `pageSize` config is set on the Collection", function() {
+				var MyCollection = Collection.extend( {
+					proxy : proxy
+					// note: no pageSize
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						proxy : proxy
-					} );
-					
-					new MyCollection().loadPageRange( 1, 2 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a `pageSize` config"
+					myCollection.loadPageRange( 1, 2 );
 				} ).toThrow( "The `pageSize` config must be set on the Collection to load paged data." );
 			} );
 			
 			
 			it( "loadPageRange() should throw an error if no proxy is configured", function() {
+				var MyCollection = Collection.extend( {
+					// note: no proxy, and no model
+					pageSize : 25
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						// note: no proxy, and no model
-						pageSize : 25
-					} );
-					
-					new MyCollection().loadPageRange( 1, 2 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a proxy configured"
+					myCollection.loadPageRange( 1, 2 );
 				} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 			} );
 			
 			
 			it( "loadPageRange() should throw an error if it has no proxy but has a Model, but that model has no proxy configured", function() {
+				var MyCollection = Collection.extend( {
+					// note: no proxy, and a model that doesn't have a proxy
+					model : Model.extend( { /* no proxy on model */ } ),
+					pageSize : 25
+				} );
+				var myCollection = new MyCollection();
+				
 				expect( function() {
-					var MyCollection = Collection.extend( {
-						// note: no proxy, and a model that doesn't have a proxy
-						model : Model.extend( { /* no proxy on model */ } ),
-						pageSize : 25
-					} );
-					
-					new MyCollection().loadPageRange( 1, 2 );
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "Test should have thrown an error for not having a proxy configured"
+					myCollection.loadPageRange( 1, 2 );
 				} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+			} );
+			
+			
+			it( "loadPageRange() should return an OperationPromise object", function() {
+				var MyCollection = Collection.extend( {
+					proxy : proxy,
+					pageSize : 25
+				} );
+				
+				var myCollection = new MyCollection(),
+				    operationPromise = myCollection.loadPageRange( 1, 3 );
+				
+				expect( operationPromise instanceof OperationPromise ).toBe( true );
 			} );
 			
 			
@@ -3130,8 +3203,7 @@ define( [
 				} );
 				
 				new MyCollection().loadPageRange( 1, 3 );
-				
-				JsMockito.verify( proxy, JsMockito.Verifiers.times( 3 ) ).read();
+				expect( proxy.read.callCount ).toBe( 3 );
 			} );
 			
 			
@@ -3143,17 +3215,17 @@ define( [
 				} );
 				
 				new MyCollection().loadPageRange( 1, 3 );
-				
-				JsMockito.verify( proxy, JsMockito.Verifiers.times( 3 ) ).read();
+				expect( proxy.read.callCount ).toBe( 3 );
 			} );
 			
 			
-			it( "loadPageRange() should set the 'loading' flag to true when loading data, and back to false when finished with a successful load of *all* pages", function() {
+			it( "loadPageRange() should cause isLoading() to return `true` while loading data, and back to false when finished with a successful load of *all* pages", function() {
 				var requests = [], 
 				    deferreds = [];
 				
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet() );
+					request.setSuccess();
 					requests.push( request );
 					
 					var deferred = new jQuery.Deferred();
@@ -3169,25 +3241,25 @@ define( [
 				} );
 				var collection = new MyCollection();
 				
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be loading"
+				expect( collection.isLoading() ).toBe( false );
 				collection.loadPageRange( 1, 2 );
-				expect( collection.isLoading() ).toBe( true );  // orig YUI Test err msg: "The collection should be loading now"
+				expect( collection.isLoading() ).toBe( true );
 				
 				// Resolve the first Proxy read request's deferred
 				deferreds[ 0 ].resolve( requests[ 0 ] );
-				expect( collection.isLoading() ).toBe( true );  // orig YUI Test err msg: "The collection should still be considered loading after only one of two requests has finished"
+				expect( collection.isLoading() ).toBe( true );
 				
 				// Now resolve the second read request's deferred. The collection should now no longer be considered loading.
 				deferreds[ 1 ].resolve( requests[ 1 ] );
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered loading after the proxy finishes its load"
+				expect( collection.isLoading() ).toBe( false );
 			} );
 			
 			
-			it( "loadPageRange() should set the 'loading' flag to true when loading data, and back to false when finished with an errored load of even just one of the pages", function() {
+			it( "loadPageRange() should cause isLoading() to return `true` while loading data, and back to false when finished an errored load of even just one of the pages", function() {
 				var requests = [], 
 				    deferreds = [];
 				
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet() );
 					requests.push( request );
 					
@@ -3204,19 +3276,20 @@ define( [
 				} );
 				var collection = new MyCollection();
 				
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be loading"
+				expect( collection.isLoading() ).toBe( false );
 				collection.loadPageRange( 1, 2 );
-				expect( collection.isLoading() ).toBe( true );  // orig YUI Test err msg: "The collection should be loading now"
+				expect( collection.isLoading() ).toBe( true );
 				
 				// Reject the first Proxy read request's deferred
+				requests[ 0 ].setException( "exception" );
 				deferreds[ 0 ].reject( requests[ 0 ] );
-				expect( collection.isLoading() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered loading after the proxy has errored for one of the requests"
+				expect( collection.isLoading() ).toBe( false );
 			} );
 			
 			
 			it( "loadPageRange() should call the proxy's read() method with the proper paging configs, and any `params` option provided to the method", function() {
 				var requests = [];
-				JsMockito.when( proxy ).read().then( function( req ) {
+				proxy.read.andCallFake( function( req ) {
 					requests.push( req );
 					return new jQuery.Deferred().promise();
 				} );
@@ -3233,7 +3306,7 @@ define( [
 					params : params
 				} );
 				
-				expect( requests.length ).toBe( 3 );  // orig YUI Test err msg: "Proxy should have been called 3 times, creating 3 request objects"
+				expect( requests.length ).toBe( 3 );  // Proxy should have been called 3 times, creating 3 request objects
 				
 				expect( requests[ 0 ].getParams() ).toBe( params );
 				expect( requests[ 0 ].getPage() ).toBe( 1 );
@@ -3257,7 +3330,7 @@ define( [
 			
 			it( "loadPageRange() should load the models returned by the data in the proxy, in the order of the page requests", function() {
 				var deferreds = [];  // for storing each of the proxy's deferreds, so we can resolve them out of order
-				var requests = []; // for storing the request objects that the Collection creates for each request
+				var requests = [];   // for storing the request objects that the Collection creates for each request
 				var recordSets = [   // for returning new data for each "page load"
 					[ { id: 1, name: "John" }, { id: 2, name: "Jane" } ],
 					[ { id: 3, name: "Greg" }, { id: 4, name: "Jeff" } ],
@@ -3265,7 +3338,7 @@ define( [
 				];
 				var opNum = -1;
 				
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					opNum++;
 					request.setResultSet( new ResultSet( {
 						records : recordSets[ opNum ]
@@ -3287,10 +3360,10 @@ define( [
 				var collection = new MyCollection();
 				collection.loadPageRange( 1, 3 );
 				
-				// Resolve the deferreds out of order
-				deferreds[ 2 ].resolve( requests[ 2 ] );
-				deferreds[ 0 ].resolve( requests[ 0 ] );
-				deferreds[ 1 ].resolve( requests[ 1 ] );
+				// Set success and resolve the deferreds out of order
+				requests[ 2 ].setSuccess(); deferreds[ 2 ].resolve( requests[ 2 ] );
+				requests[ 0 ].setSuccess(); deferreds[ 0 ].resolve( requests[ 0 ] );
+				requests[ 1 ].setSuccess(); deferreds[ 1 ].resolve( requests[ 1 ] );
 				
 				expect( collection.getCount() ).toBe( 6 );  // orig YUI Test err msg: "Should be 6 models in the collection now"
 				expect( collection.getAt( 0 ).get( 'id' ) ).toBe( 1 );  // orig YUI Test err msg: "model w/ id 1 should be at index 0"
@@ -3311,7 +3384,7 @@ define( [
 				];
 				var opNum = -1;
 				
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					opNum++;
 					request.setResultSet( new ResultSet( {
 						records : recordSets[ opNum ]
@@ -3337,9 +3410,9 @@ define( [
 					addModels : true
 				} );
 				
-				// Resolve the deferreds out of order, just to check
-				deferreds[ 1 ].resolve( requests[ 1 ] );
-				deferreds[ 0 ].resolve( requests[ 0 ] );
+				// Set success and resolve the deferreds out of order, just to check
+				requests[ 1 ].setSuccess(); deferreds[ 1 ].resolve( requests[ 1 ] );
+				requests[ 0 ].setSuccess(); deferreds[ 0 ].resolve( requests[ 0 ] );
 				
 				expect( collection.getCount() ).toBe( 6 );  // orig YUI Test err msg: "Should be 6 models in the collection now. The 2 that were loaded should have been added"
 				expect( collection.getAt( 0 ).get( 'id' ) ).toBe( 1 );  // orig YUI Test err msg: "model w/ id 1 should be at index 0"
@@ -3360,7 +3433,7 @@ define( [
 				];
 				var opNum = -1;
 				
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					opNum++;
 					request.setResultSet( new ResultSet( {
 						records : recordSets[ opNum ]
@@ -3385,9 +3458,9 @@ define( [
 				} );
 				collection.loadPageRange( 2, 3 );
 				
-				// Resolve the deferreds out of order, just to check
-				deferreds[ 1 ].resolve( requests[ 1 ] );
-				deferreds[ 0 ].resolve( requests[ 0 ] );
+				// Set success and resolve the deferreds out of order, just to check
+				requests[ 1 ].setSuccess(); deferreds[ 1 ].resolve( requests[ 1 ] );
+				requests[ 0 ].setSuccess(); deferreds[ 0 ].resolve( requests[ 0 ] );
 				
 				expect( collection.getCount() ).toBe( 6 );  // orig YUI Test err msg: "Should be 6 models in the collection now. The 2 that were loaded should have been added"
 				expect( collection.getAt( 0 ).get( 'id' ) ).toBe( 1 );  // orig YUI Test err msg: "model w/ id 1 should be at index 0"
@@ -3408,7 +3481,7 @@ define( [
 				];
 				var opNum = -1;
 				
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					opNum++;
 					request.setResultSet( new ResultSet( {
 						records : recordSets[ opNum ]
@@ -3433,9 +3506,9 @@ define( [
 				} );
 				collection.loadPageRange( 2, 3 );
 				
-				// Resolve the deferreds out of order, just to check
-				deferreds[ 1 ].resolve( requests[ 1 ] );
-				deferreds[ 0 ].resolve( requests[ 0 ] );
+				// Set success and resolve the deferreds out of order, just to check
+				requests[ 1 ].setSuccess(); deferreds[ 1 ].resolve( requests[ 1 ] );
+				requests[ 0 ].setSuccess(); deferreds[ 0 ].resolve( requests[ 0 ] );
 				
 				expect( collection.getCount() ).toBe( 4 );  // orig YUI Test err msg: "Should be 4 models in the collection now. The 2 that existed should have been removed"
 				expect( collection.getAt( 0 ).get( 'id' ) ).toBe( 3 );  // orig YUI Test err msg: "model w/ id 3 should be at index 0"
@@ -3445,10 +3518,10 @@ define( [
 			} );
 			
 			
-			it( "loadPageRange() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
+			it( "loadPageRange() should call its success/complete callbacks, resolve its deferred, and fire the 'load' event with the arguments: collection, operation", function() {
 				var deferreds = [], 
 				    requests = [];
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : []
 					} ) );
@@ -3475,12 +3548,12 @@ define( [
 				    loadCallCount = 0;
 				
 				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
-				function checkCbArgs( collection, batch, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
-					expect( collection ).toBe( collectionInstance );  // orig YUI Test err msg: "the collection should have been arg 1 in " + cbName
-					expect( batch instanceof BatchRequest ).toBe( true );  // orig YUI Test err msg: "Batch should have been arg 2 in " + cbName
-					expect( batch.getRequests().length ).toBe( 2 );  // orig YUI Test err msg: "Batch should have exactly 2 Requests in " + cbName
-					expect( batch.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's first Request in " + cbName
-					expect( batch.getRequests()[ 1 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's second Request in " + cbName
+				function checkCbArgs( collection, operation, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 2 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
+					expect( operation.getRequests()[ 1 ] instanceof ReadRequest ).toBe( true );
 				}
 				
 				// Instantiate and run the loadPageRange() method
@@ -3490,60 +3563,63 @@ define( [
 							loadbeginCallCount++;
 							expect( collection ).toBe( collectionInstance );
 						},
-						'load' : function( collection, batch ) {
+						'load' : function( collection, operation ) {
 							loadCallCount++;
-							checkCbArgs( collection, batch, "load event cb" );
+							checkCbArgs( collection, operation, "load event cb" );
 						}
 					}
 				} );
 				
-				var promise = collectionInstance.loadPageRange( 1, 2, {
-					success : function( collection, batch ) {
+				var operationPromise = collectionInstance.loadPageRange( 1, 2, {
+					success : function( collection, operation ) {
 						successCallCount++;
-						checkCbArgs( collection, batch, "success cb" );
+						checkCbArgs( collection, operation, "success cb" );
 					},
-					error : function( collection, batch ) {
+					error : function( collection, operation ) {
 						errorCallCount++;
-						checkCbArgs( collection, batch, "error cb" );
+						checkCbArgs( collection, operation, "error cb" );
 					},
-					complete : function( collection, batch ) {
+					complete : function( collection, operation ) {
 						completeCallCount++;
-						checkCbArgs( collection, batch, "complete cb" );
+						checkCbArgs( collection, operation, "complete cb" );
 					}
 				} )
-					.done( function( collection, batch ) {
+					.done( function( collection, operation ) {
 						doneCallCount++;
-						checkCbArgs( collection, batch, "done cb" );
+						checkCbArgs( collection, operation, "done cb" );
 					} )
-					.fail( function( collection, batch ) {
+					.fail( function( collection, operation ) {
 						failCallCount++;
-						checkCbArgs( collection, batch, "fail cb" );
+						checkCbArgs( collection, operation, "fail cb" );
 					} )
-					.always( function( collection, batch ) {
+					.always( function( collection, operation ) {
 						alwaysCallCount++;
-						checkCbArgs( collection, batch, "always cb" );
+						checkCbArgs( collection, operation, "always cb" );
 					} );
 
 				// First check the loadbegin event
 				expect( loadbeginCallCount ).toBe( 1 );
 				
 				// Now resolve the deferreds
-				for( var i = 0, len = deferreds.length; i < len; i++ )
+				for( var i = 0, len = deferreds.length; i < len; i++ ) {
+					requests[ i ].setSuccess();
 					deferreds[ i ].resolve( requests[ i ] );
+				}
 				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 1 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 0 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 1 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 0 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "loadCallCount"
+				expect( successCallCount ).toBe( 1 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 1 );
+				expect( failCallCount ).toBe( 0 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 1 );
 			} );
 			
 			
-			it( "loadPageRange() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, batch", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+			it( "loadPageRange() should call its error/complete callbacks, reject its deferred, and fire the 'load' event with the arguments: collection, operation", function() {
+				proxy.read.andCallFake( function( request ) {
+					request.setException( "exception" );
 					return new jQuery.Deferred().reject( request ).promise();
 				} );
 				
@@ -3559,67 +3635,73 @@ define( [
 				    doneCallCount = 0,
 				    failCallCount = 0,
 				    alwaysCallCount = 0,
+				    loadbeginCallCount = 0,
 				    loadCallCount = 0;
 				
 				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
-				function checkCbArgs( collection, batch, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
-					expect( collection ).toBe( collectionInstance );  // orig YUI Test err msg: "the collection should have been arg 1 in " + cbName
-					expect( batch instanceof BatchRequest ).toBe( true );  // orig YUI Test err msg: "Batch should have been arg 2 in " + cbName
-					expect( batch.getRequests().length ).toBe( 2 );  // orig YUI Test err msg: "Batch should have exactly 2 Requests in " + cbName
-					expect( batch.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's first Request in " + cbName
-					expect( batch.getRequests()[ 1 ] instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been the batch's second Request in " + cbName
+				function checkCbArgs( collection, operation, cbName ) {  // cbName = the callback name. Provided by the callbacks themselves.
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 2 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
+					expect( operation.getRequests()[ 1 ] instanceof ReadRequest ).toBe( true );
 				}
 				
 				// Instantiate and run the loadPageRange() method
 				var collectionInstance = new MyCollection( {
 					listeners : {
-						'load' : function( collection, batch ) {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
+						'load' : function( collection, operation ) {
 							loadCallCount++;
-							checkCbArgs( collection, batch, "load event cb" );
+							checkCbArgs( collection, operation, "load event cb" );
 						}
 					}
 				} );
 				
-				var promise = collectionInstance.loadPageRange( 1, 2, {
-					success : function( collection, batch ) {
+				var operationPromise = collectionInstance.loadPageRange( 1, 2, {
+					success : function( collection, operation ) {
 						successCallCount++;
-						checkCbArgs( collection, batch, "success cb" );
+						checkCbArgs( collection, operation, "success cb" );
 					},
-					error : function( collection, batch ) {
+					error : function( collection, operation ) {
 						errorCallCount++;
-						checkCbArgs( collection, batch, "error cb" );
+						checkCbArgs( collection, operation, "error cb" );
 					},
-					complete : function( collection, batch ) {
+					complete : function( collection, operation ) {
 						completeCallCount++;
-						checkCbArgs( collection, batch, "complete cb" );
+						checkCbArgs( collection, operation, "complete cb" );
 					}
 				} )
-					.done( function( collection, batch ) {
+					.done( function( collection, operation ) {
 						doneCallCount++;
-						checkCbArgs( collection, batch, "done cb" );
+						checkCbArgs( collection, operation, "done cb" );
 					} )
-					.fail( function( collection, batch ) {
+					.fail( function( collection, operation ) {
 						failCallCount++;
-						checkCbArgs( collection, batch, "fail cb" );
+						checkCbArgs( collection, operation, "fail cb" );
 					} )
-					.always( function( collection, batch ) {
+					.always( function( collection, operation ) {
 						alwaysCallCount++;
-						checkCbArgs( collection, batch, "always cb" );
+						checkCbArgs( collection, operation, "always cb" );
 					} );
 				
 				// Make sure the appropriate callbacks executed
-				expect( successCallCount ).toBe( 0 );  // orig YUI Test err msg: "successCallCount"
-				expect( errorCallCount ).toBe( 1 );  // orig YUI Test err msg: "errorCallCount"
-				expect( completeCallCount ).toBe( 1 );  // orig YUI Test err msg: "completeCallCount"
-				expect( doneCallCount ).toBe( 0 );  // orig YUI Test err msg: "doneCallCount"
-				expect( failCallCount ).toBe( 1 );  // orig YUI Test err msg: "failCallCount"
-				expect( alwaysCallCount ).toBe( 1 );  // orig YUI Test err msg: "alwaysCallCount"
-				expect( loadCallCount ).toBe( 1 );  // orig YUI Test err msg: "loadCallCount"
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 1 );
 			} );
 			
 			
 			it( "loadPageRange() should set the totalCount property on the Collection if the property is available on the resulting ResultSet from the first Request (the sampling Request)", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -3627,6 +3709,7 @@ define( [
 						],
 						totalCount : 100
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
@@ -3645,7 +3728,7 @@ define( [
 			
 			
 			it( "loadPageRange() should *not* set the totalCount property on the Collection if the property is *not* available on the resulting ResultSet from the first Request (the sampling Request)", function() {
-				JsMockito.when( proxy ).read().then( function( request ) {
+				proxy.read.andCallFake( function( request ) {
 					request.setResultSet( new ResultSet( {
 						records : [ 
 							{ id: 1, name: "John" },
@@ -3653,6 +3736,7 @@ define( [
 						]
 						//totalCount : 100  -- not providing totalCount config
 					} ) );
+					request.setSuccess();
 					return new jQuery.Deferred().resolve( request ).promise();
 				} );
 				
