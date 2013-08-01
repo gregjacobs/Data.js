@@ -91,7 +91,7 @@
 // If no AMD loader, injects browser global `Class`
 (function( root, factory ) {
 	if( typeof define === 'function' && define.amd ) {
-		define( 'Class',factory );       // Handle availability of AMD loader
+		define('Class', factory );       // Handle availability of AMD loader
 	} else {
 		root.Class = factory();  // Browser global (root == window)
 	}
@@ -717,7 +717,7 @@
 
 
 /*global define */
-define( 'data/Data',[],function() {
+define('data/Data',[], function() {
 	
 	/**
 	 * @class data.Data
@@ -748,7 +748,7 @@ define( 'data/Data',[],function() {
 /*jslint forin: true */
 (function( root, factory ) {
 	if( typeof define === 'function' && define.amd ) {
-		define( 'Observable',[ 'lodash', 'Class' ], factory );  // AMD (such as RequireJS). Register as module.
+		define('Observable', [ 'lodash', 'Class' ], factory );  // AMD (such as RequireJS). Register as module.
 	} else {
 		root.Observable = factory( root._, root.Class );  // Browser global. root == window
 	}
@@ -1313,7 +1313,7 @@ define( 'data/Data',[],function() {
 	
 } ) );
 /*global define */
-define( 'data/DataComponent',[
+define('data/DataComponent', [
 	'lodash',
 	'Class',
 	'Observable'
@@ -1433,7 +1433,7 @@ define( 'data/DataComponent',[
 	
 } );
 /*global define */
-define( 'data/persistence/ResultSet',[
+define('data/persistence/ResultSet', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -1530,7 +1530,7 @@ define( 'data/persistence/ResultSet',[
 } );
 /*global define */
 /*jshint boss:true */
-define( 'data/persistence/reader/Reader',[
+define('data/persistence/reader/Reader', [
 	'lodash',
 	'Class',
 	'data/persistence/ResultSet'
@@ -1976,7 +1976,7 @@ define( 'data/persistence/reader/Reader',[
 	
 } );
 /*global define */
-define( 'data/persistence/reader/Json',[
+define('data/persistence/reader/Json', [
 	'jquery',
 	'lodash',
 	'Class',
@@ -2022,7 +2022,7 @@ define( 'data/persistence/reader/Json',[
 	
 } );
 /*global define */
-define( 'data/persistence/proxy/Proxy',[
+define('data/persistence/proxy/Proxy', [
 	'lodash',
 	'Class',
 	'Observable',
@@ -2200,7 +2200,7 @@ define( 'data/persistence/proxy/Proxy',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Request',[
+define('data/persistence/request/Request', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -2448,7 +2448,7 @@ define( 'data/persistence/request/Request',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Write',[
+define('data/persistence/request/Write', [
 	'lodash',
 	'Class',
 	'data/persistence/request/Request'
@@ -2490,7 +2490,7 @@ define( 'data/persistence/request/Write',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Create',[
+define('data/persistence/request/Create', [
 	'data/persistence/request/Write'
 ], function( WriteRequest ) {
 	
@@ -2519,7 +2519,7 @@ define( 'data/persistence/request/Create',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Read',[
+define('data/persistence/request/Read', [
 	'lodash',
 	'Class',
 	'data/persistence/request/Request'
@@ -2644,7 +2644,7 @@ define( 'data/persistence/request/Read',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Update',[
+define('data/persistence/request/Update', [
 	'data/persistence/request/Write'
 ], function( WriteRequest ) {
 	
@@ -2673,7 +2673,7 @@ define( 'data/persistence/request/Update',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Destroy',[
+define('data/persistence/request/Destroy', [
 	'data/persistence/request/Write'
 ], function( WriteRequest ) {
 	
@@ -2702,7 +2702,7 @@ define( 'data/persistence/request/Destroy',[
 	
 } );
 /*global define */
-define( 'data/attribute/Attribute',[
+define('data/attribute/Attribute', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -3213,7 +3213,7 @@ define( 'data/attribute/Attribute',[
 } );
 
 /*global define */
-define( 'data/attribute/Object',[
+define('data/attribute/Object', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -3262,7 +3262,7 @@ define( 'data/attribute/Object',[
 } );
 /*global define */
 /*jshint browser:true */
-define( 'data/attribute/DataComponent',[
+define('data/attribute/DataComponent', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3349,7 +3349,7 @@ define( 'data/attribute/DataComponent',[
 
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new collectionClass( ... );
-define( 'data/attribute/Collection',[
+define('data/attribute/Collection', [
 	'require',
 	'lodash',
 	'Class',
@@ -3562,7 +3562,7 @@ define( 'data/attribute/Collection',[
 } );
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new modelClass( ... );
-define( 'data/attribute/Model',[
+define('data/attribute/Model', [
 	'require',
 	'lodash',
 	'Class',
@@ -3760,7 +3760,7 @@ define( 'data/attribute/Model',[
 	
 } );
 /*global define */
-define( 'data/attribute/Primitive',[
+define('data/attribute/Primitive', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -3796,7 +3796,7 @@ define( 'data/attribute/Primitive',[
 } );
 /*global define */
 /*jshint eqnull:true */
-define( 'data/attribute/Boolean',[
+define('data/attribute/Boolean', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3862,7 +3862,7 @@ define( 'data/attribute/Boolean',[
 	
 } );
 /*global define */
-define( 'data/attribute/Date',[
+define('data/attribute/Date', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3906,7 +3906,7 @@ define( 'data/attribute/Date',[
 	
 } );
 /*global define */
-define( 'data/attribute/Number',[
+define('data/attribute/Number', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -3993,7 +3993,7 @@ define( 'data/attribute/Number',[
 	
 } );
 /*global define */
-define( 'data/attribute/Float',[
+define('data/attribute/Float', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -4030,7 +4030,7 @@ define( 'data/attribute/Float',[
 	
 } );
 /*global define */
-define( 'data/attribute/Integer',[
+define('data/attribute/Integer', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -4068,7 +4068,7 @@ define( 'data/attribute/Integer',[
 	
 } );
 /*global define */
-define( 'data/attribute/Mixed',[
+define('data/attribute/Mixed', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -4095,7 +4095,7 @@ define( 'data/attribute/Mixed',[
 } );
 /*global define */
 /*jshint eqnull:true */
-define( 'data/attribute/String',[
+define('data/attribute/String', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -4158,7 +4158,7 @@ define( 'data/attribute/String',[
 } );
 /*global define */
 /*jshint forin:true, eqnull:true */
-define( 'data/Model',[
+define('data/Model', [
 	'require',
 	'jquery',
 	'lodash',
@@ -5847,7 +5847,7 @@ define( 'data/Model',[
 } );
 
 /*global define */
-define( 'data/NativeObjectConverter',[
+define('data/NativeObjectConverter', [
 	'require',
 	'lodash',
 	'data/DataComponent',
@@ -5993,7 +5993,7 @@ define( 'data/NativeObjectConverter',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Promise',[
+define('data/persistence/operation/Promise', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -6143,7 +6143,7 @@ define( 'data/persistence/operation/Promise',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Operation',[
+define('data/persistence/operation/Operation', [
 	'jquery',
 	'lodash',
 	'Class',
@@ -6166,6 +6166,55 @@ define( 'data/persistence/operation/Operation',[
 	 *    Collection). It is possible that all of the requests have completed, but the {@link #dataComponent} that the Operation 
 	 *    is operating on has not been updated with the result of these requests just yet. The Operation is not considered to be 
 	 *    {@link #isComplete complete} until this second part has finished.
+	 * 
+	 * 
+	 * ## Sequence of Operations with Collaborators
+	 * 
+	 * In the following sequence diagram, the Collection's {@link data.Collection#load load} method is called. Collection delegates
+	 * to a created instance of the Operation class, which then delegates to one or more {@link data.persistence.request.Request Requests}
+	 * (such as if multiple pages of data are being loaded at once), and finally to a {@link data.persistence.proxy.Proxy} to perform 
+	 * the actual Requests. 
+	 * 
+	 * When all Requests are complete, and the Collection has added the new {@link data.Model Models}, then the Operation is resolved,
+	 * causing {@link data.persistence.operation.Promise#done done} handlers on the Operation's {@link #promise} object to be called.
+	 * 
+	 *       Collection        Operation     Request1     Request2      Proxy
+	 *           |                 |            |            |            |
+	 *     load  |                 |            |            |            |
+	 *     ----->X                 |            |            |            |
+	 *           |                 |            |            |            |
+	 *           | executeRequests |            |            |            |
+	 *           X---------------->X            |            |            |
+	 *           |                 |            |            |            |
+	 *           |                 |  execute   |            |            |
+	 *           |                 X----------->X   read     |            |
+	 *           |                 |            X------------|----------->X
+	 *           |                 |            |            |            |
+	 *           |                 |  execute   |            |            |
+	 *           |                 X------------|----------->X   read     |
+	 *           |                 |            |            X----------->X
+	 *           |                 |            |            |            |
+	 *           |                 |            |            |            |
+	 *           |                 |            |            | (complete) |
+	 *           |                 |            | (complete) X<-----------X
+	 *           |                 X<-----------|------------X            |
+	 *           |                 |            |            |            |
+	 *           |                 |            |            | (complete) |
+	 *           |                 | (complete) X<-----------|------------X
+	 *           | (reqs complete) X<-----------X            |            |
+	 *           X<----------------X            |            |            |
+	 *           |                 |            |            |            |
+	 *           
+	 *           // ...
+	 *           // Models that have been loaded from Proxy are added to Collection
+	 *           // ...
+	 *           
+	 *       Collection        Operation
+	 *           |                 |
+	 *           |     resolve     |
+	 *           X---------------->X
+	 *           |                 X-----------> `done` handlers are called on the OperationPromise
+	 * 
 	 * 
 	 * 
 	 * ## Deferred Interface
@@ -6738,7 +6787,7 @@ define( 'data/persistence/operation/Operation',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Load',[
+define('data/persistence/operation/Load', [
 	'data/persistence/operation/Operation'
 ], function( Operation ) {
 	
@@ -6776,7 +6825,7 @@ define( 'data/persistence/operation/Load',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Batch',[
+define('data/persistence/request/Batch', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -6918,7 +6967,7 @@ define( 'data/persistence/request/Batch',[
 	
 } );
 /*global define */
-define( 'data/Collection',[
+define('data/Collection', [
 	'require',
 	'jquery',
 	'lodash',
@@ -8597,7 +8646,7 @@ define( 'data/Collection',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Destroy',[
+define('data/persistence/operation/Destroy', [
 	'data/persistence/operation/Operation'
 ], function( Operation ) {
 	
@@ -8616,7 +8665,7 @@ define( 'data/persistence/operation/Destroy',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Save',[
+define('data/persistence/operation/Save', [
 	'data/persistence/operation/Operation'
 ], function( Operation ) {
 	
@@ -8635,7 +8684,7 @@ define( 'data/persistence/operation/Save',[
 	
 } );
 /*global define */
-define( 'data/persistence/proxy/Ajax',[
+define('data/persistence/proxy/Ajax', [
 	'jquery',
 	'lodash',
 	'Class',
@@ -9056,7 +9105,7 @@ define( 'data/persistence/proxy/Ajax',[
 	
 } );
 /*global define */
-define( 'data/persistence/proxy/Rest',[
+define('data/persistence/proxy/Rest', [
 	'jquery',
 	'lodash',
 	'Class',

@@ -24,6 +24,55 @@ define( [
 	 *    {@link #isComplete complete} until this second part has finished.
 	 * 
 	 * 
+	 * ## Sequence of Operations with Collaborators
+	 * 
+	 * In the following sequence diagram, the Collection's {@link data.Collection#load load} method is called. Collection delegates
+	 * to a created instance of the Operation class, which then delegates to one or more {@link data.persistence.request.Request Requests}
+	 * (such as if multiple pages of data are being loaded at once), and finally to a {@link data.persistence.proxy.Proxy} to perform 
+	 * the actual Requests. 
+	 * 
+	 * When all Requests are complete, and the Collection has added the new {@link data.Model Models}, then the Operation is resolved,
+	 * causing {@link data.persistence.operation.Promise#done done} handlers on the Operation's {@link #promise} object to be called.
+	 * 
+	 *       Collection        Operation     Request1     Request2      Proxy
+	 *           |                 |            |            |            |
+	 *     load  |                 |            |            |            |
+	 *     ----->X                 |            |            |            |
+	 *           |                 |            |            |            |
+	 *           | executeRequests |            |            |            |
+	 *           X---------------->X            |            |            |
+	 *           |                 |            |            |            |
+	 *           |                 |  execute   |            |            |
+	 *           |                 X----------->X   read     |            |
+	 *           |                 |            X------------|----------->X
+	 *           |                 |            |            |            |
+	 *           |                 |  execute   |            |            |
+	 *           |                 X------------|----------->X   read     |
+	 *           |                 |            |            X----------->X
+	 *           |                 |            |            |            |
+	 *           |                 |            |            |            |
+	 *           |                 |            |            | (complete) |
+	 *           |                 |            | (complete) X<-----------X
+	 *           |                 X<-----------|------------X            |
+	 *           |                 |            |            |            |
+	 *           |                 |            |            | (complete) |
+	 *           |                 | (complete) X<-----------|------------X
+	 *           | (reqs complete) X<-----------X            |            |
+	 *           X<----------------X            |            |            |
+	 *           |                 |            |            |            |
+	 *           
+	 *           // ...
+	 *           // Models that have been loaded from Proxy are added to Collection
+	 *           // ...
+	 *           
+	 *       Collection        Operation
+	 *           |                 |
+	 *           |     resolve     |
+	 *           X---------------->X
+	 *           |                 X-----------> `done` handlers are called on the OperationPromise
+	 * 
+	 * 
+	 * 
 	 * ## Deferred Interface
 	 * 
 	 * The Operation implements the jQuery-style Deferred interface, and is controlled by the DataComponent (Model or Collection)
