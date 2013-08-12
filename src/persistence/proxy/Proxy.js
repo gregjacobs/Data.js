@@ -117,12 +117,12 @@ define( [
 		
 		
 		/**
-		 * Creates a Model on the persistent storage.
+		 * Creates one or more Models on the persistent storage medium.
 		 * 
 		 * @abstract
 		 * @method create
 		 * @param {data.persistence.request.Create} request The CreateRequest instance to represent
-		 *   the creation on the persistent storage.
+		 *   the creation on the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
@@ -131,12 +131,20 @@ define( [
 		
 		
 		/**
-		 * Reads a Model from the server.
+		 * Reads one or more Models from the persistent storage medium.
+		 * 
+		 * Note that this method should support the configuration options of the {@link data.persistence.request.Read ReadRequest}
+		 * object. This includes handling the following configs as appropriate for the particular Proxy subclass:
+		 * 
+		 * - {@link data.persistence.request.Read#modelId modelId}
+		 * - {@link data.persistence.request.Read#page page}/{@link data.persistence.request.Read#pageSize pageSize}
+		 * - {@link data.persistence.request.Read#start start}/{@link data.persistence.request.Read#limit limit}
+		 * - {@link data.persistence.request.Read#params params} (if applicable)
 		 * 
 		 * @abstract
 		 * @method read
 		 * @param {data.persistence.request.Read} request The ReadRequest instance to represent
-		 *   the reading of data from the persistent storage.
+		 *   the reading of data from the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
@@ -145,12 +153,12 @@ define( [
 		
 		
 		/**
-		 * Updates the Model on the server, using the provided `data`.  
+		 * Updates one or more Models on the persistent storage medium.  
 		 * 
 		 * @abstract
 		 * @method update
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance to represent
-		 *   the update on the persistent storage.
+		 *   the update on the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
@@ -159,12 +167,14 @@ define( [
 		
 		
 		/**
-		 * Destroys (deletes) the Model on the server. This method is not named "delete" as "delete" is a JavaScript reserved word.
+		 * Destroys (deletes) one or more Models on the persistent storage medium.
+		 * 
+		 * Note: This method is not named "delete", as `delete` is a JavaScript keyword.
 		 * 
 		 * @abstract
 		 * @method destroy
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance to represent
-		 *   the destruction (deletion) on the persistent storage.
+		 *   the destruction (deletion) on the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.

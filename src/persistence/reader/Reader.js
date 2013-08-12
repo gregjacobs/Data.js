@@ -219,7 +219,7 @@ define( [
 		
 
 		/**
-		 * Extracts the records data from the JavaScript object produced as a result of {@link #convertRaw}.
+		 * Extracts the records' data from the JavaScript object produced as a result of {@link #convertRaw}.
 		 * The default implementation uses the {@link #dataProperty} config to pull out the object which holds
 		 * the record(s) data.
 		 * 

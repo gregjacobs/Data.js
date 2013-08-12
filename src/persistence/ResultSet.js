@@ -5,7 +5,6 @@ define( [
 ], function( _, Class ) {
 	
 	/**
-	 * @abstract
 	 * @class data.persistence.ResultSet
 	 * @extends Object
 	 * 
@@ -13,7 +12,7 @@ define( [
 	 * request, along with any metadata such as the total number of data records in a windowed 
 	 * data set.
 	 */
-	var Reader = Class.extend( Object, {
+	var ResultSet = Class.create( {
 		
 		/**
 		 * @cfg {Object/Object[]} records
@@ -91,6 +90,6 @@ define( [
 		
 	} );
 	
-	return Reader;
+	return ResultSet;
 	
 } );
