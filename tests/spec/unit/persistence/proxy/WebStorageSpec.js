@@ -9,6 +9,7 @@ define( [
 	
 	describe( 'data.persistence.proxy.WebStorage', function() {
 
+		// Some Model classes to use
 		var SimpleModel = Model.extend( {
 			attributes : [ 'id', 'a', 'b' ]
 		} );
@@ -32,14 +33,18 @@ define( [
 		// Fake storage medium, used in the tests
 		var storageMedium;
 		
-		// ConcreteWebStorage proxy, for use in the tests
+		// ConcreteWebStorage proxy class, for use in the tests
 		var ConcreteWebStorageProxy = WebStorageProxy.extend( {
 			// Implementation of abstract interface
 			getStorageMedium : function() { return storageMedium; }
 		} );
 		
+		// Proxy instance for tests
+		var proxy;
+		
 		
 		beforeEach( function() {
+			proxy = new ConcreteWebStorageProxy( { storageKey: 'TestKey' } );
 			storageMedium = new StorageMedium();
 
 			spyOn( storageMedium, 'getItem' ).andCallThrough();
@@ -59,15 +64,17 @@ define( [
 			} );
 			
 		} );
-
+		
+		
+		describe( 'create()', function() {
+			
+		} );
+		
+		
+		// -------------------------------------
 		
 		
 		describe( 'setRecord()', function() {
-			var proxy;
-			
-			beforeEach( function() {
-				proxy = new ConcreteWebStorageProxy( { storageKey: 'TestKey' } );
-			} );
 			
 			it( "should store a new model with the given `id` param (from a create()), along with its version number", function() {
 				var model = new SimpleModel( { a: 1, b: 2 } );
@@ -110,13 +117,39 @@ define( [
 		} );
 		
 		
-		describe( 'setRecordIds()', function() {
-			var proxy;
+		describe( 'removeRecord()', function() {
 			
-			beforeEach( function() {
-				proxy = new ConcreteWebStorageProxy( { storageKey: 'TestKey' } );
+			it( "should remove an record by ID", function() {
+				// Check initial condition
+				expect( proxy.getRecord( 10 ) ).toEqual( { id: 10, a: 1, b: 2 } );
+				
+				proxy.removeRecord( 10 );
+				expect( proxy.getRecord( 10 ) ).toBe( null );
+			} );
+		} );
+		
+		
+		describe( 'getRecord()', function() {
+			
+			it( "should return `null` if there is no record for the given `id`", function() {
+				expect( proxy.getRecord( 10 ) ).toBe( null );
 			} );
 			
+			
+			it( "should retrieve a record that has been set to WebStorage", function() {
+				var model = new SimpleModel( { id: 10, a: 1, b: 2 } );
+				proxy.setRecord( model, 10 );
+				
+				expect( proxy.getRecord( 10 ) ).toEqual( { id: 10, a: 1, b: 2 } );
+			} );
+			
+		} );
+		
+		
+		// -------------------------------------
+		
+		
+		describe( 'setRecordIds()', function() {
 			
 			it( "should store an empty array when provided one", function() {
 				proxy.setRecordIds( [] );
@@ -143,12 +176,6 @@ define( [
 		
 		
 		describe( 'getRecordIds()', function() {
-			var proxy;
-			
-			beforeEach( function() {
-				proxy = new ConcreteWebStorageProxy( { storageKey: 'TestKey' } );
-			} );
-			
 			
 			it( "should return an empty array when no records have been saved", function() {
 				expect( proxy.getRecordIds() ).toEqual( [] );
@@ -165,12 +192,6 @@ define( [
 		
 		
 		describe( 'getNewId()', function() {
-			var proxy;
-			
-			beforeEach( function() {
-				proxy = new ConcreteWebStorageProxy( { storageKey: 'TestKey' } );
-			} );
-			
 
 			it( "should retrieve the ID #1, and set the 'recordCounter' into the web storage medium when first used", function() {
 				expect( storageMedium.getItem( proxy.getRecordCounterKey() ) ).toBe( null );  // initial condition
@@ -215,11 +236,6 @@ define( [
 		
 		
 		describe( 'getRecordKey()', function() {
-			var proxy;
-			
-			beforeEach( function() {
-				proxy = new ConcreteWebStorageProxy( { storageKey: 'TestKey' } );
-			} );
 			
 			it( "should throw an error if the method is called without any arguments", function() {
 				expect( function() {
@@ -239,12 +255,6 @@ define( [
 		
 		// TODO:
 		describe( 'clear()', function() {
-			var proxy;
-			
-			beforeEach( function() {
-				proxy = new ConcreteWebStorageProxy( { storageKey: 'TestKey' } );
-			} );
-			
 			
 			
 		} );

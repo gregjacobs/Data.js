@@ -36,9 +36,6 @@ define( [
 		 * Record data stored on a server (using say, the {@link data.persistence.proxy.Ajax Ajax Proxy}) is 
 		 * usually not versioned. The server data format and the client Model is usually updated in sync, and 
 		 * there is no reason for a client-side migration method in this case.
-		 * 
-		 * 
-		 * TODO: Document a link to the migration method
 		 */
 		
 		
