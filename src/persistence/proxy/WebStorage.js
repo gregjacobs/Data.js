@@ -1,4 +1,5 @@
 /*global define */
+/*jshint eqnull:true */
 define( [
 	'jquery',
 	'lodash',
@@ -46,11 +47,19 @@ define( [
 		 * This must be unique for a given model/collection, as the LocalStorage/SessionStorage 
 		 * objects are a simple key/value store. If two or more WebStorage proxies have the same 
 		 * storageKey, they may conflict. 
+		 * 
+		 * Some examples of this might be:
+		 * - "Users"
+		 * - "app.Users"
+		 * 
+		 * Note: Once chosen, this value should never be changed. This value will be used to look up
+		 * model data in the WebStorage's key/value store, and if changed, existing data will be left
+		 * orphaned.
 		 */
 		
 		/**
 		 * @hide
-		 * @cfg {data.persistence.reader.Reader} reader
+		 * @cfg {data.persistence.reader.ClientStorage} reader
 		 * 
 		 * The WebStorage proxy uses its own scheme to store model data using local storage. 
 		 */
@@ -80,12 +89,14 @@ define( [
 			this._super( arguments );
 			
 			// <debug>
-			if( !this.storageKey ) throw new Error( "`storageKey` cfg required for WebStorage proxy" );
+			if( !this.storageKey ) throw new Error( "`storageKey` cfg required" );
 			// </debug>
 			
 			this.cache = {};
 		},
 		
+		
+		// --------------------------------------
 		
 		
 		/**
@@ -98,8 +109,30 @@ define( [
 		 *   this method as the first argument.
 		 */
 		create : function( request ) {
-			var proxyData = this.getData(),
-				data = proxyData.data,
+			var models = request.getModels(),
+			    returnRecords = [],
+			    recordIds = this.getRecordIds(),
+			    deferred = new jQuery.Deferred();
+			
+			for( var i = 0, len = models.length; i < len; i++ ) {
+				var model = models[ i ],
+				    newId = this.getNewId(),
+				    returnRecord = {};
+
+				recordIds.push( newId );
+				this.setRecord( model, newId );
+				
+				// To allow the Model to update itself with its new ID
+				returnRecord[ model.getIdAttribute().getName() ] = newId;
+				returnRecords.push( returnRecord );
+			}
+			this.setRecordIds( recordIds );
+			
+			request.setResultSet( new ResultSet( { records: returnRecords } ) );
+			request.setSuccess();
+			deferred.resolve( request );
+			
+			return deferred.promise();
 		},
 		
 		
@@ -113,16 +146,30 @@ define( [
 		 *   this method as the first argument.
 		 */
 		read : function( request ) {
-			var proxyData = this.getData(),
-				data = proxyData.data,
-				resultSet = ( data ) ? this.reader.read( data ) : new ResultSet(),  // empty resultset if no data
-				deferred = new jQuery.Deferred();
+			var records = [],
+			    recordIds = this.getRecordIds(),
+			    modelId = request.getModelId(),
+			    deferred = new jQuery.Deferred();
 			
-			// TODO: Handle the ReadRequest having a modelId config
+			if( modelId !== undefined ) {
+				if( _.contains( recordIds, modelId ) ) {
+					records.push( this.getRecord( modelId ) ); 
+				}
+			} else {
+				for( var i = 0, len = recordIds.length; i < len; i++ ) {
+					records.push( this.getRecord( recordIds[ i ] ) );
+				}
+			}
+			
 			// TODO: Handle the ReadRequest having page/pageSize configs
 			// TODO: Handle the ReadRequest having start/limit configs
 			
-			request.setResultSet( resultSet );
+			var resultSet = new ResultSet( {
+				records : records,
+				totalCount : recordIds.length
+			} );
+			
+			request.setResultSet( new ResultSet() );
 			request.setSuccess();
 			deferred.resolve( request );
 			
@@ -141,7 +188,26 @@ define( [
 		 *   this method as the first argument.
 		 */
 		update : function( request ) {
-			throw new Error( "update() not yet implemented" );
+			var models = request.getModels(),
+			    recordIds = this.getRecordIds(),
+			    deferred = new jQuery.Deferred();
+			
+			for( var i = 0, len = models.length; i < len; i++ ) {
+				var model = models[ i ],
+				    modelId = model.getId();
+
+				if( !_.contains( recordIds, modelId ) ) {
+					recordIds.push( modelId );
+				}
+				this.setRecord( model );
+			}
+			this.setRecordIds( recordIds );
+			
+			request.setResultSet( new ResultSet() );
+			request.setSuccess();
+			deferred.resolve( request );
+			
+			return deferred.promise();
 		},
 		
 		
@@ -157,7 +223,27 @@ define( [
 		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
-			throw new Error( "destroy() not yet implemented" );
+			var models = request.getModels(),
+			    recordIds = this.getRecordIds(),
+			    deferred = new jQuery.Deferred();
+			
+			for( var i = 0, len = models.length; i < len; i++ ) {
+				var model = models[ i ],
+				    modelId = model.getId(),
+				    recordIdx = _.indexOf( recordIds, modelId );
+				
+				if( recordIdx !== -1 ) {
+					this.removeRecord( modelId );
+					recordIds.splice( recordIdx, 1 );
+				}
+			}
+			this.setRecordIds( recordIds );
+			
+			request.setResultSet( new ResultSet() );
+			request.setSuccess();
+			deferred.resolve( request );
+			
+			return deferred.promise();
 		},
 		
 		
@@ -177,53 +263,252 @@ define( [
 		
 		
 		/**
+		 * Stores a record to the underlying WebStorage medium.
+		 * 
+		 * The record is stored with the Model's {@link data.Model#version version number} that represented the 
+		 * Model at the time of storage, along with its underlying data. An example of the format might be this:
+		 * 
+		 *     {
+		 *         version : 1,
+		 *         data : {
+		 *             attr1 : "value1",
+		 *             attr2 : "value2",
+		 *             ...
+		 *         }
+		 *     }
+		 * 
+		 * @protected
+		 * @param {data.Model} model The Model to save a record for.
+		 * @param {Number} [id] The ID to save the record for. If not provided, uses the Model's {@link data.Model#getId id}.
+		 *   This parameter is for saving new models, which don't have an ID yet.
+		 */
+		setRecord : function( model, id ) {
+			if( id === undefined ) id = model.getId();
+			
+			var storageMedium = this.getStorageMedium(),
+			    recordKey = this.getRecordKey( id ),
+			    recordIds = this.getRecordIds(),
+			    modelData = model.getData( { persistedOnly: true } );
+			
+			// Force the ID into the model data, for when 'creating', and the Model doesn't have an ID yet
+			modelData[ model.getIdAttribute().getName() ] = id;
+			
+			var data = {
+				version : model.getVersion(),
+				data : modelData
+			};
+
+			storageMedium.removeItem( recordKey );  // iPad bug requires removal before setting it
+			storageMedium.setItem( recordKey, JSON.stringify( data ) );
+		},
+		
+		
+		/**
+		 * Removes a record by ID.
+		 * 
+		 * @protected
+		 * @param {Number} id
+		 */
+		removeRecord : function( id ) {
+			this.getStorageMedium().removeItem( this.getRecordKey( id ) ); 
+		},
+		
+		
+		/**
 		 * Retrieves a record by ID from the underlying WebStorage medium.
 		 * 
-		 * Each record is originally stored with the {@link data.Model#version version number} that represented the Model 
-		 * at the time of storage.
+		 * Each record is originally stored with the Model's {@link data.Model#version version number} that represented the 
+		 * Model at the time of storage, and its underlying data. An example of the format might be this:
+		 * 
+		 *     {
+		 *         version : 1,
+		 *         data : {
+		 *             attr1 : "value1",
+		 *             attr2 : "value2",
+		 *             ...
+		 *         }
+		 *     }
+		 * 
+		 * This is passed to the {@link #migrate} method, to allow any conversion to the latest format of the model, and then
+		 * the `data` is returned.
 		 * 
 		 * @protected
 		 * @param {Number} id The ID of the record to retrieve.
-		 * @return {Object} An object which contains the metadata and data for the stored record, or `null`
-		 *   if there is no record for the given `id`. When the object is returned (for a found record), the
-		 *   Object has the following properties:
-		 * @return {Number} return.version The version number of the record when it was stored.
-		 * @return {Object} return.data The stored data for the record, as an anonymous object.
+		 * @return {Object} An object which contains the record data for the stored record, or `null`
+		 *   if there is no record for the given `id`. 
 		 */
 		getRecord : function( id ) {
 			var storageMedium = this.getStorageMedium(),
-			    json = storageMedium[ this.storageKey ];
+			    json = storageMedium.getItem( this.getRecordKey( id ) );
 			
 			if( !json ) {
 				return null;
 				
 			} else {
-				var metadata = JSON.parse( json );
+				var metadata = JSON.parse( json ),
+				    data = this.migrate( metadata.version, metadata.data );
 				
-				
-				return metadata;
+				return data;
 			}
 		},
 		
 		
+		// ------------------------------------------
+		
+		// Bookkeeping Methods
+		
 		/**
-		 * Retrieves the data and metadata from the underlying WebStorage medium.
+		 * Sets the list of record (model) IDs that are currently stored for the WebStorageProxy's {@link #storageKey}.
+		 * 
+		 * This information tells us which models are stored, and how many. It must be updated as new records are inserted,
+		 * or current records are removed, for bookkeeping purposes.
 		 * 
 		 * @protected
-		 * @return {Object} An object which contains the data and metadata for the stored data. This
-		 *   Object has the following properties:
-		 * @return {String} return.data The stored, serialized data. Will be an empty string if there
-		 *   is no stored data.
+		 * @param {Number[]} recordIds The array of record IDs.
 		 */
-		getStoredData : function() {
+		setRecordIds : function( recordIds ) {
 			var storageMedium = this.getStorageMedium(),
-			    rawJson = storageMedium[ this.storageKey ],
-			    metadata = ( rawJson ) ? JSON.parse( rawJson ) : {};
+			    recordIdsKey = this.getRecordIdsKey();
 			
-			// No data stored yet, set to empty string
-			metadata.data = metadata.data || "";
+			storageMedium.removeItem( recordIdsKey );  // iPad bug requires removal before setting it
+			storageMedium.setItem( recordIdsKey, JSON.stringify( recordIds ) );
+		},
+		
+		
+		/**
+		 * Retrieves the list of record (model) IDs that are currently stored for the WebStorageProxy's {@link #storageKey}.
+		 * 
+		 * This information tells us which models are stored, and how many.
+		 * 
+		 * @protected
+		 * @return {Number[]} The array of IDs that are currently stored.
+		 */
+		getRecordIds : function() {
+			var recordIds = this.getStorageMedium().getItem( this.getRecordIdsKey() );
 			
-			return metadata;
+			return ( recordIds ) ? JSON.parse( recordIds ) : [];
+		},
+		
+		
+		/**
+		 * Retrieves a new, sequential ID which can be used to {@link #create} records (models). Once this
+		 * ID is returned, it is considered "taken", and subsequent calls to this method will return new IDs.
+		 * 
+		 * @protected
+		 * @return {Number} A new, unused sequential ID.
+		 */
+		getNewId : function() {
+			var storageMedium = this.getStorageMedium(),
+			    recordCounterKey = this.getRecordCounterKey(),
+			    newId = ( +storageMedium.getItem( recordCounterKey ) || 0 ) + 1;
+			
+			storageMedium.removeItem( recordCounterKey );  // iPad bug requires removal before setting it
+			storageMedium.setItem( recordCounterKey, newId );
+			
+			return newId;
+		},
+
+		
+		/**
+		 * Retrieves the WebStorage key name for the proxy's list of currently-stored record (model) IDs. This array
+		 * is used for bookkeeping, so that the proxy knows which models are stored, and how many, for the particular
+		 * {@link #storageKey}. 
+		 * 
+		 * @protected
+		 * @param {Number} id
+		 * @return {String} The key name for the "recordIds" in WebStorage, for this {link #storageKey}.
+		 */
+		getRecordIdsKey : function() {
+			return this.storageKey + '-recordIds';
+		},
+		
+
+		/**
+		 * Retrieves the WebStorage key name for the proxy's "record counter" for this {@link #storageKey}. This 
+		 * number is used to always generate new, sequential IDs for records when being {@link #create created}.
+		 * 
+		 * @protected
+		 * @param {Number} id
+		 * @return {String} The key name for the "record counter" in WebStorage, for this {link #storageKey}.
+		 */
+		getRecordCounterKey : function() {
+			return this.storageKey + '-recordCounter';
+		},
+		
+		
+		/**
+		 * Retrieves the WebStorage key name for the given Record, by its ID.
+		 * 
+		 * @protected
+		 * @param {Number} id
+		 * @return {String} The key name that will uniquely identify the record in WebStorage, for this {link #storageKey}.
+		 */
+		getRecordKey : function( id ) {
+			// <debug>
+			if( id == null ) throw new Error( "`id` arg required" );
+			// </debug>
+			
+			return this.storageKey + '-' + id;
+		},
+		
+		
+		/**
+		 * Clears all WebStorage used by the {@link #storageKey} for the WebStorageProxy.
+		 * 
+		 * All records are removed, as well as the associated bookkeeping data.
+		 */
+		clear : function() {
+			var storageMedium = this.getStorageMedium(),
+			    recordIds = this.getRecordIds();
+			
+			for( var i = 0, len = recordIds.length; i < len; i++ ) {
+				this.removeRecord( recordIds[ i ] );
+			}
+			
+			storageMedium.removeItem( this.getRecordIdsKey() );
+			storageMedium.removeItem( this.getRecordCounterKey() );
+		},
+		
+		
+		// ---------------------------------------------
+		
+		/**
+		 * Hook method to allow for a subclass to transform the data from a previous version to the latest format
+		 * of the data. This method should be overridden by a subclass to implement the appropriate transformations
+		 * to the `data`.
+		 * 
+		 * 
+		 * ## Implementing a migration
+		 * 
+		 * By default, this method simply returns the `data` provided to it. However, here is an example of what an
+		 * override might look like:
+		 * 
+		 *     migrate : function( version, data ) {
+		 *         switch( version ) {
+		 *             case 1 : 
+		 *                 data.newProp = data.oldProp;
+		 *                 delete data.oldProp;
+		 *             case 2 :
+		 *                 data.newProp2 = data.oldProp2;
+		 *                 delete data.oldProp2;
+		 *         }
+		 *         return data;
+		 *     }
+		 *     
+		 * Note that there are no `break` statements in this `switch` block. This is because if a model's data is at version
+		 * 1, then we want to apply the migrations to transform it from version 1 to version 2, and then from version 2 to version 
+		 * 3 (assuming version 3 is the latest). Alternatively, you could apply all transformations in each `case`, but then 
+		 * each time the Model's structure is changed, you would need to update all cases. 
+		 * 
+		 * @protected
+		 * @template
+		 * @param {Number} version The version number of the data. This can be used in a `switch` statement to apply
+		 *   data transformations to bring the data up to the latest version.
+		 * @param {Object} data The data to migrate.
+		 * @return {Object} The migrated data.
+		 */
+		migrate : function( version, data ) {
+			return data;
 		}
 		
 	} );

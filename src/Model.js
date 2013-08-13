@@ -569,6 +569,16 @@ define( [
 		
 		
 		/**
+		 * Retrieves the Model's {@link #version}.
+		 * 
+		 * @return {Number}
+		 */
+		getVersion : function() {
+			return this.version;
+		},
+		
+		
+		/**
 		 * Retrieves the ID for the Model. This uses the configured {@link #idAttribute} to retrieve
 		 * the correct ID attribute for the Model.
 		 * 

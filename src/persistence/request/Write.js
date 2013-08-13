@@ -32,7 +32,7 @@ define( [
 		 * @return {data.Model[]}
 		 */
 		getModels : function() {
-			return ( this.models || (this.models = []) );
+			return this.models || [];
 		}
 		
 	} );
