@@ -148,6 +148,7 @@ define( [
 		read : function( request ) {
 			var records = [],
 			    recordIds = this.getRecordIds(),
+			    totalNumRecords = recordIds.length,
 			    modelId = request.getModelId(),
 			    deferred = new jQuery.Deferred();
 			
@@ -156,7 +157,7 @@ define( [
 					records.push( this.getRecord( modelId ) ); 
 				}
 			} else {
-				for( var i = 0, len = recordIds.length; i < len; i++ ) {
+				for( var i = 0; i < totalNumRecords; i++ ) {
 					records.push( this.getRecord( recordIds[ i ] ) );
 				}
 			}
@@ -166,10 +167,10 @@ define( [
 			
 			var resultSet = new ResultSet( {
 				records : records,
-				totalCount : recordIds.length
+				totalCount : totalNumRecords
 			} );
 			
-			request.setResultSet( new ResultSet() );
+			request.setResultSet( resultSet );
 			request.setSuccess();
 			deferred.resolve( request );
 			
@@ -178,8 +179,10 @@ define( [
 		
 		
 		/**
-		 * Updates the given Model on the server.  This method uses "incremental" updates, in which only the changed attributes of the `model`
-		 * are persisted.
+		 * Updates one or more Models in WebStorage.
+		 * 
+		 * Note that if a Model does not exist in WebStorage, but is being "updated", then it will be created 
+		 * instead.
 		 * 
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated.
@@ -212,7 +215,7 @@ define( [
 		
 		
 		/**
-		 * Destroys (deletes) the Model on the server.
+		 * Destroys (deletes) one or more Models from WebStorage.
 		 * 
 		 * Note that this method is not named "delete" as "delete" is a JavaScript reserved word.
 		 * 
@@ -488,6 +491,7 @@ define( [
 		 *             case 1 : 
 		 *                 data.newProp = data.oldProp;
 		 *                 delete data.oldProp;
+		 *                 &#47;* falls through *&#47;  // note the comment to remove JSHint warning about no 'break' statement here
 		 *             case 2 :
 		 *                 data.newProp2 = data.oldProp2;
 		 *                 delete data.oldProp2;
@@ -498,7 +502,10 @@ define( [
 		 * Note that there are no `break` statements in this `switch` block. This is because if a model's data is at version
 		 * 1, then we want to apply the migrations to transform it from version 1 to version 2, and then from version 2 to version 
 		 * 3 (assuming version 3 is the latest). Alternatively, you could apply all transformations in each `case`, but then 
-		 * each time the Model's structure is changed, you would need to update all cases. 
+		 * each time the Model's structure is changed, you would need to update all cases.
+		 * 
+		 * Tip: use the `&#47;* falls through *&#47;` annotation when using JSHint, to remove warnings about a case without 
+		 * a `break` statement.
 		 * 
 		 * @protected
 		 * @template
