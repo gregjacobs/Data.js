@@ -83,8 +83,9 @@ define( [
 				
 				// Check that the record for the model was created, and that bookkeeping was done
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );
-				expect( proxy.getRecordIds() ).toEqual( [ 1 ] );
+				expect( proxy.getRecordIds() ).toEqual( [ "1" ] );
 				
+				// Check that a record ID was returned in the resultset to set to the Model
 				var resultRecords = createRequest.getResultSet().getRecords();
 				expect( resultRecords.length ).toBe( 1 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1 } );
@@ -101,8 +102,9 @@ define( [
 				// Check that the records for the models were created, and that bookkeeping was done
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );
 				expect( proxy.getRecord( 2 ) ).toEqual( { id: 2, a: 3, b: 4 } );
-				expect( proxy.getRecordIds() ).toEqual( [ 1, 2 ] );
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "2" ] );
 				
+				// Check that record IDs were returned in the resultset to set to the Models
 				var resultRecords = createRequest.getResultSet().getRecords();
 				expect( resultRecords.length ).toBe( 2 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1 } );
@@ -110,7 +112,7 @@ define( [
 			} );
 			
 			
-			it( "should create records on top of existing records, for multiple calls to create()", function() {
+			it( "should create records in addition existing records in the storage medium, for multiple calls to create()", function() {
 				// Add the first set
 				var model1 = new SimpleModel( { a: 1, b: 2 } ),
 				    model2 = new SimpleModel( { a: 3, b: 4 } ),
@@ -128,6 +130,29 @@ define( [
 				expect( resultRecords.length ).toBe( 2 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 3 } );
 				expect( resultRecords[ 1 ] ).toEqual( { id: 4 } );
+			} );
+			
+			
+			it( "should create records with String IDs (as opposed to just Number IDs)", function() {
+				/* NOTE: Never mind this test. If a Model has a string ID, the proxy's update() method will
+				 *       be called from Model.save() instead. Leaving this here as a reminder.
+				
+				var model1 = new SimpleModel( { id: "firstId", a: 1, b: 2 } ),
+				    model2 = new SimpleModel( { id: "secondId", a: 3, b: 4 } ),
+				    createRequest = new CreateRequest( { models: [ model1, model2 ] } );
+				
+				proxy.create( createRequest );  // synchronous - no need to add handlers to the returned promise
+				
+				// Check that the records for the models were created, and that bookkeeping was done
+				expect( proxy.getRecord( 1 ) ).toEqual( { id: "firstId", a: 1, b: 2 } );
+				expect( proxy.getRecord( 2 ) ).toEqual( { id: "secondId", a: 3, b: 4 } );
+				expect( proxy.getRecordIds() ).toEqual( [ "firstId", "secondId" ] );
+				
+				var resultRecords = createRequest.getResultSet().getRecords();
+				expect( resultRecords.length ).toBe( 2 );
+				expect( resultRecords[ 0 ] ).toEqual( { id: "firstId" } );
+				expect( resultRecords[ 1 ] ).toEqual( { id: "secondId" } );
+				*/
 			} );
 			
 		} );
@@ -179,6 +204,19 @@ define( [
 				expect( resultRecords.length ).toBe( 0 );
 			} );
 			
+			
+			it( "should read a model by a String ID (as opposed to just a Number ID)", function() {
+				var model4 = new SimpleModel( { id: "fourthId", a: 7, b: 8 } );  // for testing String IDs
+				proxy.update( new UpdateRequest( { models: [ model4 ] } ) );  // this will actually have the effect of a create(), since the ID is already assigned to the model
+				
+				var readRequest = new ReadRequest( { modelId: "fourthId" } );
+				proxy.read( readRequest );  // synchronous - no need to add handlers to the returned promise
+				
+				var resultRecords = readRequest.getResultSet().getRecords();
+				expect( resultRecords.length ).toBe( 1 );
+				expect( resultRecords[ 0 ] ).toEqual( { id: "fourthId", a: 7, b: 8 } );
+			} );
+			
 		} );
 		
 		
@@ -210,7 +248,9 @@ define( [
 				
 				// Check that the record for the model was updated, and that bookkeeping was done
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 2, b: 3 } );
-				expect( proxy.getRecordIds() ).toEqual( [ 1, 2, 3 ] );  // this should be the same as it was
+				expect( proxy.getRecord( 2 ) ).toEqual( { id: 2, a: 3, b: 4 } );  // should be the same as the initial create
+				expect( proxy.getRecord( 3 ) ).toEqual( { id: 3, a: 5, b: 6 } );  // should be the same as the initial create
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "2", "3" ] );  // this should be the same as it was
 			} );
 			
 			
@@ -224,7 +264,8 @@ define( [
 				// Check that the record for the model was updated, and that bookkeeping was done
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 2, b: 3 } );
 				expect( proxy.getRecord( 2 ) ).toEqual( { id: 2, a: 4, b: 5 } );
-				expect( proxy.getRecordIds() ).toEqual( [ 1, 2, 3 ] );  // this should be the same as it was
+				expect( proxy.getRecord( 3 ) ).toEqual( { id: 3, a: 5, b: 6 } );  // should be the same as the initial create
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "2", "3" ] );  // this should be the same as it was
 			} );
 			
 			
@@ -236,7 +277,27 @@ define( [
 				
 				// Check that the record for the model was created, and that bookkeeping was done
 				expect( proxy.getRecord( 4 ) ).toEqual( { id: 4, a: 7, b: 8 } );
-				expect( proxy.getRecordIds() ).toEqual( [ 1, 2, 3, 4 ] );  // should have added the number 4
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "2", "3", "4" ] );  // should have added the number 4
+			} );
+			
+			
+			it( "should update models with String IDs (as opposed to just Number IDs)", function() {
+				// Initially create a model with a string ID
+				var model4 = new SimpleModel( { id: "fourthId", a: 1, b: 2 } );
+				proxy.update( new UpdateRequest( { models: [ model4 ] } ) );  // has the effect of a create() in this case, since the model already has an ID
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "2", "3", "fourthId" ] );  // initial condition
+				
+				model4.set( { a: 2, b: 3 } );  // this model's id: "fourthId"
+				
+				var updateRequest = new UpdateRequest( { models: [ model4 ] } );
+				proxy.update( updateRequest );  // synchronous - no need to add handlers to the returned promise
+				
+				// Check that the record for the model was updated, and that bookkeeping was done
+				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );  // should be the same as the initial create
+				expect( proxy.getRecord( 2 ) ).toEqual( { id: 2, a: 3, b: 4 } );  // should be the same as the initial create
+				expect( proxy.getRecord( 3 ) ).toEqual( { id: 3, a: 5, b: 6 } );  // should be the same as the initial create
+				expect( proxy.getRecord( 'fourthId' ) ).toEqual( { id: "fourthId", a: 2, b: 3 } );  // should be the same as the initial create
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "2", "3", "fourthId" ] );  // this should be the same as it was
 			} );
 			
 		} );
@@ -270,7 +331,7 @@ define( [
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );
 				expect( proxy.getRecord( 2 ) ).toBe( null );
 				expect( proxy.getRecord( 3 ) ).toEqual( { id: 3, a: 5, b: 6 } );
-				expect( proxy.getRecordIds() ).toEqual( [ 1, 3 ] );  // should have removed the number 2
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "3" ] );  // should have removed the number 2
 			} );
 			
 			
@@ -282,7 +343,7 @@ define( [
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );
 				expect( proxy.getRecord( 2 ) ).toBe( null );
 				expect( proxy.getRecord( 3 ) ).toBe( null );
-				expect( proxy.getRecordIds() ).toEqual( [ 1 ] );  // should have removed the numbers 2 and 3
+				expect( proxy.getRecordIds() ).toEqual( [ "1" ] );  // should have removed the numbers 2 and 3
 			} );
 			
 			
@@ -294,7 +355,7 @@ define( [
 				expect( proxy.getRecord( 1 ) ).toBe( null );
 				expect( proxy.getRecord( 2 ) ).toBe( null );
 				expect( proxy.getRecord( 3 ) ).toEqual( { id: 3, a: 5, b: 6 } );
-				expect( proxy.getRecordIds() ).toEqual( [ 3 ] );  // should have removed the numbers 1 and 2
+				expect( proxy.getRecordIds() ).toEqual( [ "3" ] );  // should have removed the numbers 1 and 2
 			} );
 			
 		} );
@@ -408,14 +469,14 @@ define( [
 			} );
 			
 			
-			it( "should store an array of record ids, in json format", function() {
-				proxy.setRecordIds( [ 1, 2, 3 ] );
+			it( "should store an array of record ids, in json format, and converting any numbers to strings for consistency with the possibility of string IDs", function() {
+				proxy.setRecordIds( [ 1, 2, 3, "fourthId", "anIdWith,aComma" ] );
 				
-				expect( proxy.getRecordIds() ).toEqual( [ 1, 2, 3 ] );
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "2", "3", "fourthId", "anIdWith,aComma" ] );
 				
 				// Make sure that both removeItem and setItem were called
 				expect( storageMedium.removeItem ).toHaveBeenCalledWith( proxy.getRecordIdsKey() );
-				expect( storageMedium.setItem ).toHaveBeenCalledWith( proxy.getRecordIdsKey(), '[1,2,3]' );  // json array string
+				expect( storageMedium.setItem ).toHaveBeenCalledWith( proxy.getRecordIdsKey(), '["1","2","3","fourthId","anIdWith,aComma"]' );  // json array string
 			} );
 			
 		} );
@@ -428,10 +489,10 @@ define( [
 			} );
 			
 			
-			it( "should return an array of the IDs that are currently stored (basically checking the conversion from serialized storage)", function() {
-				proxy.setRecordIds( [ 1, 2, 3 ] );
+			it( "should return an array of the IDs that are currently stored (basically checking the conversion from serialized storage, and conversion to strings from numbers)", function() {
+				proxy.setRecordIds( [ 1, 2, 3, "fourthId" ] );
 				
-				expect( proxy.getRecordIds() ).toEqual( [ 1, 2, 3 ] );
+				expect( proxy.getRecordIds() ).toEqual( [ "1", "2", "3", "fourthId" ] );
 			} );
 			
 		} );
@@ -456,6 +517,23 @@ define( [
 				newId = proxy.getNewId();  // second time
 				expect( newId ).toBe( 2 );
 				expect( storageMedium.getItem( proxy.getRecordCounterKey() ) ).toBe( "2" );  // make sure it was stored
+			} );
+			
+			
+			it( "should return a new ID that hasn't been used yet, in the face of records that were stored with manually populated IDs", function() {
+				// "Create" two records, with manually populated IDs 1 and 2
+				var model1 = new SimpleModel( { id: 1, a: 1, b: 2 } ),
+				    model2 = new SimpleModel( { id: 2, a: 3, b: 4 } );
+				proxy.update( new UpdateRequest( { models: [ model1, model2 ] } ) );  // update() in this case performs a "create", since the models already have IDs
+				
+				// Check initial condition - no models were added by the create() method, and so the internal 
+				// record counter hasn't been initialized/incremented
+				expect( storageMedium.getItem( proxy.getRecordCounterKey() ) ).toBe( null );
+				
+				// Now perform the test
+				var newId = proxy.getNewId();
+				expect( newId ).toBe( 3 );  // make sure getNewId() skipped record IDs that already exist in storage
+				expect( storageMedium.getItem( proxy.getRecordCounterKey() ) ).toBe( "3" );  // make sure it was stored
 			} );
 			
 		} );

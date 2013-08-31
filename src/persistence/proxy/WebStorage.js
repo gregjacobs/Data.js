@@ -59,7 +59,7 @@ define( [
 		
 		/**
 		 * @hide
-		 * @cfg {data.persistence.reader.ClientStorage} reader
+		 * @cfg {data.persistence.reader.Reader} reader
 		 * 
 		 * The WebStorage proxy uses its own scheme to store model data using local storage. 
 		 */
@@ -116,7 +116,7 @@ define( [
 			
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				var model = models[ i ],
-				    newId = this.getNewId(),
+				    newId = this.getNewId(),  // returns a Number ID, for populating models that accept a Number ID attribute
 				    returnRecord = {};
 
 				recordIds.push( newId );
@@ -153,6 +153,7 @@ define( [
 			    deferred = new jQuery.Deferred();
 			
 			if( modelId !== undefined ) {
+				modelId = String( modelId );  // modelIds are stored in the proxy as strings (for consistency with any string IDs), so convert any number to a string
 				if( _.contains( recordIds, modelId ) ) {
 					records.push( this.getRecord( modelId ) ); 
 				}
@@ -197,7 +198,7 @@ define( [
 			
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				var model = models[ i ],
-				    modelId = model.getId();
+				    modelId = String( model.getId() );  // modelIds are stored in the proxy as strings (for consistency with any string IDs), so convert any number to a string
 
 				if( !_.contains( recordIds, modelId ) ) {
 					recordIds.push( modelId );
@@ -232,7 +233,7 @@ define( [
 			
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				var model = models[ i ],
-				    modelId = model.getId(),
+				    modelId = String( model.getId() ),  // modelIds are stored in the proxy as strings (for consistency with any string IDs), so convert any number to a string
 				    recordIdx = _.indexOf( recordIds, modelId );
 				
 				if( recordIdx !== -1 ) {
@@ -282,8 +283,8 @@ define( [
 		 * 
 		 * @protected
 		 * @param {data.Model} model The Model to save a record for.
-		 * @param {Number} [id] The ID to save the record for. If not provided, uses the Model's {@link data.Model#getId id}.
-		 *   This parameter is for saving new models, which don't have an ID yet.
+		 * @param {Number/String} [id] The ID to save the record for. If not provided, uses the Model's 
+		 *   {@link data.Model#getId id}. This parameter is for saving new models, which don't have an ID yet.
 		 */
 		setRecord : function( model, id ) {
 			if( id === undefined ) id = model.getId();
@@ -310,7 +311,7 @@ define( [
 		 * Removes a record by ID.
 		 * 
 		 * @protected
-		 * @param {Number} id
+		 * @param {Number/String} id
 		 */
 		removeRecord : function( id ) {
 			this.getStorageMedium().removeItem( this.getRecordKey( id ) ); 
@@ -336,7 +337,7 @@ define( [
 		 * the `data` is returned.
 		 * 
 		 * @protected
-		 * @param {Number} id The ID of the record to retrieve.
+		 * @param {Number/String} id The ID of the record to retrieve.
 		 * @return {Object} An object which contains the record data for the stored record, or `null`
 		 *   if there is no record for the given `id`. 
 		 */
@@ -367,9 +368,10 @@ define( [
 		 * or current records are removed, for bookkeeping purposes.
 		 * 
 		 * @protected
-		 * @param {Number[]} recordIds The array of record IDs.
+		 * @param {String[]} recordIds The array of record IDs. Any numbers in the array will be converted to strings.
 		 */
 		setRecordIds : function( recordIds ) {
+			recordIds = _.map( recordIds, function( id ) { return String( id ); } );
 			var storageMedium = this.getStorageMedium(),
 			    recordIdsKey = this.getRecordIdsKey();
 			
@@ -384,7 +386,7 @@ define( [
 		 * This information tells us which models are stored, and how many.
 		 * 
 		 * @protected
-		 * @return {Number[]} The array of IDs that are currently stored.
+		 * @return {String[]} The array of IDs that are currently stored.
 		 */
 		getRecordIds : function() {
 			var recordIds = this.getStorageMedium().getItem( this.getRecordIdsKey() );
@@ -397,13 +399,25 @@ define( [
 		 * Retrieves a new, sequential ID which can be used to {@link #create} records (models). Once this
 		 * ID is returned, it is considered "taken", and subsequent calls to this method will return new IDs.
 		 * 
+		 * This method also double checks that no manually-assigned IDs would be overwritten by a generated ID.
+		 * 
 		 * @protected
-		 * @return {Number} A new, unused sequential ID.
+		 * @return {Number} A new, unused sequential ID. This returns a Number ID, for populating models that 
+		 *   accept a Number ID attribute. Models with a String ID property will automatically convert the
+		 *   number to a String.
 		 */
 		getNewId : function() {
 			var storageMedium = this.getStorageMedium(),
 			    recordCounterKey = this.getRecordCounterKey(),
-			    newId = ( +storageMedium.getItem( recordCounterKey ) || 0 ) + 1;
+			    recordCounter = +storageMedium.getItem( recordCounterKey ) || 0,
+			    currentRecordIds = this.getRecordIds(),
+			    newId = recordCounter + 1;
+			
+			// Make sure to find a new ID that hasn't been used yet. It is possible that IDs have manually
+			// been specified on one or more models, and this method must account for any that are currently stored.
+			while( _.contains( currentRecordIds, String( newId ) ) ) {
+				newId++;
+			}
 			
 			storageMedium.removeItem( recordCounterKey );  // iPad bug requires removal before setting it
 			storageMedium.setItem( recordCounterKey, newId );
@@ -418,7 +432,6 @@ define( [
 		 * {@link #storageKey}. 
 		 * 
 		 * @protected
-		 * @param {Number} id
 		 * @return {String} The key name for the "recordIds" in WebStorage, for this {link #storageKey}.
 		 */
 		getRecordIdsKey : function() {
@@ -431,7 +444,6 @@ define( [
 		 * number is used to always generate new, sequential IDs for records when being {@link #create created}.
 		 * 
 		 * @protected
-		 * @param {Number} id
 		 * @return {String} The key name for the "record counter" in WebStorage, for this {link #storageKey}.
 		 */
 		getRecordCounterKey : function() {
@@ -443,7 +455,7 @@ define( [
 		 * Retrieves the WebStorage key name for the given Record, by its ID.
 		 * 
 		 * @protected
-		 * @param {Number} id
+		 * @param {Number/String} id
 		 * @return {String} The key name that will uniquely identify the record in WebStorage, for this {link #storageKey}.
 		 */
 		getRecordKey : function( id ) {
