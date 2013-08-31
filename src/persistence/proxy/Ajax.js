@@ -291,7 +291,7 @@ define( [
 				    pageParam = this.pageParam,
 				    pageSizeParam = this.pageSizeParam;
 				
-				if( modelId !== null ) 
+				if( modelId !== undefined ) 
 					params[ this.idParam ] = modelId;
 				
 				if( page > 0 && pageParam ) {   // an actual page was requested, and there is a pageParam config defined

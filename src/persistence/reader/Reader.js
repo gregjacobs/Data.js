@@ -23,7 +23,7 @@ define( [
 	 * to apply transformations from the raw data to a form that will be consumed by a {@link data.Model Model}
 	 * or {@link data.Collection Collection}.
 	 */
-	var Reader = Class.extend( Object, {
+	var Reader = Class.create( {
 		abstractClass : true,
 		
 		
@@ -185,8 +185,8 @@ define( [
 		
 		
 		/**
-		 * Reads the raw data, and returns a {@link data.persistence.ResultSet} object which holds the data
-		 * in JavaScript object form, along with any metadata present.
+		 * Reads the raw data/metadata, and returns a {@link data.persistence.ResultSet} object which holds the data
+		 * in JavaScript Object form, along with any of the metadata present.
 		 * 
 		 * @param {Mixed} rawData The raw data to transform.
 		 * @return {data.persistence.ResultSet} A ResultSet object which holds the data in JavaScript object form,
@@ -219,7 +219,7 @@ define( [
 		
 
 		/**
-		 * Extracts the records data from the JavaScript object produced as a result of {@link #convertRaw}.
+		 * Extracts the records' data from the JavaScript object produced as a result of {@link #convertRaw}.
 		 * The default implementation uses the {@link #dataProperty} config to pull out the object which holds
 		 * the record(s) data.
 		 * 
@@ -234,7 +234,7 @@ define( [
 
 				// <debug>
 				if( data === undefined ) {
-					throw new Error( "Reader could not find the data at property '" + dataProperty + "'" );
+					throw new Error( "Reader could not find the data at the property '" + dataProperty + "'" );
 				}
 				// </debug>
 			}

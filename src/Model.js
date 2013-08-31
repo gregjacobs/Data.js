@@ -147,16 +147,24 @@ define( [
 		},
 		
 		
-		
 		/**
-		 * @cfg {data.persistence.proxy.Proxy} proxy
+		 * @cfg {Number} version
 		 * 
-		 * The persistence proxy to use (if any) to load or persist the Model's data to/from persistent
-		 * storage. If this is not specified, the Model may not {@link #method-load} or {@link #method-save} its data.
+		 * The version number for the Model's {@link #attributes}. 
 		 * 
-		 * Note that this may be specified as part of a Model subclass (so that all instances of the Model inherit
-		 * the proxy), or on a particular model instance using {@link #setProxy}.
+		 * This may be used in conjunction with, for instance, a {@link data.persistence.proxy.WebStorage WebStorage} 
+		 * Proxy, which stores the Model's data along with this version number. The version number can then be used to 
+		 * perform a migration of old stored data into the format of a newer version of the Model by way of a migration
+		 * method.
+		 * 
+		 * 
+		 * 
+		 * TODO: Document migration method, and that this is not needed for server-side proxies
+		 * 
+		 * 
+		 * 
 		 */
+		version : 1,
 		
 		/**
 		 * @cfg {String[]/Object[]} attributes
@@ -195,6 +203,17 @@ define( [
 		 * The attribute that should be used as the ID for the Model. 
 		 */
 		idAttribute : 'id',
+		
+		
+		/**
+		 * @cfg {data.persistence.proxy.Proxy} proxy
+		 * 
+		 * The persistence proxy to use (if any) to load or persist the Model's data to/from persistent
+		 * storage. If this is not specified, the Model may not {@link #method-load} or {@link #method-save} its data.
+		 * 
+		 * Note that this may be specified as part of a Model subclass (so that all instances of the Model inherit
+		 * the proxy), or on a particular model instance using {@link #setProxy}.
+		 */
 		
 		/**
 		 * @cfg {Boolean} ignoreUnknownAttrs
@@ -547,6 +566,16 @@ define( [
 		
 		
 		// --------------------------------
+		
+		
+		/**
+		 * Retrieves the Model's {@link #version}.
+		 * 
+		 * @return {Number}
+		 */
+		getVersion : function() {
+			return this.version;
+		},
 		
 		
 		/**
@@ -1609,7 +1638,7 @@ define( [
 		
 		// ------------------------------------
 		
-		// Protected utility methods
+		// Utility methods
 		
 		
 		/**

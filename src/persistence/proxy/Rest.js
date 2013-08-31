@@ -285,7 +285,7 @@ define( [
 			// In the read case where there is no particular model to load (i.e. loading a collection),
 			// then we skip this as well, as we want to load *all* (or at least a range of) models of the 
 			// particular resource.
-			if( action !== 'create' && modelId ) {
+			if( action !== 'create' && modelId !== undefined ) {
 				if( !url.match( /\/$/ ) ) {
 					url += '/';  // append trailing slash if it's not there
 				}

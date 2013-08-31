@@ -67,13 +67,13 @@ define( [
 		
 		/**
 		 * Retrieves the value of the {@link #modelId} config, if it was provided.
-		 * If it was not provided, returns `null`.
+		 * If it was not provided, returns `undefined`.
 		 * 
-		 * @return {Number/String} The {@link #modelId} provided as a config, or `null` if the config 
+		 * @return {Number/String} The {@link #modelId} provided as a config, or `undefined` if the config 
 		 *   was not provided.
 		 */
 		getModelId : function() {
-			return ( this.modelId !== undefined ) ? this.modelId : null;
+			return this.modelId;
 		},
 		
 		
