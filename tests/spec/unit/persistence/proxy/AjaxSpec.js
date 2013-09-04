@@ -30,13 +30,12 @@ define( [
 			} );
 			
 			
-			it( "should call the ajax function with the correct url when a single model is being loaded", function() {
+			it( "should call the ajax function with a url that includes an id param when a single model is being loaded", function() {
 				spyOn( request, 'getModelId' ).andReturn( 1 );
 				
 				var providedUrl,
 				    providedData;  // this will be the params string in the case of 'read'
 				
-				var testData = { attribute1: 'value1', attribute2: 'value2' };
 				var TestProxy = AjaxProxy.extend( {
 					ajax : function( options ) {
 						providedUrl = options.url;
@@ -52,6 +51,30 @@ define( [
 				proxy.read( request );
 				expect( providedUrl ).toBe( '/testUrl' );
 				expect( providedData ).toBe( 'id=1' );
+			} );
+			
+			
+			it( "should not add the id param if the `idParam` config is set to an empty string or other falsy value", function() {
+				spyOn( request, 'getModelId' ).andReturn( 1 );
+				
+				var providedUrl,
+				    providedData;  // this will be the params string in the case of 'read'
+				
+				var TestProxy = AjaxProxy.extend( {
+					ajax : function( options ) {
+						providedUrl = options.url;
+						providedData = options.data;
+						return new jQuery.Deferred().promise();
+					}
+				} );
+				
+				var proxy = new TestProxy( {
+					url : '/testUrl',
+					idParam : ''  // empty string
+				} );
+				proxy.read( request );
+				expect( providedUrl ).toBe( '/testUrl' );
+				expect( providedData ).toBe( '' );
 			} );
 			
 			

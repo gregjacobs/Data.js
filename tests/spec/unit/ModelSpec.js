@@ -1856,14 +1856,6 @@ define( [
 			} );
 			
 			
-			it( "should throw an error if the model does not have a value for its `id` attribute", function() {
-				var model = new TestModel();  // note: no value for the `id` attribute
-				expect( function() {
-					model.load();
-				} ).toThrow( "data.Model::load() error: Cannot load. Model does not have an idAttribute that relates to a valid attribute, or does not yet have a valid id (i.e. an id that is not null)." );
-			} );
-			
-			
 			it( "should delegate to its proxy's read() method to retrieve the data", function() {
 				var model = new TestModel( { id: 1 } );
 				model.load();

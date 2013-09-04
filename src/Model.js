@@ -1203,8 +1203,7 @@ define( [
 		
 		/**
 		 * (Re)Loads the Model's attributes from its persistent storage (such as a web server), using the configured 
-		 * {@link #proxy}. Any changed data will be discarded. The Model must have a value for its {@link #idAttribute}
-		 * for this method to succeed.
+		 * {@link #proxy}. Any changed data will be discarded. 
 		 * 
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
@@ -1234,9 +1233,6 @@ define( [
 			// <debug>
 			if( !this.proxy ) {
 				throw new Error( "data.Model::load() error: Cannot load. No proxy configured." );
-			}
-			if( this.isNew() ) {
-				throw new Error( "data.Model::load() error: Cannot load. Model does not have an idAttribute that relates to a valid attribute, or does not yet have a valid id (i.e. an id that is not null)." );
 			}
 			// </debug>
 			

@@ -286,13 +286,14 @@ define( [
 			// Add the model's `id` and the paging parameters for 'read' requests only
 			if( action === 'read' ) {
 				var modelId = request.getModelId(),
+				    idParam = this.idParam,
 				    page = request.getPage(),
 				    pageSize = request.getPageSize(),
 				    pageParam = this.pageParam,
 				    pageSizeParam = this.pageSizeParam;
 				
-				if( modelId !== undefined ) 
-					params[ this.idParam ] = modelId;
+				if( modelId !== undefined && idParam ) 
+					params[ idParam ] = modelId;
 				
 				if( page > 0 && pageParam ) {   // an actual page was requested, and there is a pageParam config defined
 					params[ pageParam ] = page;
