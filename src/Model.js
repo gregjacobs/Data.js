@@ -1248,7 +1248,8 @@ define( [
 			
 			// Make a request to load the data from the proxy
 			var me = this,  // for closures
-			    request = new ReadRequest( { proxy: this.proxy, modelId: this.getId(), params: options.params } );
+			    id = ( this.hasIdAttribute() ) ? this.getId() : undefined,
+			    request = new ReadRequest( { proxy: this.proxy, modelId: id, params: options.params } );
 			
 			request.execute().then(
 				function( request ) { me.onLoadSuccess( deferred, request ); },

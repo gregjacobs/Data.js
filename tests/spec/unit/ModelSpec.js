@@ -1856,11 +1856,37 @@ define( [
 			} );
 			
 			
-			it( "should delegate to its proxy's read() method to retrieve the data", function() {
+			it( "should delegate to its proxy's read() method, with the model's ID, to retrieve the data", function() {
 				var model = new TestModel( { id: 1 } );
 				model.load();
 				
 				expect( proxy.read ).toHaveBeenCalled();
+				expect( loadRequest.getModelId() ).toBe( 1 );
+			} );
+			
+			
+			it( "should delegate to its proxy's read() method, even without the model's ID if it doesn't have one assigned, to retrieve the data", function() {
+				var model = new TestModel();  // note: no `id` assigned
+				model.load();
+				
+				expect( proxy.read ).toHaveBeenCalled();
+				expect( loadRequest.getModelId() ).toBe( undefined );
+			} );
+			
+			
+			it( "should delegate to its proxy's read() method, even if it *doesn't have an idAttribute*, to retrieve the data", function() {
+				var NoIdModel = Model.extend( {
+					attributes  : [ 'name' ],  // note: no 'id' attribute
+					idAttribute : 'id',        // the default value, but just to be explicit
+					
+					proxy : proxy
+				} );
+				
+				var model = new NoIdModel();
+				model.load();
+				
+				expect( proxy.read ).toHaveBeenCalled();
+				expect( loadRequest.getModelId() ).toBe( undefined );
 			} );
 			
 			
