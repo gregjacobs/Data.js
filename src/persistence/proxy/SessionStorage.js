@@ -1,7 +1,7 @@
 /*global define */
 define( [
 	'data/persistence/proxy/Proxy',  // for registering the proxy
-	'data/persistence/proxy/WebStorageProxy'
+	'data/persistence/proxy/WebStorage'
 ], function( Proxy, WebStorageProxy ) {
 	
 	/**
@@ -13,11 +13,24 @@ define( [
 	 * 
 	 * ## Example
 	 * 
-	 * This proxy may be used as such:
+	 * The proxy may be used as such:
 	 * 
+	 *     define( [
+	 *         'data/Model',
+	 *         'data/persistence/proxy/SessionStorage'
+	 *     ], function( Model, SessionStorage ) {
+	 *     
+	 *          var MyModel = Model.extend( {
+	 *              attributes : [ ... ],
+	 *              
+	 *              proxy : new SessionStorage( {
+	 *                  storageKey : 'MyModel'
+	 *              } );
+	 *          } );
 	 * 
-	 * 
-	 * 
+	 *          return MyModel;
+	 *          
+	 *     } );
 	 * 
 	 * 
 	 * ## Limitations
