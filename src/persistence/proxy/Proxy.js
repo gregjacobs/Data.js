@@ -179,7 +179,20 @@ define( [
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		destroy : Class.abstractMethod
+		destroy : Class.abstractMethod,
+		
+		
+		// -----------------------------------
+		
+		
+		/**
+		 * Retrieves the {@link #reader} for the Proxy.
+		 * 
+		 * @return {data.persistence.reader.Reader} The Proxy's {@link #reader}, or `null` if there is none set.
+		 */
+		getReader : function() {
+			return this.reader || null;
+		}
 		
 	} );
 	
