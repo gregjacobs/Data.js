@@ -66,21 +66,22 @@ module.exports = function( grunt ) {
 				options : {
 					baseUrl: 'src',
 					out : "dist/data-all.js",
-					
+
 					// Note: Paths relative to the baseUrl, `src`. This is so that when Data.js files
 					// are optimized, they are defined in the output file as 'data/Xyz', instead of 'src/data/Xyz'.
+					// All dependencies should be included separately as well.
 					paths : {
-						'jquery'             : 'empty:',  // included separately
-						'lodash'             : 'empty:',  // included separately
-						'Class'              : '../vendor/class/Class',
-						'Observable'         : '../vendor/observable/Observable',
+						'jquery'             : 'empty:',
+						'lodash'             : 'empty:',
+						'Class'              : 'empty:',
+						'Observable'         : 'empty:',
 						
 						'data'               : '.'
 					},
-					
+
 					logLevel: 2,       // 0=trace, 1=info, 2=warn, 3=error, 4=silent
 					optimize: 'none',  // We'll minify later, in `uglify` task
-				
+
 					include : allSrcFiles,        // include all source files, and
 					insertRequire : allSrcFiles   // add a require() statement at the end of the build file for the Data.js library's
 					                              // files, so that its classes can be instantiated lazily based on their `type` property
