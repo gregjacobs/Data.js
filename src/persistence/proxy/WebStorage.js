@@ -64,13 +64,6 @@ define( [
 		 * The WebStorage proxy uses its own scheme to store model data using local storage. 
 		 */
 		
-		/**
-		 * @hide
-		 * @cfg {data.persistence.writer.Writer} writer
-		 * 
-		 * The WebStorage proxy uses its own scheme to store model data using local storage. 
-		 */
-		
 		
 		/**
 		 * @protected

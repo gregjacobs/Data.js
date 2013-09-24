@@ -26,7 +26,7 @@ define( [
 	 * 
 	 * ## Sequence of Operations with Collaborators
 	 * 
-	 * In the following sequence diagram, the Collection's {@link data.Collection#load load} method is called. Collection delegates
+	 * In the following sequence diagram, the Collection's {@link data.Collection#method-load load} method is called. Collection delegates
 	 * to a created instance of the Operation class, which then delegates to one or more {@link data.persistence.request.Request Requests}
 	 * (such as if multiple pages of data are being loaded at once), and finally to a {@link data.persistence.proxy.Proxy} to perform 
 	 * the actual Requests. 

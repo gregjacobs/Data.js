@@ -150,19 +150,12 @@ define( [
 		/**
 		 * @cfg {Number} version
 		 * 
-		 * The version number for the Model's {@link #attributes}. 
+		 * The version number for the Model's {@link #cfg-attributes}. 
 		 * 
 		 * This may be used in conjunction with, for instance, a {@link data.persistence.proxy.WebStorage WebStorage} 
 		 * Proxy, which stores the Model's data along with this version number. The version number can then be used to 
 		 * perform a migration of old stored data into the format of a newer version of the Model by way of a migration
-		 * method.
-		 * 
-		 * 
-		 * 
-		 * TODO: Document migration method, and that this is not needed for server-side proxies
-		 * 
-		 * 
-		 * 
+		 * method. See {@link data.persistence.proxy.WebStorage#migrate} for details.
 		 */
 		version : 1,
 		

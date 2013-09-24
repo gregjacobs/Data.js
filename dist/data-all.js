@@ -3041,19 +3041,12 @@ define( 'data/Model',[
 		/**
 		 * @cfg {Number} version
 		 * 
-		 * The version number for the Model's {@link #attributes}. 
+		 * The version number for the Model's {@link #cfg-attributes}. 
 		 * 
 		 * This may be used in conjunction with, for instance, a {@link data.persistence.proxy.WebStorage WebStorage} 
 		 * Proxy, which stores the Model's data along with this version number. The version number can then be used to 
 		 * perform a migration of old stored data into the format of a newer version of the Model by way of a migration
-		 * method.
-		 * 
-		 * 
-		 * 
-		 * TODO: Document migration method, and that this is not needed for server-side proxies
-		 * 
-		 * 
-		 * 
+		 * method. See {@link data.persistence.proxy.WebStorage#migrate} for details.
 		 */
 		version : 1,
 		
@@ -4929,7 +4922,7 @@ define( 'data/persistence/operation/Operation',[
 	 * 
 	 * ## Sequence of Operations with Collaborators
 	 * 
-	 * In the following sequence diagram, the Collection's {@link data.Collection#load load} method is called. Collection delegates
+	 * In the following sequence diagram, the Collection's {@link data.Collection#method-load load} method is called. Collection delegates
 	 * to a created instance of the Operation class, which then delegates to one or more {@link data.persistence.request.Request Requests}
 	 * (such as if multiple pages of data are being loaded at once), and finally to a {@link data.persistence.proxy.Proxy} to perform 
 	 * the actual Requests. 
@@ -7926,13 +7919,6 @@ define( 'data/persistence/proxy/WebStorage',[
 		/**
 		 * @hide
 		 * @cfg {data.persistence.reader.Reader} reader
-		 * 
-		 * The WebStorage proxy uses its own scheme to store model data using local storage. 
-		 */
-		
-		/**
-		 * @hide
-		 * @cfg {data.persistence.writer.Writer} writer
 		 * 
 		 * The WebStorage proxy uses its own scheme to store model data using local storage. 
 		 */
