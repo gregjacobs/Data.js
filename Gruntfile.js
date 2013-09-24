@@ -146,8 +146,8 @@ module.exports = function( grunt ) {
 			'--title=Data.js API Docs',
 			
 			'src/',
-			'vendor/class/',
-			'vendor/observable/'
+			'bower_components/Class-js/src',
+			'bower_components/Observable-js/src'
 		];
 		
 		execFile( executable, args, function( err, stdout, stderr ) {
