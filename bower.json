@@ -30,9 +30,9 @@
     "vendor/jsduck"
   ],
   "dependencies": {
-    "Class-js": "~0.5.0",
-    "lodash": "official-lodash#~2.0.0",
-    "Observable-js": "~0.1.0",
+    "Class-js": "~0.5.1",
+    "lodash": "~2.1.0",
+    "Observable-js": "~0.1.1",
     "requirejs": "~2.1.8",
     "jquery": "~1.10.2"
   },
