@@ -542,9 +542,52 @@ define( [
 		/**
 		 * Retrieves the Operation's {@link #promise}. This promise is what is returned to clients of the
 		 * {@link data.Model} / {@link data.Collection} API.
+		 * 
+		 * @return {data.persistence.operation.Promise} The Operation's Promise object.
 		 */
 		promise : function() {
 			return this._promise || ( this._promise = new OperationPromise( { operation: this } ) );
+		},
+		
+		
+		/**
+		 * Determines the state of the Operation's {@link #promise Promise} (Deferred) object. This method is
+		 * here for compatibility with jQuery's Deferred/Promise interface.
+		 * 
+		 * This method will return one of the following values:
+		 * - **"pending"**: The Deferred object is not yet in a completed state (neither "rejected" nor "resolved").
+		 * - **"resolved"**: The Deferred object is in the resolved state, when the Operation has been 
+		 *   {@link #wasSuccessful successful}.
+		 * - **"rejected"**: The Deferred object is in the rejected state, when the Operation has 
+		 *   {@link #hasErrored errored}.
+		 * 
+		 * @return {String} See return values, above.
+		 */
+		state : function() {
+			return this.deferred.state();
+		},
+		
+		
+		/**
+		 * Adds a handler for when the Operation has made some progress.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has been notified of progress (i.e. one
+		 * of its requests has been completed):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * 
+		 * **NOTE**: This is currently unimplemented from the "notification" side of things, but the method is currently provided 
+		 * as a no-op for compatibility with jQuery's Promise interface.
+		 * 
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		progress : function( handlerFn ) {
+			//this.deferred.progress( handlerFn );  -- not yet implemented
+			return this;
 		},
 		
 		

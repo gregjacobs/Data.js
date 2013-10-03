@@ -1,6 +1,6 @@
 /*!
  * Data.js
- * Version 0.1.0
+ * Version 0.2.0
  *
  * Copyright(c) 2013 Gregory Jacobs.
  * MIT Licensed. http://www.opensource.org/licenses/mit-license.php
@@ -9,7 +9,7 @@
  */
 
 /*global define */
-define( 'data/Data',[],function() {
+define('data/Data',[], function() {
 	
 	/**
 	 * @class data.Data
@@ -37,7 +37,7 @@ define( 'data/Data',[],function() {
 } );
 
 /*global define */
-define( 'data/DataComponent',[
+define('data/DataComponent', [
 	'lodash',
 	'Class',
 	'Observable'
@@ -157,7 +157,7 @@ define( 'data/DataComponent',[
 	
 } );
 /*global define */
-define( 'data/persistence/ResultSet',[
+define('data/persistence/ResultSet', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -253,7 +253,7 @@ define( 'data/persistence/ResultSet',[
 } );
 /*global define */
 /*jshint boss:true */
-define( 'data/persistence/reader/Reader',[
+define('data/persistence/reader/Reader', [
 	'lodash',
 	'Class',
 	'data/persistence/ResultSet'
@@ -699,7 +699,7 @@ define( 'data/persistence/reader/Reader',[
 	
 } );
 /*global define */
-define( 'data/persistence/reader/Json',[
+define('data/persistence/reader/Json', [
 	'jquery',
 	'lodash',
 	'Class',
@@ -745,7 +745,7 @@ define( 'data/persistence/reader/Json',[
 	
 } );
 /*global define */
-define( 'data/persistence/proxy/Proxy',[
+define('data/persistence/proxy/Proxy', [
 	'lodash',
 	'Class',
 	'Observable',
@@ -925,7 +925,20 @@ define( 'data/persistence/proxy/Proxy',[
 		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
 		 *   this method as the first argument.
 		 */
-		destroy : Class.abstractMethod
+		destroy : Class.abstractMethod,
+		
+		
+		// -----------------------------------
+		
+		
+		/**
+		 * Retrieves the {@link #reader} for the Proxy.
+		 * 
+		 * @return {data.persistence.reader.Reader} The Proxy's {@link #reader}, or `null` if there is none set.
+		 */
+		getReader : function() {
+			return this.reader || null;
+		}
 		
 	} );
 	
@@ -933,7 +946,7 @@ define( 'data/persistence/proxy/Proxy',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Request',[
+define('data/persistence/request/Request', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -1181,7 +1194,7 @@ define( 'data/persistence/request/Request',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Write',[
+define('data/persistence/request/Write', [
 	'lodash',
 	'Class',
 	'data/persistence/request/Request'
@@ -1223,7 +1236,7 @@ define( 'data/persistence/request/Write',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Create',[
+define('data/persistence/request/Create', [
 	'data/persistence/request/Write'
 ], function( WriteRequest ) {
 	
@@ -1252,7 +1265,7 @@ define( 'data/persistence/request/Create',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Read',[
+define('data/persistence/request/Read', [
 	'lodash',
 	'Class',
 	'data/persistence/request/Request'
@@ -1377,7 +1390,7 @@ define( 'data/persistence/request/Read',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Update',[
+define('data/persistence/request/Update', [
 	'data/persistence/request/Write'
 ], function( WriteRequest ) {
 	
@@ -1406,7 +1419,7 @@ define( 'data/persistence/request/Update',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Destroy',[
+define('data/persistence/request/Destroy', [
 	'data/persistence/request/Write'
 ], function( WriteRequest ) {
 	
@@ -1435,7 +1448,7 @@ define( 'data/persistence/request/Destroy',[
 	
 } );
 /*global define */
-define( 'data/attribute/Attribute',[
+define('data/attribute/Attribute', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -1946,7 +1959,7 @@ define( 'data/attribute/Attribute',[
 } );
 
 /*global define */
-define( 'data/attribute/Object',[
+define('data/attribute/Object', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -1995,7 +2008,7 @@ define( 'data/attribute/Object',[
 } );
 /*global define */
 /*jshint browser:true */
-define( 'data/attribute/DataComponent',[
+define('data/attribute/DataComponent', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -2082,7 +2095,7 @@ define( 'data/attribute/DataComponent',[
 
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new collectionClass( ... );
-define( 'data/attribute/Collection',[
+define('data/attribute/Collection', [
 	'require',
 	'lodash',
 	'Class',
@@ -2295,7 +2308,7 @@ define( 'data/attribute/Collection',[
 } );
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new modelClass( ... );
-define( 'data/attribute/Model',[
+define('data/attribute/Model', [
 	'require',
 	'lodash',
 	'Class',
@@ -2493,7 +2506,7 @@ define( 'data/attribute/Model',[
 	
 } );
 /*global define */
-define( 'data/attribute/Primitive',[
+define('data/attribute/Primitive', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -2529,7 +2542,7 @@ define( 'data/attribute/Primitive',[
 } );
 /*global define */
 /*jshint eqnull:true */
-define( 'data/attribute/Boolean',[
+define('data/attribute/Boolean', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -2595,7 +2608,7 @@ define( 'data/attribute/Boolean',[
 	
 } );
 /*global define */
-define( 'data/attribute/Date',[
+define('data/attribute/Date', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -2639,7 +2652,7 @@ define( 'data/attribute/Date',[
 	
 } );
 /*global define */
-define( 'data/attribute/Number',[
+define('data/attribute/Number', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -2726,7 +2739,7 @@ define( 'data/attribute/Number',[
 	
 } );
 /*global define */
-define( 'data/attribute/Float',[
+define('data/attribute/Float', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -2763,7 +2776,7 @@ define( 'data/attribute/Float',[
 	
 } );
 /*global define */
-define( 'data/attribute/Integer',[
+define('data/attribute/Integer', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -2801,7 +2814,7 @@ define( 'data/attribute/Integer',[
 	
 } );
 /*global define */
-define( 'data/attribute/Mixed',[
+define('data/attribute/Mixed', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute'
@@ -2828,7 +2841,7 @@ define( 'data/attribute/Mixed',[
 } );
 /*global define */
 /*jshint eqnull:true */
-define( 'data/attribute/String',[
+define('data/attribute/String', [
 	'lodash',
 	'Class',
 	'data/attribute/Attribute',
@@ -2891,7 +2904,7 @@ define( 'data/attribute/String',[
 } );
 /*global define */
 /*jshint forin:true, eqnull:true */
-define( 'data/Model',[
+define('data/Model', [
 	'require',
 	'jquery',
 	'lodash',
@@ -4599,7 +4612,7 @@ define( 'data/Model',[
 } );
 
 /*global define */
-define( 'data/NativeObjectConverter',[
+define('data/NativeObjectConverter', [
 	'require',
 	'lodash',
 	'data/DataComponent',
@@ -4745,7 +4758,7 @@ define( 'data/NativeObjectConverter',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Promise',[
+define('data/persistence/operation/Promise', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -4800,6 +4813,40 @@ define( 'data/persistence/operation/Promise',[
 		// -----------------------------------
 		
 		// Promise interface
+
+		/**
+		 * Determines the state of the Operation. This method is here for compatibility with jQuery's 
+		 * Deferred/Promise interface.
+		 * 
+		 * This method will return one of the following values:
+		 * - **"pending"**: The Operation is not yet in a completed state (neither "rejected" nor "resolved").
+		 * - **"resolved"**: The Operation is in the resolved state (i.e. the Operation was {@link #wasSuccessful successful}).
+		 * - **"rejected"**: The Operation is in the rejected state (i.e. when the Operation has {@link #hasErrored errored}).
+		 * 
+		 * @return {String} See return values, above.
+		 */
+		state : function() {
+			return this.operation.state();
+		},
+		
+		
+		/**
+		 * Adds a handler for when the Operation has made some progress.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has been notified of progress (i.e. one
+		 * of its requests has been completed):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		progress : function( handlerFn ) {
+			this.operation.progress( handlerFn );
+			return this;
+		},
+		
 		
 		/**
 		 * Adds a handler for when the Operation has completed successfully.
@@ -4887,6 +4934,20 @@ define( 'data/persistence/operation/Promise',[
 		always : function( handlerFn ) {
 			this.operation.always( handlerFn );
 			return this;
+		},
+		
+		
+		/**
+		 * Returns the OperationPromise itself (this object). 
+		 * 
+		 * This method is purely for compatibility with jQuery's Promise API, and is also for methods like 
+		 * `jQuery.when()`, which uses the existence of this method as a duck-type check in order to 
+		 * determine if a Deferred or Promise object has been passed to it.  
+		 * 
+		 * @return {data.persistence.operation.Promise} This OperationPromise object.
+		 */
+		promise : function() {
+			return this;
 		}
 		
 	} );
@@ -4895,7 +4956,7 @@ define( 'data/persistence/operation/Promise',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Operation',[
+define('data/persistence/operation/Operation', [
 	'jquery',
 	'lodash',
 	'Class',
@@ -5438,9 +5499,52 @@ define( 'data/persistence/operation/Operation',[
 		/**
 		 * Retrieves the Operation's {@link #promise}. This promise is what is returned to clients of the
 		 * {@link data.Model} / {@link data.Collection} API.
+		 * 
+		 * @return {data.persistence.operation.Promise} The Operation's Promise object.
 		 */
 		promise : function() {
 			return this._promise || ( this._promise = new OperationPromise( { operation: this } ) );
+		},
+		
+		
+		/**
+		 * Determines the state of the Operation's {@link #promise Promise} (Deferred) object. This method is
+		 * here for compatibility with jQuery's Deferred/Promise interface.
+		 * 
+		 * This method will return one of the following values:
+		 * - **"pending"**: The Deferred object is not yet in a completed state (neither "rejected" nor "resolved").
+		 * - **"resolved"**: The Deferred object is in the resolved state, when the Operation has been 
+		 *   {@link #wasSuccessful successful}.
+		 * - **"rejected"**: The Deferred object is in the rejected state, when the Operation has 
+		 *   {@link #hasErrored errored}.
+		 * 
+		 * @return {String} See return values, above.
+		 */
+		state : function() {
+			return this.deferred.state();
+		},
+		
+		
+		/**
+		 * Adds a handler for when the Operation has made some progress.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has been notified of progress (i.e. one
+		 * of its requests has been completed):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * 
+		 * **NOTE**: This is currently unimplemented from the "notification" side of things, but the method is currently provided 
+		 * as a no-op for compatibility with jQuery's Promise interface.
+		 * 
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		progress : function( handlerFn ) {
+			//this.deferred.progress( handlerFn );  -- not yet implemented
+			return this;
 		},
 		
 		
@@ -5539,7 +5643,7 @@ define( 'data/persistence/operation/Operation',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Load',[
+define('data/persistence/operation/Load', [
 	'data/persistence/operation/Operation'
 ], function( Operation ) {
 	
@@ -5577,7 +5681,7 @@ define( 'data/persistence/operation/Load',[
 	
 } );
 /*global define */
-define( 'data/persistence/request/Batch',[
+define('data/persistence/request/Batch', [
 	'lodash',
 	'Class'
 ], function( _, Class ) {
@@ -5719,7 +5823,7 @@ define( 'data/persistence/request/Batch',[
 	
 } );
 /*global define */
-define( 'data/Collection',[
+define('data/Collection', [
 	'require',
 	'jquery',
 	'lodash',
@@ -7398,7 +7502,7 @@ define( 'data/Collection',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Destroy',[
+define('data/persistence/operation/Destroy', [
 	'data/persistence/operation/Operation'
 ], function( Operation ) {
 	
@@ -7417,7 +7521,7 @@ define( 'data/persistence/operation/Destroy',[
 	
 } );
 /*global define */
-define( 'data/persistence/operation/Save',[
+define('data/persistence/operation/Save', [
 	'data/persistence/operation/Operation'
 ], function( Operation ) {
 	
@@ -7436,7 +7540,7 @@ define( 'data/persistence/operation/Save',[
 	
 } );
 /*global define */
-define( 'data/persistence/proxy/Ajax',[
+define('data/persistence/proxy/Ajax', [
 	'jquery',
 	'lodash',
 	'Class',
@@ -7859,7 +7963,7 @@ define( 'data/persistence/proxy/Ajax',[
 } );
 /*global define */
 /*jshint eqnull:true */
-define( 'data/persistence/proxy/WebStorage',[
+define('data/persistence/proxy/WebStorage', [
 	'jquery',
 	'lodash',
 	'Class',
@@ -8388,7 +8492,7 @@ define( 'data/persistence/proxy/WebStorage',[
 	
 } );
 /*global define */
-define( 'data/persistence/proxy/LocalStorage',[
+define('data/persistence/proxy/LocalStorage', [
 	'data/persistence/proxy/Proxy',  // for registering the proxy
 	'data/persistence/proxy/WebStorage'
 ], function( Proxy, WebStorageProxy ) {
@@ -8450,7 +8554,7 @@ define( 'data/persistence/proxy/LocalStorage',[
 	
 } );
 /*global define */
-define( 'data/persistence/proxy/Rest',[
+define('data/persistence/proxy/Rest', [
 	'jquery',
 	'lodash',
 	'Class',
@@ -8756,7 +8860,7 @@ define( 'data/persistence/proxy/Rest',[
 	
 } );
 /*global define */
-define( 'data/persistence/proxy/SessionStorage',[
+define('data/persistence/proxy/SessionStorage', [
 	'data/persistence/proxy/Proxy',  // for registering the proxy
 	'data/persistence/proxy/WebStorage'
 ], function( Proxy, WebStorageProxy ) {
