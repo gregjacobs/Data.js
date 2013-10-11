@@ -1,6 +1,6 @@
 {
   "name": "Data.js",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "homepage": "https://github.com/gregjacobs/Data.js",
   "authors": [
     "Gregory Jacobs <greg@greg-jacobs.com>"
@@ -27,7 +27,7 @@
     "bower_components",
     "test",
     "tests",
-    "vendor/jsduck"
+    "vendor"
   ],
   "dependencies": {
     "Class-js": "~0.5.1",
