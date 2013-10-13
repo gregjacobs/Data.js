@@ -1,6 +1,6 @@
 /*!
  * Data.js
- * Version 0.2.0
+ * Version 0.2.3
  *
  * Copyright(c) 2013 Gregory Jacobs.
  * MIT Licensed. http://www.opensource.org/licenses/mit-license.php

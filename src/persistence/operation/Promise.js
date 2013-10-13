@@ -61,8 +61,10 @@ define( [
 		 * 
 		 * This method will return one of the following values:
 		 * - **"pending"**: The Operation is not yet in a completed state (neither "rejected" nor "resolved").
-		 * - **"resolved"**: The Operation is in the resolved state (i.e. the Operation was {@link #wasSuccessful successful}).
-		 * - **"rejected"**: The Operation is in the rejected state (i.e. when the Operation has {@link #hasErrored errored}).
+		 * - **"resolved"**: The Operation is in the resolved state (i.e. the Operation was 
+		 *   {@link data.persistence.operation.Operation#wasSuccessful successful}).
+		 * - **"rejected"**: The Operation is in the rejected state (i.e. when the Operation has 
+		 *   {@link data.persistence.operation.Operation#hasErrored errored}).
 		 * 
 		 * @return {String} See return values, above.
 		 */
