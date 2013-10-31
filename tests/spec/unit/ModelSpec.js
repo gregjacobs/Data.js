@@ -261,7 +261,7 @@ define( [
 		} );
 		
 		
-		describe( "Test Initialization (constructor)", function() {
+		describe( "constructor", function() {
 			
 			describe( "Test lazy instantiating a proxy", function() {
 				
@@ -326,7 +326,8 @@ define( [
 			} );
 			
 			
-			describe( "Test change event upon initialization", function() {
+			describe( "`change` event upon initialization", function() {
+				
 				var TestModel = Class.extend( Model, {
 					attributes: [
 						{ name: 'attribute1' },
@@ -399,27 +400,80 @@ define( [
 					expect( model.isModified() ).toBe( false );  // orig YUI Test err msg: "The model should not be modified upon initialization"
 					expect( _.isEmpty( model.getChanges() ) ).toBe( true );  // orig YUI Test err msg: "There should not be any 'changes' upon initialization"
 				} );
+
+				
+				it( "should throw an error if there are properties in the `data` object that don't map to model attributes, if the `ignoreUnknownAttrs` config or option is `false`", function() {
+					var MyModel = Model.extend( {
+						attributes : [ 'a', 'b' ]
+					} );
+
+					var model;
+					expect( function() {
+						model = new MyModel( { a: 1, b: 2, c: 3, d: 4 } );
+					} ).toThrow( "data.Model.set(): An attribute with the attributeName 'c' was not found." );
+					
+					expect( function() {
+						model = new MyModel( { a: 1, b: 2, c: 3, d: 4 }, { ignoreUnknownAttrs: false } );
+					} ).toThrow( "data.Model.set(): An attribute with the attributeName 'c' was not found." );
+					
+
+					// Check that the local option overrides the Model-level config
+					var IgnoreUnknownsModel = MyModel.extend( {
+						ignoreUnknownAttrs: true  // `true` on Model level, but option will be provided as `false`
+					} );
+					
+					expect( function() {
+						model = new IgnoreUnknownsModel( { a: 1, b: 2, c: 3, d: 4 }, { ignoreUnknownAttrs: false } );
+					} ).toThrow( "data.Model.set(): An attribute with the attributeName 'c' was not found." );
+				} );
+				
+					
+				it( "should accept properties in the `data` object that don't map to model attributes, if the `ignoreUnknownAttrs` model-level config is `true`", function() {
+					var MyModel = Model.extend( {
+						attributes : [ 'a', 'b' ],
+						ignoreUnknownAttrs: true  // model-level config
+					} );
+					
+					var model = new MyModel( { a: 1, b: 2, c: 3, d: 4 } );
+					expect( model.get( 'a' ) ).toBe( 1 );
+					expect( model.get( 'b' ) ).toBe( 2 );
+				} );
+				
+					
+				it( "should accept properties in the `data` object that don't map to model attributes, if the `ignoreUnknownAttrs` option is provided as `true`", function() {
+					var MyModel = Model.extend( {
+						attributes : [ 'a', 'b' ]
+					} );
+					
+					var model = new MyModel( { a: 1, b: 2, c: 3, d: 4 }, { ignoreUnknownAttrs: true } );
+					expect( model.get( 'a' ) ).toBe( 1 );
+					expect( model.get( 'b' ) ).toBe( 2 );
+				} );
 				
 			} );
 			
 			
-			describe( "Test that initialize() is called", function() {
+			describe( "Test that initialize() is called upon construction", function() {
 				
-				it( "The initialize() method should be called with the constructor function, for subclass initialization", function() {
+				it( "The initialize() method should be called during the constructor for subclasses to hook into, after model attributes have been set", function() {
 					var initializeCalled = false;
 					
 					var MyModel = Model.extend( {
 						attributes : [ 
-							'test',
+							'test1',
 							{ name: 'test2', defaultValue: 'defaultForTest2' }
 						],
 						initialize : function() {
 							initializeCalled = true;
+							
+							// Check that model attributes have already been set 
+							expect( this.get( 'test1' ) ).toBe( 1 );
+							expect( this.get( 'test2' ) ).toBe( 2 );
 						}
 					} );
 					
-					var model = new MyModel();
-					expect( initializeCalled ).toBe( true );  // orig YUI Test err msg: "The initialize() method should have been called"
+					var model = new MyModel( { test1: 1, test2: 2 } );
+					expect( initializeCalled ).toBe( true );
 				} );
 				
 			} );

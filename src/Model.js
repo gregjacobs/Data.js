@@ -353,8 +353,19 @@ define( [
 		 * 
 		 * @constructor 
 		 * @param {Object} [data] Any initial data for the {@link #cfg-attributes attributes}, specified in an object (hash map). See {@link #set}.
+		 *   If not passing any initial data, but want to pass the second argument (`options`), provide `null`.
+		 * @param {Object} [options] Any options for Model construction/initialization. This may be an object with the following properties:
+		 * @param {Boolean} [options.ignoreUnknownAttrs] Set to `true` if unknown attributes should be ignored in the data object provided
+		 *   to the first argument of this method. This is useful if you have an object which contains many properties, but your model does not
+		 *   define matching attributes for each one of them. This option is **not recommended**, as it bypasses the check which can help you 
+		 *   determine that you have possibly typed an attribute name incorrectly, and it may then be difficult at the time when a bug arises 
+		 *   because of it (especially in a large software system) to determine where the source of the problem was. Defaults to the value of the 
+		 *   {@link #ignoreUnknownAttrs} config. This is also set by some internal constructor calls to create models, such as when loading data
+		 *   into a {@link data.Collection} (based on the {@link data.Collection#ignoreUnknownAttrsOnLoad}).
 		 */
-		constructor : function( data ) {
+		constructor : function( data, options ) {
+			options = options || {};
+			
 			// Default the data to an empty object
 			data = data || {};
 			
@@ -514,7 +525,7 @@ define( [
 			this.modifiedData = {};
 			
 			// Set the initial data / defaults, if we have any
-			this.set( data );
+			this.set( data, { ignoreUnknownAttrs: options.ignoreUnknownAttrs } );
 			this.commit();  // and because we are initializing, the data is not considered modified
 			
 			// Call hook method for subclasses
@@ -693,6 +704,7 @@ define( [
 					}
 				}
 				
+				// Handle any attributes that have a setter (i.e. a `set` config) after the ones that don't have setters
 				for( var i = 0, len = attrsWithSetters.length; i < len; i++ ) {
 					attributeName = attrsWithSetters[ i ];
 					this.doSet( attributeName, values[ attributeName ], options, changeSetNewValues, changeSetOldValues );
