@@ -146,6 +146,30 @@ define( [
 		clearOnPageLoad : true,
 		
 		/**
+		 * @cfg {Boolean} ignoreUnknownAttrsOnLoad
+		 * 
+		 * `true` to ignore any unknown attributes that come from an external data source (server, local storage, etc)
+		 * when {@link #load loading} the Collection. This defaults to true in case say, a web service adds additional
+		 * properties to a response object, which would otherwise trigger an error for an unknown attribute when the 
+		 * Models are created for the Collection.
+		 * 
+		 * This may be useful to set to `false` for development purposes however, to make sure that your server or other
+		 * persistent storage mechanism is providing all of the correct data, and that there are no mistyped property 
+		 * names, spelling errors, or anything of that nature. One way to do this on a global level for development purposes
+		 * is:
+		 * 
+		 *     require( [
+		 *         'data/Collection'
+		 *     ], function( Collection ) {
+		 *         
+		 *         // Check all attributes from external data sources when in "development" mode
+		 *         Collection.prototype.ignoreUnknownAttrsOnLoad = false;
+		 *         
+		 *     } );
+		 */
+		ignoreUnknownAttrsOnLoad : true,
+		
+		/**
 		 * @cfg {Function} sortBy
 		 * A function that is used to keep the Collection in a sorted ordering. Without one, the Collection will
 		 * simply keep models in insertion order.
@@ -477,18 +501,22 @@ define( [
 		 * If a model is provided as an anonymous data object, this method will be called to transform the data into 
 		 * the appropriate {@link data.Model model} class, using the {@link #model} config.
 		 * 
-		 * This may be overridden in subclasses to allow for custom processing, or to create a factory method for Model creation.
+		 * This may be overridden in subclasses to allow for custom processing, or to create a factory method for the
+		 * appropriate Model creation.
 		 * 
 		 * @protected
-		 * @param {Object} modelData
+		 * @param {Object} modelData The anonymous data object which will be passed to the {@link data.Model} constructor to
+		 *   populate its initial data.
+		 * @param {Object} modelOptions An object of options to pass to the {@link data.Model} constructor. This will be an
+		 *   empty object if no options are being passed.
 		 * @return {data.Model} The instantiated model.
 		 */
-		createModel : function( modelData ) {
+		createModel : function( modelData, modelOptions ) {
 			if( !this.model ) {
-				throw new Error( "Cannot instantiate model from anonymous data, 'model' config not provided to Collection." );
+				throw new Error( "Cannot instantiate model from anonymous data, `model` config not provided to Collection." );
 			}
 			
-			return new this.model( modelData );
+			return new this.model( modelData, modelOptions );
 		},
 		
 		
@@ -541,7 +569,7 @@ define( [
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				model = models[ i ];
 				if( !( model instanceof Model ) ) {
-					model = this.createModel( model );
+					model = this.createModel( model, {} );
 				}
 				
 				// Only add if the model does not already exist in the collection
@@ -1446,7 +1474,8 @@ define( [
 		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
 		 */
 		onLoadSuccess : function( operation ) {
-			var requests = operation.getRequests();
+			var me = this,  // for closures
+			    requests = operation.getRequests();
 			
 			// Sample the first load Request for a totalCount
 			var totalCount = requests[ 0 ].getResultSet().getTotalCount();
@@ -1459,12 +1488,16 @@ define( [
 				this.removeAll();
 			}
 			
-			// Create a single array of all of the loaded records, put together in order of the requests, and then
-			// add them to the Collection.
+			// Create a single array of all of the loaded records from all requests, put them together in the order of 
+			// the requests, and then add them to the Collection.
 			var records = _.flatten(
 				_.map( requests, function( req ) { return req.getResultSet().getRecords(); } )  // create an array of the arrays of result sets (to be flattened after)
 			);
-			this.add( records );
+			
+			// And now create models from the records
+			var ignoreUnknownAttrs = this.ignoreUnknownAttrsOnLoad;
+			var models = _.map( records, function( record ) { return me.createModel( record, { ignoreUnknownAttrs: ignoreUnknownAttrs } ); } );
+			this.add( models );
 			
 			// Remove the Operation from the `activeLoadOperations`. Note: If removing the last one,
 			// the Collection will no longer be considered 'loading'.

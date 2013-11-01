@@ -1,6 +1,7 @@
 /*global define, window, _, describe, beforeEach, afterEach, it, xit, expect, spyOn, JsMockito */
 define( [
 	'jquery',
+	'lodash',
 	'data/Data',
 	'data/Collection',
 	'data/Model',
@@ -8,10 +9,11 @@ define( [
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Proxy',
 	'data/persistence/proxy/Ajax',
+	'data/persistence/proxy/Memory',
 	'data/persistence/request/Read',
 	'data/persistence/operation/Load',
 	'data/persistence/operation/Promise'
-], function( jQuery, Data, Collection, Model, Attribute, ResultSet, Proxy, AjaxProxy, ReadRequest, LoadOperation, OperationPromise ) {
+], function( jQuery, _, Data, Collection, Model, Attribute, ResultSet, Proxy, AjaxProxy, MemoryProxy, ReadRequest, LoadOperation, OperationPromise ) {
 	
 	describe( "data.Collection", function() {
 		
@@ -129,7 +131,7 @@ define( [
 		} );
 		
 		
-		describe( "Test createModel()", function() {
+		describe( 'createModel()', function() {
 			
 			it( "createModel() should take an anonymous config object, and transform it into a Model instance, based on the 'model' config", function() {
 				var MyModel = Model.extend( {
@@ -150,7 +152,7 @@ define( [
 		} );
 		
 		
-		describe( "Test add()", function() {
+		describe( 'add()', function() {
 			var MyModel = Model.extend( {
 				attributes : [ 'attr' ]
 			} );
@@ -512,6 +514,40 @@ define( [
 				expect( models.length ).toBe( 2 );  // orig YUI Test err msg: "There should now be two models in the collection"
 				expect( models[ 0 ].get( 'attr' ) ).toBe( 'value1' );  // orig YUI Test err msg: "The first model added in the array should have the data provided from modelData1"
 				expect( models[ 1 ].get( 'attr' ) ).toBe( 'value2' );  // orig YUI Test err msg: "The second model added in the array should have the data provided from modelData2"
+			} );
+			
+			
+			it( "add() should transform anonymous data objects to Model instances, by calling a user-overridden createModel() method with the data, and an empty object for the options", function() {
+				var createModelCallCount = 0;
+				
+				var MyModel = Model.extend( {
+					attributes : [ 'attr' ]
+				} );
+				
+				var CreateModelCollection = Collection.extend( {
+					createModel : function( modelData, modelOptions ) {
+						createModelCallCount++;
+						
+						expect( modelData ).toEqual( { attr: 'value' } );
+						expect( modelOptions ).toEqual( {} );
+						
+						return new MyModel( modelData );
+					}
+				} );
+				
+				var collection = new CreateModelCollection(),  // note: MyCollection is configured with MyModel as the 'model'
+				    modelData = { attr: 'value' },
+				    models;
+				
+				models = collection.getModels();
+				expect( models.length ).toBe( 0 );  // Initial condition: There should be no models in the collection
+				
+				collection.add( [ modelData ] );
+				expect( createModelCallCount ).toBe( 1 );
+				
+				models = collection.getModels();
+				expect( models.length ).toBe( 1 );
+				expect( models[ 0 ].get( 'attr' ) ).toBe( 'value' );
 			} );
 			
 			
@@ -1854,6 +1890,48 @@ define( [
 				collection.load();
 				
 				expect( collection.getCount() ).toBe( 2 );  // orig YUI Test err msg: "Should be 2 models in the collection now"
+			} );
+
+			
+			it( "load() should throw an error when there are object response properties don't match the model's attributes, when the `ignoreUnknownAttrsOnLoad` config is false", function() {
+				var MyModel = Model.extend( {
+					attributes : [ 'a' ]
+				} );
+				
+				var MyCollection = Collection.extend( {
+					model : MyModel,
+					
+					proxy : new MemoryProxy( {
+						data : [ { a: 1, b: 2 } ]  // 'b' is not defined as an attribute on the Model
+					} ),
+					ignoreUnknownAttrsOnLoad: false
+				} );
+				
+				var collection = new MyCollection();
+				expect( function() {
+					collection.load();
+				} ).toThrow( "data.Model.set(): An attribute with the attributeName 'b' was not found." );
+			} );
+			
+			
+			it( "load() should *not* throw an error when there are response properties don't match the model's attributes, when the `ignoreUnknownAttrsOnLoad` config is true", function() {
+				var MyModel = Model.extend( {
+					attributes : [ 'a' ]
+				} );
+				
+				var MyCollection = Collection.extend( {
+					model : MyModel,
+					
+					proxy : new MemoryProxy( {
+						data : [ { a: 1, b: 2 } ]  // 'b' is not defined as an attribute on the Model
+					} ),
+					ignoreUnknownAttrsOnLoad: true
+				} );
+				
+				var collection = new MyCollection();
+				collection.load();  // synchronous in this case, using MemoryProxy
+				
+				expect( collection.getAt( 0 ).get( 'a' ) ).toBe( 1 );
 			} );
 			
 			
