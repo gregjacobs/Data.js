@@ -20,6 +20,7 @@ define( [
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Proxy',
 	'data/persistence/proxy/Rest',
+	'data/persistence/proxy/Memory',
 	'data/persistence/request/Write',
 	'data/persistence/request/Create',
 	'data/persistence/request/Read',
@@ -45,6 +46,7 @@ define( [
 	ResultSet,
 	Proxy,
 	RestProxy,
+	MemoryProxy,
 	WriteRequest,
 	CreateRequest,
 	ReadRequest,
@@ -402,7 +404,7 @@ define( [
 				} );
 
 				
-				it( "should throw an error if there are properties in the `data` object that don't map to model attributes, if the `ignoreUnknownAttrs` config or option is `false`", function() {
+				it( "should throw an error if there are properties in the `data` object that don't map to model attributes, if the `ignoreUnknownAttrs` option is `false`", function() {
 					var MyModel = Model.extend( {
 						attributes : [ 'a', 'b' ]
 					} );
@@ -415,28 +417,6 @@ define( [
 					expect( function() {
 						model = new MyModel( { a: 1, b: 2, c: 3, d: 4 }, { ignoreUnknownAttrs: false } );
 					} ).toThrow( "data.Model.set(): An attribute with the attributeName 'c' was not found." );
-					
-
-					// Check that the local option overrides the Model-level config
-					var IgnoreUnknownsModel = MyModel.extend( {
-						ignoreUnknownAttrs: true  // `true` on Model level, but option will be provided as `false`
-					} );
-					
-					expect( function() {
-						model = new IgnoreUnknownsModel( { a: 1, b: 2, c: 3, d: 4 }, { ignoreUnknownAttrs: false } );
-					} ).toThrow( "data.Model.set(): An attribute with the attributeName 'c' was not found." );
-				} );
-				
-					
-				it( "should accept properties in the `data` object that don't map to model attributes, if the `ignoreUnknownAttrs` model-level config is `true`", function() {
-					var MyModel = Model.extend( {
-						attributes : [ 'a', 'b' ],
-						ignoreUnknownAttrs: true  // model-level config
-					} );
-					
-					var model = new MyModel( { a: 1, b: 2, c: 3, d: 4 } );
-					expect( model.get( 'a' ) ).toBe( 1 );
-					expect( model.get( 'b' ) ).toBe( 2 );
 				} );
 				
 					
@@ -663,15 +643,6 @@ define( [
 			} );
 			
 			
-			it( "should *not* throw an error when trying to set an attribute that isn't defined (using the attrName and value args), and the `ignoreUnknownAttrs` config is set to `true`", function() {
-				var TestModel2 = TestModel.extend( { ignoreUnknownAttrs: true } );
-				var model = new TestModel2();
-				
-				// Following line simply should not throw an error
-				model.set( 'nonExistentAttr', 1 );
-			} );
-			
-			
 			it( "should *not* throw an error when trying to set an attribute that isn't defined (using the attrName and value args), and the `ignoreUnknownAttrs` method option is set to `true`", function() {
 				var model = new TestModel();
 				
@@ -680,8 +651,7 @@ define( [
 			} );
 			
 			
-			it( "should throw an error when trying to set an attribute that isn't defined (using the attrName and value args), when the `ignoreUnknownAttrs` config is `true`, but the *method option* is passed explicitly as `false`", function() {
-				var TestModel2 = TestModel.extend( { ignoreUnknownAttrs: true } );
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attrName and value args), when the `ignoreUnknownAttrs` option is passed explicitly as `false`", function() {
 				var model = new TestModel();
 				
 				expect( function() {
@@ -698,15 +668,6 @@ define( [
 			} );
 			
 			
-			it( "should *not* throw an error when trying to set an attribute that isn't defined (using the attrName arg as an anonymous object), and the `ignoreUnknownAttrs` config is set to `true`", function() {
-				var TestModel2 = TestModel.extend( { ignoreUnknownAttrs: true } );
-				var model = new TestModel2();
-				
-				// Following line simply should not throw an error
-				model.set( { 'nonExistentAttr': 1 } );
-			} );
-			
-			
 			it( "should *not* throw an error when trying to set an attribute that isn't defined (using the attrName arg as an anonymous object), and the `ignoreUnknownAttrs` method option is set to `true`", function() {
 				var model = new TestModel();
 				
@@ -715,8 +676,7 @@ define( [
 			} );
 			
 			
-			it( "should throw an error when trying to set an attribute that isn't defined (using the attrName arg as an anonymous object), when the `ignoreUnknownAttrs` config is `true`, but the *method option* is passed explicitly as `false`", function() {
-				var TestModel2 = TestModel.extend( { ignoreUnknownAttrs: true } );
+			it( "should throw an error when trying to set an attribute that isn't defined (using the attrName arg as an anonymous object), when the `ignoreUnknownAttrs` option is passed explicitly as `false`", function() {
 				var model = new TestModel();
 				
 				expect( function() {
@@ -1952,6 +1912,41 @@ define( [
 					params : params
 				} );
 				expect( loadRequest.params ).toBe( params );
+			} );
+
+			
+			it( "should throw an error when the load completes if there are properties in the response object that don't match model attributes, when the `ignoreUnknownAttrsOnLoad` config is false", function() {
+				var MyModel = Model.extend( {
+					attributes : [ 'a', 'b' ],
+					
+					proxy : new MemoryProxy( {
+						data: { a: 1, b: 2, c: 3 }
+					} ),
+					ignoreUnknownAttrsOnLoad: false
+				} );
+				
+				var model = new MyModel();
+				expect( function() {
+					model.load();
+				} ).toThrow( "data.Model.set(): An attribute with the attributeName 'c' was not found." );
+			} );
+			
+			
+			it( "should *not* throw an error when the load completes if there are properties in the response object that don't match model attributes, when the `ignoreUnknownAttrsOnLoad` config is true", function() {
+				var MyModel = Model.extend( {
+					attributes : [ 'a', 'b' ],
+					
+					proxy : new MemoryProxy( {
+						data: { a: 1, b: 2, c: 3 }
+					} ),
+					ignoreUnknownAttrsOnLoad: true
+				} );
+				
+				var model = new MyModel();
+				model.load();  // this line should not error
+
+				expect( model.get( 'a' ) ).toBe( 1 );
+				expect( model.get( 'b' ) ).toBe( 2 );
 			} );
 			
 			

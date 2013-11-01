@@ -209,38 +209,28 @@ define( [
 		 */
 		
 		/**
-		 * @cfg {Boolean} ignoreUnknownAttrs
+		 * @cfg {Boolean} ignoreUnknownAttrsOnLoad
 		 * 
-		 * Set this to `true` to have the Model ignore unknown attributes when they are {@link #set} to the model. When this is `false` (the
-		 * default), an error is thrown when an attribute is set to the model that doesn't have a corresponding {@link #cfg-attributes attribute} 
-		 * definition. This helps to catch errors for incorrectly spelled attribute names, instead of simply allowing the code to continue along
-		 * unknowingly. Problems and bugs caused by un-set data may then be difficult to track down to the original source of the problem, 
-		 * especially in larger software systems. Therefore, it is **not recommended** that you set this configuration option.
+		 * `true` to ignore any unknown attributes that come from an external data source (server, local storage, etc)
+		 * when {@link #load loading} the Model. This defaults to `true` in case say, a web service adds additional
+		 * properties to a response object, which would otherwise trigger an error for an unknown attribute when the data is
+		 * set to the Model.
 		 * 
-		 * However, it is possible that your original data source provides many data properties that you do not want to have corresponding 
-		 * {@link #cfg-attributes attribute} definitions for. It is also possible that your data source adds properties from time to time, where you
-		 * don't want your code throwing errors in production. In these cases, it may be useful to set this configuration option. Just note that 
-		 * you will be bypassing the check which can help you determine the source of a possible error immediately, rather than further down the 
-		 * line in the code's execution.
-		 * 
-		 * A possible option to get the best of both worlds is to leave this as the default (`false`) for "development" mode, and then set it to
-		 * `true` on a global level for "production" mode. You can overwrite the default value of this configuration in production mode using a 
-		 * snippet such at this:
+		 * This may be useful to set to `false` for development purposes however, to make sure that your server or other
+		 * persistent storage mechanism is providing all of the correct data, and that there are no mistyped property 
+		 * names, spelling errors, or anything of that nature. One way to do this on a global level for development purposes
+		 * is:
 		 * 
 		 *     require( [
 		 *         'data/Model'
 		 *     ], function( Model ) {
 		 *         
-		 *         // Ignore unknown attributes if they come up from a data 
-		 *         // source when in "production" mode
-		 *         Model.prototype.ignoreUnknownAttrs = true;
+		 *         // Check all attributes from external data sources when in "development" mode
+		 *         Model.prototype.ignoreUnknownAttrsOnLoad = false;
 		 *         
 		 *     } );
-		 * 
-		 * Attributes retrieved with {@link #get} or {@link #raw} will still throw an error if the attribute name requested is unknown.
 		 */
-		ignoreUnknownAttrs : false,
-		
+		ignoreUnknownAttrsOnLoad : true,
 		
 		/**
 		 * @private
@@ -355,13 +345,13 @@ define( [
 		 * @param {Object} [data] Any initial data for the {@link #cfg-attributes attributes}, specified in an object (hash map). See {@link #set}.
 		 *   If not passing any initial data, but want to pass the second argument (`options`), provide `null`.
 		 * @param {Object} [options] Any options for Model construction/initialization. This may be an object with the following properties:
-		 * @param {Boolean} [options.ignoreUnknownAttrs] Set to `true` if unknown attributes should be ignored in the data object provided
+		 * @param {Boolean} [options.ignoreUnknownAttrs=false] Set to `true` if unknown attributes should be ignored in the data object provided
 		 *   to the first argument of this method. This is useful if you have an object which contains many properties, but your model does not
 		 *   define matching attributes for each one of them. This option is **not recommended**, as it bypasses the check which can help you 
 		 *   determine that you have possibly typed an attribute name incorrectly, and it may then be difficult at the time when a bug arises 
-		 *   because of it (especially in a large software system) to determine where the source of the problem was. Defaults to the value of the 
-		 *   {@link #ignoreUnknownAttrs} config. This is also set by some internal constructor calls to create models, such as when loading data
-		 *   into a {@link data.Collection} (based on the {@link data.Collection#ignoreUnknownAttrsOnLoad}).
+		 *   because of it (especially in a large software system) to determine where the source of the problem was. This is also set by some 
+		 *   internal constructor calls to create models, such as when loading data into a {@link data.Collection} (based on the 
+		 *   {@link data.Collection#ignoreUnknownAttrsOnLoad} config).
 		 */
 		constructor : function( data, options ) {
 			options = options || {};
@@ -650,12 +640,11 @@ define( [
 		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a hash).
 		 * @param {Object} [options] Any options to pass to the method. This should be the second argument if providing an Object to the 
 		 *   first parameter. This should be an object which may contain the following properties:
-		 * @param {Boolean} [options.ignoreUnknownAttrs] Set to `true` if unknown attributes should be ignored in the data object provided
+		 * @param {Boolean} [options.ignoreUnknownAttrs=false] Set to `true` if unknown attributes should be ignored in the data object provided
 		 *   to the first argument of this method. This is useful if you have an object which contains many properties, but your model does not
 		 *   define matching attributes for each one of them. This option is **not recommended**, as it bypasses the check which can help you 
 		 *   determine that you have possibly typed an attribute name incorrectly, and it may then be difficult at the time when a bug arises 
-		 *   because of it (especially in a large software system) to determine where the source of the problem was. Defaults to the value of the 
-		 *   {@link #ignoreUnknownAttrs} config.
+		 *   because of it (especially in a large software system) to determine where the source of the problem was.
 		 */
 		set : function( attributeName, newValue, options ) {
 			// If coming into the set() method for the first time (non-recursively, not from an attribute setter, not from a 'change' handler, etc),
@@ -680,15 +669,14 @@ define( [
 				options = newValue || {};    // 2nd arg is the `options` object with this form
 				var values = attributeName,  // for clarity
 				    attributes = this.attributes,
-				    attrsWithSetters = [],
-				    ignoreUnknownAttrs = ( options.ignoreUnknownAttrs === undefined ) ? this.ignoreUnknownAttrs : options.ignoreUnknownAttrs;
+				    attrsWithSetters = [];
 				
 				for( attributeName in values ) {
 					if( values.hasOwnProperty( attributeName ) ) {
 						var attribute = attributes[ attributeName ];
 						
 						if( !attribute ) {  // no matching attribute for the current attributeName (property name) in the data object
-							if( ignoreUnknownAttrs )
+							if( options.ignoreUnknownAttrs )
 								continue;
 							
 							// <debug>
@@ -734,11 +722,10 @@ define( [
 		doSet : function( attributeName, newValue, options, changeSetNewValues, changeSetOldValues ) {
 			var attribute = this.attributes[ attributeName ],
 			    modelData = this.data,
-			    modelModifiedData = this.modifiedData,
-			    ignoreUnknownAttrs = ( options.ignoreUnknownAttrs === undefined ) ? this.ignoreUnknownAttrs : options.ignoreUnknownAttrs;
+			    modelModifiedData = this.modifiedData;
 			
 			if( !attribute ) {
-				if( ignoreUnknownAttrs ) return;  // simply return; nothing to do
+				if( options.ignoreUnknownAttrs ) return;  // simply return; nothing to do
 				
 				// <debug>
 				throw new Error( "data.Model.set(): An attribute with the attributeName '" + attributeName + "' was not found." );
@@ -1277,7 +1264,7 @@ define( [
 		 * @param {data.persistence.request.Read} request The ReadRequest object which represents the load.
 		 */
 		onLoadSuccess : function( deferred, request ) {
-			this.set( request.getResultSet().getRecords()[ 0 ] );
+			this.set( request.getResultSet().getRecords()[ 0 ], { ignoreUnknownAttrs: this.ignoreUnknownAttrsOnLoad } );  // only ignore unknown attributes in the response data object if the `ignoreUnknownAttrsOnLoad` config is set to `true`
 			this.loading = false;
 			
 			this.commit();
