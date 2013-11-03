@@ -21,11 +21,17 @@ define( [
 	'data/persistence/proxy/Proxy',
 	'data/persistence/proxy/Rest',
 	'data/persistence/proxy/Memory',
+	'data/persistence/operation/Load',
+	'data/persistence/operation/Save',
+	'data/persistence/operation/Destroy',
 	'data/persistence/request/Write',
 	'data/persistence/request/Create',
 	'data/persistence/request/Read',
 	'data/persistence/request/Update',
-	'data/persistence/request/Destroy'
+	'data/persistence/request/Destroy',
+	
+	'spec/lib/TestProxy',
+	'spec/lib/ModelPersistenceVerifier'
 ], function( 
 	jQuery,
 	_,
@@ -47,11 +53,17 @@ define( [
 	Proxy,
 	RestProxy,
 	MemoryProxy,
+	LoadOperation,
+	SaveOperation,
+	DestroyOperation,
 	WriteRequest,
 	CreateRequest,
 	ReadRequest,
 	UpdateRequest,
-	DestroyRequest
+	DestroyRequest,
+	
+	TestProxy,
+	ModelPersistenceVerifier
 ) {
 
 	describe( 'data.Model', function() {
@@ -1950,89 +1962,31 @@ define( [
 			} );
 			
 			
-			it( "when successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, request]", function() {
-				var loadbeginEventCount = 0,
-				    loadEventCount = 0,
-				    successCallCount = 0,
-				    errorCallCount = 0,
-				    completeCallCount = 0,
-				    doneCallCount = 0,
-				    failCallCount = 0,
-				    alwaysCallCount = 0;
-				
-				// Instantiate and run the load() method to delegate
-				var modelInstance = new TestModel( { id: 1 } );
-				modelInstance.on( {
-					'loadbegin' : function( model, request ) {
-						loadbeginEventCount++;
-						expect( model ).toBe( modelInstance );
-					},
-					'load' : function( model, request ) {
-						loadEventCount++;
-						expect( model ).toBe( modelInstance );
-						expect( request instanceof ReadRequest ).toBe( true );
-					}
+			it( "when successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, operation]", function() {
+				var proxy = new TestProxy();
+				var MyModel = Model.extend( {
+					attributes  : [ 'id' ],
+					idAttribute : 'id',
+					
+					proxy : proxy
 				} );
-				expect( modelInstance.isLoading() ).toBe( false );  // initial condition
 				
-				var promise = modelInstance.load( {
-					success : function( model, request ) {
-						successCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in success cb"
-					},
-					error : function( model, request ) {
-						errorCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in error cb"
-					},
-					complete : function( model, request ) {
-						completeCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in complete cb"
-					}
-				} )
-					.done( function( model, request ) {
-						doneCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in done cb"
-					} )
-					.fail( function( model, request ) {
-						failCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in fail cb"
-					} )
-					.always( function( model, request ) {
-						alwaysCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in always cb"
-					} );
 				
-				// First check that `loadbegin` was fired, but not `load` yet. Also that the model is loading.
-				expect( loadbeginEventCount ).toBe( 1 );
-				expect( loadEventCount ).toBe( 0 );
-				expect( modelInstance.isLoading() ).toBe( true );
+				var model = new MyModel( { id: 1 } );
 				
-				// Now set a result set (for the successful load of the model), and resolve the deferred
-				loadRequest.setResultSet( new ResultSet( {
-					records : [ { id: 1, name: "My Model" } ]
-				} ) );
-				proxyDeferred.resolve( loadRequest );
+				var modelPersistenceVerifier = new ModelPersistenceVerifier( {
+					model : model
+				} );
+				modelPersistenceVerifier.executePersistenceMethod( 'load' );
 				
-				// Make sure the appropriate callbacks executed
-				expect( modelInstance.isLoading() ).toBe( false );
-				expect( loadbeginEventCount ).toBe( 1 );  // make sure it wasn't fired again
-				expect( loadEventCount ).toBe( 1 );
-				expect( successCallCount ).toBe( 1 );
-				expect( errorCallCount ).toBe( 0 );
-				expect( completeCallCount ).toBe( 1 );
-				expect( doneCallCount ).toBe( 1 );
-				expect( failCallCount ).toBe( 0 );
-				expect( alwaysCallCount ).toBe( 1 );
+				// Resolve the "read" request that the load operation performed, and verify that the 
+				// appropriate events/callbacks/handlers were called
+				proxy.resolveRead( 0 );
+				modelPersistenceVerifier.verify( 'success' );
 			} );
 			
 			
-			it( "when an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, request]", function() {
+			it( "when an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, operation]", function() {
 				var loadbeginEventCount = 0,
 				    loadEventCount = 0,
 				    successCallCount = 0,
@@ -2045,49 +1999,49 @@ define( [
 				// Instantiate and run the load() method to delegate
 				var modelInstance = new TestModel( { id: 1 } );
 				modelInstance.on( {
-					'loadbegin' : function( model, request ) {
+					'loadbegin' : function( model, operation ) {
 						loadbeginEventCount++;
 						expect( model ).toBe( modelInstance );
 					},
-					'load' : function( model, request ) {
+					'load' : function( model, operation ) {
 						loadEventCount++;
 						expect( model ).toBe( modelInstance );
-						expect( request instanceof ReadRequest ).toBe( true );
+						expect( operation instanceof LoadOperation ).toBe( true );
 					}
 				} );
 				expect( modelInstance.isLoading() ).toBe( false );  // initial condition
 				
 				var promise = modelInstance.load( {
-					success : function( model, request ) {
+					success : function( model, operation ) {
 						successCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in success cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof LoadOperation ).toBe( true );
 					},
-					error : function( model, request ) {
+					error : function( model, operation ) {
 						errorCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in error cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof LoadOperation ).toBe( true );
 					},
-					complete : function( model, request ) {
+					complete : function( model, operation ) {
 						completeCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in complete cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof LoadOperation ).toBe( true );
 					}
 				} )
-					.done( function( model, request ) {
+					.done( function( model, operation ) {
 						doneCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in done cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof LoadOperation ).toBe( true );
 					} )
-					.fail( function( model, request ) {
+					.fail( function( model, operation ) {
 						failCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in fail cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof LoadOperation ).toBe( true );
 					} )
-					.always( function( model, request ) {
+					.always( function( model, operation ) {
 						alwaysCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-						expect( request instanceof ReadRequest ).toBe( true );  // orig YUI Test err msg: "ReadRequest should have been arg 2 in always cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof LoadOperation ).toBe( true );
 					} );
 				
 				// First check that `loadbegin` was fired, but not `load` yet. Also that the model is loading.
@@ -2110,6 +2064,138 @@ define( [
 				expect( alwaysCallCount ).toBe( 1 );
 			} );
 			
+			/*
+			it( "load() should call the 'cancel' callback, and fire the 'loadcancel' event with the arguments [collection, operation] when a LoadOperation is aborted", function() {
+				var deferred, request;  // for testing that if the request completes after it has been aborted, it is ignored
+				proxy.read.andCallFake( function( req ) {
+					request = req;
+					deferred = new jQuery.Deferred();
+					return deferred.promise();
+				} );
+				
+				var MyCollection = Collection.extend( {
+					model : MyModel,
+					proxy : proxy
+				} );
+				
+				var successCbCallCount = 0,
+				    errorCbCallCount = 0,
+				    cancelCbCallCount = 0,
+				    completeCbCallCount = 0,
+				    doneCallCount = 0,
+				    failCallCount = 0,
+				    cancelCallCount = 0,
+				    alwaysCallCount = 0,
+				    loadbeginCallCount = 0,
+				    loadCallCount = 0,
+				    loadcancelCallCount = 0;
+				
+				// for checking the arguments provided to each callback (options callbacks, and promise callbacks)
+				function checkCbArgs( collection, operation ) {
+					expect( collection ).toBe( collectionInstance );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					expect( operation.getRequests().length ).toBe( 1 );
+					expect( operation.getRequests()[ 0 ] instanceof ReadRequest ).toBe( true );
+				}
+				
+				// Instantiate and run the load() method
+				var collectionInstance = new MyCollection( {
+					listeners : {
+						'loadbegin' : function( collection ) {
+							loadbeginCallCount++;
+							expect( collection ).toBe( collectionInstance );
+						},
+						'load' : function( collection, operation ) {
+							loadCallCount++;
+							checkCbArgs( collection, operation );
+						},
+						'loadcancel' : function( collection, operation ) {
+							loadcancelCallCount++;
+							checkCbArgs( collection, operation );
+						}
+					}
+				} );
+				var operationPromise = collectionInstance.load( {
+					success : function( collection, operation ) {
+						successCbCallCount++;
+						checkCbArgs( collection, operation );
+					},
+					error : function( collection, operation ) {
+						errorCbCallCount++;
+						checkCbArgs( collection, operation );
+					},
+					cancel : function( collection, operation ) {
+						cancelCbCallCount++;
+						checkCbArgs( collection, operation );
+					},
+					complete : function( collection, operation ) {
+						completeCbCallCount++;
+						checkCbArgs( collection, operation );
+					}
+				} )
+					.done( function( collection, operation ) {
+						doneCallCount++;
+						checkCbArgs( collection, operation );
+					} )
+					.fail( function( collection, operation ) {
+						failCallCount++;
+						checkCbArgs( collection, operation );
+					} )
+					.cancel( function( collection, operation ) {
+						cancelCallCount++;
+						checkCbArgs( collection, operation );
+					} )
+					.always( function( collection, operation ) {
+						alwaysCallCount++;
+						checkCbArgs( collection, operation );
+					} );
+				
+				// Abort (cancel) the LoadOperation (from the OperationPromise)
+				operationPromise.abort();
+				
+				// Make sure the appropriate callbacks executed
+				expect( successCbCallCount ).toBe( 0 );
+				expect( errorCbCallCount ).toBe( 0 );
+				expect( cancelCbCallCount ).toBe( 1 );
+				expect( completeCbCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 0 );
+				expect( loadcancelCallCount ).toBe( 1 );
+				
+				
+				// -----------------------------
+				
+				// Test that if the requests complete after the LoadOperation has been aborted, that they have no effect
+				request.setResultSet( new ResultSet( {
+					records : [ 
+						{ id: 1, name: "John" },
+						{ id: 2, name: "Jane" }
+					],
+					totalCount : 100
+				} ) );
+				request.setSuccess();
+				deferred.resolve( request );
+				
+				expect( collectionInstance.getCount() ).toBe( 0 );
+				
+				// Callback counts should all still be the same
+				expect( successCbCallCount ).toBe( 0 );
+				expect( errorCbCallCount ).toBe( 0 );
+				expect( cancelCbCallCount ).toBe( 1 );
+				expect( completeCbCallCount ).toBe( 1 );
+				expect( doneCallCount ).toBe( 0 );
+				expect( failCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 1 );
+				expect( alwaysCallCount ).toBe( 1 );
+				expect( loadbeginCallCount ).toBe( 1 );
+				expect( loadCallCount ).toBe( 0 );
+				expect( loadcancelCallCount ).toBe( 1 );
+			} );
+			*/
 		} );
 		
 		
@@ -2225,33 +2311,33 @@ define( [
 					
 					// Listen for events
 					modelInstance.on( {
-						'savebegin' : function( model, request ) {
+						'savebegin' : function( model, operation ) {
 							savebeginEventCount++;
 							expect( model ).toBe( modelInstance );
 						},
-						'save' : function( model, request ) {
+						'save' : function( model, operation ) {
 							saveEventCount++;
 							expect( model ).toBe( modelInstance );
-							expect( request instanceof WriteRequest ).toBe( true );
+							expect( operation instanceof SaveOperation ).toBe( true );
 						}
 					} );
 					
 					// Set up the callbacks config. This will be passed to the save() method
 					callbacksConfig = {
-						success : function( model, request ) {
+						success : function( model, operation ) {
 							successCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-							expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in success cb"
+							expect( model ).toBe( modelInstance );
+							expect( operation instanceof SaveOperation ).toBe( true );
 						},
-						error : function( model, request ) {
+						error : function( model, operation ) {
 							errorCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-							expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in error cb"
+							expect( model ).toBe( modelInstance );
+							expect( operation instanceof SaveOperation ).toBe( true );
 						},
-						complete : function( model, request ) {
+						complete : function( model, operation ) {
 							completeCallCount++;
-							expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-							expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in complete cb"
+							expect( model ).toBe( modelInstance );
+							expect( operation instanceof SaveOperation ).toBe( true );
 						}
 					};
 					
@@ -2260,27 +2346,27 @@ define( [
 				
 				// Helper method for attaching the handlers to the jQuery.Promise object returned by save()
 				function attachPromiseHandlers( promise ) {
-					promise.done( function( model, request ) {
+					promise.done( function( model, operation ) {
 						doneCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in done cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof SaveOperation ).toBe( true );
 					} );
 					
-					promise.fail( function( model, request ) {
+					promise.fail( function( model, operation ) {
 						failCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in fail cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof SaveOperation ).toBe( true );
 					} );
 					
-					promise.always( function( model, request ) {
+					promise.always( function( model, operation ) {
 						alwaysCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in always cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof SaveOperation ).toBe( true );
 					} );
 				}
 				
 			
-				it( "when creating, and successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, request]", function() {
+				it( "when creating, and successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, operation]", function() {
 					expect( modelInstance.isSaving() ).toBe( false );  // initial condition
 					
 					var promise = modelInstance.save( callbacksConfig );
@@ -2309,7 +2395,7 @@ define( [
 				} );
 				
 				
-				it( "when creating, but an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, request]", function() {
+				it( "when creating, but an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, operation]", function() {
 					expect( modelInstance.isSaving() ).toBe( false );  // initial condition
 					
 					var promise = modelInstance.save( callbacksConfig );
@@ -2337,7 +2423,7 @@ define( [
 				} );
 				
 				
-				it( "when updating, and successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, request]", function() {
+				it( "when updating, and successful, should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments: [model, operation]", function() {
 					expect( modelInstance.isSaving() ).toBe( false );  // initial condition
 					
 					var promise = modelInstance.save( callbacksConfig );
@@ -2366,7 +2452,7 @@ define( [
 				} );
 				
 				
-				it( "when updating, but an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, request]", function() {
+				it( "when updating, but an error occurs, should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments: [model, operation]", function() {
 					expect( modelInstance.isSaving() ).toBe( false );  // initial condition
 					
 					var promise = modelInstance.save( callbacksConfig );
@@ -2423,16 +2509,16 @@ define( [
 					model.set( 'attribute1', 'newattribute1value' );
 					model.save();
 					
-					expect( _.keys( dataToPersist ).length ).toBe( 1 );  // orig YUI Test err msg: "The dataToPersist should only have one key after attribute1 has been changed"
-					expect( dataToPersist.hasOwnProperty( 'attribute1' ) ).toBe( true );  // orig YUI Test err msg: "The dataToPersist should have 'attribute1'"
+					expect( _.keys( dataToPersist ).length ).toBe( 1 );
+					expect( dataToPersist.hasOwnProperty( 'attribute1' ) ).toBe( true );
 					
 					
 					// Now change attribute2. The dataToPersist should not include attribute1, since it has been persisted
 					model.set( 'attribute2', 'newattribute2value' );
 					model.save();
 					
-					expect( _.keys( dataToPersist ).length ).toBe( 1 );  // orig YUI Test err msg: "The dataToPersist should only have one key after attribute2 has been changed"
-					expect( dataToPersist.hasOwnProperty( 'attribute2' ) ).toBe( true );  // orig YUI Test err msg: "The dataToPersist should have 'attribute2'"
+					expect( _.keys( dataToPersist ).length ).toBe( 1 );
+					expect( dataToPersist.hasOwnProperty( 'attribute2' ) ).toBe( true );
 				} );
 				
 			} );
@@ -2904,7 +2990,7 @@ define( [
 			} );
 			
 			
-			it( "should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments [model, request] when successful", function() {
+			it( "should call its success/complete callbacks, fire the appropriate events, and resolve its deferred with the arguments [model, operation] when successful", function() {
 				var destroybeginEventCount = 0,
 				    destroyEventCount = 0,
 				    successCallCount = 0,
@@ -2917,49 +3003,49 @@ define( [
 				// Instantiate and run the destroy() method
 				var modelInstance = new TestModel( { id: 1 } );
 				modelInstance.on( {
-					'destroybegin' : function( model, request ) {
+					'destroybegin' : function( model, operation ) {
 						destroybeginEventCount++;
 						expect( model ).toBe( modelInstance );
 					},
-					'destroy' : function( model, request ) {
+					'destroy' : function( model, operation ) {
 						destroyEventCount++;
 						expect( model ).toBe( modelInstance );
-						expect( request instanceof WriteRequest ).toBe( true );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					}
 				} );
 				expect( modelInstance.isDestroying() ).toBe( false );  // initial condition
 				
 				var promise = modelInstance.destroy( {
-					success : function( model, request ) {
+					success : function( model, operation ) {
 						successCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in success cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					},
-					error : function( model, request ) {
+					error : function( model, operation ) {
 						errorCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in error cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					},
-					complete : function( model, request ) {
+					complete : function( model, operation ) {
 						completeCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in complete cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					}
 				} )
-					.done( function( model, request ) {
+					.done( function( model, operation ) {
 						doneCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in done cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					} )
-					.fail( function( model, request ) {
+					.fail( function( model, operation ) {
 						failCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in fail cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					} )
-					.always( function( model, request ) {
+					.always( function( model, operation ) {
 						alwaysCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in always cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					} );
 				
 				// First check that `destroybegin` was fired, but not `destroy` yet. Also that the model is destroying.
@@ -2985,7 +3071,7 @@ define( [
 			} );
 			
 			
-			it( "should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments [model, request] if an error occurs", function() {
+			it( "should call its error/complete callbacks, fire the appropriate events, and reject its deferred with the arguments [model, operation] if an error occurs", function() {
 				var destroybeginEventCount = 0,
 				    destroyEventCount = 0,
 				    successCallCount = 0,
@@ -2998,48 +3084,48 @@ define( [
 				// Instantiate and run the destroy() method
 				var modelInstance = new TestModel( { id: 1 } );
 				modelInstance.on( {
-					'destroybegin' : function( model, request ) {
+					'destroybegin' : function( model, operation ) {
 						destroybeginEventCount++;
 						expect( model ).toBe( modelInstance );
 					},
-					'destroy' : function( model, request ) {
+					'destroy' : function( model, operation ) {
 						destroyEventCount++;
 						expect( model ).toBe( modelInstance );
-						expect( request instanceof WriteRequest ).toBe( true );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					}
 				} );
 				
 				var promise = modelInstance.destroy( {
-					success : function( model, request ) {
+					success : function( model, operation ) {
 						successCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in success cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in success cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					},
-					error : function( model, request ) {
+					error : function( model, operation ) {
 						errorCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in error cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in error cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					},
-					complete : function( model, request ) {
+					complete : function( model, operation ) {
 						completeCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in complete cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in complete cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					}
 				} )
-					.done( function( model, request ) {
+					.done( function( model, operation ) {
 						doneCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in done cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in done cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					} )
-					.fail( function( model, request ) {
+					.fail( function( model, operation ) {
 						failCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in fail cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in fail cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					} )
-					.always( function( model, request ) {
+					.always( function( model, operation ) {
 						alwaysCallCount++;
-						expect( model ).toBe( modelInstance );  // orig YUI Test err msg: "the model should have been arg 1 in always cb"
-						expect( request instanceof WriteRequest ).toBe( true );  // orig YUI Test err msg: "WriteRequest should have been arg 2 in always cb"
+						expect( model ).toBe( modelInstance );
+						expect( operation instanceof DestroyOperation ).toBe( true );
 					} );
 				
 				// First check that `destroybegin` was fired, but not `destroy` yet. Also that the model is destroying.
