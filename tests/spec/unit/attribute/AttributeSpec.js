@@ -1,4 +1,4 @@
-/*global define, _, describe, beforeEach, afterEach, it, expect, JsMockito */
+/*global define, _, describe, beforeEach, afterEach, it, expect */
 define( [
 	'data/Model',
 	'data/attribute/Attribute'

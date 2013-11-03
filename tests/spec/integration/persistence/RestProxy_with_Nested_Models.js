@@ -1,4 +1,4 @@
-/*global define, window, _, describe, beforeEach, afterEach, it, expect, JsMockito */
+/*global define, window, _, describe, beforeEach, afterEach, it, expect */
 define( [
 	'lodash',
 	'data/Model',
