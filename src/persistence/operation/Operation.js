@@ -73,7 +73,7 @@ define( [
 	 * which instantiates it. The interface, while not the full jQuery Deferred implementation, includes:
 	 * 
 	 * 1. The ability to attach {@link #done}, {@link #fail}, {@link #cancel}, {@link #then}, and {@link #always} handlers, 
-	 *    to detect when the Operation has completed successfully, has failed, or has been canceled, and
+	 *    to detect when the Operation has completed successfully, has failed, or has been aborted (canceled), and
 	 * 2. {@link #resolve}, {@link #reject}, and {@link #abort} methods for setting the completion state of the Operation. 
 	 *    These are called by the DataComponent (Model or Collection) which instantiated the Operation, with the exception
 	 *    of {@link #abort} which may be called by client code of the {@link #dataComponent} to cancel an Operation.
@@ -87,7 +87,7 @@ define( [
 	 * 
 	 * This Object supports the same interface as standard jQuery promises, but adds the extra method 
 	 * {@link data.persistence.operation.Promise#abort abort}, which can cancel the Operation, and the {@link #cancel}
-	 * method which is used to subscribe handlers for if the Operation is canceled.
+	 * method which is used to subscribe handlers for if the Operation is {@link #abort aborted}.
 	 * 
 	 * 
 	 * ## Subclasses
@@ -204,19 +204,19 @@ define( [
 		 * been completed, but the Operation itself is not necessarily completed until after its {@link #dataComponent} 
 		 * has processed the results of the request(s).
 		 * 
-		 * This flag is also set to `true` if the Operation errored, or has been canceled.
+		 * This flag is also set to `true` if the Operation errored, or has been aborted.
 		 */
 		completed : false,
 		
 		/**
 		 * @protected
-		 * @property {Boolean} canceled
+		 * @property {Boolean} aborted
 		 * 
-		 * Set to `true` if the Operation has been canceled ({@link #abort aborted}) while still in progress. Note that 
+		 * Set to `true` if the Operation has been {@link #abort aborted} while still in progress. Note that 
 		 * its {@link #requests} may still complete, but the {@link #dataComponent} associated with this Operation will 
 		 * ignore their results.
 		 */
-		canceled : false,
+		aborted : false,
 		
 		/**
 		 * @private
@@ -501,12 +501,12 @@ define( [
 		
 		
 		/**
-		 * Attempts to cancel (abort) the Operation, if it is still in progress. 
+		 * Attempts to abort (cancel) the Operation, if it is still in progress. 
 		 * 
 		 * This may only be useful for {@link data.persistence.operation.Load LoadOperations}, as it may cause 
 		 * {@link data.persistence.operation.Save Save} and {@link data.persistence.operation.Destroy Destroy}
 		 * operations to leave the backing persistence medium in an inconsistent state. However, it is provided
-		 * if say, a retry is going to be performed and the previous operation should be canceled on the client-side.
+		 * if say, a retry is going to be performed and the previous operation should be aborted on the client-side.
 		 * 
 		 * {@link #cancel} handlers are called with two arguments:
 		 * 
@@ -516,7 +516,7 @@ define( [
 		abort : function() {
 			if( !this.completed ) {
 				this.completed = true;
-				this.canceled = true;
+				this.aborted = true;
 				
 				this.cancelDeferred.resolve( this.dataComponent, this );
 			}
@@ -524,12 +524,12 @@ define( [
 		
 		
 		/**
-		 * Determines if the Operation was {@link #canceled} (via the {@link #abort} method).
+		 * Determines if the Operation was {@link #aborted} (via the {@link #abort} method).
 		 * 
 		 * @return {Boolean}
 		 */
-		wasCanceled : function() {
-			return this.canceled;
+		wasAborted : function() {
+			return this.aborted;
 		},
 		
 		
@@ -635,9 +635,9 @@ define( [
 		
 		
 		/**
-		 * Adds a handler for if the Operation has been canceled, via the {@link #abort} method.
+		 * Adds a handler for if the Operation has been {@link #aborted}.
 		 * 
-		 * Handlers are called with the following two arguments when the Operation has been canceled (aborted):
+		 * Handlers are called with the following two arguments when the Operation has been aborted (canceled):
 		 * 
 		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
@@ -675,7 +675,7 @@ define( [
 		 * Adds a handler for when the Operation completes, regardless of success or failure.
 		 * 
 		 * Handlers are called with the following two arguments when the Operation has completed successfully, has failed,
-		 * or has been canceled (aborted):
+		 * or has been aborted (canceled):
 		 * 
 		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
 		 * - **operation** (Operation): This Operation object.

@@ -54,18 +54,18 @@ define( [
 				
 				expect( operation.wasSuccessful() ).toBe( true );
 				expect( operation.hasErrored() ).toBe( false );
-				expect( operation.wasCanceled() ).toBe( false );
+				expect( operation.wasAborted() ).toBe( false );
 				expect( operation.isComplete() ).toBe( true );
 			} );
 			
 			
-			it( "should prevent the Operation from becoming 'canceled' after it has been resolved", function() {
+			it( "should prevent the Operation from becoming 'aborted' after it has been resolved", function() {
 				operation.resolve();
 				operation.abort();  // attempt to abort, which should have been blocked
 				
 				expect( operation.wasSuccessful() ).toBe( true );
 				expect( operation.hasErrored() ).toBe( false );
-				expect( operation.wasCanceled() ).toBe( false );
+				expect( operation.wasAborted() ).toBe( false );
 				expect( operation.isComplete() ).toBe( true );
 			} );
 		} );
@@ -115,18 +115,18 @@ define( [
 				
 				expect( operation.wasSuccessful() ).toBe( false );
 				expect( operation.hasErrored() ).toBe( true );
-				expect( operation.wasCanceled() ).toBe( false );
+				expect( operation.wasAborted() ).toBe( false );
 				expect( operation.isComplete() ).toBe( true );
 			} );
 			
 			
-			it( "should prevent the Operation from becoming 'canceled' after it has been rejected", function() {
+			it( "should prevent the Operation from becoming 'aborted' after it has been rejected", function() {
 				operation.reject();
 				operation.abort();  // attempt to abort, which should have been blocked
 				
 				expect( operation.wasSuccessful() ).toBe( false );
 				expect( operation.hasErrored() ).toBe( true );
-				expect( operation.wasCanceled() ).toBe( false );
+				expect( operation.wasAborted() ).toBe( false );
 				expect( operation.isComplete() ).toBe( true );
 			} );
 		} );
@@ -176,7 +176,7 @@ define( [
 				
 				expect( operation.wasSuccessful() ).toBe( false );
 				expect( operation.hasErrored() ).toBe( false );
-				expect( operation.wasCanceled() ).toBe( true );
+				expect( operation.wasAborted() ).toBe( true );
 				expect( operation.isComplete() ).toBe( true );
 			} );
 			
@@ -187,13 +187,13 @@ define( [
 				
 				expect( operation.wasSuccessful() ).toBe( false );
 				expect( operation.hasErrored() ).toBe( false );
-				expect( operation.wasCanceled() ).toBe( true );
+				expect( operation.wasAborted() ).toBe( true );
 				expect( operation.isComplete() ).toBe( true );
 			} );
 		} );
 		
 		
-		describe( 'wasCanceled()', function() {
+		describe( 'wasAborted()', function() {
 			var operation;
 			
 			beforeEach( function() {
@@ -202,22 +202,22 @@ define( [
 			
 			
 			it( "should return `false` for a brand new Operation", function() {
-				expect( operation.wasCanceled() ).toBe( false );
+				expect( operation.wasAborted() ).toBe( false );
 			} );
 			
 			it( "should return `false` after the Operation has been resolved", function() {
 				operation.resolve();
-				expect( operation.wasCanceled() ).toBe( false );
+				expect( operation.wasAborted() ).toBe( false );
 			} );
 			
 			it( "should return `false` after the Operation has been rejected", function() {
 				operation.reject();
-				expect( operation.wasCanceled() ).toBe( false );
+				expect( operation.wasAborted() ).toBe( false );
 			} );
 			
 			it( "should return `true` after the Operation has been aborted", function() {
 				operation.abort();
-				expect( operation.wasCanceled() ).toBe( true );
+				expect( operation.wasAborted() ).toBe( true );
 			} );
 			
 		} );
@@ -323,7 +323,7 @@ define( [
 		
 		describe( 'cancel()', function() {
 			
-			it( "should register a handler to be called if the Operation is canceled (aborted)", function() {
+			it( "should register a handler to be called if the Operation is aborted (canceled)", function() {
 				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
 				    cancelCallCount = 0;
 				
