@@ -149,7 +149,7 @@ define( [
 		 * @cfg {Boolean} ignoreUnknownAttrsOnLoad
 		 * 
 		 * `true` to ignore any unknown attributes that come from an external data source (server, local storage, etc)
-		 * when {@link #load loading} the Collection. This defaults to true in case say, a web service adds additional
+		 * when {@link #method-load loading} the Collection. This defaults to true in case say, a web service adds additional
 		 * properties to a response object, which would otherwise trigger an error for an unknown attribute when the 
 		 * Models are created for the Collection.
 		 * 
@@ -1200,9 +1200,7 @@ define( [
 				
 			} else {
 				options = this.normalizeLoadOptions( options );
-				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null ),
-				    request = new ReadRequest( { proxy: proxy, params: options.params } ),
-				    operation = new LoadOperation( { dataComponent: this, requests: request, addModels: !!options.addModels } );
+				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 				
 				// <debug>
 				// No persistence proxy, cannot load. Throw an error
@@ -1210,6 +1208,9 @@ define( [
 					throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 				}
 				// </debug>
+				
+				var request = new ReadRequest( { params: options.params } ),
+				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
 				operation.done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
@@ -1277,9 +1278,7 @@ define( [
 				
 			} else {
 				options = this.normalizeLoadOptions( options );
-				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null ),
-				    request = new ReadRequest( { proxy: proxy, params: options.params, start: startIdx, limit : endIdx - startIdx } ),
-				    operation = new LoadOperation( { dataComponent: this, requests: request, addModels: !!options.addModels } );
+				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 				
 				// <debug>
 				// No persistence proxy, cannot load. Throw an error
@@ -1287,6 +1286,9 @@ define( [
 					throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 				}
 				// </debug>
+				
+				var request = new ReadRequest( { params: options.params, start: startIdx, limit : endIdx - startIdx } ),
+				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
 				operation.done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
@@ -1394,8 +1396,7 @@ define( [
 			options = this.normalizeLoadOptions( options );
 			var me = this,  // for closures
 			    proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null ),
-			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad,
-			    operation = new LoadOperation( { dataComponent: this, addModels: addModels } );
+			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad;
 			
 			// <debug>
 			// No persistence proxy, cannot load. Throw an error
@@ -1404,9 +1405,9 @@ define( [
 			}
 			// </debug>
 			
+			var operation = new LoadOperation( { dataComponent: this, proxy: proxy, addModels: addModels } );
 			for( var page = startPage; page <= endPage; page++ ) {
 				var request = new ReadRequest( {
-					proxy    : proxy,
 					params   : options.params,
 					
 					page     : page,
@@ -1470,7 +1471,7 @@ define( [
 		 * Resolves the `operation` object created by {@link #method-load}.
 		 * 
 		 * @protected
-		 * @param {data.persistence.operation.Load} operation The LoadOperation object which hold metadata, and all of the 
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
 		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
 		 */
 		onLoadSuccess : function( operation ) {
@@ -1515,7 +1516,7 @@ define( [
 		 * Rejects the `operation` object created by {@link #method-load}.
 		 * 
 		 * @protected
-		 * @param {data.persistence.operation.Load} operation The LoadOperation object which hold metadata, and all of the 
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
 		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
 		 */
 		onLoadError : function( operation ) {
@@ -1536,14 +1537,14 @@ define( [
 		 * completion to be ignored.
 		 * 
 		 * @protected
-		 * @param {data.persistence.operation.Load} operation The LoadOperation object which hold metadata, and all of the 
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
 		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
 		 */
 		onLoadCancel : function( operation ) {
 			// Request was canceled (aborted), simply remove it from the activeLoadOperations and ignore its results
 			this.removeActiveLoadOperation( operation );
 			
-			// Note: operation was already aborted. No need to call operation.abort() here.
+			// Note: the operation was already aborted. No need to call operation.abort() here.
 			this.fireEvent( 'loadcancel', this, operation );
 		},
 		

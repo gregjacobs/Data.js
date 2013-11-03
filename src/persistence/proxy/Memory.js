@@ -16,7 +16,7 @@ define( [
 	 * This proxy can be used to load any raw data through a {@link #reader}, in order to execute the reader's processing code 
 	 * to transform the data. It may also be used for debugging, and mocking purposes in tests.
 	 * 
-	 * Make sure to set the {@link #data} config either at instantiation time, or via {@link setData}, before any
+	 * Make sure to set the {@link #data} config either at instantiation time, or via {@link #setData}, before any
 	 * requests are made to read data from this proxy.
 	 * 
 	 * Only the {@link #read} method is implemented out of the four CRUD methods at this time. Saving or destroying models is 

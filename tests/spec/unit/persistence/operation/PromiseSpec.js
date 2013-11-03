@@ -3,22 +3,35 @@ define( [
 	'jquery',
 	'data/persistence/operation/Promise',
 	'data/persistence/operation/Operation',
-	'data/Model'  // Used as the `dataComponent` of the Operations
-], function( jQuery, OperationPromise, Operation, Model ) {
+	'data/Model',                   // Used as the `dataComponent` of the Operations
+	'data/persistence/proxy/Proxy'  // Used as the `proxy` of the Operations
+], function( jQuery, OperationPromise, Operation, Model, Proxy ) {
 	
 	describe( 'data.persistence.operation.Promise', function() {
 		
-		// Concrete Subclass
+		var emptyFn = function() {};
+		
+		// Concrete Subclasses
 		var ConcreteOperation = Operation.extend( {} );
+		
+		var ConcreteProxy = Proxy.extend( {
+			create  : emptyFn,
+			read    : emptyFn,
+			update  : emptyFn,
+			destroy : emptyFn
+		} );
 		
 		// Used as the `dataComponent` of the Operations
 		var model = new Model();
+		
+		// Used as the `proxy` of the Operations
+		var proxy = new ConcreteProxy();
 		
 		
 		describe( "Ability to use with jQuery.when()", function() {
 			
 			it( "should be allowed to be used as a single promise passed to jQuery.when()", function() {
-				var operation = new ConcreteOperation( { dataComponent: model } ),
+				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
 				    operationPromise = new OperationPromise( { operation: operation } ),
 				    isDone = false;
 
@@ -35,9 +48,9 @@ define( [
 
 			
 			it( "should be allowed to be used as a multiple promises passed to jQuery.when(), only being resolved when all individual promises are resolved", function() {
-				var operation1 = new ConcreteOperation( { dataComponent: model } ),
-				    operation2 = new ConcreteOperation( { dataComponent: model } ),
-				    operation3 = new ConcreteOperation( { dataComponent: model } ),
+				var operation1 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    operation2 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    operation3 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
 				    operationPromise1 = new OperationPromise( { operation: operation1 } ),
 				    operationPromise2 = new OperationPromise( { operation: operation2 } ),
 				    operationPromise3 = new OperationPromise( { operation: operation3 } ),
@@ -65,9 +78,9 @@ define( [
 
 			
 			it( "should be allowed to be used as a multiple promises passed to jQuery.when(), being rejected if just one of the individual promises are rejected", function() {
-				var operation1 = new ConcreteOperation( { dataComponent: model } ),
-				    operation2 = new ConcreteOperation( { dataComponent: model } ),
-				    operation3 = new ConcreteOperation( { dataComponent: model } ),
+				var operation1 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    operation2 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    operation3 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
 				    operationPromise1 = new OperationPromise( { operation: operation1 } ),
 				    operationPromise2 = new OperationPromise( { operation: operation2 } ),
 				    operationPromise3 = new OperationPromise( { operation: operation3 } ),

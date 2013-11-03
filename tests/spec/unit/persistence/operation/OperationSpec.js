@@ -2,17 +2,29 @@
 define( [
 	'data/persistence/operation/Operation',
 	'data/persistence/operation/Promise',
-	'data/Model'  // Used as the `dataComponent` of the Operations
-], function( Operation, OperationPromise, Model ) {
+	'data/Model',                   // Used as the `dataComponent` of the Operations
+	'data/persistence/proxy/Proxy'  // Used as the `proxy` of the Operations
+], function( Operation, OperationPromise, Model, Proxy ) {
 	
 	describe( 'data.persistence.operation.Operation', function() {
 		
-		// Concrete Subclass
+		var emptyFn = function() {};
+		
+		// Concrete Subclasses
 		var ConcreteOperation = Operation.extend( {} );
+		
+		var ConcreteProxy = Proxy.extend( {
+			create  : emptyFn,
+			read    : emptyFn,
+			update  : emptyFn,
+			destroy : emptyFn
+		} );
 		
 		// Used as the `dataComponent` of the Operations
 		var model = new Model();
 		
+		// Used as the `proxy` of the Operations
+		var proxy = new ConcreteProxy();
 		
 		
 		
@@ -32,7 +44,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			
@@ -63,7 +75,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			
@@ -93,7 +105,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			
@@ -124,7 +136,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			
@@ -154,7 +166,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			
@@ -185,7 +197,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			
@@ -215,7 +227,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			
@@ -249,7 +261,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			
@@ -272,7 +284,7 @@ define( [
 		describe( 'done()', function() {
 			
 			it( "should register a handler to be called upon Operation success", function() {
-				var operation = new ConcreteOperation( { dataComponent: model } ),
+				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
 				    doneCallCount = 0;
 				
 				operation.done( function( dataComponent, op ) { 
@@ -292,7 +304,7 @@ define( [
 		describe( 'fail()', function() {
 			
 			it( "should register a handler to be called upon Operation error", function() {
-				var operation = new ConcreteOperation( { dataComponent: model } ),
+				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
 				    errorCallCount = 0;
 				
 				operation.fail( function( dataComponent, op ) { 
@@ -312,7 +324,7 @@ define( [
 		describe( 'cancel()', function() {
 			
 			it( "should register a handler to be called if the Operation is canceled (aborted)", function() {
-				var operation = new ConcreteOperation( { dataComponent: model } ),
+				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
 				    cancelCallCount = 0;
 				
 				operation.cancel( function( dataComponent, op ) { 
@@ -333,7 +345,7 @@ define( [
 			var operation;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model } );
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
 			} );
 			
 			

@@ -27,39 +27,33 @@ define( [
 	 * ## Sequence of Operations with Collaborators
 	 * 
 	 * In the following sequence diagram, the Collection's {@link data.Collection#method-load load} method is called. Collection delegates
-	 * to a created instance of the Operation class, which then delegates to one or more {@link data.persistence.request.Request Requests}
-	 * (such as if multiple pages of data are being loaded at once), and finally to a {@link data.persistence.proxy.Proxy} to perform 
-	 * the actual Requests. 
+	 * to an instantiated instance of the Operation class, which then delegates to the {@link #proxy} to execute one or more 
+	 * {@link data.persistence.request.Request Requests} (such as if multiple pages of data are being loaded at once). 
 	 * 
 	 * When all Requests are complete, and the Collection has added the new {@link data.Model Models}, then the Operation is resolved,
 	 * causing {@link data.persistence.operation.Promise#done done} handlers on the Operation's {@link #promise} object to be called.
 	 * 
-	 *       Collection        Operation     Request1     Request2      Proxy
-	 *           |                 |            |            |            |
-	 *     load  |                 |            |            |            |
-	 *     ----->X                 |            |            |            |
-	 *           |                 |            |            |            |
-	 *           | executeRequests |            |            |            |
-	 *           X---------------->X            |            |            |
-	 *           |                 |            |            |            |
-	 *           |                 |  execute   |            |            |
-	 *           |                 X----------->X   read     |            |
-	 *           |                 |            X------------|----------->X
-	 *           |                 |            |            |            |
-	 *           |                 |  execute   |            |            |
-	 *           |                 X------------|----------->X   read     |
-	 *           |                 |            |            X----------->X
-	 *           |                 |            |            |            |
-	 *           |                 |            |            |            |
-	 *           |                 |            |            | (complete) |
-	 *           |                 |            | (complete) X<-----------X
-	 *           |                 X<-----------|------------X            |
-	 *           |                 |            |            |            |
-	 *           |                 |            |            | (complete) |
-	 *           |                 | (complete) X<-----------|------------X
-	 *           | (reqs complete) X<-----------X            |            |
-	 *           X<----------------X            |            |            |
-	 *           |                 |            |            |            |
+	 *       Collection        Operation                 Proxy
+	 *           |                 |                       |
+	 *     load  |                 |                       |
+	 *     ----->X                 |                       |
+	 *           |                 |                       |
+	 *           | executeRequests |                       |
+	 *           X---------------->X                       |
+	 *           |                 |     read: request 1   |
+	 *           |                 X---------------------->X
+	 *           |                 |     read: request 2   |
+	 *           |                 X---------------------->X
+	 *           |                 |                       |
+	 *           |                 |                       |
+	 *           |                 |  (request 1 complete) |
+	 *           |                 X<----------------------X
+	 *           |                 |  (request 2 complete) |
+	 *           |                 X<----------------------X
+	 *           |                 |                       |
+	 *           | (reqs complete) |                       |
+	 *           X<----------------X                       |
+	 *           |                 |                       |
 	 *           
 	 *           // ...
 	 *           // Models that have been loaded from Proxy are added to Collection
@@ -137,6 +131,13 @@ define( [
 		 * 
 		 * The DataComponent ({@link data.Model Model) or {@link data.Collection Collection} that the Operation is
 		 * operating on.
+		 */
+		
+		/**
+		 * @cfg {data.persistence.proxy.Proxy} proxy (required)
+		 * 
+		 * The Proxy that the {@link #requests} of the Operation should be made to. Running the {@link #executeRequests} 
+		 * method will make the requests to this Proxy.
 		 */
 		
 		/**
@@ -255,6 +256,10 @@ define( [
 		constructor : function( cfg ) {
 			_.assign( this, cfg );
 			
+			// <debug>
+			if( !this.proxy ) throw new Error( "`proxy` cfg required" );
+			// </debug>
+			
 			this.id = ++Operation.idCounter;
 			this.deferred = new jQuery.Deferred();
 			this.cancelDeferred = new jQuery.Deferred();  // need a separate Deferred to keep track of "cancel" handlers
@@ -355,11 +360,15 @@ define( [
 			this.started = true;
 			
 			var me = this,  // for closures
+			    proxy = this.proxy,
 			    requestsDeferred = this.requestsDeferred;  // The Operation's requestDeferred
 			
 			// Execute all individual requests, and when they are complete, resolve or reject the 
 			// Operation's "requestsDeferred"
-			var requestsPromises = _.map( this.requests, function( req ) { return req.execute(); } );  // Execute all and return an array of Promise objects, one for each Request
+			var requestsPromises = _.map( this.requests, function( req ) { 
+				return proxy[ req.getAction() ]( req );    // Execute all requests and return an array of Promise objects, one for each Request
+			} );
+			
 			jQuery.when.apply( jQuery, requestsPromises )
 				.done( function() { requestsDeferred.resolve( me ); } )
 				.fail( function() { requestsDeferred.reject( me ); } );

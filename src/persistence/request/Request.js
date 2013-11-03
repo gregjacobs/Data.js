@@ -8,9 +8,9 @@ define( [
 	 * @abstract
 	 * @class data.persistence.request.Request
 	 * 
-	 * Represents an request for a {@link data.persistence.proxy.Proxy} to carry out. This class basically represents 
-	 * any CRUD request to be performed, passes along any options needed for that request, and accepts any data/state
-	 * as a result of that request from the configured {@link #proxy}. 
+	 * Represents a request for a {@link data.persistence.proxy.Proxy} to carry out. This class represents any CRUD request 
+	 * to be performed, passes along any options needed for that request, and accepts any data/state as a result of the 
+	 * request from the proxy. 
 	 * 
 	 * Note: This class does not (necessarily) represent an HTTP request. It represents a request to a 
 	 * {@link data.persistence.proxy.Proxy Proxy}, which will in turn create/read/update/destroy the data wherever the 
@@ -24,20 +24,15 @@ define( [
 	 * - {@link data.persistence.request.Write}: Represents an Request to write (store) data to persistence storage.
 	 *   This includes destroying (deleting) models as well.
 	 * 
-	 * This class is used internally by the framework for making requests to {@link data.persistence.proxy.Proxy Proxies},
+	 * This class is mainly used internally by the framework for making requests to {@link data.persistence.proxy.Proxy Proxies},
 	 * but is provided to client callbacks for when {@link data.Model Model}/{@link data.Collection Collection} requests 
-	 * complete, so information can be obtained about the request that took place.
+	 * complete, so information can be obtained about the request that took place. The request(s) are available from the 
+	 * {@link data.persistence.operation.Operation Operation} object that represents a high level load/save operation
+	 * for a {@link data.Model Model}/{@link data.Collection Collection}.
 	 */
 	var Request = Class.extend( Object, {
 		abstractClass : true,
 		
-		
-		/**
-		 * @cfg {data.persistence.proxy.Proxy} proxy
-		 * 
-		 * The Proxy that the Request should be made to. Running the {@link #execute} method will make the
-		 * request to this Proxy.
-		 */
 		
 		/**
 		 * @cfg {Object} params
@@ -110,16 +105,6 @@ define( [
 		
 		
 		/**
-		 * Sets the {@link #proxy} that this Request will use when {@link #execute executed}.
-		 * 
-		 * @param {data.persistence.proxy.Proxy} proxy
-		 */
-		setProxy : function( proxy ) {
-			this.proxy = proxy;
-		},
-		
-		
-		/**
 		 * Retrieves the {@link #params} for this Request. Returns an empty
 		 * object if no params were provided.
 		 * 
@@ -127,18 +112,6 @@ define( [
 		 */
 		getParams : function() {
 			return ( this.params || (this.params = {}) );
-		},
-		
-		
-		/**
-		 * Executes the Request using the configured {@link #proxy}.
-		 * 
-		 * @return {jQuery.Promise} A Promise object which is resolved when the Request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with this Request object provided 
-		 *   as the first argument.
-		 */
-		execute : function() {
-			return this.proxy[ this.getAction() ]( this );  // getAction() returns 'create', 'read', 'update', or 'destroy'
 		},
 		
 		
