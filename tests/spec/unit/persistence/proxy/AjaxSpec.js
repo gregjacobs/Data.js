@@ -183,7 +183,7 @@ define( [
 				var proxy = new AjaxProxy(),
 				    request = new ReadRequest( { modelId: 1 } );
 				
-				expect( proxy.buildParams( 'read', request ) ).toEqual( { id: 1 } );
+				expect( proxy.buildParams( request ) ).toEqual( { id: 1 } );
 			} );
 			
 			
@@ -198,7 +198,7 @@ define( [
 						param2: 2
 					}
 				} );
-				expect( proxy.buildParams( 'read', readRequest ) ).toEqual( {
+				expect( proxy.buildParams( readRequest ) ).toEqual( {
 					id: 1,
 					param1: "value1",
 					param2: 2
@@ -212,9 +212,9 @@ define( [
 				    updateRequest = new UpdateRequest( { params: inputParams } ),
 				    destroyRequest = new DestroyRequest( { params: inputParams } );
 				
-				expect( proxy.buildParams( 'create', createRequest ) ).toEqual( expectedParams );
-				expect( proxy.buildParams( 'update', updateRequest ) ).toEqual( expectedParams );
-				expect( proxy.buildParams( 'destroy', destroyRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( createRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( updateRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( destroyRequest ) ).toEqual( expectedParams );
 			} );
 			
 			
@@ -234,7 +234,7 @@ define( [
 						param3: "value3"
 					}
 				} );
-				expect( proxy.buildParams( 'read', readRequest ) ).toEqual( {
+				expect( proxy.buildParams( readRequest ) ).toEqual( {
 					id     : 1,
 					param1 : "overridden_value1",
 					param2 : "value2",
@@ -249,9 +249,9 @@ define( [
 				    updateRequest = new UpdateRequest( { params: inputParams } ),
 				    destroyRequest = new DestroyRequest( { params: inputParams } );
 				
-				expect( proxy.buildParams( 'create', createRequest ) ).toEqual( expectedParams );
-				expect( proxy.buildParams( 'update', updateRequest ) ).toEqual( expectedParams );
-				expect( proxy.buildParams( 'destroy', destroyRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( createRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( updateRequest ) ).toEqual( expectedParams );
+				expect( proxy.buildParams( destroyRequest ) ).toEqual( expectedParams );
 			} );
 			
 			
@@ -263,7 +263,7 @@ define( [
 				var readRequest = new ReadRequest( { 
 					page : 5
 				} );
-				expect( proxy.buildParams( 'read', readRequest ) ).toEqual( {
+				expect( proxy.buildParams( readRequest ) ).toEqual( {
 					pageNum : 5
 				} );
 			} );
@@ -277,7 +277,7 @@ define( [
 				var readRequest = new ReadRequest( { 
 					//page : 0   -- no page configured
 				} );
-				expect( proxy.buildParams( 'read', readRequest ) ).toEqual( {} );
+				expect( proxy.buildParams( readRequest ) ).toEqual( {} );
 			} );
 			
 			
@@ -289,7 +289,7 @@ define( [
 				var readRequest = new ReadRequest( { 
 					page : 5
 				} );
-				expect( proxy.buildParams( 'read', readRequest ) ).toEqual( {} );
+				expect( proxy.buildParams( readRequest ) ).toEqual( {} );
 			} );
 			
 			
@@ -303,7 +303,7 @@ define( [
 					page  : 5,
 					pageSize : 50
 				} );
-				expect( proxy.buildParams( 'read', readRequest ) ).toEqual( {
+				expect( proxy.buildParams( readRequest ) ).toEqual( {
 					pageNum  : 5,
 					pageSize : 50
 				} );
@@ -320,7 +320,7 @@ define( [
 					//page : 0   -- no page configured
 					pageSize : 50
 				} );
-				expect( proxy.buildParams( 'read', readRequest ) ).toEqual( {
+				expect( proxy.buildParams( readRequest ) ).toEqual( {
 					pageSize : 50
 				} );
 			} );
@@ -336,7 +336,7 @@ define( [
 					page : 5,
 					pageSize : 50
 				} );
-				expect( proxy.buildParams( 'read', readRequest ) ).toEqual( {
+				expect( proxy.buildParams( readRequest ) ).toEqual( {
 					pageNum : 5
 				} );
 			} );
