@@ -87,22 +87,6 @@ define( [
 				
 				// The following only apply to 'create', 'read', and 'update' requests - not 'destroy'
 				if( actionName === 'create' || actionName === 'read' || actionName === 'update' ) {
-				
-					it( "should resolve a '" + actionName + "' request by creating an empty ResultSet when the 2nd arg is not provided", function() {
-						var request = new RequestClass(),
-						    resolvedRequest;
-						
-						manualResolveProxy[ actionName ]( request ).done( function( request ) { resolvedRequest = request; } );
-						
-						// Test initial conditions - not resolved yet
-						expect( resolvedRequest ).toBe( undefined );
-						
-						// Resolve with no
-						manualResolveProxy[ 'resolve' + capitalizedActionName ]( 0 );  // not providing a ResultSet object
-						expect( resolvedRequest ).toBe( request );
-						expect( resolvedRequest.getResultSet() instanceof ResultSet ).toBe( true );
-					} );
-					
 					
 					it( "should resolve a '" + actionName + "' request using a directly-provided `resultSet`", function() {
 						var request = new RequestClass(),

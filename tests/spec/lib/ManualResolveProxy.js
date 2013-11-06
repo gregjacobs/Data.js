@@ -156,7 +156,8 @@ define( [
 					resultSet = this.reader.read( data );
 				}
 				
-				request.setResultSet( resultSet || new ResultSet() );
+				if( resultSet )
+					request.setResultSet( resultSet );
 			}
 			
 			request.setSuccess();

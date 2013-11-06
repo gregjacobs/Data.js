@@ -1977,7 +1977,7 @@ define( [
 				
 				modelPersistenceVerifier.execute( 'load' );
 				
-				manualProxy.resolveRead( 0 );  // Resolve the "read" request that the load operation performed (the first 'read' request), and 
+				manualProxy.resolveRead( 0, {} );  // Resolve the "read" request that the load operation performed (the first 'read' request), and 
 				modelPersistenceVerifier.verify( 'success' );  // verify that the appropriate events/callbacks/handlers were called
 			} );
 			
