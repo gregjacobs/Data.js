@@ -142,8 +142,8 @@ define( [
 		 *         'personId'        : 'id',
 		 *         'personInfo.name' : 'name',
 		 *         
-		 *         'personInfo' : ''  // note, nested objects which have properties mapped to them are not automatically
-		 *                            // removed (yet), so remove it manually by setting this top level key to an empty string. 
+		 *         'personInfo' : ''  // if the `ignoreUnknownAttrsOnLoad` config has been set to false on the collection/model that is
+		 *                            // being loaded, we can remove it manually by setting this top level key to an empty string. 
 		 *                            // See &quot;Removing Unneeded Source Properties&quot; below.
 		 *     }
 		 * 
@@ -170,7 +170,7 @@ define( [
 		 * ### Removing Unneeded Source Properties
 		 * 
 		 * There is a special form for removing source data properties that are unneeded, so that they do not get 
-		 * set to the target {@link data.Model} (which by default, would throw an error for an unknown attribute). 
+		 * set to the target {@link data.Model} if {@link data.Model#ignoreUnknownAttrsOnLoad} has been set to false. 
 		 * Setting the value in the map to an empty string will remove the particular source data property as part 
 		 * of the mapping process. Ex:
 		 * 

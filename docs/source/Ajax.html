@@ -200,7 +200,7 @@ define( [
 		 */
 		read : function( request ) {
 			var me = this,  // for closures
-			    paramsObj = this.buildParams( 'read', request ),
+			    paramsObj = this.buildParams( request ),
 			    deferred = new jQuery.Deferred();
 			
 			this.ajax( {
@@ -271,14 +271,14 @@ define( [
 		 * @return {String} The full URL, with all parameters.
 		 */
 		buildUrl : function( request ) {
-			var action = request.getAction(),  // The CRUD action name. Ex: 'create', 'read', 'update', 'destroy'
+			var action = request.getAction(),  // The CRUD action name. Ex: 'create', 'read', 'update', or 'destroy'
 			    url = this.getUrl( action );
 			
 			// Only add params explicitly to the URL when doing a create/update/destroy request. For a 'read' 
 			// request, params will be added conditionally to either the url or the post body based on the http 
 			// method being used ('GET' or 'POST', handled in the read() method itself). 
 			if( action !== 'read' ) {
-				var params = this.buildParams( action, request );
+				var params = this.buildParams( request );
 				
 				url = this.urlAppend( url, this.serializeParams( params, action, request ) );
 			}
@@ -292,13 +292,15 @@ define( [
 		 * added.
 		 * 
 		 * @protected
-		 * @param {String} action The action that is being taken. Should be 'create', 'read', 'update', or 'destroy'.
-		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
+		 * @param {data.persistence.request.Request} request The request which holds the
+		 *   {@link data.persistence.request.Request#getAction action} (create/read/update/destroy), and the
+		 *   {@link data.persistence.request.Request#getParams parameters} for the request.
 		 * @return {Object} An Object (map) of the parameters, where the keys are the parameter names,
 		 *   and the values are the parameter values.
 		 */
-		buildParams : function( action, request ) {
-			var params = _.assign( {}, this.defaultParams, request.getParams() || {} );   // build the params map
+		buildParams : function( request ) {
+			var action = request.getAction(),  // The CRUD action name. Ex: 'create', 'read', 'update', or 'destroy'
+			    params = _.assign( {}, this.defaultParams, request.getParams() || {} );   // build the params map
 			
 			// Add the model's `id` and the paging parameters for 'read' requests only
 			if( action === 'read' ) {

@@ -26,6 +26,9 @@ define( [
 	'data/DataComponent',
 	
 	'data/persistence/proxy/Proxy',
+	'data/persistence/operation/Load',
+	'data/persistence/operation/Save',
+	'data/persistence/operation/Destroy',
 	'data/persistence/request/Create',
 	'data/persistence/request/Read',
 	'data/persistence/request/Update',
@@ -59,6 +62,9 @@ define( [
 	DataComponent,
 	
 	Proxy,
+	LoadOperation,
+	SaveOperation,
+	DestroyOperation,
 	CreateRequest,
 	ReadRequest,
 	UpdateRequest,
@@ -225,39 +231,29 @@ define( [
 		 * the proxy), or on a particular model instance using {@link #setProxy}.
 		 */
 		
-<span id='data-Model-cfg-ignoreUnknownAttrs'>		/**
-</span>		 * @cfg {Boolean} ignoreUnknownAttrs
+<span id='data-Model-cfg-ignoreUnknownAttrsOnLoad'>		/**
+</span>		 * @cfg {Boolean} ignoreUnknownAttrsOnLoad
 		 * 
-		 * Set this to `true` to have the Model ignore unknown attributes when they are {@link #set} to the model. When this is `false` (the
-		 * default), an error is thrown when an attribute is set to the model that doesn't have a corresponding {@link #cfg-attributes attribute} 
-		 * definition. This helps to catch errors for incorrectly spelled attribute names, instead of simply allowing the code to continue along
-		 * unknowingly. Problems and bugs caused by un-set data may then be difficult to track down to the original source of the problem, 
-		 * especially in larger software systems. Therefore, it is **not recommended** that you set this configuration option.
+		 * `true` to ignore any unknown attributes that come from an external data source (server, local storage, etc)
+		 * when {@link #method-load loading} the Model. This defaults to `true` in case say, a web service adds additional
+		 * properties to a response object, which would otherwise trigger an error for an unknown attribute when the data is
+		 * set to the Model.
 		 * 
-		 * However, it is possible that your original data source provides many data properties that you do not want to have corresponding 
-		 * {@link #cfg-attributes attribute} definitions for. It is also possible that your data source adds properties from time to time, where you
-		 * don't want your code throwing errors in production. In these cases, it may be useful to set this configuration option. Just note that 
-		 * you will be bypassing the check which can help you determine the source of a possible error immediately, rather than further down the 
-		 * line in the code's execution.
-		 * 
-		 * A possible option to get the best of both worlds is to leave this as the default (`false`) for &quot;development&quot; mode, and then set it to
-		 * `true` on a global level for &quot;production&quot; mode. You can overwrite the default value of this configuration in production mode using a 
-		 * snippet such at this:
+		 * This may be useful to set to `false` for development purposes however, to make sure that your server or other
+		 * persistent storage mechanism is providing all of the correct data, and that there are no mistyped property 
+		 * names, spelling errors, or anything of that nature. One way to do this on a global level for development purposes
+		 * is:
 		 * 
 		 *     require( [
 		 *         'data/Model'
 		 *     ], function( Model ) {
 		 *         
-		 *         // Ignore unknown attributes if they come up from a data 
-		 *         // source when in &quot;production&quot; mode
-		 *         Model.prototype.ignoreUnknownAttrs = true;
+		 *         // Check all attributes from external data sources when in &quot;development&quot; mode
+		 *         Model.prototype.ignoreUnknownAttrsOnLoad = false;
 		 *         
 		 *     } );
-		 * 
-		 * Attributes retrieved with {@link #get} or {@link #raw} will still throw an error if the attribute name requested is unknown.
 		 */
-		ignoreUnknownAttrs : false,
-		
+		ignoreUnknownAttrsOnLoad : true,
 		
 <span id='data-Model-property-attributes'>		/**
 </span>		 * @private
@@ -370,8 +366,19 @@ define( [
 		 * 
 		 * @constructor 
 		 * @param {Object} [data] Any initial data for the {@link #cfg-attributes attributes}, specified in an object (hash map). See {@link #set}.
+		 *   If not passing any initial data, but want to pass the second argument (`options`), provide `null`.
+		 * @param {Object} [options] Any options for Model construction/initialization. This may be an object with the following properties:
+		 * @param {Boolean} [options.ignoreUnknownAttrs=false] Set to `true` if unknown attributes should be ignored in the data object provided
+		 *   to the first argument of this method. This is useful if you have an object which contains many properties, but your model does not
+		 *   define matching attributes for each one of them. This option is **not recommended**, as it bypasses the check which can help you 
+		 *   determine that you have possibly typed an attribute name incorrectly, and it may then be difficult at the time when a bug arises 
+		 *   because of it (especially in a large software system) to determine where the source of the problem was. This is also set by some 
+		 *   internal constructor calls to create models, such as when loading data into a {@link data.Collection} (based on the 
+		 *   {@link data.Collection#ignoreUnknownAttrsOnLoad} config).
 		 */
-		constructor : function( data ) {
+		constructor : function( data, options ) {
+			options = options || {};
+			
 			// Default the data to an empty object
 			data = data || {};
 			
@@ -457,17 +464,46 @@ define( [
 				
 <span id='data-Model-event-load'>				/**
 </span>				 * Fires when the Model is {@link #method-load loaded} from its external data store (such as a web server), 
-				 * through its {@link #proxy}.
+				 * through its {@link #proxy}. This is a catch-all event for &quot;load completion&quot;.
 				 * 
-				 * This event fires for both successful and failed &quot;load&quot; requests. Success of the load request may 
-				 * be determined using the `request`'s {@link data.persistence.request.Request#wasSuccessful wasSuccessful} 
-				 * method.
+				 * This event fires for all three of successful, failed, and aborted &quot;load&quot; requests. Success/failure/cancellation
+				 * of the load request may be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful},
+				 * {@link data.persistence.operation.Operation#hasErrored hasErrored}, or 
+				 * {@link data.persistence.operation.Operation#wasAborted wasAborted} methods.
 				 * 
 				 * @event load
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.request.Read} request The ReadRequest object for the load request.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation object that represents the load.
 				 */
 				'load',
+				
+<span id='data-Model-event-loadsuccess'>				/**
+</span>				 * Fires when the Model has successfully loaded data from its {@link #method-load} method.
+				 * 
+				 * @event loadsuccess
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which was successful.
+				 */
+				'loadsuccess',
+				
+<span id='data-Model-event-loaderror'>				/**
+</span>				 * Fires when the Model has failed to load data from its {@link #method-load} method.
+				 * 
+				 * @event loaderror
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which has errored.
+				 */
+				'loaderror',
+				
+<span id='data-Model-event-loadcancel'>				/**
+</span>				 * Fires when the Model's {@link data.persistence.operation.Load LoadOperation} has been canceled 
+				 * by client code while it is still {@link #method-load loading}.
+				 * 
+				 * @event loadcancel
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which was aborted (canceled).
+				 */
+				'loadcancel',
 				
 <span id='data-Model-event-savebegin'>				/**
 </span>				 * Fires when the Model begins a {@link #method-save} request, through its {@link #proxy}. The 
@@ -482,17 +518,51 @@ define( [
 </span>				 * Fires when the Model is {@link #method-save saved} to its external data store (such as a web server),
 				 * through its {@link #proxy}.
 				 * 
-				 * This event fires for both successful and failed &quot;save&quot; requests. Success of the save request may 
-				 * be determined using the `request`'s {@link data.persistence.request.Request#wasSuccessful wasSuccessful} 
-				 * method.
+				 * This event fires for all three of successful, failed, and aborted &quot;save&quot; requests. Success/failure/cancellation
+				 * of the destroy request may be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful},
+				 * {@link data.persistence.operation.Operation#hasErrored hasErrored}, or 
+				 * {@link data.persistence.operation.Operation#wasAborted wasAborted} methods.
 				 * 
 				 * @event save
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.request.Write} request The WriteRequest object for the save. This will
-				 *   either be a {@link data.persistence.request.Create CreateRequest} or 
-				 *   {@link data.persistence.request.Update UpdateRequest}.
+				 * @param {data.persistence.operation.Save} operation The SaveOperation object that represents the save.
 				 */
 				'save',
+				
+<span id='data-Model-event-savesuccess'>				/**
+</span>				 * Fires when the Model has been successfully {@link #method-save saved} on its external data store (such as a 
+				 * web server), through its {@link #proxy}.
+				 * 
+				 * @event savesuccess
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Save} operation The SaveOperation which was successful.
+				 */
+				'savesuccess',
+				
+<span id='data-Model-event-saveerror'>				/**
+</span>				 * Fires when the Model has been failed to be {@link #method-save saved} on its external data store (such as a 
+				 * web server), through its {@link #proxy}.
+				 * 
+				 * @event saveerror
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Save} operation The SaveOperation which has errored.
+				 */
+				'saveerror',
+				
+<span id='data-Model-event-savecancel'>				/**
+</span>				 * Fires when the {@link #method-save saving} of the Model has been aborted (canceled).
+				 * 
+				 * Note: when aborting a &quot;save&quot; operation, it is possible that the request still made it through and data was 
+				 * updated on it on its external data store (such as a web server). This may cause an inconsistency between
+				 * the state of the model on the client-side, and the state of the model on the server-side. Therefore, it is
+				 * not recommended that the &quot;save&quot; operation be canceled, unless it is going to be attempted again, or the
+				 * page is going to be refreshed.
+				 * 
+				 * @event savecancel
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Save} operation The SaveOperation which was aborted (canceled).
+				 */
+				'savecancel',
 				
 <span id='data-Model-event-destroybegin'>				/**
 </span>				 * Fires when the Model begins a {@link #method-destroy} request, through its {@link #proxy}. The 
@@ -507,11 +577,51 @@ define( [
 </span>				 * Fires when the Model has been {@link #method-destroy destroyed} on its external data store (such as a 
 				 * web server), through its {@link #proxy}.
 				 * 
+				 * This event fires for all three of successful, failed, and aborted &quot;destroy&quot; requests. Success/failure/cancellation
+				 * of the destroy request may be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful},
+				 * {@link data.persistence.operation.Operation#hasErrored hasErrored}, or 
+				 * {@link data.persistence.operation.Operation#wasAborted wasAborted} methods.
+				 * 
 				 * @event destroy
 				 * @param {data.Model} model This Model instance.
-				 * @param {data.persistence.request.Write} request The DestroyRequest object for the destroy request.
+				 * @param {data.persistence.operation.Destroy} operation The DestroyOperation object that represents the destroy.
 				 */
-				'destroy'
+				'destroy',
+				
+<span id='data-Model-event-destroysuccess'>				/**
+</span>				 * Fires when the Model has been successfully {@link #method-destroy destroyed} on its external data store (such as a 
+				 * web server), through its {@link #proxy}.
+				 * 
+				 * @event destroysuccess
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Destroy} operation The DestroyOperation which was successful.
+				 */
+				'destroysuccess',
+				
+<span id='data-Model-event-destroyerror'>				/**
+</span>				 * Fires when the Model has been failed to be {@link #method-destroy destroyed} on its external data store (such as a 
+				 * web server), through its {@link #proxy}.
+				 * 
+				 * @event destroyerror
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Destroy} operation The DestroyOperation which has errored.
+				 */
+				'destroyerror',
+				
+<span id='data-Model-event-destroycancel'>				/**
+</span>				 * Fires when the {@link #method-destroy destruction} of the Model has been aborted (canceled).
+				 * 
+				 * Note: when aborting a &quot;destroy&quot; operation, it is possible that the request still made it through and was 
+				 * destroyed on it on its external data store (such as a web server). This may cause an inconsistency between
+				 * the state of the model on the client-side, and the state of the model on the server-side. Therefore, it is
+				 * not recommended that the &quot;destroy&quot; operation be canceled, unless it is going to be attempted again, or the
+				 * page is going to be refreshed.
+				 * 
+				 * @event destroycancel
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Destroy} operation The DestroyOperation which was aborted (canceled).
+				 */
+				'destroycancel'
 			);
 			
 			
@@ -531,7 +641,7 @@ define( [
 			this.modifiedData = {};
 			
 			// Set the initial data / defaults, if we have any
-			this.set( data );
+			this.set( data, { ignoreUnknownAttrs: options.ignoreUnknownAttrs } );
 			this.commit();  // and because we are initializing, the data is not considered modified
 			
 			// Call hook method for subclasses
@@ -656,12 +766,11 @@ define( [
 		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a hash).
 		 * @param {Object} [options] Any options to pass to the method. This should be the second argument if providing an Object to the 
 		 *   first parameter. This should be an object which may contain the following properties:
-		 * @param {Boolean} [options.ignoreUnknownAttrs] Set to `true` if unknown attributes should be ignored in the data object provided
+		 * @param {Boolean} [options.ignoreUnknownAttrs=false] Set to `true` if unknown attributes should be ignored in the data object provided
 		 *   to the first argument of this method. This is useful if you have an object which contains many properties, but your model does not
 		 *   define matching attributes for each one of them. This option is **not recommended**, as it bypasses the check which can help you 
 		 *   determine that you have possibly typed an attribute name incorrectly, and it may then be difficult at the time when a bug arises 
-		 *   because of it (especially in a large software system) to determine where the source of the problem was. Defaults to the value of the 
-		 *   {@link #ignoreUnknownAttrs} config.
+		 *   because of it (especially in a large software system) to determine where the source of the problem was.
 		 */
 		set : function( attributeName, newValue, options ) {
 			// If coming into the set() method for the first time (non-recursively, not from an attribute setter, not from a 'change' handler, etc),
@@ -686,15 +795,14 @@ define( [
 				options = newValue || {};    // 2nd arg is the `options` object with this form
 				var values = attributeName,  // for clarity
 				    attributes = this.attributes,
-				    attrsWithSetters = [],
-				    ignoreUnknownAttrs = ( options.ignoreUnknownAttrs === undefined ) ? this.ignoreUnknownAttrs : options.ignoreUnknownAttrs;
+				    attrsWithSetters = [];
 				
 				for( attributeName in values ) {
 					if( values.hasOwnProperty( attributeName ) ) {
 						var attribute = attributes[ attributeName ];
 						
 						if( !attribute ) {  // no matching attribute for the current attributeName (property name) in the data object
-							if( ignoreUnknownAttrs )
+							if( options.ignoreUnknownAttrs )
 								continue;
 							
 							// &lt;debug&gt;
@@ -710,6 +818,7 @@ define( [
 					}
 				}
 				
+				// Handle any attributes that have a setter (i.e. a `set` config) after the ones that don't have setters
 				for( var i = 0, len = attrsWithSetters.length; i &lt; len; i++ ) {
 					attributeName = attrsWithSetters[ i ];
 					this.doSet( attributeName, values[ attributeName ], options, changeSetNewValues, changeSetOldValues );
@@ -739,11 +848,10 @@ define( [
 		doSet : function( attributeName, newValue, options, changeSetNewValues, changeSetOldValues ) {
 			var attribute = this.attributes[ attributeName ],
 			    modelData = this.data,
-			    modelModifiedData = this.modifiedData,
-			    ignoreUnknownAttrs = ( options.ignoreUnknownAttrs === undefined ) ? this.ignoreUnknownAttrs : options.ignoreUnknownAttrs;
+			    modelModifiedData = this.modifiedData;
 			
 			if( !attribute ) {
-				if( ignoreUnknownAttrs ) return;  // simply return; nothing to do
+				if( options.ignoreUnknownAttrs ) return;  // simply return; nothing to do
 				
 				// &lt;debug&gt;
 				throw new Error( &quot;data.Model.set(): An attribute with the attributeName '&quot; + attributeName + &quot;' was not found.&quot; );
@@ -1218,55 +1326,64 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link data.Model} This Model instance.
-		 * - `request` : {@link data.persistence.request.Read} The ReadRequest that was executed.
+		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
+		 *   information about the operation and the request(s) that took place.
+		 * 
+		 * 
+		 * ## Aborting a Load Operation
+		 * 
+		 * It is possible to abort a &quot;load&quot; operation using the returned OperationPromise's {@link data.persistence.operation.Promise#abort abort}
+		 * method. The `cancel` and `complete` callbacks are called, as well as `cancel` and `always` handlers on the Promise.
+		 * 
+		 * Note that the load request to the {@link #proxy} may not be aborted (canceled) itself, but even if it returns, the data 
+		 * will not populate the model in this case.
+		 * 
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
 		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.failure] Function to call if the save fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
 		 * @param {Object} [options.scope] The object to call the `success`, `failure`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to this Model.
-		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the reload completes. The Promise is both 
-		 *   resolved or rejected with the arguments listed above in the method description.
+		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
+		 *   the load completes. The Promise is both resolved or rejected with the arguments listed above in the method description.
 		 */
 		load : function( options ) {
 			options = options || {};
 			var emptyFn    = Data.emptyFn,
-			    scope      = options.scope    || options.context || this,
-			    successCb  = options.success  || emptyFn,
-			    errorCb    = options.error    || emptyFn,
-			    completeCb = options.complete || emptyFn,
-			    deferred   = new jQuery.Deferred();
+			    scope      = options.scope || options.context || this,
+			    successCb  = _.bind( options.success  || emptyFn, scope ),
+			    errorCb    = _.bind( options.error    || emptyFn, scope ),
+			    cancelCb   = _.bind( options.cancel   || emptyFn, scope ),
+			    completeCb = _.bind( options.complete || emptyFn, scope );
 			
 			// &lt;debug&gt;
-			if( !this.proxy ) {
-				throw new Error( &quot;data.Model::load() error: Cannot load. No proxy configured.&quot; );
-			}
+			if( !this.proxy ) throw new Error( &quot;data.Model::load() error: Cannot load. No proxy configured.&quot; );
 			// &lt;/debug&gt;
-			
-			// Attach any user-provided callbacks to the deferred.
-			deferred
-				.done( _.bind( successCb, scope ) )
-				.fail( _.bind( errorCb, scope ) )
-				.always( _.bind( completeCb, scope ) );
 			
 			// Set the `loading` flag while the Model is loading. Will be set to false in onLoadSuccess or onLoadError
 			this.loading = true;
 			this.fireEvent( 'loadbegin', this );
 			
 			// Make a request to load the data from the proxy
-			var me = this,  // for closures
-			    id = ( this.hasIdAttribute() ) ? this.getId() : undefined,
-			    request = new ReadRequest( { proxy: this.proxy, modelId: id, params: options.params } );
+			var id = ( this.hasIdAttribute() ) ? this.getId() : undefined,
+			    request = new ReadRequest( { modelId: id, params: options.params } ),
+			    operation = new LoadOperation( { dataComponent: this, proxy: this.proxy, requests: request } );
 			
-			request.execute().then(
-				function( request ) { me.onLoadSuccess( deferred, request ); },
-				function( request ) { me.onLoadError( deferred, request ); }
+			// Attach any user-provided callbacks to the operation. The `scope` was attached above.
+			operation.done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
+			
+			operation.executeRequests().then(
+				_.bind( this.onLoadSuccess, this ),
+				_.bind( this.onLoadError, this )
 			);
+			operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is aborted (canceled) by the user
 			
-			return deferred.promise();
+			return operation.promise();  // returns the OperationPromise object
 		},
 		
 		
@@ -1277,18 +1394,21 @@ define( [
 		 * Resolves the `jQuery.Deferred` object created by {@link #method-load}.
 		 * 
 		 * @protected
-		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-load} method. This 
-		 *   Deferred will be resolved after post-processing of the successful load is complete.
-		 * @param {data.persistence.request.Read} request The ReadRequest object which represents the load.
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
 		 */
-		onLoadSuccess : function( deferred, request ) {
-			this.set( request.getResultSet().getRecords()[ 0 ] );
+		onLoadSuccess : function( operation ) {
+			if( operation.wasAborted() ) return;  // the requests for the operation may still complete after the operation has been aborted. In this case, simply return out. 
+			
+			var requests = operation.getRequests();
+			this.set( requests[ 0 ].getResultSet().getRecords()[ 0 ], { ignoreUnknownAttrs: this.ignoreUnknownAttrsOnLoad } );  // only ignore unknown attributes in the response data object if the `ignoreUnknownAttrsOnLoad` config is set to `true`
 			this.loading = false;
 			
 			this.commit();
 			
-			deferred.resolve( this, request ); 
-			this.fireEvent( 'load', this, request );
+			operation.resolve();
+			this.fireEvent( 'loadsuccess', this, operation );
+			this.fireEvent( 'load', this, operation );
 		},
 		
 		
@@ -1299,15 +1419,34 @@ define( [
 		 * Rejects the `jQuery.Deferred` object created by {@link #method-load}.
 		 * 
 		 * @protected
-		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-load} method. This 
-		 *   Deferred will be rejected after any post-processing.
-		 * @param {data.persistence.request.Read} request The ReadRequest object which represents the load.
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
 		 */
-		onLoadError : function( deferred, request ) {
+		onLoadError : function( operation ) {
+			if( operation.wasAborted() ) return;  // the requests for the operation may still complete (in an error state) after the operation has been aborted. In this case, simply return out.
+			
 			this.loading = false;
 			
-			deferred.reject( this, request );
-			this.fireEvent( 'load', this, request );
+			operation.reject();
+			this.fireEvent( 'loaderror', this, operation );
+			this.fireEvent( 'load', this, operation );
+		},
+		
+		
+<span id='data-Model-method-onLoadCancel'>		/**
+</span>		 * Handles a {@link data.persistence.operation.Load LoadOperation} being canceled (aborted) by a client of 
+		 * the Model.
+		 *  
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
+		 */
+		onLoadCancel : function( operation ) {
+			this.loading = false;
+			
+			// Note: the operation was already aborted. No need to call operation.abort() here.
+			this.fireEvent( 'loadcancel', this, operation );
+			this.fireEvent( 'load', this, operation );
 		},
 		
 		
@@ -1318,7 +1457,8 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link data.Model} This Model instance.
-		 * - `request` : {@link data.persistence.request.Write} The WriteRequest that was executed.
+		 * - `operation` : {@link data.persistence.operation.Save} The SaveOperation that was executed, which provides
+		 *   information about the operation and the request(s) that took place.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Boolean} [options.syncRelated=true] `true` to synchronize (persist) the &quot;related&quot; child models/collections 
@@ -1333,56 +1473,100 @@ define( [
 		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.error] Function to call if the save fails.
+		 * @param {Function} [options.cancel] Function to call if the save has been canceled, by the returned
+		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}. See note in the description of the
+		 *   return of this method for a caveat on aborting (canceling) &quot;save&quot; operations.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to the Model.
-		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the save completes. The Promise is both 
-		 *   resolved or rejected with the arguments listed above in the method description.
+		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
+		 *   the save completes. The Promise is both resolved or rejected with the arguments listed above in the method description.
+		 *   
+		 *   The &quot;save&quot; operation may be aborted (canceled) via the OperationPromise's {@link data.persistence.operation.Promise#abort abort}
+		 *   method. However, note that when aborting a &quot;save&quot; operation, it is possible that the request still made it through 
+		 *   and was saved on its external data store (such as a web server). This may cause an inconsistency between the state 
+		 *   of the model on the client-side, and the state of the model on the server-side. Therefore, it is not recommended that 
+		 *   the &quot;save&quot; operation be canceled, unless it is going to be attempted again after sufficient time where the data store
+		 *   (server) has finished its operation, or the page is going to be refreshed.
 		 */
 		save : function( options ) {
 			options = options || {};
 			var me          = this,  // for closures
 			    syncRelated = ( options.syncRelated === undefined ) ? true : options.syncRelated,  // defaults to true
 			    emptyFn     = Data.emptyFn,
-			    scope       = options.scope    || options.context || this,
-			    successCb   = options.success  || emptyFn,
-			    errorCb     = options.error    || emptyFn,
-			    completeCb  = options.complete || emptyFn;
+			    scope       = options.scope || options.context || this,
+			    successCb   = _.bind( options.success  || emptyFn, this ),
+			    errorCb     = _.bind( options.error    || emptyFn, this ),
+			    cancelCb    = _.bind( options.cancel   || emptyFn, this ),
+			    completeCb  = _.bind( options.complete || emptyFn, this );
 			
 			// &lt;debug&gt;
-			if( !this.proxy ) {
-				// No proxy, cannot save. Throw an error
-				throw new Error( &quot;data.Model::save() error: Cannot save. No proxy.&quot; );
-			}
-			if( !this.hasIdAttribute() ) {
-				// No id attribute, throw an error
-				throw new Error( &quot;data.Model::save() error: Cannot save. Model does not have an idAttribute that relates to a valid attribute.&quot; );
-			}
+			if( !this.proxy ) throw new Error( &quot;data.Model::save() error: Cannot save. No proxy.&quot; );  // No proxy, cannot save. Throw an error
+			if( !this.hasIdAttribute() ) throw new Error( &quot;data.Model::save() error: Cannot save. Model does not have an idAttribute that relates to a valid attribute.&quot; );
 			// &lt;/debug&gt;
 			
 			// Set the `saving` flag while the Model is saving. Will be set to false in onSaveSuccess or onSaveError
 			this.saving = true;
 			this.fireEvent( 'savebegin', this );
 			
+			var saveOperation = this.createSaveOperation( options );
+			
 			// First, synchronize any nested related (i.e. non-embedded) Models and Collections of the model.
 			// Chain the synchronization of collections to the synchronization of this Model itself to create
 			// the `modelSavePromise` (if the `syncRelated` option is true)
-			var modelSavePromise;
 			if( syncRelated ) {
-				modelSavePromise = jQuery.when( this.syncRelatedCollections(), this.syncRelatedModels() ).then( function() { 
-					return me.doSave( options ); 
-			    } );
-			} else {  // not synchronizing related collections/models
-				modelSavePromise = this.doSave( options );
+				jQuery.when( this.syncRelatedCollections(), this.syncRelatedModels() ).then( 
+					function() { me.executeSaveOperation( saveOperation ); },
+					function() { saveOperation.reject(); }  // one of the sync tasks failed: fail the Operation
+				);
+			} else {  // not synchronizing related collections/models, execute the SaveOperation immediately
+				this.executeSaveOperation( saveOperation );
 			}
 			
 			// Set up any callbacks provided in the options
-			modelSavePromise
-				.done( _.bind( successCb, scope ) )
-				.fail( _.bind( errorCb, scope ) )
-				.always( _.bind( completeCb, scope ) );
+			saveOperation.done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
 			
-			return modelSavePromise;
+			return saveOperation.promise();
+		},
+		
+		
+<span id='data-Model-method-createSaveOperation'>		/**
+</span>		 * Creates a {@link data.persistence.operation.Save SaveOperation} to save the model. This method is called by 
+		 * {@link #method-save}, and the SaveOperation object is created before actually executing it for the case that
+		 * related (i.e. non-{@link data.attribute.DataComponent#embedded embedded}) models/collections need to be persisted
+		 * first.
+		 * 
+		 * @protected
+		 * @param {Object} options The `options` object provided to the {@link #method-save} method.
+		 * @return {data.persistence.operation.Save} The SaveOperation object that will be used to persist this model.
+		 */
+		createSaveOperation : function( options ) {
+			// Create and return the SaveOperation object
+			var RequestClass = this.isNew() ? CreateRequest : UpdateRequest,
+			    writeRequest = new RequestClass( { models : [ this ], params: options.params } ),
+			    operation = new SaveOperation( { dataComponent: this, proxy: this.proxy, requests: writeRequest } );
+			
+			return operation;
+		},
+		
+		
+<span id='data-Model-method-executeSaveOperation'>		/**
+</span>		 * Private method that performs the actual save (persistence) of this Model. This method is called from 
+		 * {@link #method-save} at the appropriate time. It is delayed from being called if the Model first has to 
+		 * persist non-{@link data.attribute.DataComponent#embedded embedded}) child collections.
+		 * 
+		 * @private
+		 * @param {data.persistence.operation.Save} operation The SaveOperation to execute.
+		 * @param {Object} originalPersistedSnapshotData
+		 */
+		executeSaveOperation : function( operation, originalPersistedSnapshotData ) {
+			operation.executeRequests().then(
+				_.bind( this.onSaveSuccess, this ),
+				_.bind( this.onSaveError, this )
+			);
+			
+			// handle if the Operation is aborted (canceled) by the user
+			operation.cancel( _.bind( this.onSaveCancel, this, operation ) );
 		},
 		
 		
@@ -1438,79 +1622,32 @@ define( [
 		},
 		
 		
-<span id='data-Model-method-doSave'>		/**
-</span>		 * Private method that performs the actual save (persistence) of this Model. This method is called from 
-		 * {@link #method-save} at the appropriate time. It is delayed from being called if the Model first has to 
-		 * persist non-{@link data.attribute.DataComponent#embedded embedded}) child collections.
-		 * 
-		 * @private
-		 * @param {Object} options The `options` object provided to the {@link #method-save} method.
-		 * @return {jQuery.Promise} The observable Promise object which can be used to determine if the save call has 
-		 *   completed successfully (`done` callback) or errored (`fail` callback), and to perform any actions that need to 
-		 *   be taken in either case with the `always` callback.
-		 */
-		doSave : function( options ) {
-			var me = this,   // for closures
-			    deferred = new jQuery.Deferred();
-			
-			// Store a &quot;snapshot&quot; of the data that is being persisted. This is used to compare against the Model's current data at the time of when the persistence operation
-			// completes. Anything that does not match this persisted snapshot data must have been updated while the persistence operation was in progress, and the Model must 
-			// be considered modified for those attributes after its commit() runs. This is a bit roundabout that a commit() operation runs when the persistence operation is complete
-			// and then data is manually modified, but this is also the correct time to run the commit() operation, as we still want to see the changes if the request fails. 
-			// So, if a persistence request fails, we should have all of the data still marked as modified, both the data that was to be persisted, and any new data that was set 
-			// while the persistence operation was being attempted.
-			var persistedData = _.cloneDeep( this.getData() );
-			
-			var handleServerUpdate = function( resultSet ) {  // accepts a data.persistence.ResultSet object
-				var data = ( resultSet ) ? resultSet.getRecords()[ 0 ] : null;
-				data = data || me.getData();  // no data returned, used the model's data. hack for now...
-	
-				// The request to persist the data was successful, commit the Model
-				me.commit();
-				
-				// Loop over the persisted snapshot data, and see if any Model attributes were updated while the persistence request was taking place.
-				// If so, those attributes should be marked as modified, with the snapshot data used as the &quot;originals&quot;. See the note above where persistedData was set. 
-				var currentData = me.getData();
-				for( var attributeName in persistedData ) {
-					if( persistedData.hasOwnProperty( attributeName ) &amp;&amp; !_.isEqual( persistedData[ attributeName ], currentData[ attributeName ] ) ) {
-						me.modifiedData[ attributeName ] = persistedData[ attributeName ];   // set the last persisted value on to the &quot;modifiedData&quot; object. Note: &quot;modifiedData&quot; holds *original* values, so that the &quot;data&quot; object can hold the latest values. It is how we know an attribute is modified as well.
-					}
-				}
-			};
-			
-			
-			// Make a request to create or update the data on the server
-			var RequestClass = this.isNew() ? CreateRequest : UpdateRequest;
-			var writeRequest = new RequestClass( {
-				proxy  : this.proxy,
-				models : [ this ],
-				params : options.params
-			} );
-			writeRequest.execute().then(
-				function( request ) { handleServerUpdate( request.getResultSet() ); me.onSaveSuccess( deferred, request ); },
-				function( request ) { me.onSaveError( deferred, request ); }
-			);
-			
-			return deferred.promise();  // return only the observable Promise object of the Deferred
-		},
-		
-		
 <span id='data-Model-method-onSaveSuccess'>		/**
 </span>		 * Handles the {@link #proxy} successfully saving the Model as a result of the {@link #method-save}
 		 * method being called.
 		 * 
-		 * Resolves the `jQuery.Deferred` object created by {@link #method-save}.
-		 * 
 		 * @protected
-		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-save} method. This 
-		 *   Deferred will be resolved after post-processing of the successful save is complete.
-		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the save.
+		 * @param {data.persistence.operation.Save} operation The SaveOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the operation.
 		 */
-		onSaveSuccess : function( deferred, request ) {
+		onSaveSuccess : function( operation ) {
+			if( operation.wasAborted() ) return;  // the requests for the operation may still complete (in an error state) after the operation has been aborted. In this case, simply return out.
+			
 			this.saving = false;
 			
-			deferred.resolve( this, request ); 
-			this.fireEvent( 'save', this, request );
+			// Handle a server-side update, if any. This is when a server (or any proxy) returns a model's state in the 
+			// response to the save request, to provide any updates to attributes. This is most useful for 'create' requests 
+			// where the ID of the model will be returned, in order to update the client model.
+			var resultSet = operation.getRequests()[ 0 ].getResultSet(),
+			    updateData = ( resultSet ) ? resultSet.getRecords()[ 0 ] : null;
+			
+			if( updateData ) this.set( updateData );
+			
+			this.commit();  // model is no longer modified
+			
+			operation.resolve(); 
+			this.fireEvent( 'savesuccess', this, operation );
+			this.fireEvent( 'save', this, operation );
 		},
 		
 		
@@ -1518,18 +1655,35 @@ define( [
 </span>		 * Handles the {@link #proxy} failing to destroy the Model a result of the {@link #method-destroy} method 
 		 * being called.
 		 * 
-		 * Rejects the `jQuery.Deferred` object created by {@link #method-save}.
-		 * 
 		 * @protected
-		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-save} method. This 
-		 *   Deferred will be rejected after post-processing of the successful save is complete.
-		 * @param {data.persistence.request.Write} request The WriteRequest object which represents the save.
+		 * @param {data.persistence.operation.Save} operation The SaveOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the operation.
 		 */
-		onSaveError : function( deferred, request ) {
+		onSaveError : function( operation ) {
+			if( operation.wasAborted() ) return;  // the requests for the operation may still complete (in an error state) after the operation has been aborted. In this case, simply return out.
+			
 			this.saving = false;
 			
-			deferred.reject( this, request );
-			this.fireEvent( 'save', this, request );
+			operation.reject();
+			this.fireEvent( 'saveerror', this, operation );
+			this.fireEvent( 'save', this, operation );
+		},
+		
+		
+<span id='data-Model-method-onSaveCancel'>		/**
+</span>		 * Handles a {@link data.persistence.operation.Save SaveOperation} being canceled (aborted) by a client of 
+		 * the Model.
+		 *  
+		 * @protected
+		 * @param {data.persistence.operation.Save} operation The SaveOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the save operation.
+		 */
+		onSaveCancel : function( operation ) {
+			this.saving = false;
+			
+			// Note: the operation was already aborted. No need to call operation.abort() here.
+			this.fireEvent( 'savecancel', this, operation );
+			this.fireEvent( 'save', this, operation );
 		},
 		
 		
@@ -1540,67 +1694,74 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `model` : {@link data.Model} This Model instance.
-		 * - `request` : {@link data.persistence.request.Destroy} The DestroyRequest that was executed.
+		 * - `operation` : {@link data.persistence.operation.Destroy} The DestroyOperation that was executed, which provides
+		 *   information about the operation and the request(s) that took place.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
 		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Function} [options.success] Function to call if the destroy (deletion) is successful.
 		 * @param {Function} [options.error] Function to call if the destroy (deletion) fails.
+		 * @param {Function} [options.cancel] Function to call if the destroy (deletion) has been canceled, by the returned
+		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}. See note in the description of the
+		 *   return of this method for a caveat on aborting (canceling) &quot;destroy&quot; operations.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to the Model.
 		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the destroy (deletion) completes. The 
 		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
+		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
+		 *   the destroy (deletion) completes. The Promise is both resolved or rejected with the arguments listed above in the 
+		 *   method description.
+		 *   
+		 *   The &quot;destroy&quot; operation may be aborted (canceled) via the OperationPromise's {@link data.persistence.operation.Promise#abort abort}
+		 *   method. However, note that when aborting a &quot;destroy&quot; operation, it is possible that the request still made it through 
+		 *   and was destroyed on its external data store (such as a web server). This may cause an inconsistency between the state 
+		 *   of the model on the client-side, and the state of the model on the server-side. Therefore, it is not recommended that 
+		 *   the &quot;destroy&quot; operation be canceled, unless it is going to be attempted again, or the page is going to be refreshed.
 		 */
 		destroy : function( options ) {
 			options = options || {};
-			var me          = this,   // for closures
-			    emptyFn     = Data.emptyFn,
-			    scope       = options.scope    || options.context || this,
-			    successCb   = options.success  || emptyFn,
-			    errorCb     = options.error    || emptyFn,
-			    completeCb  = options.complete || emptyFn,
-			    deferred    = new jQuery.Deferred();
+			var emptyFn     = Data.emptyFn,
+			    scope       = options.scope || options.context || this,
+			    successCb   = _.bind( options.success  || emptyFn, this ),
+			    errorCb     = _.bind( options.error    || emptyFn, this ),
+			    cancelCb    = _.bind( options.cancel   || emptyFn, this ),
+			    completeCb  = _.bind( options.complete || emptyFn, this );
 			
 			// No proxy, cannot destroy. Throw an error
 			// &lt;debug&gt;
-			if( !this.proxy ) {
-				throw new Error( &quot;data.Model::destroy() error: Cannot destroy model on server. No proxy.&quot; );
-			}
+			if( !this.proxy ) throw new Error( &quot;data.Model::destroy() error: Cannot destroy model on server. No proxy.&quot; );
 			// &lt;/debug&gt;
 			
-			// Attach any user-provided callbacks to the deferred.
-			deferred
-				.done( _.bind( successCb, scope ) )
-				.fail( _.bind( errorCb, scope ) )
-				.always( _.bind( completeCb, scope ) );
 			
 			// Set the `destroying` flag while the Model is destroying. Will be set to false in onDestroySuccess 
 			// or onDestroyError
 			this.destroying = true;
 			this.fireEvent( 'destroybegin', this );
 			
-			var request = new DestroyRequest( {
-				proxy  : this.proxy,
-				models : [ this ],
-				params : options.params
-			} );
+			var id = ( this.hasIdAttribute() ) ? this.getId() : undefined,
+			    request = new DestroyRequest( { models : [ this ], params : options.params } ),
+			    operation = new DestroyOperation( { dataComponent: this, proxy: this.proxy, requests: request } );
+			
+			// Attach any user-provided callbacks to the operation. The `scope` was attached above.
+			operation.done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
 			
 			if( this.isNew() ) {
-				// If it is a new model, there is nothing on the server to destroy. Simply fire the event and call the callback.
-				request.setSuccess();  // would normally be set by the proxy if we were making a request to it
-				this.onDestroySuccess( deferred, request );
+				// If it is a new model, there is nothing on the server to destroy. Simply call the success handler to 
+				// fire the event.
+				this.onDestroySuccess( operation );
 				
 			} else {
 				// Make a request to destroy the data on the server
-				request.execute().then(
-					function( request ) { me.onDestroySuccess( deferred, request ); },
-					function( request ) { me.onDestroyError( deferred, request ); }
+				operation.executeRequests().then(
+					_.bind( this.onDestroySuccess, this ),
+					_.bind( this.onDestroyError, this )
 				);
+				operation.cancel( _.bind( this.onDestroyCancel, this, operation ) );  // handle if the Operation is aborted (canceled) by the user
 			}
 			
-			return deferred.promise();  // return just the observable Promise object of the Deferred
+			return operation.promise();  // returns the OperationPromise object
 		},
 		
 		
@@ -1608,19 +1769,19 @@ define( [
 </span>		 * Handles the {@link #proxy} successfully destroying the Model as a result of the {@link #method-destroy}
 		 * method being called.
 		 * 
-		 * Resolves the `jQuery.Deferred` object created by {@link #method-destroy}.
-		 * 
 		 * @protected
-		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
-		 *   Deferred will be resolved after post-processing of the successful destroy is complete.
-		 * @param {data.persistence.request.Destroy} request The DestroyRequest object which represents the destroy.
+		 * @param {data.persistence.operation.Destroy} operation The DestroyOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the destroy (delete) operation.
 		 */
-		onDestroySuccess : function( deferred, request ) {
+		onDestroySuccess : function( operation ) {
+			if( operation.wasAborted() ) return;  // the requests for the operation may still complete after the operation has been aborted. In this case, simply return out. 
+			
 			this.destroying = false;
 			this.destroyed = true;
 			
-			deferred.resolve( this, request ); 
-			this.fireEvent( 'destroy', this, request );
+			operation.resolve();
+			this.fireEvent( 'destroysuccess', this, operation );
+			this.fireEvent( 'destroy', this, operation );
 		},
 		
 		
@@ -1628,18 +1789,35 @@ define( [
 </span>		 * Handles the {@link #proxy} failing to destroy the Model a result of the {@link #method-destroy} method 
 		 * being called.
 		 * 
-		 * Rejects the `jQuery.Deferred` object created by {@link #method-destroy}.
-		 * 
 		 * @protected
-		 * @param {jQuery.Deferred} deferred The Deferred object created in the {@link #method-destroy} method. This 
-		 *   Deferred will be rejected after post-processing of the successful destroy is complete.
-		 * @param {data.persistence.request.Destroy} request The DestroyRequest object which represents the destroy.
+		 * @param {data.persistence.operation.Destroy} operation The DestroyOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the destroy (delete) operation.
 		 */
-		onDestroyError : function( deferred, request ) {
+		onDestroyError : function( operation ) {
+			if( operation.wasAborted() ) return;  // the requests for the operation may still complete after the operation has been aborted. In this case, simply return out. 
+			
 			this.destroying = false;
 			
-			deferred.reject( this, request );
-			this.fireEvent( 'destroy', this, request );
+			operation.reject();
+			this.fireEvent( 'destroyerror', this, operation );
+			this.fireEvent( 'destroy', this, operation );
+		},
+		
+		
+<span id='data-Model-method-onDestroyCancel'>		/**
+</span>		 * Handles a {@link data.persistence.operation.Destroy DestroyOperation} being canceled (aborted) by a client of 
+		 * the Model.
+		 *  
+		 * @protected
+		 * @param {data.persistence.operation.Destroy} operation The DestroyOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the destroy operation.
+		 */
+		onDestroyCancel : function( operation ) {
+			this.destroying = false;
+			
+			// Note: the operation was already aborted. No need to call operation.abort() here.
+			this.fireEvent( 'destroycancel', this, operation );
+			this.fireEvent( 'destroy', this, operation );
 		},
 		
 		

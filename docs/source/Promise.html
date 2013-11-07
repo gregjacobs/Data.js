@@ -71,6 +71,42 @@ define( [
 		// -----------------------------------
 		
 		// Promise interface
+
+<span id='data-persistence-operation-Promise-method-state'>		/**
+</span>		 * Determines the state of the Operation. This method is here for compatibility with jQuery's 
+		 * Deferred/Promise interface.
+		 * 
+		 * This method will return one of the following values:
+		 * - **&quot;pending&quot;**: The Operation is not yet in a completed state (neither &quot;rejected&quot; nor &quot;resolved&quot;).
+		 * - **&quot;resolved&quot;**: The Operation is in the resolved state (i.e. the Operation was 
+		 *   {@link data.persistence.operation.Operation#wasSuccessful successful}).
+		 * - **&quot;rejected&quot;**: The Operation is in the rejected state (i.e. when the Operation has 
+		 *   {@link data.persistence.operation.Operation#hasErrored errored}).
+		 * 
+		 * @return {String} See return values, above.
+		 */
+		state : function() {
+			return this.operation.state();
+		},
+		
+		
+<span id='data-persistence-operation-Promise-method-progress'>		/**
+</span>		 * Adds a handler for when the Operation has made some progress.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has been notified of progress (i.e. one
+		 * of its requests has been completed):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		progress : function( handlerFn ) {
+			this.operation.progress( handlerFn );
+			return this;
+		},
+		
 		
 <span id='data-persistence-operation-Promise-method-done'>		/**
 </span>		 * Adds a handler for when the Operation has completed successfully.
@@ -157,6 +193,20 @@ define( [
 		 */
 		always : function( handlerFn ) {
 			this.operation.always( handlerFn );
+			return this;
+		},
+		
+		
+<span id='data-persistence-operation-Promise-method-promise'>		/**
+</span>		 * Returns the OperationPromise itself (this object). 
+		 * 
+		 * This method is purely for compatibility with jQuery's Promise API, and is also for methods like 
+		 * `jQuery.when()`, which uses the existence of this method as a duck-type check in order to 
+		 * determine if a Deferred or Promise object has been passed to it.  
+		 * 
+		 * @return {data.persistence.operation.Promise} This OperationPromise object.
+		 */
+		promise : function() {
 			return this;
 		}
 		
