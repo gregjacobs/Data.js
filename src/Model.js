@@ -1492,10 +1492,6 @@ define( [
 			this.saving = true;
 			this.fireEvent( 'savebegin', this );
 			
-			// Store a "snapshot" of the data that is being persisted. See the handleSaveUpdateData() method for a description.
-			var persistedSnapshotData = _.cloneDeep( this.getData() );
-			
-			
 			var saveOperation = this.createSaveOperation( options );
 			
 			// First, synchronize any nested related (i.e. non-embedded) Models and Collections of the model.
@@ -1503,11 +1499,11 @@ define( [
 			// the `modelSavePromise` (if the `syncRelated` option is true)
 			if( syncRelated ) {
 				jQuery.when( this.syncRelatedCollections(), this.syncRelatedModels() ).then( 
-					function() { me.executeSaveOperation( saveOperation, persistedSnapshotData ); },
+					function() { me.executeSaveOperation( saveOperation ); },
 					function() { saveOperation.reject(); }  // one of the sync tasks failed: fail the Operation
 				);
 			} else {  // not synchronizing related collections/models, execute the SaveOperation immediately
-				this.executeSaveOperation( saveOperation, persistedSnapshotData );
+				this.executeSaveOperation( saveOperation );
 			}
 			
 			// Set up any callbacks provided in the options
@@ -1547,71 +1543,13 @@ define( [
 		 * @param {Object} originalPersistedSnapshotData
 		 */
 		executeSaveOperation : function( operation, originalPersistedSnapshotData ) {
-			var me = this;
-			
 			operation.executeRequests().then(
-				function( operation ) {
-					var resultSet = operation.getRequests()[ 0 ].getResultSet(),
-					    updateData = ( resultSet ) ? resultSet.getRecords()[ 0 ] : null;
-					
-					me.handleSaveUpdateData( originalPersistedSnapshotData, updateData || me.getData() );  // this.getData() is a bit of a hack for now
-					
-					me.onSaveSuccess( operation );
-				},
-				function( operation ) { me.onSaveError( operation ); }
+				_.bind( this.onSaveSuccess, this ),
+				_.bind( this.onSaveError, this )
 			);
 			
 			// handle if the Operation is aborted (canceled) by the user
 			operation.cancel( _.bind( this.onSaveCancel, this, operation ) );
-		},
-		
-		
-		/**
-		 * Handles a server (or other persistent data store) sending back "update" data during a {@link #method-save save}.
-		 * 
-		 * This method takes a snapshot of the data which was sent to the server (`originalPersistedData`), and compares 
-		 * this against the Model's current data at the time of when the save operation completes (i.e. when this method is 
-		 * called). 
-		 * 
-		 * The method assumes that anything that does not match the persisted snapshot data must have been updated while the 
-		 * persistence operation was in progress, and the Model must be considered modified for those attributes after its 
-		 * call to {@link #method-commit} executes. 
-		 * 
-		 * This is a bit roundabout that a {@link #method-commit} operation executes after the persistence operation is 
-		 * complete, and then data is manually modified again. However, this is also the correct time to run this 
-		 * {@link #method-commit} operation, as we still want to see the changes if the request fails (which we wouldn't see 
-		 * if we ran {@link #method-commit} before the request went out). So, if a persistence request fails, we should have 
-		 * all of the data still marked as modified, both the data that was to be persisted, and any new data that was set 
-		 * while the save operation was being attempted.
-		 * 
-		 * Basically, the process of this method is this:
-		 * 
-		 * 1. Take the "update" data provided by the server, and apply it to the Model. (TODO: NOT YET IMPLEMENTED)
-		 * 2. {@link #method-commit Commit} the model's data, since the {@link #method-save} operation completed successfully.
-		 * 3. Re-apply attribute values to the Model that have been updated since the {@link #method-save} operation *began*,
-		 *    which will be marked as "modified" (since these changes haven't been persisted yet).
-		 * 
-		 * @private
-		 * @param {Object} originalPersistedData The original, raw persisted snapshot data (retrieved from a call to 
-		 *   {@link #getData} before the save operation was started), which is used to compare against the Model's current 
-		 *   data at the time of when the persistence operation completes to see if any attributes were updated *while* the
-		 *   save operation was taking place.  
-		 * @param {Object} updateData The data that the server (or other persistent data store) sent back to update the Model 
-		 *   with during the save operation.
-		 */
-		handleSaveUpdateData : function( originalPersistedData, updateData ) {
-			// The request to persist the data was successful, commit the Model
-			this.commit();
-			
-			// Loop over the persisted snapshot data, and see if any Model attributes were updated while the persistence request 
-			// was taking place. If so, those attributes should be marked as modified, with the snapshot data used as the 
-			// "originals".
-			var currentData = this.getData();
-			for( var attrName in originalPersistedData ) {
-				if( originalPersistedData.hasOwnProperty( attrName ) && !_.isEqual( originalPersistedData[ attrName ], currentData[ attrName ] ) ) {
-					this.modifiedData[ attrName ] = originalPersistedData[ attrName ];   // set the last persisted value on to the "modifiedData" object. Note: "modifiedData" holds *original* values, so that the "data" object can hold the latest values. It is how we know an attribute is modified as well.
-				}
-			}
 		},
 		
 		
@@ -1679,6 +1617,16 @@ define( [
 			if( operation.wasAborted() ) return;  // the requests for the operation may still complete (in an error state) after the operation has been aborted. In this case, simply return out.
 			
 			this.saving = false;
+			
+			// Handle a server-side update, if any. This is when a server (or any proxy) returns a model's state in the 
+			// response to the save request, to provide any updates to attributes. This is most useful for 'create' requests 
+			// where the ID of the model will be returned, in order to update the client model.
+			var resultSet = operation.getRequests()[ 0 ].getResultSet(),
+			    updateData = ( resultSet ) ? resultSet.getRecords()[ 0 ] : null;
+			
+			if( updateData ) this.set( updateData );
+			
+			this.commit();  // model is no longer modified
 			
 			operation.resolve(); 
 			this.fireEvent( 'savesuccess', this, operation );
