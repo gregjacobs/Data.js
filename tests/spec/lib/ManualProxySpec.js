@@ -2,7 +2,7 @@
 define( [
 	'lodash',
 	
-	'spec/lib/ManualResolveProxy',
+	'spec/lib/ManualProxy',
 	
 	'data/persistence/request/Create',
 	'data/persistence/request/Read',
@@ -10,9 +10,9 @@ define( [
 	'data/persistence/request/Destroy',
 	
 	'data/persistence/ResultSet'
-], function( _, ManualResolveProxy, CreateRequest, ReadRequest, UpdateRequest, DestroyRequest, ResultSet ) {
+], function( _, ManualProxy, CreateRequest, ReadRequest, UpdateRequest, DestroyRequest, ResultSet ) {
 	
-	describe( 'spec.lib.ManualResolveProxy', function() {
+	describe( 'spec.lib.ManualProxy', function() {
 		
 		var manualResolveProxy;
 		var requestClasses = {
@@ -23,7 +23,7 @@ define( [
 		};
 		
 		beforeEach( function() {
-			manualResolveProxy = new ManualResolveProxy();
+			manualResolveProxy = new ManualProxy();
 		} );
 		
 		

@@ -35,15 +35,15 @@ define( [
 	 * 
 	 *     require( [
 	 *         'data/Model',
-	 *         'spec/lib/ManualResolveProxy',
+	 *         'spec/lib/ManualProxy',
 	 *         'spec/lib/ModelPersistenceVerifier'
-	 *     ], function( Model, ManualResolveProxy, ModelPersistenceVerifier ) {
+	 *     ], function( Model, ManualProxy, ModelPersistenceVerifier ) {
 	 *     
 	 *         describe( "data.Model", function() {
 	 *         
 	 *             it( "should load data and fire all of the appropriate callbacks", function() {
 	 *                 // These two statements would probably go in a beforeEach()
-	 *                 var manualProxy = new ManualResolveProxy();
+	 *                 var manualProxy = new ManualProxy();
 	 *                 var ManualProxyModel = Model.extend( {
 	 *                     attributes : [ 'id', 'attr' ],
 	 *                     proxy : manualProxy

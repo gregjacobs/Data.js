@@ -30,7 +30,7 @@ define( [
 	'data/persistence/request/Update',
 	'data/persistence/request/Destroy',
 	
-	'spec/lib/ManualResolveProxy',
+	'spec/lib/ManualProxy',
 	'spec/lib/ModelPersistenceVerifier'
 ], function( 
 	jQuery,
@@ -62,7 +62,7 @@ define( [
 	UpdateRequest,
 	DestroyRequest,
 	
-	ManualResolveProxy,
+	ManualProxy,
 	ModelPersistenceVerifier
 ) {
 
@@ -1853,7 +1853,7 @@ define( [
 			
 			beforeEach( function() {
 				spiedProxy = new ConcreteProxy();
-				manualProxy = new ManualResolveProxy();
+				manualProxy = new ManualProxy();
 				
 				// Reset between each test
 				readRequest = undefined;
@@ -2042,7 +2042,7 @@ define( [
 			
 			beforeEach( function() {
 				spiedProxy = new ConcreteProxy();
-				manualProxy = new ManualResolveProxy();
+				manualProxy = new ManualProxy();
 				
 				// Reset between each test
 				saveRequest = undefined;
@@ -2276,7 +2276,7 @@ define( [
 				    ManualProxyModel;
 				
 				beforeEach( function() {
-					manualProxy = new ManualResolveProxy();
+					manualProxy = new ManualProxy();
 					
 					ManualProxyModel = Model.extend( {
 						attributes : [ 'id', 'attribute1', 'attribute2' ],
@@ -2665,7 +2665,7 @@ define( [
 			
 			beforeEach( function() {
 				spiedProxy = new ConcreteProxy();
-				manualProxy = new ManualResolveProxy();
+				manualProxy = new ManualProxy();
 				
 				// Reset between each test
 				destroyRequest = undefined;

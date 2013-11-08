@@ -8,7 +8,7 @@ define( [
 ], function( jQuery, Proxy, ResultSet ) {
 	
 	/**
-	 * @class spec.lib.ManualResolveProxy
+	 * @class spec.lib.ManualProxy
 	 * @extends data.persistence.proxy.Proxy
 	 * 
 	 * A proxy specifically for use with unit tests, which allows for manual resolution/rejection of requests made
@@ -35,10 +35,10 @@ define( [
 	 * 
 	 *     require( [
 	 *         'data/Model',
-	 *         'spec/lib/ManualResolveProxy',
-	 *     ], function( Model, ManualResolveProxy ) {
+	 *         'spec/lib/ManualProxy',
+	 *     ], function( Model, ManualProxy ) {
 	 *     
-	 *         var manualProxy = new ManualResolveProxy();
+	 *         var manualProxy = new ManualProxy();
 	 *         var ManualProxyModel = Model.extend( {
 	 *             attributes : [ 'id', 'attr' ],
 	 *             proxy : manualProxy
@@ -47,7 +47,7 @@ define( [
 	 *         
 	 *         var model = new ManualProxyModel( { id: 1 } );
 	 *         
-	 *         var promise = model.load();  // generates a 'read' request against the ManualResolveProxy
+	 *         var promise = model.load();  // generates a 'read' request against the ManualProxy
 	 *         promise.done( function( model ) { alert( "Done Loading Model. `attr` value: '" + model.get( 'attr' ) + "'" ); } );
 	 *         
 	 *         // Resolve the "read" request that the load operation performed (the first 'read' request in the proxy). 
@@ -57,7 +57,7 @@ define( [
 	 *         manualProxy.resolveRead( 0, { attr: "New Attr Value" } );
 	 *     } );
 	 */
-	var ManualResolveProxy = Proxy.extend( {
+	var ManualProxy = Proxy.extend( {
 		
 		
 		/**
@@ -329,6 +329,6 @@ define( [
 		
 	} );
 	
-	return ManualResolveProxy;
+	return ManualProxy;
 	
 } );
