@@ -1478,10 +1478,10 @@ define( [
 			    syncRelated = ( options.syncRelated === undefined ) ? true : options.syncRelated,  // defaults to true
 			    emptyFn     = Data.emptyFn,
 			    scope       = options.scope || options.context || this,
-			    successCb   = _.bind( options.success  || emptyFn, this ),
-			    errorCb     = _.bind( options.error    || emptyFn, this ),
-			    cancelCb    = _.bind( options.cancel   || emptyFn, this ),
-			    completeCb  = _.bind( options.complete || emptyFn, this );
+			    successCb   = _.bind( options.success  || emptyFn, scope ),
+			    errorCb     = _.bind( options.error    || emptyFn, scope ),
+			    cancelCb    = _.bind( options.cancel   || emptyFn, scope ),
+			    completeCb  = _.bind( options.complete || emptyFn, scope );
 			
 			// <debug>
 			if( !this.proxy ) throw new Error( "data.Model::save() error: Cannot save. No proxy." );  // No proxy, cannot save. Throw an error
@@ -1707,10 +1707,10 @@ define( [
 			options = options || {};
 			var emptyFn     = Data.emptyFn,
 			    scope       = options.scope || options.context || this,
-			    successCb   = _.bind( options.success  || emptyFn, this ),
-			    errorCb     = _.bind( options.error    || emptyFn, this ),
-			    cancelCb    = _.bind( options.cancel   || emptyFn, this ),
-			    completeCb  = _.bind( options.complete || emptyFn, this );
+			    successCb   = _.bind( options.success  || emptyFn, scope ),
+			    errorCb     = _.bind( options.error    || emptyFn, scope ),
+			    cancelCb    = _.bind( options.cancel   || emptyFn, scope ),
+			    completeCb  = _.bind( options.complete || emptyFn, scope );
 			
 			// No proxy, cannot destroy. Throw an error
 			// <debug>
