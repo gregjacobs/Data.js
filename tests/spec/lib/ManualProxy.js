@@ -131,6 +131,42 @@ define( [
 		
 		
 		/**
+		 * Generalized request retrieval method which is called internally by {@link #getCreateRequest}, {@link #getReadRequest},
+		 * {@link #getUpdateRequest}, and {@link #getDestroyRequest}.
+		 * 
+		 * Retrieves the {@link data.persistence.request.Request} object for the given `actionName` and `requestIdx`. 
+		 * 
+		 * @protected
+		 * @param {String} actionName One of: 'create', 'read', 'update', 'destroy'
+		 * @param {Number} requestIdx The request number to retrieve.
+		 * @return {data.persistence.request.Request} The Request object, or `null` if there is none for the given
+		 *   `actionName` and `requestIdx`. 
+		 */
+		getRequest : function( actionName, requestIdx ) {
+			var storedReqObj = this.requests[ actionName ][ requestIdx ],
+			    request = storedReqObj.request;
+			
+			return request || null;
+		},
+		
+		
+		/**
+		 * Generalized request count retrieval method which is called internally by {@link #getCreateRequestCount}, 
+		 * {@link #getReadRequestCount}, {@link #getUpdateRequestCount}, and {@link #getDestroyRequestCount}.
+		 * 
+		 * Retrieves the number of {@link data.persistence.request.Request Requests} that have been made for the given 
+		 * `actionName`. 
+		 * 
+		 * @protected
+		 * @param {String} actionName One of: 'create', 'read', 'update', 'destroy'
+		 * @return {Number} The number of requests that have been made 
+		 */
+		getRequestCount : function( actionName ) {
+			return this.requests[ actionName ].length;
+		},
+		
+		
+		/**
 		 * Generalized resolution method which is called internally from {@link #resolveCreate}, {@link #resolveRead},
 		 * {@link #resolveUpdate}, and {@link #resolveDestroy}.
 		 * 
@@ -201,6 +237,26 @@ define( [
 		},
 		
 		/**
+		 * Retrieves the 'create' request at the given `requestIdx`.
+		 * 
+		 * @param {Number} requestIdx The index of the Request to retrieve.
+		 * @return {data.persistence.request.Create} The CreateRequest at the `requestIdx`, or `null` if
+		 *   one does not exist.
+		 */
+		getCreateRequest : function( requestIdx ) {
+			return this.getRequest( 'create', requestIdx );
+		},
+		
+		/**
+		 * Retrieves the number of 'create' requests that have been made to the proxy.
+		 *
+		 * @return {Number} The number of 'create' requests that have been made to the proxy.
+		 */
+		getCreateRequestCount : function() {
+			return this.getRequestCount( 'create' );
+		},
+		
+		/**
 		 * Resolves the 'create' request at the given `requestIdx`.
 		 * 
 		 * @param {Number} requestIdx The index of the request to resolve.
@@ -233,6 +289,26 @@ define( [
 		 */
 		read : function( request ) {
 			return this.appendRequest( 'read', request );
+		},
+		
+		/**
+		 * Retrieves the 'read' request at the given `requestIdx`.
+		 * 
+		 * @param {Number} requestIdx The index of the Request to retrieve.
+		 * @return {data.persistence.request.Read} The ReadRequest at the `requestIdx`, or `null` if
+		 *   one does not exist.
+		 */
+		getReadRequest : function( requestIdx ) {
+			return this.getRequest( 'read', requestIdx );
+		},
+		
+		/**
+		 * Retrieves the number of 'read' requests that have been made to the proxy.
+		 *
+		 * @return {Number} The number of 'read' requests that have been made to the proxy.
+		 */
+		getReadRequestCount : function() {
+			return this.getRequestCount( 'read' );
 		},
 		
 		/**
@@ -272,6 +348,26 @@ define( [
 		},
 		
 		/**
+		 * Retrieves the number of 'update' requests that have been made to the proxy.
+		 *
+		 * @return {Number} The number of 'update' requests that have been made to the proxy.
+		 */
+		getUpdateRequestCount : function() {
+			return this.getRequestCount( 'update' );
+		},
+		
+		/**
+		 * Retrieves the 'update' request at the given `requestIdx`.
+		 * 
+		 * @param {Number} requestIdx The index of the Request to retrieve.
+		 * @return {data.persistence.request.Update} The UpdateRequest at the `requestIdx`, or `null` if
+		 *   one does not exist.
+		 */
+		getUpdateRequest : function( requestIdx ) {
+			return this.getRequest( 'update', requestIdx );
+		},
+		
+		/**
 		 * Resolves the 'update' request at the given `requestIdx`.
 		 * 
 		 * @param {Number} requestIdx The index of the request to resolve.
@@ -306,6 +402,26 @@ define( [
 		 */
 		destroy : function( request ) {
 			return this.appendRequest( 'destroy', request );
+		},
+		
+		/**
+		 * Retrieves the 'destroy' request at the given `requestIdx`.
+		 * 
+		 * @param {Number} requestIdx The index of the Request to retrieve.
+		 * @return {data.persistence.request.Destroy} The DestroyRequest at the `requestIdx`, or `null` if
+		 *   one does not exist.
+		 */
+		getDestroyRequest : function( requestIdx ) {
+			return this.getRequest( 'destroy', requestIdx );
+		},
+		
+		/**
+		 * Retrieves the number of 'destroy' requests that have been made to the proxy.
+		 *
+		 * @return {Number} The number of 'destroy' requests that have been made to the proxy.
+		 */
+		getDestroyRequestCount : function() {
+			return this.getRequestCount( 'destroy' );
 		},
 		
 		/**

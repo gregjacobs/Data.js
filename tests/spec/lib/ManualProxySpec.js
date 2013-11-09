@@ -14,7 +14,7 @@ define( [
 	
 	describe( 'spec.lib.ManualProxy', function() {
 		
-		var manualResolveProxy;
+		var manualProxy;
 		var requestClasses = {
 			'create'  : CreateRequest,
 			'read'    : ReadRequest,
@@ -23,7 +23,7 @@ define( [
 		};
 		
 		beforeEach( function() {
-			manualResolveProxy = new ManualProxy();
+			manualProxy = new ManualProxy();
 		} );
 		
 		
@@ -31,6 +31,44 @@ define( [
 			var actionName = capitalizedActionName.toLowerCase(),
 			    RequestClass = requestClasses[ actionName ];
 		
+			describe( "get" + capitalizedActionName + "Request()", function() {
+				
+				it( "should retrieve the '" + actionName + "' request at `requestNum`", function() {
+					var request1 = new RequestClass(),
+					    request2 = new RequestClass();
+					
+					// Add Requests to the proxy. Example call here: manualProxy.create( request )
+					manualProxy[ actionName ]( request1 );
+					manualProxy[ actionName ]( request2 );
+					
+					// Check that the Requests can be retrieved back. 
+					// Example call here: manualProxy.getCreateRequest( 0 )
+					expect( manualProxy[ 'get' + capitalizedActionName + 'Request' ]( 0 ) ).toBe( request1 );
+					expect( manualProxy[ 'get' + capitalizedActionName + 'Request' ]( 1 ) ).toBe( request2 );
+				} );
+				
+			} );
+			
+			describe( "get" + capitalizedActionName + "RequestCount()", function() {
+				
+				it( "should retrieve the total number of '" + actionName + "' requests", function() {
+					var request1 = new RequestClass(),
+					    request2 = new RequestClass();
+					
+					// Initial condition - should have 0 requests. 
+					// Example call here: manualProxy.getCreateRequestCount()
+					expect( manualProxy[ 'get' + capitalizedActionName + 'RequestCount' ]() ).toBe( 0 );
+					
+					// Add Requests to the proxy. Example call here: manualProxy.create( request )
+					manualProxy[ actionName ]( request1 );
+					expect( manualProxy[ 'get' + capitalizedActionName + 'RequestCount' ]() ).toBe( 1 );  // ex: manualProxy.getCreateRequestCount()
+					manualProxy[ actionName ]( request2 );
+					expect( manualProxy[ 'get' + capitalizedActionName + 'RequestCount' ]() ).toBe( 2 );  // ex: manualProxy.getCreateRequestCount()
+				} );
+				
+			} );
+			
+			
 			describe( "resolve" + capitalizedActionName + "()", function() {
 				
 				it( "should resolve the '" + actionName + "' request at `requestNum`", function() {
@@ -39,21 +77,21 @@ define( [
 					    resolvedRequest1,
 					    resolvedRequest2;
 					
-					// Example call here: manualResolveProxy.create( request )
-					manualResolveProxy[ actionName ]( request1 ).done( function( request ) { resolvedRequest1 = request; } );
-					manualResolveProxy[ actionName ]( request2 ).done( function( request ) { resolvedRequest2 = request; } );
+					// Add Requests to the proxy. Example call here: manualProxy.create( request )
+					manualProxy[ actionName ]( request1 ).done( function( request ) { resolvedRequest1 = request; } );
+					manualProxy[ actionName ]( request2 ).done( function( request ) { resolvedRequest2 = request; } );
 					
 					// Test initial conditions - not resolved yet
 					expect( resolvedRequest1 ).toBe( undefined );
 					expect( resolvedRequest2 ).toBe( undefined );
 					
-					// Resolve the first. Example call here: manualResolveProxy.resolveCreate( 0 )
-					manualResolveProxy[ 'resolve' + capitalizedActionName ]( 0 );
+					// Resolve the first. Example call here: manualProxy.resolveCreate( 0 )
+					manualProxy[ 'resolve' + capitalizedActionName ]( 0 );
 					expect( resolvedRequest1 ).toBe( request1 );
 					expect( resolvedRequest2 ).toBe( undefined );
 					
-					// Resolve the second. Example call here: manualResolveProxy.resolveCreate( 1 )
-					manualResolveProxy[ 'resolve' + capitalizedActionName ]( 1 );
+					// Resolve the second. Example call here: manualProxy.resolveCreate( 1 )
+					manualProxy[ 'resolve' + capitalizedActionName ]( 1 );
 					expect( resolvedRequest1 ).toBe( request1 );
 					expect( resolvedRequest2 ).toBe( request2 );
 				} );
@@ -65,21 +103,21 @@ define( [
 					    resolvedRequest1,
 					    resolvedRequest2;
 					
-					// Example call here: manualResolveProxy.create( request )
-					manualResolveProxy[ actionName ]( request1 ).done( function( request ) { resolvedRequest1 = request; } );
-					manualResolveProxy[ actionName ]( request2 ).done( function( request ) { resolvedRequest2 = request; } );
+					// Add Requests to the proxy. Example call here: manualProxy.create( request )
+					manualProxy[ actionName ]( request1 ).done( function( request ) { resolvedRequest1 = request; } );
+					manualProxy[ actionName ]( request2 ).done( function( request ) { resolvedRequest2 = request; } );
 					
 					// Test initial conditions - not resolved yet
 					expect( resolvedRequest1 ).toBe( undefined );
 					expect( resolvedRequest2 ).toBe( undefined );
 					
-					// Resolve the first. Example call here: manualResolveProxy.resolveCreate( 1 )
-					manualResolveProxy[ 'resolve' + capitalizedActionName ]( 1 );
+					// Resolve the first. Example call here: manualProxy.resolveCreate( 1 )
+					manualProxy[ 'resolve' + capitalizedActionName ]( 1 );
 					expect( resolvedRequest1 ).toBe( undefined );
 					expect( resolvedRequest2 ).toBe( request2 );
 					
-					// Resolve the second. Example call here: manualResolveProxy.resolveCreate( 0 )
-					manualResolveProxy[ 'resolve' + capitalizedActionName ]( 0 );
+					// Resolve the second. Example call here: manualProxy.resolveCreate( 0 )
+					manualProxy[ 'resolve' + capitalizedActionName ]( 0 );
 					expect( resolvedRequest1 ).toBe( request1 );
 					expect( resolvedRequest2 ).toBe( request2 );
 				} );
@@ -93,13 +131,14 @@ define( [
 						    resultSet = new ResultSet(),
 						    resolvedRequest;
 						
-						manualResolveProxy[ actionName ]( request ).done( function( request ) { resolvedRequest = request; } );
+						// Add Request to the proxy. Example call here: manualProxy.create( request )
+						manualProxy[ actionName ]( request ).done( function( request ) { resolvedRequest = request; } );
 						
 						// Test initial conditions - not resolved yet
 						expect( resolvedRequest ).toBe( undefined );
 						
 						// Resolve
-						manualResolveProxy[ 'resolve' + capitalizedActionName ]( 0, resultSet );
+						manualProxy[ 'resolve' + capitalizedActionName ]( 0, resultSet );
 						expect( resolvedRequest ).toBe( request );
 						expect( resolvedRequest.getResultSet() ).toBe( resultSet );
 					} );
@@ -109,13 +148,14 @@ define( [
 						var request = new RequestClass(),
 						    resolvedRequest;
 						
-						manualResolveProxy[ actionName ]( request ).done( function( request ) { resolvedRequest = request; } );
+						// Add Request to the proxy. Example call here: manualProxy.create( request )
+						manualProxy[ actionName ]( request ).done( function( request ) { resolvedRequest = request; } );
 						
 						// Test initial conditions - not resolved yet
 						expect( resolvedRequest ).toBe( undefined );
 						
 						// Resolve with anonymous data, to be fed through the proxy's reader
-						manualResolveProxy[ 'resolve' + capitalizedActionName ]( 0, { a: 1, b: 2 } );
+						manualProxy[ 'resolve' + capitalizedActionName ]( 0, { a: 1, b: 2 } );
 						expect( resolvedRequest ).toBe( request );
 						expect( resolvedRequest.getResultSet() instanceof ResultSet ).toBe( true );
 						expect( resolvedRequest.getResultSet().getRecords()[ 0 ] ).toEqual( { a: 1, b: 2 } );
@@ -134,21 +174,21 @@ define( [
 					    rejectedRequest1,
 					    rejectedRequest2;
 					
-					// Example call here: manualResolveProxy.create( request )
-					manualResolveProxy[ actionName ]( request1 ).fail( function( request ) { rejectedRequest1 = request; } );
-					manualResolveProxy[ actionName ]( request2 ).fail( function( request ) { rejectedRequest2 = request; } );
+					// Add Requests to the proxy. Example call here: manualProxy.create( request )
+					manualProxy[ actionName ]( request1 ).fail( function( request ) { rejectedRequest1 = request; } );
+					manualProxy[ actionName ]( request2 ).fail( function( request ) { rejectedRequest2 = request; } );
 					
 					// Test initial conditions - not resolved yet
 					expect( rejectedRequest1 ).toBe( undefined );
 					expect( rejectedRequest2 ).toBe( undefined );
 					
-					// Reject the first. Example call here: manualResolveProxy.rejectCreate( 0 )
-					manualResolveProxy[ 'reject' + capitalizedActionName ]( 0 );
+					// Reject the first. Example call here: manualProxy.rejectCreate( 0 )
+					manualProxy[ 'reject' + capitalizedActionName ]( 0 );
 					expect( rejectedRequest1 ).toBe( request1 );
 					expect( rejectedRequest2 ).toBe( undefined );
 					
-					// Reject the second. Example call here: manualResolveProxy.rejectCreate( 1 )
-					manualResolveProxy[ 'reject' + capitalizedActionName ]( 1 );
+					// Reject the second. Example call here: manualProxy.rejectCreate( 1 )
+					manualProxy[ 'reject' + capitalizedActionName ]( 1 );
 					expect( rejectedRequest1 ).toBe( request1 );
 					expect( rejectedRequest2 ).toBe( request2 );
 				} );
@@ -160,21 +200,21 @@ define( [
 					    rejectedRequest1,
 					    rejectedRequest2;
 					
-					// Example call here: manualResolveProxy.create( request )
-					manualResolveProxy[ actionName ]( request1 ).fail( function( request ) { rejectedRequest1 = request; } );
-					manualResolveProxy[ actionName ]( request2 ).fail( function( request ) { rejectedRequest2 = request; } );
+					// Add Requests to the proxy. Example call here: manualProxy.create( request )
+					manualProxy[ actionName ]( request1 ).fail( function( request ) { rejectedRequest1 = request; } );
+					manualProxy[ actionName ]( request2 ).fail( function( request ) { rejectedRequest2 = request; } );
 					
 					// Test initial conditions - not resolved yet
 					expect( rejectedRequest1 ).toBe( undefined );
 					expect( rejectedRequest2 ).toBe( undefined );
 					
-					// Reject the first. Example call here: manualResolveProxy.rejectCreate( 1 )
-					manualResolveProxy[ 'reject' + capitalizedActionName ]( 1 );
+					// Reject the first. Example call here: manualProxy.rejectCreate( 1 )
+					manualProxy[ 'reject' + capitalizedActionName ]( 1 );
 					expect( rejectedRequest1 ).toBe( undefined );
 					expect( rejectedRequest2 ).toBe( request2 );
 					
-					// Reject the second. Example call here: manualResolveProxy.rejectCreate( 0 )
-					manualResolveProxy[ 'reject' + capitalizedActionName ]( 0 );
+					// Reject the second. Example call here: manualProxy.rejectCreate( 0 )
+					manualProxy[ 'reject' + capitalizedActionName ]( 0 );
 					expect( rejectedRequest1 ).toBe( request1 );
 					expect( rejectedRequest2 ).toBe( request2 );
 				} );
