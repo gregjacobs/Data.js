@@ -56,7 +56,7 @@ define( [
 	 *                 
 	 *                 modelPersistenceVerifier.execute( 'load' );
 	 *                 
-	 *                 manualProxy.resolveRead( 0 );  // Resolve the "read" request that the load operation performed (the first 'read' request), and 
+	 *                 manualProxy.resolveRead( 0, { id: 1, attr: "abc" } );  // Resolve the "read" request that the load operation performed (the first 'read' request), and 
 	 *                 modelPersistenceVerifier.verify( 'success' );  // verify that the appropriate events/callbacks/handlers were called - executes Jasmine expect() statements
 	 *             } );
 	 *             
@@ -123,8 +123,9 @@ define( [
 		 * @param {String} methodName The name of the method that will be called on the {@link #model}. 
 		 */
 		onBeforeExecute : function( methodName ) {
-			if( !_.contains( [ 'load', 'save', 'destroy' ], methodName ) )
-				throw new Error( "`methodName` arg must be one of: 'load', 'save', 'destroy'" );
+			var methodNames = [ 'load', 'save', 'destroy' ];
+			if( !_.contains( methodNames, methodName ) )
+				throw new Error( "`methodName` arg must be one of: '" + methodNames.join( "', '" ) + "'" );
 			
 			// Check the initial state of the model before the persistence method is called
 			var model = this.model;

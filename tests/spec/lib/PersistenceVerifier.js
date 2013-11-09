@@ -56,6 +56,7 @@ define( [
 		 * Must be implemented by subclass.
 		 * 
 		 * @abstract
+		 * @protected
 		 * @method getDataComponent
 		 * @return {data.DataComponent}
 		 */
@@ -70,12 +71,31 @@ define( [
 		 * class (constructor function).
 		 * 
 		 * @abstract
+		 * @protected
 		 * @method getOperationClass
 		 * @param {String} methodName The name of the method under test.
 		 * @return {Function} The class (constructor function) for the appropriate {@link data.persistence.operation.Operation Operation},
 		 *   given the input `methodName`.
 		 */
 		getOperationClass : Class.abstractMethod,
+		
+		
+		/**
+		 * Retrieves the name of the event which should be monitored for the method under test (`methodName`).
+		 * 
+		 * Most often, the event name is the same as the method name. However, if a translation may occur, then this
+		 * method may be overridden in subclasses to do so. For example, {@link data.Collection} uses the 'load' event 
+		 * for its {@link data.Collection#loadPage loadPage}, {@link data.Collection#loadRange loadRange}, and 
+		 * {@link data.Collection#loadPageRange loadPageRange} methods.
+		 * 
+		 * @protected
+		 * @method getEventName
+		 * @param {String} methodName The name of the method under test.
+		 * @return {String} The event name to monitor for the method under test.
+		 */
+		getEventName : function( methodName ) {
+			return methodName;
+		},
 		
 		
 		/**
@@ -87,6 +107,9 @@ define( [
 		 * - {@link #onAfterExecute}: Hook point for after the `methodName` has been called on the data component.
 		 * 
 		 * @param {String} methodName The name of the method to execute (i.e. the method under test).
+		 * @param {Mixed...} extraArgs Any extra arguments to be passed to the method under test. These arguments will
+		 *   be passed to the method under test before the `options` object that this method passes.
+		 *   Ex: `persistenceVerifier.execute( 'loadPage', 1 );`
 		 * @return {data.persistence.operation.Promise} The OperationPromise object returned by the method under test.
 		 *   This will represent either the 'load', 'save', or 'destroy' operation.
 		 */
@@ -97,34 +120,36 @@ define( [
 			
 			
 			var me = this,  // for closures
+			    extraArgs = _.toArray( arguments ).slice( 1 ),
 			    dataComponentInstance = this.getDataComponent(),        // Model or Collection instance will be returned
-			    OperationClass = this.getOperationClass( methodName ),  // OperationClass for verification of callback arguments
+			    OperationClass = this.getOperationClass( methodName ),  // OperationClass for verification of callback arguments,
+			    eventName = this.getEventName( methodName ),            // The name of the event for the method. A translation might occur here, such as the loadRange() method using the 'load' event
 			    scopeObj = {};  // an object for testing the scope that callbacks provided to the method are called in
 			
 			// Call hook method for subclasses
 			this.onBeforeExecute( methodName );
 			
 			// Assign event handlers
-			dataComponentInstance.on( methodName + 'begin', function( model, operation ) {    // ex: 'loadbegin' event
+			dataComponentInstance.on( eventName + 'begin', function( model, operation ) {    // ex: 'loadbegin' event
 				me.beginEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 			} );
-			dataComponentInstance.on( methodName + 'success', function( model, operation ) {  // ex: 'loadsuccess' event
+			dataComponentInstance.on( eventName + 'success', function( model, operation ) {  // ex: 'loadsuccess' event
 				me.successEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 				expect( operation instanceof OperationClass ).toBe( true );
 			} );
-			dataComponentInstance.on( methodName + 'error', function( model, operation ) {    // ex: 'loaderror' event
+			dataComponentInstance.on( eventName + 'error', function( model, operation ) {    // ex: 'loaderror' event
 				me.errorEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 				expect( operation instanceof OperationClass ).toBe( true );
 			} );
-			dataComponentInstance.on( methodName + 'cancel', function( model, operation ) {   // ex: 'loadcancel' event
+			dataComponentInstance.on( eventName + 'cancel', function( model, operation ) {   // ex: 'loadcancel' event
 				me.cancelEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 				expect( operation instanceof OperationClass ).toBe( true );
 			} );
-			dataComponentInstance.on( methodName, function( model, operation ) {              // ex: 'load' event
+			dataComponentInstance.on( eventName, function( model, operation ) {              // ex: 'load' event
 				me.completeEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 				expect( operation instanceof OperationClass ).toBe( true );
@@ -132,7 +157,7 @@ define( [
 			
 			
 			// Call the persistence method
-			var operationPromise = dataComponentInstance[ methodName ]( {
+			var operationPromise = dataComponentInstance[ methodName ].apply( dataComponentInstance, extraArgs.concat( {
 				success : function( dataComponent, operation ) {
 					me.successCbCallCount++;
 					expect( dataComponent ).toBe( dataComponentInstance );
@@ -158,7 +183,7 @@ define( [
 					expect( this ).toBe( scopeObj );  // make sure `scope` was passed
 				},
 				scope : scopeObj
-			} );
+			} ) );
 			
 			// Verify that the method returned an OperationPromise object
 			expect( operationPromise instanceof OperationPromise ).toBe( true );
