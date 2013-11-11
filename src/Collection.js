@@ -397,11 +397,13 @@ define( [
 				'loadbegin',
 				
 				/**
-				 * Fires when the Collection is loaded from an external data source, through its {@link #proxy}.
+				 * Fires when the Collection is {@link #method-load loaded} from its external data store (such as a web server), 
+				 * through its {@link #proxy}. This is a catch-all event for "load completion".
 				 * 
-				 * This event fires for both successful and failed "load" operations. Success of the load operation may 
-				 * be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful} 
-				 * method. 
+				 * This event fires for all three of successful, failed, and aborted "load" requests. Success/failure/cancellation
+				 * of the load request may be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful},
+				 * {@link data.persistence.operation.Operation#hasErrored hasErrored}, or 
+				 * {@link data.persistence.operation.Operation#wasAborted wasAborted} methods.
 				 * 
 				 * Note that some Requests of the Operation may not be {@link data.persistence.request.Request#isComplete complete}
 				 * when this event fires, if one or more Requests in the Operation have errored.
@@ -412,6 +414,26 @@ define( [
 				 *   the {@link data.persistence.request.Request Request(s)} that were required to execute the load operation.
 				 */
 				'load',
+				
+				/**
+				 * Fires when the Collection has successfully loaded data from one of its "load" methods ({@link #method-load},
+				 * {@link #loadPage}, {@link #loadRange}, {@link #loadPageRange}).
+				 * 
+				 * @event loadsuccess
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which was successful.
+				 */
+				'loadsuccess',
+				
+				/**
+				 * Fires when the Collection has failed to load data from one of its "load" methods ({@link #method-load},
+				 * {@link #loadPage}, {@link #loadRange}, {@link #loadPageRange}).
+				 * 
+				 * @event loaderror
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which has errored.
+				 */
+				'loaderror',
 				
 				/**
 				 * Fires when one of the Collection's {@link data.persistence.operation.Load LoadOperation's} has been canceled 
@@ -1505,6 +1527,7 @@ define( [
 			this.removeActiveLoadOperation( operation );
 			
 			operation.resolve();
+			this.fireEvent( 'loadsuccess', this, operation );
 			this.fireEvent( 'load', this, operation );
 		},
 		
@@ -1525,6 +1548,7 @@ define( [
 			this.removeActiveLoadOperation( operation );
 			
 			operation.reject();
+			this.fireEvent( 'loaderror', this, operation );
 			this.fireEvent( 'load', this, operation );
 		},
 		
@@ -1546,6 +1570,7 @@ define( [
 			
 			// Note: the operation was already aborted. No need to call operation.abort() here.
 			this.fireEvent( 'loadcancel', this, operation );
+			this.fireEvent( 'load', this, operation );
 		},
 		
 		
@@ -1641,10 +1666,8 @@ define( [
 		 */
 		sync : function( options ) {
 			options = options || {};
-			var scope = options.scope || options.context || this;
-			
-			
-			var models = this.getModels(),
+			var scope = options.scope || options.context || this,
+			    models = this.getModels(),
 			    newModels = [],
 			    modifiedModels = [],
 			    removedModels = this.removedModels,
