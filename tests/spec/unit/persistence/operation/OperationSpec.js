@@ -60,7 +60,7 @@ define( [
 				
 				// Set both requests to "complete"
 				requests[ 0 ].setSuccess();
-				requests[ 1 ].setException();
+				requests[ 1 ].setError();
 				
 				var resultRequests = operation.getIncompleteRequests();
 				expect( resultRequests ).toEqual( [] );
@@ -92,7 +92,7 @@ define( [
 				
 				// Set 2 middle requests to "complete"
 				requests[ 1 ].setSuccess();
-				requests[ 3 ].setException();
+				requests[ 3 ].setError();
 				
 				var resultRequests = operation.getIncompleteRequests();
 				expect( resultRequests.length ).toBe( 3 );  // 3 incomplete requests
@@ -135,7 +135,7 @@ define( [
 				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
 				
 				// An errored request
-				requests[ 1 ].setException();
+				requests[ 1 ].setError();
 				resultRequests = operation.getSuccessfulRequests();
 				expect( resultRequests.length ).toBe( 1 );  // still only 1 successful request at this point
 				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
@@ -181,13 +181,13 @@ define( [
 				expect( resultRequests.length ).toBe( 0 );  // no errored requests at this point
 				
 				// An errored request
-				requests[ 1 ].setException();
+				requests[ 1 ].setError();
 				resultRequests = operation.getErroredRequests();
 				expect( resultRequests.length ).toBe( 1 );  // 1 errored request at this point
 				expect( resultRequests[ 0 ] ).toBe( requests[ 1 ] );
 				
 				// Another errored request
-				requests[ 2 ].setException();
+				requests[ 2 ].setError();
 				resultRequests = operation.getErroredRequests();
 				expect( resultRequests.length ).toBe( 2 );  // 2 errored requests at this point
 				expect( resultRequests[ 0 ] ).toBe( requests[ 1 ] );
@@ -237,11 +237,11 @@ define( [
 				expect( operation.requestsAreComplete() ).toBe( false );  // initial condition
 				
 				// Set one request to have errored
-				requests[ 0 ].setException();
+				requests[ 0 ].setError();
 				expect( operation.requestsAreComplete() ).toBe( false );
 				
 				// Set the other request to have errored
-				requests[ 1 ].setException();
+				requests[ 1 ].setError();
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
 			
@@ -259,7 +259,7 @@ define( [
 				expect( operation.requestsAreComplete() ).toBe( false );
 				
 				// Set the other request to be complete
-				requests[ 1 ].setException();
+				requests[ 1 ].setError();
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
 			
@@ -311,7 +311,7 @@ define( [
 				expect( operation.requestsWereSuccessful() ).toBe( false );
 				
 				// Set the other request to be an errored request
-				requests[ 1 ].setException();
+				requests[ 1 ].setError();
 				expect( operation.requestsWereSuccessful() ).toBe( false );
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
@@ -346,7 +346,7 @@ define( [
 				expect( operation.requestsHaveErrored() ).toBe( false );
 				
 				// Set the second request to have errored
-				requests[ 1 ].setException();
+				requests[ 1 ].setError();
 				expect( operation.requestsHaveErrored() ).toBe( true );
 				
 				// Set the thrd request to be successful

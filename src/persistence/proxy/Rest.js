@@ -125,7 +125,7 @@ define( [
 					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
 					deferred.reject( request );
 				}
 			);
@@ -158,7 +158,7 @@ define( [
 					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
 					deferred.reject( request );
 				}
 			);
@@ -224,7 +224,7 @@ define( [
 					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
 					deferred.reject( request );
 				}
 			);
@@ -258,7 +258,7 @@ define( [
 					deferred.resolve( request );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					request.setException( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
 					deferred.reject( request );
 				}
 			);

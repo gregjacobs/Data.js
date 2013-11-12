@@ -35,6 +35,120 @@ define( [
 		} );
 		
 		
+		describe( 'wasSuccessful()', function() {
+			var request;
+			
+			beforeEach( function() {
+				request = new ConcreteRequest();
+			} );
+			
+			
+			it( "should return false when the Request has not yet been completed", function() {
+				expect( request.isComplete() ).toBe( false );  // just double checking 
+				
+				expect( request.wasSuccessful() ).toBe( false );
+			} );
+			
+			
+			it( "should return true when the Request has been completed successfully", function() {
+				request.setSuccess(); 
+				
+				expect( request.wasSuccessful() ).toBe( true );
+			} );
+			
+			
+			it( "should return false when the Request has errored without an 'error' object provided", function() {
+				request.setError();
+				
+				expect( request.wasSuccessful() ).toBe( false );
+			} );
+			
+			
+			it( "should return false when the Request has errored with an 'error' object provided", function() {
+				request.setError( "Error Message" );
+				
+				expect( request.wasSuccessful() ).toBe( false );
+			} );
+			
+		} );
+		
+		
+		describe( 'hasErrored()', function() {
+			var request;
+			
+			beforeEach( function() {
+				request = new ConcreteRequest();
+			} );
+			
+			
+			it( "should return false when the Request has not yet been completed", function() {
+				expect( request.isComplete() ).toBe( false );  // just double checking 
+				
+				expect( request.hasErrored() ).toBe( false );
+			} );
+			
+			
+			it( "should return false when the Request has been completed successfully", function() {
+				request.setSuccess(); 
+				
+				expect( request.hasErrored() ).toBe( false );
+			} );
+			
+			
+			it( "should return true when the Request has errored without an 'error' object provided", function() {
+				request.setError();
+				
+				expect( request.hasErrored() ).toBe( true );
+			} );
+			
+			
+			it( "should return true when the Request has errored with an 'error' object provided", function() {
+				request.setError( "Error Message" );
+				
+				expect( request.hasErrored() ).toBe( true );
+			} );
+			
+		} );
+		
+		
+		describe( 'getError()', function() {
+			var request;
+			
+			beforeEach( function() {
+				request = new ConcreteRequest();
+			} );
+			
+			
+			it( "should return `undefined` when the Request has not yet been completed", function() {
+				expect( request.isComplete() ).toBe( false );  // just double checking 
+				
+				expect( request.getError() ).toBeUndefined();
+			} );
+			
+			
+			it( "should return `undefined` when the Request has been completed successfully", function() {
+				request.setSuccess();
+				
+				expect( request.getError() ).toBeUndefined();
+			} );
+			
+			
+			it( "should return `undefined` when the Request has errored, but not 'error' object/string has been set", function() {
+				request.setError();  // note: no 'error' argument provided to setError()
+				
+				expect( request.getError() ).toBeUndefined();
+			} );
+			
+			
+			it( "should return the 'error' object/string that has been set by setError()", function() {
+				request.setError( "Error Message" );
+				
+				expect( request.getError() ).toBe( "Error Message" );
+			} );
+			
+		} );
+		
+		
 		describe( 'isComplete()', function() {
 			var request;
 			
@@ -55,7 +169,7 @@ define( [
 			
 			
 			it( "should return `true` if the Request has been marked as errored", function() {
-				request.setException();
+				request.setError();
 				expect( request.isComplete() ).toBe( true );
 			} );
 			

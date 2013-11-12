@@ -36,7 +36,7 @@ define( [
 			
 			it( "should return `false` if just one Request failed", function() {
 				op1.setSuccess();
-				op2.setException( "An error occurred" );
+				op2.setError( "An error occurred" );
 				
 				var batch = new RequestBatch( {
 					requests : [ op1, op2 ]
@@ -51,7 +51,7 @@ define( [
 			
 			it( "should return `true` if just one Request failed", function() {
 				op1.setSuccess();
-				op2.setException( "An error occurred" );
+				op2.setError( "An error occurred" );
 				
 				var batch = new RequestBatch( {
 					requests : [ op1, op2 ]
@@ -77,8 +77,8 @@ define( [
 			
 			it( "should return an array of the Request objects that have failed (errored)", function() {
 				op1.setSuccess();
-				op2.setException( "An error occurred" );
-				op3.setException( "An error occurred 2" );
+				op2.setError( "An error occurred" );
+				op3.setError( "An error occurred 2" );
 				
 				var batch = new RequestBatch( {
 					requests : [ op1, op2, op3 ]
@@ -100,8 +100,8 @@ define( [
 			
 			
 			it( "should return an empty array if all Request objects failed", function() {
-				op1.setException( "An error occurred" );
-				op2.setException( "An error occurred 2" );
+				op1.setError( "An error occurred" );
+				op2.setError( "An error occurred 2" );
 				
 				var batch = new RequestBatch( {
 					requests : [ op1, op2 ]
@@ -116,8 +116,8 @@ define( [
 			
 			it( "should return an array of the Request objects that have failed (errored)", function() {
 				op1.setSuccess();
-				op2.setException( "An error occurred" );
-				op3.setException( "An error occurred" );
+				op2.setError( "An error occurred" );
+				op3.setError( "An error occurred" );
 				
 				var batch = new RequestBatch( {
 					requests : [ op1, op2, op3 ]
@@ -127,9 +127,9 @@ define( [
 			
 			
 			it( "should return an array of all of the Request objects if they all failed (errored)", function() {
-				op1.setException( "An error occurred" );
-				op2.setException( "An error occurred" );
-				op3.setException( "An error occurred" );
+				op1.setError( "An error occurred" );
+				op2.setError( "An error occurred" );
+				op3.setError( "An error occurred" );
 				
 				var batch = new RequestBatch( {
 					requests : [ op1, op2, op3 ]
@@ -155,8 +155,8 @@ define( [
 			
 			it( "should return true if all requests are complete (success or errored)", function() {
 				op1.setSuccess();
-				op2.setException( "An error occurred" );
-				op3.setException( "An error occurred" );
+				op2.setError( "An error occurred" );
+				op3.setError( "An error occurred" );
 				
 				var batch = new RequestBatch( {
 					requests : [ op1, op2, op3 ]

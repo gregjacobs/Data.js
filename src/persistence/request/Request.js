@@ -85,21 +85,20 @@ define( [
 		
 		/**
 		 * @private
-		 * @property {Boolean} error
+		 * @property {Boolean} errored
 		 * 
 		 * Property which is set to true upon failure to complete the Request. Read this value
 		 * with {@link #hasErrored}.
 		 */
-		error : false,
+		errored : false,
 		
 		/**
 		 * @private
-		 * @property {String/Object} exception
+		 * @property {String/Object} error
 		 * 
-		 * An object or string describing the exception that occurred. Set when {@link #setException}
+		 * An object or string describing the error that occurred. Set when {@link #setError}
 		 * is called.
 		 */
-		exception : null,
 		
 		
 		/**
@@ -190,25 +189,14 @@ define( [
 		
 		
 		/**
-		 * Marks the Request as having errored, and sets an exception object that describes the exception
-		 * that has occurred.
+		 * Marks the Request as having errored, and optionally sets an `error` object that describes the 
+		 * error that has occurred.
 		 * 
-		 * @param {String/Object} exception An object or string describing the exception that occurred.
+		 * @param {String/Object} [error] An object or string describing the error that occurred.
 		 */
-		setException : function( exception ) {
-			this.error = true;
-			this.exception = exception;
-		},
-		
-		
-		/**
-		 * Retrieves any exception object attached for an errored Request.
-		 * 
-		 * @return {String/Object} The {@link #exception} object or string which describes
-		 *   the exception that occurred for an errored Request.
-		 */
-		getException : function() {
-			return this.exception;
+		setError : function( error ) {
+			this.errored = true;
+			this.error = error;
 		},
 		
 		
@@ -218,6 +206,19 @@ define( [
 		 * @return {Boolean}
 		 */
 		hasErrored : function() {
+			return this.errored;
+		},
+		
+		
+		/**
+		 * Retrieves any {@link #error} object attached for an errored Request (via 
+		 * {@link #setError}).
+		 * 
+		 * @return {String/Object} The {@link #error} object or string which describes
+		 *   the error that occurred for an errored Request. Returns `undefined` if no error
+		 *   object has been set.
+		 */
+		getError : function() {
 			return this.error;
 		},
 		
@@ -228,7 +229,7 @@ define( [
 		 * @return {Boolean}
 		 */
 		isComplete : function() {
-			return this.success || this.error;
+			return this.success || this.errored;
 		}
 		
 	} );

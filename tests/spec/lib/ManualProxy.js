@@ -215,7 +215,7 @@ define( [
 			    deferred = storedReqObj.deferred,
 			    request  = storedReqObj.request;
 			
-			request.setException( error );
+			request.setError( error );
 			deferred.reject( request );
 		},
 		
