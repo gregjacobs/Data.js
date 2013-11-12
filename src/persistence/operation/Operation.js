@@ -378,6 +378,18 @@ define( [
 		
 		
 		/**
+		 * Retrieves the {@link data.persistence.request.Request Request} objects that are currently
+		 * incomplete.
+		 * 
+		 * @return {data.persistence.request.Request[]} An array of the Requests which have not yet
+		 *   completed.
+		 */
+		getIncompleteRequests : function() {
+			return _.filter( this.getRequests(), function( req ) { return !req.isComplete(); } );
+		},
+		
+		
+		/**
 		 * Retrieves each {@link data.persistence.request.Request Request} object that has completed
 		 * successfully.
 		 * 
@@ -385,7 +397,7 @@ define( [
 		 *   successfully.
 		 */
 		getSuccessfulRequests : function() {
-			return _.filter( this.requests, function( req ) { return !req.hasErrored(); } );
+			return _.filter( this.getRequests(), function( req ) { return req.wasSuccessful(); } );
 		},
 		
 		
@@ -395,7 +407,7 @@ define( [
 		 * @return {data.persistence.request.Request[]} An array of the Requests which have errored.
 		 */
 		getErroredRequests : function() {
-			return _.filter( this.requests, function( req ) { return req.hasErrored(); } );
+			return _.filter( this.getRequests(), function( req ) { return req.hasErrored(); } );
 		},
 		
 		
@@ -406,7 +418,7 @@ define( [
 		 * @return {Boolean} `true` if all {@link #requests} are complete, `false` if any are not yet complete.
 		 */
 		requestsAreComplete : function() {
-			return _.all( this.requests, function( req ) { return req.isComplete(); } );
+			return _.all( this.getRequests(), function( req ) { return req.isComplete(); } );
 		},
 		
 		
@@ -419,7 +431,7 @@ define( [
 		 * @return {Boolean}
 		 */
 		requestsWereSuccessful : function() {
-			return !_.find( this.requests, function( req ) { return req.hasErrored(); } );  // _.find() returns `undefined` if no errored requests are found
+			return _.all( this.getRequests(), function( req ) { return req.wasSuccessful(); } );
 		},
 		
 		
@@ -430,9 +442,8 @@ define( [
 		 * @return {Boolean}
 		 */
 		requestsHaveErrored : function() {
-			return !this.requestsWereSuccessful();
+			return _.any( this.getRequests(), function( req ) { return req.hasErrored(); } );
 		},
-		
 		
 		
 		// -----------------------------------

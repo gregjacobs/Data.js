@@ -2,9 +2,11 @@
 define( [
 	'data/persistence/operation/Operation',
 	'data/persistence/operation/Promise',
+	'data/persistence/request/Request',
+	
 	'data/Model',                   // Used as the `dataComponent` of the Operations
 	'data/persistence/proxy/Proxy'  // Used as the `proxy` of the Operations
-], function( Operation, OperationPromise, Model, Proxy ) {
+], function( Operation, OperationPromise, Request, Model, Proxy ) {
 	
 	describe( 'data.persistence.operation.Operation', function() {
 		
@@ -12,6 +14,10 @@ define( [
 		
 		// Concrete Subclasses
 		var ConcreteOperation = Operation.extend( {} );
+		var ConcreteRequest = Request.extend( {
+			// Implementation of abstract interface
+			getAction : function() {}
+		} );
 		
 		var ConcreteProxy = Proxy.extend( {
 			create  : emptyFn,
@@ -32,7 +38,343 @@ define( [
 		
 		// Requests' interface
 		
-		// TODO
+		describe( 'getIncompleteRequests()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
+			
+			it( "should return an empty array when the Operation does not yet have any Requests", function() {
+				expect( operation.getIncompleteRequests() ).toEqual( [] );
+			} );
+			
+			
+			it( "should return none of the requests if all of them are complete", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				
+				// Set both requests to "complete"
+				requests[ 0 ].setSuccess();
+				requests[ 1 ].setException();
+				
+				var resultRequests = operation.getIncompleteRequests();
+				expect( resultRequests ).toEqual( [] );
+			} );
+			
+			
+			it( "should return all of the requests if all of them are incomplete", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				
+				var resultRequests = operation.getIncompleteRequests();
+				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
+				expect( resultRequests[ 1 ] ).toBe( requests[ 1 ] );
+			} );
+			
+			
+			it( "should only return the requests that are incomplete out of the full list of requests", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest(),
+					new ConcreteRequest(),
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				
+				// Set 2 middle requests to "complete"
+				requests[ 1 ].setSuccess();
+				requests[ 3 ].setException();
+				
+				var resultRequests = operation.getIncompleteRequests();
+				expect( resultRequests.length ).toBe( 3 );  // 3 incomplete requests
+				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
+				expect( resultRequests[ 1 ] ).toBe( requests[ 2 ] );
+				expect( resultRequests[ 2 ] ).toBe( requests[ 4 ] );
+			} );
+			
+		} );
+		
+		
+		describe( 'getSuccessfulRequests()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
+			
+			it( "should return an empty array when the Operation does not yet have any Requests", function() {
+				expect( operation.getSuccessfulRequests() ).toEqual( [] );
+			} );
+			
+			
+			it( "should return an array of the successful Requests in the Operation", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.getSuccessfulRequests() ).toEqual( [] );  // initial condition
+				
+				var resultRequests;
+				
+				// A successful request
+				requests[ 0 ].setSuccess();
+				resultRequests = operation.getSuccessfulRequests();
+				expect( resultRequests.length ).toBe( 1 );  // 1 successful request at this point
+				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
+				
+				// An errored request
+				requests[ 1 ].setException();
+				resultRequests = operation.getSuccessfulRequests();
+				expect( resultRequests.length ).toBe( 1 );  // still only 1 successful request at this point
+				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
+				
+				// Another successful request
+				requests[ 2 ].setSuccess();
+				resultRequests = operation.getSuccessfulRequests();
+				expect( resultRequests.length ).toBe( 2 );  // 2 successful request at this point
+				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
+				expect( resultRequests[ 1 ] ).toBe( requests[ 2 ] );
+			} );
+			
+		} );
+		
+		
+		describe( 'getErroredRequests()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
+			
+			it( "should return an empty array when the Operation does not yet have any Requests", function() {
+				expect( operation.getErroredRequests() ).toEqual( [] );
+			} );
+			
+			
+			it( "should return an array of the successful Requests in the Operation", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.getErroredRequests() ).toEqual( [] );  // initial condition
+				
+				var resultRequests;
+				
+				// A successful request
+				requests[ 0 ].setSuccess();
+				resultRequests = operation.getErroredRequests();
+				expect( resultRequests.length ).toBe( 0 );  // no errored requests at this point
+				
+				// An errored request
+				requests[ 1 ].setException();
+				resultRequests = operation.getErroredRequests();
+				expect( resultRequests.length ).toBe( 1 );  // 1 errored request at this point
+				expect( resultRequests[ 0 ] ).toBe( requests[ 1 ] );
+				
+				// Another errored request
+				requests[ 2 ].setException();
+				resultRequests = operation.getErroredRequests();
+				expect( resultRequests.length ).toBe( 2 );  // 2 errored requests at this point
+				expect( resultRequests[ 0 ] ).toBe( requests[ 1 ] );
+				expect( resultRequests[ 1 ] ).toBe( requests[ 2 ] );
+			} );
+			
+		} );
+		
+		
+		describe( 'requestsAreComplete()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+		
+			
+			it( "should return `true` when the Operation has 0 requests", function() {
+				expect( operation.requestsAreComplete() ).toBe( true );
+			} );
+			
+			
+			it( "should return `true` when all requests have been completed successfully", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.requestsAreComplete() ).toBe( false );  // initial condition
+				
+				// Set one request to be successful
+				requests[ 0 ].setSuccess();
+				expect( operation.requestsAreComplete() ).toBe( false );
+				
+				// Set the other request to be successful
+				requests[ 1 ].setSuccess();
+				expect( operation.requestsAreComplete() ).toBe( true );
+			} );
+			
+			
+			it( "should return `true` when all requests have been completed in an error state", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.requestsAreComplete() ).toBe( false );  // initial condition
+				
+				// Set one request to have errored
+				requests[ 0 ].setException();
+				expect( operation.requestsAreComplete() ).toBe( false );
+				
+				// Set the other request to have errored
+				requests[ 1 ].setException();
+				expect( operation.requestsAreComplete() ).toBe( true );
+			} );
+			
+			
+			it( "should return `true` when all requests have been completed (all in either a success or error state)", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.requestsAreComplete() ).toBe( false );  // initial condition
+				
+				// Set one request to be complete
+				requests[ 0 ].setSuccess();
+				expect( operation.requestsAreComplete() ).toBe( false );
+				
+				// Set the other request to be complete
+				requests[ 1 ].setException();
+				expect( operation.requestsAreComplete() ).toBe( true );
+			} );
+			
+		} );
+		
+		
+		describe( 'requestsWereSuccessful()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+		
+			
+			it( "should return `true` when the Operation has 0 requests", function() {
+				expect( operation.requestsWereSuccessful() ).toBe( true );
+			} );
+			
+			
+			it( "should return `true` when all requests have succeeded", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.requestsWereSuccessful() ).toBe( false );  // initial condition
+				
+				// Set one request to be successful
+				requests[ 0 ].setSuccess();
+				expect( operation.requestsWereSuccessful() ).toBe( false );
+				
+				// Set the other request to be successful
+				requests[ 1 ].setSuccess();
+				expect( operation.requestsWereSuccessful() ).toBe( true );
+				expect( operation.requestsAreComplete() ).toBe( true );
+			} );
+			
+			
+			it( "should return `false` when one or more requests did not succeed", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.requestsWereSuccessful() ).toBe( false );  // initial condition
+				
+				// Set one request to be successful
+				requests[ 0 ].setSuccess();
+				expect( operation.requestsWereSuccessful() ).toBe( false );
+				
+				// Set the other request to be an errored request
+				requests[ 1 ].setException();
+				expect( operation.requestsWereSuccessful() ).toBe( false );
+				expect( operation.requestsAreComplete() ).toBe( true );
+			} );
+			
+		} );
+		
+		
+		describe( 'requestsHaveErrored()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+		
+			
+			it( "should return `false` when the Operation has 0 requests", function() {
+				expect( operation.requestsHaveErrored() ).toBe( false );
+			} );
+			
+			
+			it( "should return `true` when one or more requests have errored", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.requestsHaveErrored() ).toBe( false );  // initial condition
+				
+				// Set one request to be successful
+				requests[ 0 ].setSuccess();
+				expect( operation.requestsHaveErrored() ).toBe( false );
+				
+				// Set the second request to have errored
+				requests[ 1 ].setException();
+				expect( operation.requestsHaveErrored() ).toBe( true );
+				
+				// Set the thrd request to be successful
+				requests[ 2 ].setSuccess();
+				expect( operation.requestsHaveErrored() ).toBe( true );  // from the 2nd one "erroring"
+				expect( operation.requestsAreComplete() ).toBe( true );
+			} );
+			
+			
+			it( "should return `false` when all requests have succeeded", function() {
+				var requests = [
+					new ConcreteRequest(),
+					new ConcreteRequest()
+				];
+				operation.setRequests( requests );
+				expect( operation.requestsHaveErrored() ).toBe( false );  // initial condition
+				
+				// Set one request to be successful
+				requests[ 0 ].setSuccess();
+				expect( operation.requestsHaveErrored() ).toBe( false );
+				
+				// Set the other request to be an errored request
+				requests[ 1 ].setSuccess();
+				expect( operation.requestsHaveErrored() ).toBe( false );
+				expect( operation.requestsAreComplete() ).toBe( true );
+			} );
+			
+		} );
 		
 		
 		// -----------------------------------
