@@ -30,7 +30,7 @@ define( [
 	 * {@link data.persistence.operation.Operation Operation} object that represents a high level load/save operation
 	 * for a {@link data.Model Model}/{@link data.Collection Collection}.
 	 */
-	var Request = Class.extend( Object, {
+	var Request = Class.create( {
 		abstractClass : true,
 		
 		
@@ -51,6 +51,14 @@ define( [
 		
 		
 		/**
+		 * @private
+		 * @property {String} uuid
+		 * 
+		 * The unique identifier for this Request. This is created lazily upon request. Retrieve with 
+		 * {@link #getUuid}.
+		 */
+		
+		/**
 		 * @protected
 		 * @property {data.persistence.ResultSet} resultSet
 		 * 
@@ -65,7 +73,6 @@ define( [
 		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
 		 *   id attribute), then the ResultSet will contain that data.
 		 */
-		
 		
 		/**
 		 * @private
@@ -101,6 +108,16 @@ define( [
 		 */
 		constructor : function( cfg ) {
 			_.assign( this, cfg );
+		},
+		
+		
+		/**
+		 * Retrieves the {@link #uuid unique identifier} for this Request.
+		 * 
+		 * @return {String} The unique identifier for this Request.
+		 */
+		getUuid : function() {
+			return this.uuid || ( this.uuid = _.uniqueId() );  // Create the uuid lazily if one has not yet been created
 		},
 		
 		

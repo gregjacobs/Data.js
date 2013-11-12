@@ -11,6 +11,30 @@ define( [
 	
 	describe( 'data.persistence.request.Request', function() {
 		
+		describe( 'getUuid()', function() {
+			
+			it( "should return a new unique ID for each Request object that is instantiated", function() {
+				var request1 = new ConcreteRequest(),
+				    request2 = new ConcreteRequest();
+				
+				expect( typeof request1.getUuid() ).toBe( 'string' );
+				expect( typeof request2.getUuid() ).toBe( 'string' );
+				expect( request1.getUuid().length ).toBeGreaterThan( 0 );
+				expect( request2.getUuid().length ).toBeGreaterThan( 0 );
+				
+				expect( request1.getUuid() ).not.toBe( request2.getUuid() );
+			} );
+			
+			
+			it( "should return the same unique ID for each call to the method", function() {
+				var request = new ConcreteRequest();
+				
+				expect( request.getUuid() ).toBe( request.getUuid() );
+			} );
+			
+		} );
+		
+		
 		describe( 'isComplete()', function() {
 			var request;
 			
