@@ -14,6 +14,39 @@ define( [
 	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) requests on
 	 * some sort of persistence medium. This can be a backend server, a webservice, or a local storage data store,
 	 * to name a few examples.
+	 * 
+	 * 
+	 * ## Creating a Proxy
+	 * 
+	 * Each proxy needs to implement the four abstract methods:
+	 * 
+	 * - {@link #create}
+	 * - {@link #read}
+	 * - {@link #update}
+	 * - {@link #destroy}
+	 * 
+	 * Each method is passed a {@link data.persistence.request.Request Request} object, which provides the information
+	 * needed to perform each operation.
+	 * 
+	 * For an example implementation, see the {@link data.persistence.proxy.Ajax Ajax} proxy.
+	 * 
+	 * 
+	 * ## Implementing the {@link #abort} method.
+	 * 
+	 * Proxy gives a hook method for when a persistence operation is {@link data.persistence.operation.Operation#abort aborted}. 
+	 * This is to allow any proxy-specific cleanup of {@link data.persistence.request.Request Requests} made by the proxy. 
+	 * For example, the {@link data.persistence.proxy.Ajax Ajax} proxy calls the `abort()` method on the underlying 
+	 * `XMLHttpRequest` object for a request, to terminate the connection to the remote server.
+	 * 
+	 * The {@link #abort} method is passed the original {@link data.persistence.request.Request Request} object that 
+	 * began the request. If multiple Requests were made to perform a persistence {@link data.persistence.operation.Operation},
+	 * then the {@link #abort} method is called once for each Request. Note that only Request objects which are not yet 
+	 * {@link data.persistence.request.Request#isComplete complete} are passed to the {@link #abort} method.
+	 * 
+	 * It is not required that this method be implemented by the Proxy. The data container classes ({@link data.Model Model} 
+	 * and {@link data.Collection Collection} will properly handle an aborted request by ignoring its result (or error) if 
+	 * the Request eventually completes at a later time. However, it is useful to implement if resources can be saved or
+	 * if any cleanup needs to be made.
 	 */
 	var Proxy = Class.extend( Observable, {
 		abstractClass : true,
@@ -180,6 +213,19 @@ define( [
 		 *   this method as the first argument.
 		 */
 		destroy : Class.abstractMethod,
+		
+		
+		/**
+		 * Aborts a {@link data.persistence.request.Request Request} that was made to the Proxy.
+		 * 
+		 * This is an empty implementation for the Proxy base class, and may be overridden in subclasses
+		 * to provide a specific implementation if one can be made. See the description of this class 
+		 * for more details, and {@link data.persistence.proxy.Ajax#abort} for an example.
+		 * 
+		 * @param {data.persistence.request.Request} request The Request to abort. This will be a request
+		 *   that is currently in progress (i.e. not yet {@link data.persistence.request.Request#isComplete complete}).
+		 */
+		abort : function() {},
 		
 		
 		// -----------------------------------

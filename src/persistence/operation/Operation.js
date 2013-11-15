@@ -512,9 +512,16 @@ define( [
 		
 		
 		/**
-		 * Attempts to abort (cancel) the Operation, if it is still in progress. 
+		 * Aborts (cancels) the Operation, if it is still in progress. The {@link data.DataComponent DataComponent}
+		 * ({@link data.Model} or {@link data.Collection}) will ignore the result of the Operation, even if it
+		 * ends up completing at a later time. 
 		 * 
-		 * This may only be useful for {@link data.persistence.operation.Load LoadOperations}, as it may cause 
+		 * This method call's the {@link #proxy proxy's} {@link data.persistence.proxy.Proxy#abort abort} method with 
+		 * each remaining incomplete {@link data.persistence.request.Request Request}, which gives the {@link #proxy}
+		 * in use a chance to perform any cleanup or cancelation of the underlying request to the persistent storage
+		 * mechanism.
+		 * 
+		 * This method may only be useful for {@link data.persistence.operation.Load LoadOperations}, as it may cause 
 		 * {@link data.persistence.operation.Save Save} and {@link data.persistence.operation.Destroy Destroy}
 		 * operations to leave the backing persistence medium in an inconsistent state. However, it is provided
 		 * if say, a retry is going to be performed and the previous operation should be aborted on the client-side.
@@ -528,6 +535,10 @@ define( [
 			if( !this.completed ) {
 				this.completed = true;
 				this.aborted = true;
+				
+				// Abort any remaining incomplete requests with the proxy. Proxies may or may not implement
+				// the abort() method specifically, but it defaults to an empty function on the Proxy class.
+				_.forEach( this.getIncompleteRequests(), function( req ) { this.proxy.abort( req ); }, this ); 
 				
 				this.cancelDeferred.resolve( this.dataComponent, this );
 			}

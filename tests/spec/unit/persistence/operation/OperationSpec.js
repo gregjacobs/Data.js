@@ -532,6 +532,38 @@ define( [
 				expect( operation.wasAborted() ).toBe( true );
 				expect( operation.isComplete() ).toBe( true );
 			} );
+			
+			
+			it( "should call the proxy's abort() method with only the remaining incomplete requests", function() {
+				spyOn( proxy, 'abort' );
+				
+				var requests = [ new ConcreteRequest(), new ConcreteRequest(), new ConcreteRequest() ];
+				requests[ 0 ].setSuccess();
+				//requests[ 1 ].setSuccess(); -- not successful yet
+				//requests[ 2 ].setSuccess(); -- not successful yet
+				
+				operation.setRequests( requests );
+				
+				operation.abort();
+				expect( proxy.abort.calls.length ).toBe( 2 );
+				expect( proxy.abort ).toHaveBeenCalledWith( requests[ 1 ] );
+				expect( proxy.abort ).toHaveBeenCalledWith( requests[ 2 ] );
+			} );
+			
+			
+			it( "should not call the proxy's abort() method if there are no incomplete requests remaining", function() {
+				spyOn( proxy, 'abort' );
+				
+				var requests = [ new ConcreteRequest(), new ConcreteRequest() ];
+				requests[ 0 ].setSuccess();
+				requests[ 1 ].setSuccess();
+				
+				operation.setRequests( requests );
+				
+				operation.abort();
+				expect( proxy.abort ).not.toHaveBeenCalled();
+			} );
+			
 		} );
 		
 		
