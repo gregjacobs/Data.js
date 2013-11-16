@@ -144,6 +144,17 @@ define( [
 		ajax : jQuery.ajax,
 		
 		
+		/**
+		 * @protected
+		 * @property {Object} jqXhrObjs
+		 * 
+		 * A map of jQuery.jqXHR objects for running XMLHttpRequests. These are stored so that they can be
+		 * {@link #abort aborted} if need be.
+		 * 
+		 * The keys of this object are {@link data.persistence.request.Request Request} 
+		 * {@link data.persistence.request.Request#getUuid uuids}, and the values are the jqXHR objects. 
+		 */
+		
 		
 		/**
 		 * @constructor
@@ -154,6 +165,7 @@ define( [
 			
 			this.api = this.api || {};
 			this.defaultParams = this.defaultParams || {};
+			this.jqXhrObjs = {};
 		},
 		
 		
@@ -184,25 +196,37 @@ define( [
 		read : function( request ) {
 			var me = this,  // for closures
 			    paramsObj = this.buildParams( request ),
-			    deferred = new jQuery.Deferred();
+			    deferred = new jQuery.Deferred(),
+			    jqXhrObjs = this.jqXhrObjs,
+			    requestUuid = request.getUuid();
 			
-			this.ajax( {
+			// Make the AJAX request
+			var jqXhr = this.ajax( {
 				url      : this.buildUrl( request ),
 				type     : this.getHttpMethod( 'read' ),
 				data     : this.serializeParams( paramsObj, 'read', request ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
 				dataType : 'text'
-			} ).then(
-				function( data, textStatus, jqXHR ) {
+			} );
+			
+			// Store the jqXHR object in the map before attaching any promise handlers. If the jqXHR completes 
+			// synchronously for some reason, we want to make sure we clean up the reference in this map.
+			jqXhrObjs[ requestUuid ] = jqXhr;
+			
+			// Now attach handlers
+			jqXhr
+				.done( function( data, textStatus, jqXHR ) {
 					request.setResultSet( me.reader.read( data ) );
 					request.setSuccess();
 					deferred.resolve( request );
-				},
-				function( jqXHR, textStatus, errorThrown ) {
+				} )
+				.fail( function( jqXHR, textStatus, errorThrown ) {
 					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
 					deferred.reject( request );
-				}
-			);
-			
+				} )
+				.always( function() {
+					delete jqXhrObjs[ requestUuid ];  // remove the reference to the jqXHR object
+				} );
+		
 			return deferred.promise();
 		},
 		
@@ -235,6 +259,21 @@ define( [
 		 */
 		destroy : function( request ) {
 			throw new Error( "destroy() not yet implemented" );
+		},
+		
+		
+		/**
+		 * Aborts a Request by calling `abort()` on the underlying `XMLHttpRequest` object which began the AJAX
+		 * request.
+		 * 
+		 * @param {data.persistence.request.Request} request The Request to abort.
+		 */
+		abort : function( request ) {
+			var jqXhrObj = this.jqXhrObjs[ request.getUuid() ];
+			
+			// Make sure the object still exists before calling abort(). The object will have been removed
+			// from the `jqXhrObjs` map if the request has already been completed. 
+			if( jqXhrObj ) jqXhrObj.abort();
 		},
 		
 		

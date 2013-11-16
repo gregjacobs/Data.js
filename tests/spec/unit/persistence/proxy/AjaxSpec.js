@@ -1,7 +1,9 @@
-/*global define, window, jQuery, _, describe, beforeEach, afterEach, it, expect, spyOn */
+/*global define, jasmine, describe, beforeEach, afterEach, it, expect, spyOn */
 define( [
+	'jquery',
 	'lodash',
 	'Class',
+	
 	'data/Model',
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Ajax',
@@ -9,8 +11,25 @@ define( [
 	'data/persistence/request/Create',
 	'data/persistence/request/Read',
 	'data/persistence/request/Update',
-	'data/persistence/request/Destroy'
-], function( _, Class, Model, ResultSet, AjaxProxy, Reader, CreateRequest, ReadRequest, UpdateRequest, DestroyRequest ) {
+	'data/persistence/request/Destroy',
+	
+	'spec/lib/MockAjax'
+], function(
+	jQuery,
+	_,
+	Class,
+	
+	Model,
+	ResultSet,
+	AjaxProxy,
+	Reader,
+	CreateRequest,
+	ReadRequest,
+	UpdateRequest,
+	DestroyRequest,
+	
+	MockAjax
+) {
 	
 	// Used in the tests
 	var ConcreteReader = Reader.extend( {
@@ -21,92 +40,133 @@ define( [
 	describe( 'data.persistence.proxy.Ajax', function() {
 		
 		describe( 'read()', function() {
-			var reader,
+			var mockAjax,
+			    reader,
 			    request;
 			
 			beforeEach( function() {
+				mockAjax = new MockAjax();
+				
 				reader = new ConcreteReader();
 				request = new ReadRequest();
 			} );
 			
 			
 			it( "should call the ajax function with a url that includes an id param when a single model is being loaded", function() {
-				spyOn( request, 'getModelId' ).andReturn( 1 );
-				
-				var providedUrl,
-				    providedData;  // this will be the params string in the case of 'read'
-				
-				var TestProxy = AjaxProxy.extend( {
-					ajax : function( options ) {
-						providedUrl = options.url;
-						providedData = options.data;
-						return new jQuery.Deferred().promise();
-					}
-				} );
-				
-				var proxy = new TestProxy( {
+				var request = new ReadRequest( { modelId: 1 } );
+				var proxy = new AjaxProxy( {
 					url : '/testUrl',
-					idParam : 'id'
+					idParam : 'id',
+					
+					ajax : mockAjax.getAjaxMethod()
 				} );
+				
 				proxy.read( request );
-				expect( providedUrl ).toBe( '/testUrl' );
-				expect( providedData ).toBe( 'id=1' );
+				expect( mockAjax.getRequestCount() ).toBe( 1 );
+				expect( mockAjax.getOptions( 0 ).url ).toBe( '/testUrl' );
+				expect( mockAjax.getOptions( 0 ).data ).toBe( 'id=1' );
 			} );
 			
 			
 			it( "should not add the id param if the `idParam` config is set to an empty string or other falsy value", function() {
-				spyOn( request, 'getModelId' ).andReturn( 1 );
-				
-				var providedUrl,
-				    providedData;  // this will be the params string in the case of 'read'
-				
-				var TestProxy = AjaxProxy.extend( {
-					ajax : function( options ) {
-						providedUrl = options.url;
-						providedData = options.data;
-						return new jQuery.Deferred().promise();
-					}
-				} );
-				
-				var proxy = new TestProxy( {
+				var request = new ReadRequest( { modelId: 1 } );
+				var proxy = new AjaxProxy( {
 					url : '/testUrl',
-					idParam : ''  // empty string
+					idParam : '',  // empty string
+					
+					ajax : mockAjax.getAjaxMethod()
 				} );
+				
 				proxy.read( request );
-				expect( providedUrl ).toBe( '/testUrl' );
-				expect( providedData ).toBe( '' );
+				expect( mockAjax.getRequestCount() ).toBe( 1 );
+				expect( mockAjax.getOptions( 0 ).url ).toBe( '/testUrl' );
+				expect( mockAjax.getOptions( 0 ).data ).toBe( '' );
 			} );
 			
 			
-			it( "should populate the provided ReadRequest with a ResultSet upon a successful ajax request", function() {
-				var resultSet;
-
-				spyOn( request, 'getModelId' ).andReturn( 1 );
-				spyOn( request, 'setResultSet' ).andCallThrough();
-				spyOn( reader, 'read' ).andCallFake( function( data ) {
-					return ( resultSet = new ResultSet( { records: data } ) );
+			it( "should set the ReadRequest to 'success' state, and populate it with a ResultSet upon a successful ajax request", function() {
+				var request = new ReadRequest( { modelId: 1 } );
+				
+				var proxy = new AjaxProxy( {
+					url    : '/testUrl',
+					reader : reader,
+					
+					ajax : mockAjax.getAjaxMethod()
 				} );
 				
-				var testData = { attribute1: 'value1', attribute2: 'value2' };
+				var proxyPromise = proxy.read( request );
+				mockAjax.resolveRequest( 0, { attr1: 'value1', attr2: 'value2' } );  // resolve the ajax deferred
 				
-				var TestProxy = AjaxProxy.extend( {
-					ajax : function( options ) {
-						return new jQuery.Deferred().resolve( testData ).promise();
-					},
-					reader : reader
+				expect( proxyPromise.state() ).toBe( "resolved" );
+				expect( request.wasSuccessful() ).toBe( true );
+				expect( request.hasErrored() ).toBe( false );
+				expect( request.getResultSet().getRecords()[ 0 ] ).toEqual( { attr1: 'value1', attr2: 'value2' } );
+			} );
+			
+			
+			it( "should set the ReadRequest to 'error' state upon an errored ajax request", function() {
+				var request = new ReadRequest( { modelId: 1 } );
+				
+				var proxy = new AjaxProxy( {
+					url  : '/testUrl',
+					ajax : mockAjax.getAjaxMethod()
 				} );
 				
-				var proxy = new TestProxy( {
-					url : '/testUrl'
-				} );
-				proxy.read( request );
+				var proxyPromise = proxy.read( request );
+				mockAjax.rejectRequest( 0 );  // reject the ajax deferred
 				
-				expect( testData ).toBe( resultSet.getRecords()[ 0 ] );  // orig YUI Test err msg: "The records provided to the ResultSet should have been the testData"
-				
-				expect( request.setResultSet ).toHaveBeenCalledWith( resultSet );
+				expect( proxyPromise.state() ).toBe( "rejected" );
+				expect( request.wasSuccessful() ).toBe( false );
+				expect( request.hasErrored() ).toBe( true );
+				expect( request.getError() ).toEqual( { textStatus: "error", errorThrown: "error" } );
 			} );
 			
 		} );
+		
+		
+		describe( 'abort()', function() {
+			var mockAjax,
+			    proxy;
+				
+			beforeEach( function() {
+				mockAjax = new MockAjax();
+				
+				proxy = new AjaxProxy( {
+					url  : '/testUrl',
+					ajax : mockAjax.getAjaxMethod()
+				} );
+			} );
+			
+			
+			it( "should abort an in-progress request", function() {
+				var request = new ReadRequest( { modelId: 1 } ),
+				    proxyPromise = proxy.read( request );
+				
+				// Abort the request immediately after the read starts
+				proxy.abort( request );
+				
+				expect( proxyPromise.state() ).toBe( "rejected" );
+				expect( mockAjax.wasAborted( 0 ) ).toBe( true );
+				expect( request.wasSuccessful() ).toBe( false );
+				expect( request.hasErrored() ).toBe( true );
+				expect( request.getError() ).toEqual( { textStatus: "abort", errorThrown: "abort" } );
+			} );
+			
+			
+			xit( "should not error if the request has already been completed successfully", function() {
+				
+			} );
+			
+			
+			xit( "should not error if the request has already errored itself", function() {
+				
+			} );
+			
+			
+		} );
+		
+		
+		// ---------------------------------------
 		
 		
 		describe( 'buildUrl()', function() {
