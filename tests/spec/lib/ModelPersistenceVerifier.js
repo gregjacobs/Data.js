@@ -18,8 +18,12 @@ define( [
 	 * 
 	 * This fixture is used to help test the {@link data.Model#load load}, {@link data.Model#save save}, and
 	 * {@link data.Model#destroy destroy} methods, by checking that all of the events, options-provided callbacks, 
-	 * and promise handler callbacks have been properly executed by the source code. It also makes sure that all
-	 * callbacks/handlers are passed the correct arguments.
+	 * and promise handler callbacks have been properly executed and passed the correct arguments.
+	 *  
+	 * It also makes sure that the state of the {@link #model} is correct before calling the persistence method, just after
+	 * calling the persistence method, and after the persistence method completes. It does this by checking the
+	 * {@link data.Model#isLoading isLoading}, {@link data.Model#isSaving isSaving}, {@link data.Model#isDestroying isDestroying}
+	 * methods.
 	 * 
 	 * 
 	 * ## Usage

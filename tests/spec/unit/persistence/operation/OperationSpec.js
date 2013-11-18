@@ -2,11 +2,34 @@
 define( [
 	'data/persistence/operation/Operation',
 	'data/persistence/operation/Promise',
-	'data/persistence/request/Request',
 	
-	'data/Model',                   // Used as the `dataComponent` of the Operations
-	'data/persistence/proxy/Proxy'  // Used as the `proxy` of the Operations
-], function( Operation, OperationPromise, Request, Model, Proxy ) {
+	'data/persistence/request/Request',
+	'data/persistence/request/Create',
+	'data/persistence/request/Read',
+	'data/persistence/request/Update',
+	'data/persistence/request/Destroy',
+	
+	'data/persistence/ResultSet',
+	
+	'data/Model',                    // Used as the `dataComponent` of the Operations
+	'data/persistence/proxy/Proxy',  // Used as the `proxy` of the Operations
+	'spec/lib/ManualProxy'
+], function(
+	Operation,
+	OperationPromise,
+	
+	Request,
+	CreateRequest,
+	ReadRequest,
+	UpdateRequest,
+	DestroyRequest,
+	
+	ResultSet,
+		
+	Model,
+	Proxy,
+	ManualProxy
+) {
 	
 	describe( 'data.persistence.operation.Operation', function() {
 		
@@ -27,16 +50,113 @@ define( [
 		} );
 		
 		// Used as the `dataComponent` of the Operations
-		var model = new Model();
+		var model;
 		
 		// Used as the `proxy` of the Operations
 		var proxy = new ConcreteProxy();
+		var manualProxy;
 		
+		
+		beforeEach( function() {
+			model = new Model();
+			manualProxy = new ManualProxy();
+		} );
 		
 		
 		// -----------------------------------
 		
 		// Requests' interface
+		
+		describe( 'executeRequests()', function() {
+			var operation,
+			    requests;
+			
+			beforeEach( function() {
+				requests = [ new CreateRequest(), new ReadRequest(), new UpdateRequest(), new DestroyRequest() ];
+				
+				operation = new ConcreteOperation( { dataComponent: model, proxy: manualProxy, requests: requests } );
+			} );
+			
+			
+			it( "should execute each Request with the Operation's proxy", function() {
+				operation.executeRequests();
+				expect( manualProxy.getCreateRequestCount() ).toBe( 1 );
+				expect( manualProxy.getReadRequestCount() ).toBe( 1 );
+				expect( manualProxy.getUpdateRequestCount() ).toBe( 1 );
+				expect( manualProxy.getDestroyRequestCount() ).toBe( 1 );
+			} );
+			
+			
+			it( "should resolve the Operation's 'requests deferred' when all requests are complete", function() {
+				var requestsPromise = operation.executeRequests();
+				expect( requestsPromise.state() ).toBe( 'pending' );  // initial condition
+				expect( requests[ 0 ].wasSuccessful() ).toBe( false );  // initial condition
+				expect( requests[ 1 ].wasSuccessful() ).toBe( false );  // initial condition
+				expect( requests[ 2 ].wasSuccessful() ).toBe( false );  // initial condition
+				expect( requests[ 3 ].wasSuccessful() ).toBe( false );  // initial condition
+				
+				manualProxy.resolveCreate( 0 );
+				expect( requestsPromise.state() ).toBe( 'pending' );
+				expect( requests[ 0 ].wasSuccessful() ).toBe( true );
+				
+				manualProxy.resolveRead( 0 );
+				expect( requestsPromise.state() ).toBe( 'pending' );
+				expect( requests[ 1 ].wasSuccessful() ).toBe( true );
+				
+				manualProxy.resolveUpdate( 0 );
+				expect( requestsPromise.state() ).toBe( 'pending' );
+				expect( requests[ 2 ].wasSuccessful() ).toBe( true );
+				
+				manualProxy.resolveDestroy( 0 );
+				expect( requestsPromise.state() ).toBe( 'resolved' );
+				expect( requests[ 3 ].wasSuccessful() ).toBe( true );
+			} );
+			
+			
+			it( "should reject the Operation's 'requests deferred' when just one of the requests have errored", function() {
+				var requestsPromise = operation.executeRequests();
+				expect( requestsPromise.state() ).toBe( 'pending' );  // initial condition
+				
+				manualProxy.rejectCreate( 0 );
+				expect( requestsPromise.state() ).toBe( 'rejected' );
+				expect( requests[ 0 ].hasErrored() ).toBe( true );
+			} );
+			
+			
+			it( "should not attach a ResultSet object to the Requests if one was not provided by the proxy", function() {
+				var requestsPromise = operation.executeRequests();
+				
+				manualProxy.resolveCreate( 0 );
+				manualProxy.resolveRead( 0 );
+				manualProxy.resolveUpdate( 0 );
+				manualProxy.resolveDestroy( 0 );
+				
+				expect( requestsPromise.state() ).toBe( 'resolved' );
+				expect( requests[ 0 ].getResultSet() ).toBe( null );
+				expect( requests[ 1 ].getResultSet() ).toBe( null );
+				expect( requests[ 2 ].getResultSet() ).toBe( null );
+				expect( requests[ 3 ].getResultSet() ).toBe( null );
+			} );
+			
+			
+			it( "should attach a ResultSet object to the Requests if one was provided by the proxy", function() {
+				var resultSets = [ new ResultSet(), new ResultSet(), new ResultSet(), new ResultSet() ],
+				    requestsPromise = operation.executeRequests();
+				
+				manualProxy.resolveCreate( 0, resultSets[ 0 ] );
+				manualProxy.resolveRead( 0, resultSets[ 1 ] );
+				manualProxy.resolveUpdate( 0, resultSets[ 2 ] );
+				manualProxy.resolveDestroy( 0, resultSets[ 3 ] );
+				
+				expect( requestsPromise.state() ).toBe( 'resolved' );
+				expect( requests[ 0 ].getResultSet() ).toBe( resultSets[ 0 ] );
+				expect( requests[ 1 ].getResultSet() ).toBe( resultSets[ 1 ] );
+				expect( requests[ 2 ].getResultSet() ).toBe( resultSets[ 2 ] );
+				expect( requests[ 3 ].getResultSet() ).toBe( resultSets[ 3 ] );
+			} );
+			
+		} );
+		
 		
 		describe( 'getIncompleteRequests()', function() {
 			var operation;

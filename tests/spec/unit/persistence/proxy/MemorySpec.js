@@ -30,14 +30,13 @@ define( [
 				} );
 				
 				var request = new ReadRequest( { proxy: proxy } ),
-				    resolvedData;
+				    resolvedResultSet;
 				
-				proxy.read( request ).then( function( request ) {
-					resolvedData = request.getResultSet().getRecords();  // get the records from the resolved request
-				} );
+				proxy.read( request )
+					.then( function( resultSet ) { resolvedResultSet = resultSet; } );  // get the records from the ResultSet which the promise was resolved with
 				
 				var expectedData = [ { a: 1, b: 2, c: 3 } ];
-				expect( resolvedData ).toEqual( expectedData );
+				expect( resolvedResultSet.getRecords() ).toEqual( expectedData );
 			} );
 			
 		} );

@@ -143,7 +143,8 @@ define( [
 		/**
 		 * @cfg {data.persistence.request.Request/data.persistence.request.Request[]} requests
 		 * 
-		 * One or more Request(s) that make up the Operation.
+		 * One or more Request(s) that make up the Operation. May also be set using {@link #setRequests}
+		 * and {@link #addRequest}.
 		 */
 		
 		
@@ -180,7 +181,8 @@ define( [
 		 * @protected
 		 * @property {Boolean} started
 		 * 
-		 * Set to `true` when the Operation's {@link #requests} have been started from {@link #executeRequests}.
+		 * Flag that is set to `true` when the Operation's {@link #requests} have been started from 
+		 * {@link #executeRequests}.
 		 * 
 		 * Note that it is possible for the Operation to have been started, *and* be {@link #completed}.
 		 */
@@ -365,8 +367,15 @@ define( [
 			
 			// Execute all individual requests, and when they are complete, resolve or reject the 
 			// Operation's "requestsDeferred"
-			var requestsPromises = _.map( this.requests, function( req ) { 
-				return proxy[ req.getAction() ]( req );    // Execute all requests and return an array of Promise objects, one for each Request
+			var requestsPromises = _.map( this.requests, function( request ) {  // Execute all requests and return an array of Promise objects, one for each Request 
+				var promise = proxy[ request.getAction() ]( request )
+					.done( function( resultSet ) { 
+						if( resultSet ) request.setResultSet( resultSet );
+						request.setSuccess();
+					} )
+					.fail( function( error ) { request.setError( error ); } );
+				
+				return promise;
 			} );
 			
 			jQuery.when.apply( jQuery, requestsPromises )

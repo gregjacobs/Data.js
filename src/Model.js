@@ -1500,7 +1500,7 @@ define( [
 			if( syncRelated ) {
 				jQuery.when( this.syncRelatedCollections(), this.syncRelatedModels() ).then( 
 					function() { me.executeSaveOperation( saveOperation ); },
-					function() { saveOperation.reject(); }  // one of the sync tasks failed: fail the Operation
+					function() { me.onSaveError( saveOperation ); }  // one of the sync tasks failed: fail the Operation
 				);
 			} else {  // not synchronizing related collections/models, execute the SaveOperation immediately
 				this.executeSaveOperation( saveOperation );
@@ -1508,7 +1508,7 @@ define( [
 			
 			// Set up any callbacks provided in the options
 			saveOperation.done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
-			
+						
 			return saveOperation.promise();
 		},
 		
@@ -1564,18 +1564,14 @@ define( [
 		 *   If there are no nested related collections, the promise is resolved immediately.
 		 */
 		syncRelatedCollections : function() {
-			var collectionSyncPromises = [],
-			    relatedCollectionAttributes = this.getRelatedCollectionAttributes();
+			// Create and return single Promise object out of all the Collection synchronization promises
+			var collectionSyncPromises = _.chain( this.getRelatedCollectionAttributes() )
+				.map( function( attr ) { return this.get( attr.getName() ); }, this )  // retrieve an array of the actual collections under the Model
+				.compact()  // remove any null values (for attributes that have not been set to a collection yet)
+				.map( function( collection ) { return collection.sync(); } )  // sync all collections, and retrieve a list of the sync promises
+				.value();
 			
-			for( var i = 0, len = relatedCollectionAttributes.length; i < len; i++ ) {
-				var collection = this.get( relatedCollectionAttributes[ i ].getName() );
-				if( collection ) {  // make sure there is actually a Collection (i.e. it's not null)
-					collectionSyncPromises.push( collection.sync() );
-				}
-			}
-			
-			// create and return single Promise object out of all the Collection synchronization promises
-			return jQuery.when.apply( null, collectionSyncPromises );
+			return jQuery.when.apply( jQuery, collectionSyncPromises );
 		},
 		
 		
@@ -1590,18 +1586,14 @@ define( [
 		 *   If there are no nested related models, the promise is resolved immediately.
 		 */
 		syncRelatedModels : function() {
-			var modelSavePromises = [],
-			    relatedModelAttributes = this.getRelatedModelAttributes();
+			// Create and return single Promise object out of all the Model save promises
+			var modelSavePromises = _.chain( this.getRelatedModelAttributes() )
+				.map( function( attr ) { return this.get( attr.getName() ); }, this )  // retrieve an array of the actual child models under the Model
+				.compact()  // remove any null values (for attributes that have not been set to a model yet)
+				.map( function( model ) { return model.save(); } )  // save all models, and retrieve a list of the save promises
+				.value();
 			
-			for( var i = 0, len = relatedModelAttributes.length; i < len; i++ ) {
-				var model = this.get( relatedModelAttributes[ i ].getName() );
-				if( model ) {  // make sure there is actually a Model (i.e. it's not null)
-					modelSavePromises.push( model.save() );
-				}
-			}
-			
-			// create and return single Promise object out of all the Model save promises
-			return jQuery.when.apply( null, modelSavePromises );
+			return jQuery.when.apply( jQuery, modelSavePromises );
 		},
 		
 		

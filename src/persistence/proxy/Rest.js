@@ -118,15 +118,15 @@ define( [
 				contentType : 'application/json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
+					var resultSet;
 					if( data ) {  // data may or may not be returned by a server on a 'create' request
-						request.setResultSet( me.reader.read( data ) );
+						resultSet = me.reader.read( data );
 					}
-					request.setSuccess();
-					deferred.resolve( request );
+					
+					deferred.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( request );
+					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
 			
@@ -153,13 +153,11 @@ define( [
 				dataType : 'json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					request.setResultSet( me.reader.read( data ) );
-					request.setSuccess();
-					deferred.resolve( request );
+					var resultSet = me.reader.read( data );
+					deferred.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( request );
+					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
 			
@@ -217,15 +215,14 @@ define( [
 				contentType : 'application/json'
 			} ).then(
 				function( data, textStatus, jqXHR ) {
+					var resultSet;
 					if( data ) {  // data may or may not be returned by a server on an 'update' request
-						request.setResultSet( me.reader.read( data ) );
+						resultSet = me.reader.read( data );
 					}
-					request.setSuccess();
-					deferred.resolve( request );
+					deferred.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( request );
+					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
 			
@@ -254,12 +251,10 @@ define( [
 				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					request.setSuccess();
-					deferred.resolve( request );
+					deferred.resolve();
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( request );
+					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
 			

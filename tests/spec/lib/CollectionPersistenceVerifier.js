@@ -14,11 +14,15 @@ define( [
 	 * @extends spec.lib.PersistenceVerifier
 	 * 
 	 * A helper fixture for testing the persistence features of {@link data.Collection Collections}.
-	 * 
+	 *  
 	 * This fixture is used to help test the {@link data.Collection#load load} and {@link data.Collection#sync sync} 
 	 * methods, by checking that all of the events, options-provided callbacks, and promise handler callbacks have been 
-	 * properly executed by the source code. It also makes sure that all callbacks/handlers are passed the correct arguments.
+	 * properly executed and passed the correct arguments.
 	 * 
+	 * It also makes sure that the state of the {@link #collection} is correct before calling the persistence method, just after
+	 * calling the persistence method, and after the persistence method completes. It does this by checking the
+	 * {@link data.Collection#isLoading isLoading}, {@link data.Collection#isSynchronizing isSynchronizing} methods.
+	 * methods.
 	 * 
 	 * ## Usage
 	 * 

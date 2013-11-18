@@ -215,13 +215,11 @@ define( [
 			// Now attach handlers
 			jqXhr
 				.done( function( data, textStatus, jqXHR ) {
-					request.setResultSet( me.reader.read( data ) );
-					request.setSuccess();
-					deferred.resolve( request );
+					var resultSet = me.reader.read( data );
+					deferred.resolve( resultSet );
 				} )
 				.fail( function( jqXHR, textStatus, errorThrown ) {
-					request.setError( { textStatus: textStatus, errorThrown: errorThrown } );
-					deferred.reject( request );
+					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				} )
 				.always( function() {
 					delete jqXhrObjs[ requestUuid ];  // remove the reference to the jqXHR object

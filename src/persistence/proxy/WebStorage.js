@@ -121,11 +121,8 @@ define( [
 			}
 			this.setRecordIds( recordIds );
 			
-			request.setResultSet( new ResultSet( { records: returnRecords } ) );
-			request.setSuccess();
-			deferred.resolve( request );
-			
-			return deferred.promise();
+			var resultSet = new ResultSet( { records: returnRecords } );
+			return deferred.resolve( resultSet ).promise();
 		},
 		
 		
@@ -163,12 +160,7 @@ define( [
 				records : records,
 				totalCount : totalNumRecords
 			} );
-			
-			request.setResultSet( resultSet );
-			request.setSuccess();
-			deferred.resolve( request );
-			
-			return deferred.promise();
+			return deferred.resolve( resultSet ).promise();
 		},
 		
 		
@@ -200,11 +192,7 @@ define( [
 			}
 			this.setRecordIds( recordIds );
 			
-			request.setResultSet( new ResultSet() );
-			request.setSuccess();
-			deferred.resolve( request );
-			
-			return deferred.promise();
+			return deferred.resolve().promise();
 		},
 		
 		
@@ -236,11 +224,7 @@ define( [
 			}
 			this.setRecordIds( recordIds );
 			
-			request.setResultSet( new ResultSet() );
-			request.setSuccess();
-			deferred.resolve( request );
-			
-			return deferred.promise();
+			return deferred.resolve().promise();
 		},
 		
 		

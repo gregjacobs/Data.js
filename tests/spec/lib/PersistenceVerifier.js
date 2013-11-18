@@ -156,8 +156,8 @@ define( [
 			} );
 			
 			
-			// Call the persistence method
-			var operationPromise = dataComponentInstance[ methodName ].apply( dataComponentInstance, extraArgs.concat( {
+			// Create the options object for the persistence method
+			var options = {
 				success : function( dataComponent, operation ) {
 					me.successCbCallCount++;
 					expect( dataComponent ).toBe( dataComponentInstance );
@@ -183,7 +183,25 @@ define( [
 					expect( this ).toBe( scopeObj );  // make sure `scope` was passed
 				},
 				scope : scopeObj
-			} ) );
+			};
+	
+			// Determine the arguments for the persistence method. 
+			// Normally, the `extraArgs` are prepended to the `options` object created by the PersistenceVerifier. However,
+			// if the number of "extra args" plus the 'options' object created by the PersistenceVerifier would exceed 
+			// the number of arguments that the method accepts, then the last 'extraArg' provided must be an 'options' object 
+			// itself. In this case, combine it with the 'options' object that the PersistenceVerifier has already created.
+			var args = extraArgs.concat( options );
+			if( args.length > dataComponentInstance[ methodName ].length ) {
+				_.assign( args[ args.length - 2 ], args[ args.length - 1 ] );
+				args.length = args.length - 1;  // remove the last element, which is an extra argument in this case
+			}
+			
+			// Finally, call the persistence method
+			var operationPromise = dataComponentInstance[ methodName ].apply( dataComponentInstance, args );
+			
+			
+			// -----------------------------------
+			
 			
 			// Verify that the method returned an OperationPromise object
 			expect( operationPromise instanceof OperationPromise ).toBe( true );

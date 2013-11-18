@@ -17,18 +17,11 @@ define( [
 	'data/attribute/String',
 	'data/attribute/DataComponent',
 	
-	'data/persistence/ResultSet',
-	'data/persistence/proxy/Proxy',
 	'data/persistence/proxy/Rest',
 	'data/persistence/proxy/Memory',
 	'data/persistence/operation/Load',
 	'data/persistence/operation/Save',
 	'data/persistence/operation/Destroy',
-	'data/persistence/request/Write',
-	'data/persistence/request/Create',
-	'data/persistence/request/Read',
-	'data/persistence/request/Update',
-	'data/persistence/request/Destroy',
 	
 	'spec/lib/ManualProxy',
 	'spec/lib/ModelPersistenceVerifier'
@@ -49,33 +42,17 @@ define( [
 	StringAttribute,
 	DataComponentAttribute,
 	
-	ResultSet,
-	Proxy,
 	RestProxy,
 	MemoryProxy,
 	LoadOperation,
 	SaveOperation,
 	DestroyOperation,
-	WriteRequest,
-	CreateRequest,
-	ReadRequest,
-	UpdateRequest,
-	DestroyRequest,
 	
 	ManualProxy,
 	ModelPersistenceVerifier
 ) {
 
 	describe( 'data.Model', function() {
-		
-		// A concrete Proxy class for tests to use.
-		var ConcreteProxy = Proxy.extend( {
-			// Implementation of abstract interface
-			create: Data.emptyFn,
-			read: Data.emptyFn,
-			update: Data.emptyFn,
-			destroy: Data.emptyFn
-		} );
 		
 		// A concrete DataComponent for tests to use
 		var ConcreteDataComponent = DataComponent.extend( { 
@@ -1843,33 +1820,11 @@ define( [
 		
 		
 		describe( 'load()', function() {
-			var spiedProxy,
-			    readRequest,
-			    spiedProxyDeferred,
-			    manualProxy,
-			    SpiedProxyModel,
+			var manualProxy,
 			    ManualProxyModel;
 			
-			
 			beforeEach( function() {
-				spiedProxy = new ConcreteProxy();
 				manualProxy = new ManualProxy();
-				
-				// Reset between each test
-				readRequest = undefined;
-				spiedProxyDeferred = undefined;
-				
-				spyOn( spiedProxy, 'read' ).andCallFake( function( request ) {
-					readRequest = request;
-					spiedProxyDeferred = new jQuery.Deferred();
-					
-					return spiedProxyDeferred.promise();
-				} );
-				
-				SpiedProxyModel = Model.extend( {
-					attributes : [ 'id', 'name' ],
-					proxy : spiedProxy
-				} );
 				
 				ManualProxyModel = Model.extend( {
 					attributes : [ 'id', 'a', 'b' ],
@@ -1892,47 +1847,45 @@ define( [
 			
 			
 			it( "should delegate to its proxy's read() method, with the model's ID, to retrieve the data", function() {
-				var model = new SpiedProxyModel( { id: 1 } );
+				var model = new ManualProxyModel( { id: 1 } );
 				model.load();
 				
-				expect( spiedProxy.read ).toHaveBeenCalled();
-				expect( readRequest.getModelId() ).toBe( 1 );
+				expect( manualProxy.getReadRequestCount() ).toBe( 1 );
+				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBe( 1 );
 			} );
 			
 			
 			it( "should delegate to its proxy's read() method, even without the model's ID if it doesn't have one assigned, to retrieve the data", function() {
-				var model = new SpiedProxyModel();  // note: no `id` assigned
+				var model = new ManualProxyModel();  // note: no `id` assigned
 				model.load();
 				
-				expect( spiedProxy.read ).toHaveBeenCalled();
-				expect( readRequest.getModelId() ).toBe( undefined );
+				expect( manualProxy.getReadRequestCount() ).toBe( 1 );
+				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBeUndefined();
 			} );
 			
 			
 			it( "should delegate to its proxy's read() method, even if it *doesn't have an idAttribute*, to retrieve the data", function() {
-				var NoIdModel = Model.extend( {
+				var NoIdModel = ManualProxyModel.extend( {
 					attributes  : [ 'name' ],  // note: no 'id' attribute
-					idAttribute : 'id',        // the default value, but just to be explicit
-					
-					proxy : spiedProxy
+					idAttribute : 'id'         // the default value, but just to be explicit
 				} );
 				
 				var model = new NoIdModel();
 				model.load();
 				
-				expect( spiedProxy.read ).toHaveBeenCalled();
-				expect( readRequest.getModelId() ).toBe( undefined );
+				expect( manualProxy.getReadRequestCount() ).toBe( 1 );
+				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBe( undefined );
 			} );
 			
 			
 			it( "should pass any `params` option provided to the method to proxy's read() method, in the Request object", function() {
-				var model = new SpiedProxyModel( { id: 1 } ), 
-				    params = { a: 1 };
+				var model = new ManualProxyModel( { id: 1 } ), 
+				    inputParams = { a: 1 };
 				
 				model.load( {
-					params : params
+					params : inputParams
 				} );
-				expect( readRequest.params ).toBe( params );
+				expect( manualProxy.getReadRequest( 0 ).params ).toBe( inputParams );
 			} );
 
 			
@@ -2032,46 +1985,17 @@ define( [
 		
 		
 		describe( 'save()', function() {
-			var spiedProxy,
-			    saveRequest,
-			    proxyDeferred,
-			    manualProxy,
-			    SpiedProxyModel,
+			var manualProxy,
 			    ManualProxyModel;
 			
-			
 			beforeEach( function() {
-				spiedProxy = new ConcreteProxy();
 				manualProxy = new ManualProxy();
-				
-				// Reset between each test
-				saveRequest = undefined;
-				proxyDeferred = undefined;
-				
-				spyOn( spiedProxy, 'create' ).andCallFake( function( request ) {
-					saveRequest = request;
-					proxyDeferred = new jQuery.Deferred();
-					
-					return proxyDeferred.promise();
-				} );
-				spyOn( spiedProxy, 'update' ).andCallFake( function( request ) {
-					saveRequest = request;
-					proxyDeferred = new jQuery.Deferred();
-					
-					return proxyDeferred.promise();
-				} );
-				
-				SpiedProxyModel = Model.extend( {
-					attributes : [ 'id', 'name' ],
-					proxy : spiedProxy
-				} );
 				
 				ManualProxyModel = Model.extend( {
 					attributes : [ 'id', 'a', 'b' ],
 					proxy : manualProxy
 				} );
 			} );
-			
 			
 				
 			it( "should throw an error if there is no configured proxy", function() {
@@ -2087,38 +2011,38 @@ define( [
 			
 			
 			it( "should delegate to its proxy's create() method to persist changes when the Model does not have an id set", function() {
-				var model = new SpiedProxyModel();  // note: no 'id' set
+				var model = new ManualProxyModel();  // note: no 'id' set
 				model.save();
 				
-				expect( spiedProxy.create ).toHaveBeenCalled();
-				expect( spiedProxy.update ).not.toHaveBeenCalled();
+				expect( manualProxy.getCreateRequestCount() ).toBe( 1 );
+				expect( manualProxy.getUpdateRequestCount() ).toBe( 0 );
 			} );
 			
 			
 			it( "should delegate to its proxy's update() method to persist changes, when the Model has an id", function() {
-				var model = new SpiedProxyModel( { id: 1 } );
+				var model = new ManualProxyModel( { id: 1 } );
 				model.save();
 				
-				expect( spiedProxy.create ).not.toHaveBeenCalled();
-				expect( spiedProxy.update ).toHaveBeenCalled();
+				expect( manualProxy.getCreateRequestCount() ).toBe( 0 );
+				expect( manualProxy.getUpdateRequestCount() ).toBe( 1 );
 			} );
 			
 			
 			it( "should pass any `params` option provided to the method to proxy's create() or update() method, in the Request object", function() {
-				var model = new SpiedProxyModel(), 
+				var model = new ManualProxyModel(), 
 				    createParams = { a: 1 },
 				    updateParams = { b: 2 };
 				
 				model.save( {
 					params : createParams
 				} );
-				expect( saveRequest.params ).toBe( createParams );
+				expect( manualProxy.getCreateRequest( 0 ).getParams() ).toBe( createParams );
 				
 				model.set( 'id', 1 );  // now give the model an ID
 				model.save( {
 					params : updateParams
 				} );
-				expect( saveRequest.params ).toBe( updateParams );
+				expect( manualProxy.getUpdateRequest( 0 ).getParams() ).toBe( updateParams );
 			} );
 			
 			
@@ -2363,6 +2287,7 @@ define( [
 			
 			describe( "Test save() with related Models and Collections that need to be sync'd first", function() {
 				var parentModelProxy,
+				    childModelProxy,
 				    ParentModel,
 				    ChildModel,
 				    collections,
@@ -2371,18 +2296,15 @@ define( [
 				
 				beforeEach( function() {
 					collections = {};
-					models = {},
+					models = {};
 					deferreds = {};
 					
-					parentModelProxy = new ConcreteProxy();
-					spyOn( parentModelProxy, 'create' ).andCallFake( function() {
-						var deferred = deferreds[ 'parentModelProxy' ] = new jQuery.Deferred();
-						return deferred;
-					} );
+					parentModelProxy = new ManualProxy();
+					childModelProxy = new ManualProxy();
 					
 					ChildModel = Model.extend( {
 						attributes : [ 'id', 'attr' ],
-						proxy : new ConcreteProxy()  // not actually needed for the tests due to "faked" save() method, but makes it clear
+						proxy : childModelProxy
 					} );
 					
 					ParentModel = Model.extend( {
@@ -2436,45 +2358,30 @@ define( [
 						m1   : model1
 					} );
 					
-					var doneCount = 0,      // 3 vars for returned Promise object
-					    failCount = 0,
-					    alwaysCount = 0;
-					    
-					var savePromise = parentModel.save()
-						.done( function() { doneCount++; } )
-						.fail( function() { failCount++; } )
-						.always( function() { alwaysCount++; } );
+					var modelPersistenceVerifier = new ModelPersistenceVerifier( { model: parentModel } );
+					var promise = modelPersistenceVerifier.execute( 'save' );
 					
-					// Initial state after parent model save() call
+					// Initial state after parentModel save() call
+					expect( promise.state() ).toBe( 'pending' );
 					expect( collection1.sync.calls.length ).toBe( 1 );
 					expect( model1.save.calls.length ).toBe( 1 );
-					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 0 );
-					
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 0 );  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
 					
 					// State after all related data components (models and collections) have completed saving/sync'ing.
 					// Still waiting for the parent model itself to save.
 					deferreds[ 'collection1Sync' ].resolve();
 					deferreds[ 'model1Save' ].resolve();
 					
+					expect( promise.state() ).toBe( 'pending' );
 					expect( collection1.sync.calls.length ).toBe( 1 );
 					expect( model1.save.calls.length ).toBe( 1 );
-					expect( parentModelProxy.create.calls.length ).toBe( 1 );  // parent model proxy should now have been called, since the children have sync'd
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 0 );
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 1 );  // parent model proxy should now have been called, since the children have sync'd
 					
 					
 					// State after parent model has saved
-					var request = new CreateRequest();
-					request.setResultSet( new ResultSet() );
-					deferreds[ 'parentModelProxy' ].resolve( request );
-					
-					expect( doneCount ).toBe( 1 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 1 );
+					parentModelProxy.resolveCreate( 0 );
+					expect( promise.state() ).toBe( 'resolved' );
+					modelPersistenceVerifier.verify( 'success' );
 				} );
 				
 				
@@ -2488,33 +2395,24 @@ define( [
 						m1   : model1
 					} );
 					
-					var doneCount = 0,      // 3 vars for returned Promise object
-					    failCount = 0,
-					    alwaysCount = 0;
-					    
-					var savePromise = parentModel.save( { syncRelated: false } )  // don't sync related models/collections
-						.done( function() { doneCount++; } )
-						.fail( function() { failCount++; } )
-						.always( function() { alwaysCount++; } );
+					var modelPersistenceVerifier = new ModelPersistenceVerifier( { model: parentModel } );
+					var promise = modelPersistenceVerifier.execute( 'save', { syncRelated: false } );  // don't sync related models/collections
+					
 					
 					// Initial state after parent model save() call
+					expect( promise.state() ).toBe( 'pending' );
 					expect( collection1.sync ).not.toHaveBeenCalled();
 					expect( model1.save ).not.toHaveBeenCalled();
-					expect( parentModelProxy.create.calls.length ).toBe( 1 );  // parent model proxy should have been immediately called, since the children don't need to be sync'd
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 0 );
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 1 );  // parent model proxy should have been immediately called, since the children don't need to be sync'd
 					
 					// State after parent model has saved
-					var request = new CreateRequest();
-					request.setResultSet( new ResultSet() );
-					deferreds[ 'parentModelProxy' ].resolve( request );
+					parentModelProxy.resolveCreate( 0 );
 					
-					expect( collection1.sync ).not.toHaveBeenCalled();  // make sure it still havent' been called
-					expect( model1.save ).not.toHaveBeenCalled();       // make sure it still havent' been called
-					expect( doneCount ).toBe( 1 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 1 );
+					expect( promise.state() ).toBe( 'resolved' );
+					expect( collection1.sync ).not.toHaveBeenCalled();  // make sure it still hasn't been called
+					expect( model1.save ).not.toHaveBeenCalled();       // make sure it still hasn't been called
+					
+					modelPersistenceVerifier.verify( 'success' );
 				} );
 				
 				
@@ -2530,22 +2428,15 @@ define( [
 						m1   : model1
 					} );
 					
-					var doneCount = 0,      // 3 vars for returned Promise object
-					    failCount = 0,
-					    alwaysCount = 0;
-					    
-					var savePromise = parentModel.save()
-						.done( function() { doneCount++; } )
-						.fail( function() { failCount++; } )
-						.always( function() { alwaysCount++; } );
+					var modelPersistenceVerifier = new ModelPersistenceVerifier( { model: parentModel } );
+					var promise = modelPersistenceVerifier.execute( 'save' );
 					
 					// Initial state after parent model save() call
+					expect( promise.state() ).toBe( 'pending' );
 					expect( collection1.sync.calls.length ).toBe( 1 );
+					expect( collection2.sync.calls.length ).toBe( 1 );
 					expect( model1.save.calls.length ).toBe( 1 );
-					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 0 );
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 0 );  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
 					
 					
 					// State after a related collection has failed to save
@@ -2553,10 +2444,8 @@ define( [
 					deferreds[ 'collection2Sync' ].reject();  // this one fails
 					deferreds[ 'model1Save' ].resolve();
 					
-					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // still shouldn't have called the parent model's proxy, since the children failed to sync
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 1 );
-					expect( alwaysCount ).toBe( 1 );
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 0 );  // still shouldn't have called the parent model's proxy, since the children failed to sync
+					modelPersistenceVerifier.verify( 'error' );
 				} );
 				
 				
@@ -2572,22 +2461,14 @@ define( [
 						m2   : model2
 					} );
 					
-					var doneCount = 0,      // 3 vars for returned Promise object
-					    failCount = 0,
-					    alwaysCount = 0;
-					    
-					var savePromise = parentModel.save()
-						.done( function() { doneCount++; } )
-						.fail( function() { failCount++; } )
-						.always( function() { alwaysCount++; } );
+					var modelPersistenceVerifier = new ModelPersistenceVerifier( { model: parentModel } );
+					var promise = modelPersistenceVerifier.execute( 'save' );
 					
 					// Initial state after parent model save() call
+					expect( promise.state() ).toBe( 'pending' );
 					expect( collection1.sync.calls.length ).toBe( 1 );
 					expect( model1.save.calls.length ).toBe( 1 );
-					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 0 );
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 0 );  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
 					
 					
 					// State after the related model has failed to save
@@ -2595,10 +2476,8 @@ define( [
 					deferreds[ 'model1Save' ].resolve();
 					deferreds[ 'model2Save' ].reject();  // this one fails
 					
-					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // still shouldn't have called the parent model's proxy, since the children failed to sync
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 1 );
-					expect( alwaysCount ).toBe( 1 );
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 0 );  // still shouldn't have called the parent model's proxy, since the children failed to sync
+					modelPersistenceVerifier.verify( 'error' );
 				} );
 				
 				
@@ -2612,22 +2491,15 @@ define( [
 						m1   : model1
 					} );
 					
-					var doneCount = 0,      // 3 vars for returned Promise object
-					    failCount = 0,
-					    alwaysCount = 0;
-					    
-					var savePromise = parentModel.save()
-						.done( function() { doneCount++; } )
-						.fail( function() { failCount++; } )
-						.always( function() { alwaysCount++; } );
+					
+					var modelPersistenceVerifier = new ModelPersistenceVerifier( { model: parentModel } );
+					var promise = modelPersistenceVerifier.execute( 'save' );
 					
 					// Initial state after parent model save() call
+					expect( promise.state() ).toBe( 'pending' );
 					expect( collection1.sync.calls.length ).toBe( 1 );
 					expect( model1.save.calls.length ).toBe( 1 );
-					expect( parentModelProxy.create ).not.toHaveBeenCalled();  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 0 );
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 0 );  // shouldn't have called the parent model's proxy yet - waiting until children have sync'd
 					
 					
 					// State after all related data components (models and collections) have completed saving/sync'ing.
@@ -2635,19 +2507,11 @@ define( [
 					deferreds[ 'collection1Sync' ].resolve();
 					deferreds[ 'model1Save' ].resolve();
 					
-					expect( parentModelProxy.create.calls.length ).toBe( 1 );  // should have called the parent model's proxy now, since the children have been sync'd
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 0 );
-					expect( alwaysCount ).toBe( 0 );
-					
+					expect( parentModelProxy.getCreateRequestCount() ).toBe( 1 );  // should have called the parent model's proxy now, since the children have been sync'd
 					
 					// State after parent model itself has failed to save
-					var request = new CreateRequest();
-					deferreds[ 'parentModelProxy' ].reject( request );
-					
-					expect( doneCount ).toBe( 0 );
-					expect( failCount ).toBe( 1 );
-					expect( alwaysCount ).toBe( 1 );
+					parentModelProxy.rejectCreate( 0 );
+					modelPersistenceVerifier.verify( 'error' );
 				} );
 				
 			} );
@@ -2656,32 +2520,11 @@ define( [
 		
 		
 		describe( 'destroy()', function() {
-			var spiedProxy,
-			    destroyRequest,
-			    spiedProxyDeferred,
-			    manualProxy,
-			    SpiedProxyModel,
+			var manualProxy,
 			    ManualProxyModel;
 			
 			beforeEach( function() {
-				spiedProxy = new ConcreteProxy();
 				manualProxy = new ManualProxy();
-				
-				// Reset between each test
-				destroyRequest = undefined;
-				spiedProxyDeferred = undefined;
-				
-				spyOn( spiedProxy, 'destroy' ).andCallFake( function( request ) {
-					destroyRequest = request;
-					spiedProxyDeferred = new jQuery.Deferred();
-					
-					return spiedProxyDeferred.promise();
-				} );
-				
-				SpiedProxyModel = Model.extend( {
-					attributes : [ 'id', 'name' ],
-					proxy : spiedProxy
-				} );
 				
 				ManualProxyModel = Model.extend( {
 					attributes : [ 'id', 'a', 'b' ],
@@ -2704,23 +2547,23 @@ define( [
 			
 			
 			it( "should delegate to its proxy's destroy() method to persist the destruction of the model", function() {
-				var model = new SpiedProxyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
+				var model = new ManualProxyModel( { id: 1 } );  // the model needs an id to be considered as persisted on the server
 				model.destroy();
 				
-				expect( spiedProxy.destroy ).toHaveBeenCalled();
+				expect( manualProxy.getDestroyRequestCount() ).toBe( 1 );
 			} );
 			
 			
 			it( "should pass any `params` option provided to the method to proxy's destroy() method, in the Request object", function() {
 				// Instantiate and run the destroy() method to delegate
-				var model = new SpiedProxyModel( { id: 1 } ),  // the model needs an id to be considered persisted on the server
-				    params = { a: 1 };
+				var model = new ManualProxyModel( { id: 1 } ),  // the model needs an id to be considered persisted on the server
+				    inputParams = { a: 1 };
 				
 				model.destroy( {
-					params : params
+					params : inputParams
 				} );
 				
-				expect( destroyRequest.params ).toBe( params );
+				expect( manualProxy.getDestroyRequest( 0 ).getParams() ).toBe( inputParams );
 			} );
 			
 			

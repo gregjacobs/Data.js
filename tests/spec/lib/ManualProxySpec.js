@@ -73,95 +73,90 @@ define( [
 				
 				it( "should resolve the '" + actionName + "' request at `requestNum`", function() {
 					var request1 = new RequestClass(),
-					    request2 = new RequestClass(),
-					    resolvedRequest1,
-					    resolvedRequest2;
+					    request2 = new RequestClass();
 					
 					// Add Requests to the proxy. Example call here: manualProxy.create( request )
-					manualProxy[ actionName ]( request1 ).done( function( request ) { resolvedRequest1 = request; } );
-					manualProxy[ actionName ]( request2 ).done( function( request ) { resolvedRequest2 = request; } );
+					var promise1 = manualProxy[ actionName ]( request1 );
+					var promise2 = manualProxy[ actionName ]( request2 );
 					
 					// Test initial conditions - not resolved yet
-					expect( resolvedRequest1 ).toBe( undefined );
-					expect( resolvedRequest2 ).toBe( undefined );
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'pending' );
 					
 					// Resolve the first. Example call here: manualProxy.resolveCreate( 0 )
 					manualProxy[ 'resolve' + capitalizedActionName ]( 0 );
-					expect( resolvedRequest1 ).toBe( request1 );
-					expect( resolvedRequest2 ).toBe( undefined );
+					expect( promise1.state() ).toBe( 'resolved' );
+					expect( promise2.state() ).toBe( 'pending' );
 					
 					// Resolve the second. Example call here: manualProxy.resolveCreate( 1 )
 					manualProxy[ 'resolve' + capitalizedActionName ]( 1 );
-					expect( resolvedRequest1 ).toBe( request1 );
-					expect( resolvedRequest2 ).toBe( request2 );
+					expect( promise1.state() ).toBe( 'resolved' );
+					expect( promise2.state() ).toBe( 'resolved' );
 				} );
 				
 				
 				it( "should resolve the '" + actionName + "' request at `requestNum`, out of order", function() {
 					var request1 = new RequestClass(),
-					    request2 = new RequestClass(),
-					    resolvedRequest1,
-					    resolvedRequest2;
+					    request2 = new RequestClass();
 					
 					// Add Requests to the proxy. Example call here: manualProxy.create( request )
-					manualProxy[ actionName ]( request1 ).done( function( request ) { resolvedRequest1 = request; } );
-					manualProxy[ actionName ]( request2 ).done( function( request ) { resolvedRequest2 = request; } );
+					var promise1 = manualProxy[ actionName ]( request1 );
+					var promise2 = manualProxy[ actionName ]( request2 );
 					
 					// Test initial conditions - not resolved yet
-					expect( resolvedRequest1 ).toBe( undefined );
-					expect( resolvedRequest2 ).toBe( undefined );
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'pending' );
 					
 					// Resolve the first. Example call here: manualProxy.resolveCreate( 1 )
 					manualProxy[ 'resolve' + capitalizedActionName ]( 1 );
-					expect( resolvedRequest1 ).toBe( undefined );
-					expect( resolvedRequest2 ).toBe( request2 );
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'resolved' );
 					
 					// Resolve the second. Example call here: manualProxy.resolveCreate( 0 )
 					manualProxy[ 'resolve' + capitalizedActionName ]( 0 );
-					expect( resolvedRequest1 ).toBe( request1 );
-					expect( resolvedRequest2 ).toBe( request2 );
+					expect( promise1.state() ).toBe( 'resolved' );
+					expect( promise2.state() ).toBe( 'resolved' );
 				} );
 				
 				
-				// The following only apply to 'create', 'read', and 'update' requests - not 'destroy'
-				if( actionName === 'create' || actionName === 'read' || actionName === 'update' ) {
+				it( "should resolve a '" + actionName + "' request using a directly-provided `resultSet`", function() {
+					var request = new RequestClass(),
+					    resultSet = new ResultSet(),
+					    resolvedResultSet;
 					
-					it( "should resolve a '" + actionName + "' request using a directly-provided `resultSet`", function() {
-						var request = new RequestClass(),
-						    resultSet = new ResultSet(),
-						    resolvedRequest;
-						
-						// Add Request to the proxy. Example call here: manualProxy.create( request )
-						manualProxy[ actionName ]( request ).done( function( request ) { resolvedRequest = request; } );
-						
-						// Test initial conditions - not resolved yet
-						expect( resolvedRequest ).toBe( undefined );
-						
-						// Resolve
-						manualProxy[ 'resolve' + capitalizedActionName ]( 0, resultSet );
-						expect( resolvedRequest ).toBe( request );
-						expect( resolvedRequest.getResultSet() ).toBe( resultSet );
-					} );
+					// Add Request to the proxy. Example call here: manualProxy.create( request )
+					var promise = manualProxy[ actionName ]( request )
+						.done( function( resultSet ) { resolvedResultSet = resultSet; } );
 					
+					// Test initial conditions - not resolved yet
+					expect( promise.state() ).toBe( 'pending' );
+					expect( resolvedResultSet ).toBe( undefined );
 					
-					it( "should resolve a '" + actionName + "' request with some given anonymous data, to be fed through the proxy's `reader`", function() {
-						var request = new RequestClass(),
-						    resolvedRequest;
-						
-						// Add Request to the proxy. Example call here: manualProxy.create( request )
-						manualProxy[ actionName ]( request ).done( function( request ) { resolvedRequest = request; } );
-						
-						// Test initial conditions - not resolved yet
-						expect( resolvedRequest ).toBe( undefined );
-						
-						// Resolve with anonymous data, to be fed through the proxy's reader
-						manualProxy[ 'resolve' + capitalizedActionName ]( 0, { a: 1, b: 2 } );
-						expect( resolvedRequest ).toBe( request );
-						expect( resolvedRequest.getResultSet() instanceof ResultSet ).toBe( true );
-						expect( resolvedRequest.getResultSet().getRecords()[ 0 ] ).toEqual( { a: 1, b: 2 } );
-					} );
+					// Resolve
+					manualProxy[ 'resolve' + capitalizedActionName ]( 0, resultSet );
+					expect( promise.state() ).toBe( 'resolved' );
+					expect( resolvedResultSet ).toBe( resultSet );
+				} );
+				
+				
+				it( "should resolve a '" + actionName + "' request with some given anonymous data, to be fed through the proxy's `reader`", function() {
+					var request = new RequestClass(),
+					    resolvedResultSet;
 					
-				}
+					// Add Request to the proxy. Example call here: manualProxy.create( request )
+					var promise = manualProxy[ actionName ]( request )
+						.done( function( resultSet ) { resolvedResultSet = resultSet; } );
+					
+					// Test initial conditions - not resolved yet
+					expect( promise.state() ).toBe( 'pending' );
+					expect( resolvedResultSet ).toBe( undefined );
+					
+					// Resolve with anonymous data, to be fed through the proxy's reader
+					manualProxy[ 'resolve' + capitalizedActionName ]( 0, { a: 1, b: 2 } );
+					expect( promise.state() ).toBe( 'resolved' );
+					expect( resolvedResultSet instanceof ResultSet ).toBe( true );
+					expect( resolvedResultSet.getRecords()[ 0 ] ).toEqual( { a: 1, b: 2 } );
+				} );
 				
 			} );
 			
@@ -170,53 +165,68 @@ define( [
 				
 				it( "should reject the '" + actionName + "' request at `requestNum`", function() {
 					var request1 = new RequestClass(),
-					    request2 = new RequestClass(),
-					    rejectedRequest1,
-					    rejectedRequest2;
+					    request2 = new RequestClass();
 					
 					// Add Requests to the proxy. Example call here: manualProxy.create( request )
-					manualProxy[ actionName ]( request1 ).fail( function( request ) { rejectedRequest1 = request; } );
-					manualProxy[ actionName ]( request2 ).fail( function( request ) { rejectedRequest2 = request; } );
+					var promise1 = manualProxy[ actionName ]( request1 );
+					var promise2 = manualProxy[ actionName ]( request2 );
 					
 					// Test initial conditions - not resolved yet
-					expect( rejectedRequest1 ).toBe( undefined );
-					expect( rejectedRequest2 ).toBe( undefined );
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'pending' );
 					
 					// Reject the first. Example call here: manualProxy.rejectCreate( 0 )
 					manualProxy[ 'reject' + capitalizedActionName ]( 0 );
-					expect( rejectedRequest1 ).toBe( request1 );
-					expect( rejectedRequest2 ).toBe( undefined );
+					expect( promise1.state() ).toBe( 'rejected' );
+					expect( promise2.state() ).toBe( 'pending' );
 					
 					// Reject the second. Example call here: manualProxy.rejectCreate( 1 )
 					manualProxy[ 'reject' + capitalizedActionName ]( 1 );
-					expect( rejectedRequest1 ).toBe( request1 );
-					expect( rejectedRequest2 ).toBe( request2 );
+					expect( promise1.state() ).toBe( 'rejected' );
+					expect( promise2.state() ).toBe( 'rejected' );
 				} );
 				
 				
 				it( "should reject the '" + actionName + "' request at `requestNum`, out of order", function() {
 					var request1 = new RequestClass(),
-					    request2 = new RequestClass(),
-					    rejectedRequest1,
-					    rejectedRequest2;
+					    request2 = new RequestClass();
 					
 					// Add Requests to the proxy. Example call here: manualProxy.create( request )
-					manualProxy[ actionName ]( request1 ).fail( function( request ) { rejectedRequest1 = request; } );
-					manualProxy[ actionName ]( request2 ).fail( function( request ) { rejectedRequest2 = request; } );
+					var promise1 = manualProxy[ actionName ]( request1 );
+					var promise2 = manualProxy[ actionName ]( request2 );
 					
 					// Test initial conditions - not resolved yet
-					expect( rejectedRequest1 ).toBe( undefined );
-					expect( rejectedRequest2 ).toBe( undefined );
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'pending' );
 					
 					// Reject the first. Example call here: manualProxy.rejectCreate( 1 )
 					manualProxy[ 'reject' + capitalizedActionName ]( 1 );
-					expect( rejectedRequest1 ).toBe( undefined );
-					expect( rejectedRequest2 ).toBe( request2 );
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'rejected' );
 					
 					// Reject the second. Example call here: manualProxy.rejectCreate( 0 )
 					manualProxy[ 'reject' + capitalizedActionName ]( 0 );
-					expect( rejectedRequest1 ).toBe( request1 );
-					expect( rejectedRequest2 ).toBe( request2 );
+					expect( promise1.state() ).toBe( 'rejected' );
+					expect( promise2.state() ).toBe( 'rejected' );
+				} );
+				
+				
+				it( "should reject a '" + actionName + "' request with an `error` object", function() {
+					var request = new RequestClass(),
+					    rejectedError;
+					
+					// Add Request to the proxy. Example call here: manualProxy.create( request )
+					var promise = manualProxy[ actionName ]( request )
+						.fail( function( error ) { rejectedError = error; } );
+					
+					// Test initial conditions - not resolved yet
+					expect( promise.state() ).toBe( 'pending' );
+					expect( rejectedError ).toBe( undefined );
+					
+					// Reject with error
+					manualProxy[ 'reject' + capitalizedActionName ]( 0, "Test Error" );
+					expect( promise.state() ).toBe( 'rejected' );
+					expect( rejectedError ).toBe( "Test Error" );
 				} );
 				
 			} );

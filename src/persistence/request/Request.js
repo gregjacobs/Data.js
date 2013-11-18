@@ -166,7 +166,7 @@ define( [
 		 * @return {data.persistence.ResultSet} The ResultSet read by the Proxy, or null if one has not been set.
 		 */
 		getResultSet : function() {
-			return this.resultSet;
+			return this.resultSet || null;
 		},
 		
 		

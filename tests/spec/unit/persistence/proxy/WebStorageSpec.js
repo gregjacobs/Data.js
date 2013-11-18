@@ -77,16 +77,17 @@ define( [
 			
 			it( "should create a single record", function() {
 				var model = new SimpleModel( { a: 1, b: 2 } ),
-				    createRequest = new CreateRequest( { models: [ model ] } );
+				    createRequest = new CreateRequest( { models: [ model ] } ),
+				    resultRecords;
 				
-				proxy.create( createRequest );  // synchronous - no need to add handlers to the returned promise
+				proxy.create( createRequest )  // synchronous
+					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
 				
 				// Check that the record for the model was created, and that bookkeeping was done
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );
 				expect( proxy.getRecordIds() ).toEqual( [ "1" ] );
 				
 				// Check that a record ID was returned in the resultset to set to the Model
-				var resultRecords = createRequest.getResultSet().getRecords();
 				expect( resultRecords.length ).toBe( 1 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1 } );
 			} );
@@ -95,9 +96,11 @@ define( [
 			it( "should create multiple records", function() {
 				var model1 = new SimpleModel( { a: 1, b: 2 } ),
 				    model2 = new SimpleModel( { a: 3, b: 4 } ),
-				    createRequest = new CreateRequest( { models: [ model1, model2 ] } );
+				    createRequest = new CreateRequest( { models: [ model1, model2 ] } ),
+				    resultRecords;
 				
-				proxy.create( createRequest );  // synchronous - no need to add handlers to the returned promise
+				proxy.create( createRequest )  // synchronous
+					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
 				
 				// Check that the records for the models were created, and that bookkeeping was done
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );
@@ -105,7 +108,6 @@ define( [
 				expect( proxy.getRecordIds() ).toEqual( [ "1", "2" ] );
 				
 				// Check that record IDs were returned in the resultset to set to the Models
-				var resultRecords = createRequest.getResultSet().getRecords();
 				expect( resultRecords.length ).toBe( 2 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1 } );
 				expect( resultRecords[ 1 ] ).toEqual( { id: 2 } );
@@ -117,16 +119,19 @@ define( [
 				var model1 = new SimpleModel( { a: 1, b: 2 } ),
 				    model2 = new SimpleModel( { a: 3, b: 4 } ),
 				    createRequest0 = new CreateRequest( { models: [ model1, model2 ] } );
-				proxy.create( createRequest0 );  // synchronous - no need to add handlers to the returned promise
+				
+				proxy.create( createRequest0 );  // synchronous
 				
 				
-				// Add second first set
+				// Add second set
 				var model3 = new SimpleModel( { a: 5, b: 6 } ),
 				    model4 = new SimpleModel( { a: 7, b: 8 } ),
-				    createRequest1 = new CreateRequest( { models: [ model3, model4 ] } );
-				proxy.create( createRequest1 );  // synchronous - no need to add handlers to the returned promise
+				    createRequest1 = new CreateRequest( { models: [ model3, model4 ] } ),
+				    resultRecords;
 				
-				var resultRecords = createRequest1.getResultSet().getRecords();
+				proxy.create( createRequest1 )  // synchronous
+					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				
 				expect( resultRecords.length ).toBe( 2 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 3 } );
 				expect( resultRecords[ 1 ] ).toEqual( { id: 4 } );
@@ -172,11 +177,12 @@ define( [
 			
 			
 			it( "should read the collection of models", function() {
-				var readRequest = new ReadRequest();
+				var readRequest = new ReadRequest(),
+				    resultRecords;
 				
-				proxy.read( readRequest );  // synchronous - no need to add handlers to the returned promise
+				proxy.read( readRequest )  // synchronous
+					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
 				
-				var resultRecords = readRequest.getResultSet().getRecords();
 				expect( resultRecords.length ).toBe( 3 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1, a: 1, b: 2 } );
 				expect( resultRecords[ 1 ] ).toEqual( { id: 2, a: 3, b: 4 } );
@@ -185,34 +191,38 @@ define( [
 			
 			
 			it( "should read a single model by ID", function() {
-				var readRequest = new ReadRequest( { modelId: 1 } );
+				var readRequest = new ReadRequest( { modelId: 1 } ),
+				    resultRecords;
 				
-				proxy.read( readRequest );  // synchronous - no need to add handlers to the returned promise
+				proxy.read( readRequest )  // synchronous
+					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
 				
-				var resultRecords = readRequest.getResultSet().getRecords();
 				expect( resultRecords.length ).toBe( 1 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1, a: 1, b: 2 } );
 			} );
 			
 			
 			it( "should read 0 models by ID if the ID doesn't exist", function() {
-				var readRequest = new ReadRequest( { modelId: 99 } );  // non-existent model
+				var readRequest = new ReadRequest( { modelId: 99 } ),  // non-existent model
+				    resultRecords;
 				
-				proxy.read( readRequest );  // synchronous - no need to add handlers to the returned promise
+				proxy.read( readRequest )  // synchronous
+					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
 				
-				var resultRecords = readRequest.getResultSet().getRecords();
 				expect( resultRecords.length ).toBe( 0 );
 			} );
 			
 			
 			it( "should read a model by a String ID (as opposed to just a Number ID)", function() {
-				var model4 = new SimpleModel( { id: "fourthId", a: 7, b: 8 } );  // for testing String IDs
+				var model4 = new SimpleModel( { id: "fourthId", a: 7, b: 8 } ),  // for testing String IDs,
+				    resultRecords;
+				    
 				proxy.update( new UpdateRequest( { models: [ model4 ] } ) );  // this will actually have the effect of a create(), since the ID is already assigned to the model
 				
 				var readRequest = new ReadRequest( { modelId: "fourthId" } );
-				proxy.read( readRequest );  // synchronous - no need to add handlers to the returned promise
+				proxy.read( readRequest )  // synchronous
+					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
 				
-				var resultRecords = readRequest.getResultSet().getRecords();
 				expect( resultRecords.length ).toBe( 1 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: "fourthId", a: 7, b: 8 } );
 			} );
@@ -660,10 +670,12 @@ define( [
 				proxy.create( createRequest );  // synchronous - no need to add handlers to the returned promise
 				
 				// Now read the record
-				var readRequest = new ReadRequest();  // should get the model we just stored
-				proxy.read( readRequest );  // synchronous - no need to add handlers to the returned promise
+				var readRequest = new ReadRequest(),  // should get the model we just stored
+				    resultRecords;
 				
-				var resultRecords = readRequest.getResultSet().getRecords();
+				proxy.read( readRequest )  // synchronous
+					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				
 				expect( resultRecords.length ).toBe( 1 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1, e: 1, f: 2 } );
 			} );

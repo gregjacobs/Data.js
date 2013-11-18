@@ -26,9 +26,41 @@ define( [
 	 * - {@link #destroy}
 	 * 
 	 * Each method is passed a {@link data.persistence.request.Request Request} object, which provides the information
-	 * needed to perform each operation.
+	 * needed to perform each operation. 
 	 * 
-	 * For an example implementation, see the {@link data.persistence.proxy.Ajax Ajax} proxy.
+	 * Each method must return a jQuery Promise object, which should be resolved if the request completes successfully, or 
+	 * should be rejected if the request errors.
+	 * 
+	 * - A {@link data.persistence.ResultSet} object is used to return data from the Proxy. Providing any raw data to the
+	 *   proxy's {@link #reader} (i.e. to the {@link data.persistence.reader.Reader#read read} method) will return a ResultSet
+	 *   object. The Promise should then be resolved with this object, or otherwise no arguments if there is no data to return.
+	 * - If an error occurs, the Promise should be rejected. Optionally, an error message or object may be provided as the first
+	 *   argument to the reject method.
+	 * 
+	 * 
+	 * ## Example Implementation Method
+	 * 
+	 *     read : function( request ) {
+	 *         var me = this,  // for closures
+	 *             deferred = new jQuery.Deferred();
+	 *         
+	 *         jQuery.ajax( {
+	 *             url : '...',
+	 *             dataType: 'json',
+	 *             
+	 *             success : function( data ) {
+	 *                 var resultSet = me.reader.read( data );  // default reader is a {@link data.persistence.reader.Json JsonReader}
+	 *                 deferred.resolve( resultSet );
+	 *             },
+	 *             error : function( jqXHR, textStatus, errorThrown ) {
+	 *                 deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+	 *             }
+	 *         } );
+	 *         
+	 *         return deferred.promise();
+	 *     }
+	 * 
+	 * For a full example implementation, see the {@link data.persistence.proxy.Ajax Ajax} proxy.
 	 * 
 	 * 
 	 * ## Implementing the {@link #abort} method.
@@ -157,8 +189,9 @@ define( [
 		 * @param {data.persistence.request.Create} request The CreateRequest instance to represent
 		 *   the creation on the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
+		 *   The Promise's Deferred may be resolved with a {@link data.persistence.ResultSet} object as its
+		 *   argument, if there is return data from the 'create' request. If there is an error, the underlying
+		 *   Deferred may be rejected with an error string/object as its first argument.
 		 */
 		create : Class.abstractMethod,
 		
@@ -179,8 +212,9 @@ define( [
 		 * @param {data.persistence.request.Read} request The ReadRequest instance to represent
 		 *   the reading of data from the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
+		 *   The Promise's Deferred should be resolved with a {@link data.persistence.ResultSet} object as its
+		 *   argument, which contains the return data from the 'read' request. This usually comes from the {@link #reader}.
+		 *   If there is an error, the underlying Deferred may be rejected with an error string/object as its first argument.
 		 */
 		read : Class.abstractMethod,
 		
@@ -193,8 +227,9 @@ define( [
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance to represent
 		 *   the update on the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
+		 *   The Promise's Deferred may be resolved with a {@link data.persistence.ResultSet} object as its
+		 *   argument, if there is return data from the 'update' request. If there is an error, the underlying
+		 *   Deferred may be rejected with an error string/object as its first argument.
 		 */
 		update : Class.abstractMethod,
 		
@@ -209,8 +244,8 @@ define( [
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance to represent
 		 *   the destruction (deletion) on the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
+		 *   If there is an error, the underlying Deferred may be rejected with an error string/object as 
+		 *   its first argument.
 		 */
 		destroy : Class.abstractMethod,
 		

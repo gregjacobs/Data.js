@@ -6,6 +6,7 @@ define( [
 	'data/persistence/ResultSet',
 	'data/persistence/proxy/Rest',
 	'data/persistence/reader/Reader',
+	
 	'data/persistence/request/Create',
 	'data/persistence/request/Read',
 	'data/persistence/request/Update',
@@ -20,17 +21,17 @@ define( [
 	
 	describe( "data.persistence.proxy.Rest", function() {
 		
-		describe( "Test create", function() {
+		describe( 'create()', function() {
 			
 			describe( "General create() tests", function() {
-				var thisSuite;
+				var model,
+				    reader,
+				    request;
 				
 				beforeEach( function() {
-					thisSuite = {};
-					
-					thisSuite.model = JsMockito.mock( Model );
-					thisSuite.reader = JsMockito.mock( ConcreteReader );
-					thisSuite.request = JsMockito.mock( CreateRequest );
+					model = JsMockito.mock( Model );
+					reader = JsMockito.mock( ConcreteReader );
+					request = JsMockito.mock( CreateRequest );
 				} );
 				
 				
@@ -40,21 +41,21 @@ define( [
 						ajax : function( options ) { 
 							return new jQuery.Deferred().resolve( testData ).promise();
 						},
-						reader : thisSuite.reader
+						reader : reader
 					} );
 					var proxy = new TestProxy();
 					
-					JsMockito.when( thisSuite.request ).getModels().thenReturn( [ thisSuite.model ] );
+					JsMockito.when( request ).getModels().thenReturn( [ model ] );
 					
-					var resultSet;
-					JsMockito.when( thisSuite.reader ).read().then( function( data ) {
-						return ( resultSet = new ResultSet( { records: data } ) );
+					var resolvedResultSet;
+					JsMockito.when( reader ).read().then( function( data ) {
+						return new ResultSet( { records: data } );
 					} );
-					proxy.create( thisSuite.request );
+					var promise = proxy.create( request )
+						.done( function( resultSet ) { resolvedResultSet = resultSet; } );
 					
-					expect( testData ).toBe( resultSet.getRecords()[ 0 ] );  // orig YUI Test err msg: "The records provided to the ResultSet should have been the testData"
-					
-					JsMockito.verify( thisSuite.request ).setResultSet( resultSet );
+					expect( promise.state() ).toBe( 'resolved' );
+					expect( resolvedResultSet.getRecords()[ 0 ] ).toBe( testData );
 				} );
 				
 			} );
@@ -113,19 +114,19 @@ define( [
 		} );
 		
 		
-		describe( "Test read", function() {
+		describe( 'read()', function() {
 			
 			describe( "General read() tests", function() {
-				var thisSuite;
+				var model,
+				    reader,
+				    request;
 				
 				beforeEach( function() {
-					thisSuite = {};
+					model = JsMockito.mock( Model );
+					reader = JsMockito.mock( ConcreteReader );
 					
-					thisSuite.model = JsMockito.mock( Model );
-					thisSuite.reader = JsMockito.mock( ConcreteReader );
-					
-					thisSuite.request = JsMockito.mock( ReadRequest );
-					JsMockito.when( thisSuite.request ).getModelId().thenReturn( 1 );
+					request = JsMockito.mock( ReadRequest );
+					JsMockito.when( request ).getModelId().thenReturn( 1 );
 				} );
 				
 				
@@ -135,20 +136,21 @@ define( [
 						ajax : function( options ) { 
 							return new jQuery.Deferred().resolve( testData ).promise();
 						},
-						reader : thisSuite.reader
+						reader : reader
 					} );
 					
-					var resultSet;
-					JsMockito.when( thisSuite.reader ).read().then( function( data ) {
-						return ( resultSet = new ResultSet( { records: data } ) );
+					JsMockito.when( reader ).read().then( function( data ) {
+						return new ResultSet( { records: data } );
 					} );
 					
-					var proxy = new TestProxy();
-					proxy.read( thisSuite.request );
+					var proxy = new TestProxy(),
+					    resolvedResultSet;
 					
-					expect( testData ).toBe( resultSet.getRecords()[ 0 ] );  // orig YUI Test err msg: "The records provided to the ResultSet should have been the testData"
+					var promise = proxy.read( request )
+						.done( function( resultSet ) { resolvedResultSet = resultSet; } );
 					
-					JsMockito.verify( thisSuite.request ).setResultSet( resultSet );
+					expect( promise.state() ).toBe( 'resolved' );
+					expect( resolvedResultSet.getRecords()[ 0 ] ).toBe( testData );
 				} );
 				
 			} );

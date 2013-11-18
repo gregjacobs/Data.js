@@ -181,23 +181,17 @@ define( [
 		resolve : function( actionName, requestIdx, data ) {
 			var storedReqObj = this.requests[ actionName ][ requestIdx ],
 			    deferred = storedReqObj.deferred,
-			    request  = storedReqObj.request;
+			    request  = storedReqObj.request,
+			    resultSet;
 			
-			// Process the ResultSet for create/read/update actions - not destroy
-			if( actionName === 'create' || actionName === 'read' || actionName === 'update' ) {
-				var resultSet;
-				if( data instanceof ResultSet ) {
-					resultSet = data;
-				} else if( data != null ) {
-					resultSet = this.reader.read( data );
-				}
-				
-				if( resultSet )
-					request.setResultSet( resultSet );
+			// Process the ResultSet if one was provided, or if raw data was provided
+			if( data instanceof ResultSet ) {
+				resultSet = data;
+			} else if( data != null ) {
+				resultSet = this.reader.read( data );
 			}
 			
-			request.setSuccess();
-			deferred.resolve( request );
+			deferred.resolve( resultSet );
 		},
 		
 		
@@ -212,11 +206,9 @@ define( [
 		 */
 		reject : function( actionName, requestIdx, error ) {
 			var storedReqObj = this.requests[ actionName ][ requestIdx ],
-			    deferred = storedReqObj.deferred,
-			    request  = storedReqObj.request;
+			    deferred = storedReqObj.deferred;
 			
-			request.setError( error );
-			deferred.reject( request );
+			deferred.reject( error );
 		},
 		
 		
@@ -261,7 +253,8 @@ define( [
 		 * 
 		 * @param {Number} requestIdx The index of the request to resolve.
 		 * @param {data.persistence.ResultSet} [resultSet] The ResultSet to set to the 
-		 *   {@link data.persistence.request.Create CreateRequest}, if any.
+		 *   {@link data.persistence.request.Create CreateRequest}, if any. This may
+		 *   also be anonymous data to be read by the proxy's {@link #reader}.
 		 */
 		resolveCreate : function( requestIdx, resultSet ) {
 			this.resolve( 'create', requestIdx, resultSet );
@@ -316,7 +309,8 @@ define( [
 		 * 
 		 * @param {Number} requestIdx The index of the request to resolve.
 		 * @param {data.persistence.ResultSet} [resultSet] The ResultSet to set to the 
-		 *   {@link data.persistence.request.Read ReadRequest}, if any.
+		 *   {@link data.persistence.request.Read ReadRequest}, if any. This may
+		 *   also be anonymous data to be read by the proxy's {@link #reader}.
 		 */
 		resolveRead : function( requestIdx, resultSet ) {
 			this.resolve( 'read', requestIdx, resultSet );
@@ -372,7 +366,8 @@ define( [
 		 * 
 		 * @param {Number} requestIdx The index of the request to resolve.
 		 * @param {data.persistence.ResultSet} [resultSet] The ResultSet to set to the 
-		 *   {@link data.persistence.request.Update UpdateRequest}, if any.
+		 *   {@link data.persistence.request.Update UpdateRequest}, if any. This may
+		 *   also be anonymous data to be read by the proxy's {@link #reader}.
 		 */
 		resolveUpdate : function( requestIdx, resultSet ) {
 			this.resolve( 'update', requestIdx, resultSet );
@@ -428,9 +423,12 @@ define( [
 		 * Resolves the 'destroy' request at the given `requestIdx`.
 		 * 
 		 * @param {Number} requestIdx The index of the request to resolve.
+		 * @param {data.persistence.ResultSet} [resultSet] The ResultSet to set to the 
+		 *   {@link data.persistence.request.Destroy DestroyRequest}, if any. This may
+		 *   also be anonymous data to be read by the proxy's {@link #reader}.
 		 */
-		resolveDestroy : function( requestIdx ) {
-			this.resolve( 'destroy', requestIdx );
+		resolveDestroy : function( requestIdx, resultSet ) {
+			this.resolve( 'destroy', requestIdx, resultSet );
 		},
 		
 		/**
