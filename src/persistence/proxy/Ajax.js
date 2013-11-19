@@ -146,13 +146,13 @@ define( [
 		
 		/**
 		 * @protected
-		 * @property {Object} jqXhrObjs
+		 * @property {Object} xhrObjs
 		 * 
 		 * A map of jQuery.jqXHR objects for running XMLHttpRequests. These are stored so that they can be
 		 * {@link #abort aborted} if need be.
 		 * 
 		 * The keys of this object are {@link data.persistence.request.Request Request} 
-		 * {@link data.persistence.request.Request#getUuid uuids}, and the values are the jqXHR objects. 
+		 * {@link data.persistence.request.Request#getUuid uuids}, and the values are the jQuery jqXHR objects. 
 		 */
 		
 		
@@ -165,7 +165,7 @@ define( [
 			
 			this.api = this.api || {};
 			this.defaultParams = this.defaultParams || {};
-			this.jqXhrObjs = {};
+			this.xhrObjs = {};
 		},
 		
 		
@@ -197,7 +197,7 @@ define( [
 			var me = this,  // for closures
 			    paramsObj = this.buildParams( request ),
 			    deferred = new jQuery.Deferred(),
-			    jqXhrObjs = this.jqXhrObjs,
+			    xhrObjs = this.xhrObjs,
 			    requestUuid = request.getUuid();
 			
 			// Make the AJAX request
@@ -210,7 +210,7 @@ define( [
 			
 			// Store the jqXHR object in the map before attaching any promise handlers. If the jqXHR completes 
 			// synchronously for some reason, we want to make sure we clean up the reference in this map.
-			jqXhrObjs[ requestUuid ] = jqXhr;
+			xhrObjs[ requestUuid ] = jqXhr;
 			
 			// Now attach handlers
 			jqXhr
@@ -222,7 +222,7 @@ define( [
 					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				} )
 				.always( function() {
-					delete jqXhrObjs[ requestUuid ];  // remove the reference to the jqXHR object
+					delete xhrObjs[ requestUuid ];  // remove the reference to the jqXHR object
 				} );
 		
 			return deferred.promise();
@@ -267,11 +267,11 @@ define( [
 		 * @param {data.persistence.request.Request} request The Request to abort.
 		 */
 		abort : function( request ) {
-			var jqXhrObj = this.jqXhrObjs[ request.getUuid() ];
+			var xhrObj = this.getXhr( request );
 			
 			// Make sure the object still exists before calling abort(). The object will have been removed
 			// from the `jqXhrObjs` map if the request has already been completed. 
-			if( jqXhrObj ) jqXhrObj.abort();
+			if( xhrObj ) xhrObj.abort();
 		},
 		
 		
@@ -279,6 +279,21 @@ define( [
 		
 		// Note: No setDefaultParams() method so that the Proxy is immutable, and can be shared between many Model
 		//       and Collection instances.
+		
+		
+		/**
+		 * Retrieves the jqXHR object which represents an in-progress AJAX request, for the given 
+		 * {@link data.persistence.request.Request} object.
+		 * 
+		 * @protected
+		 * @param {data.persistence.request.Request} request The Request object to retrieve the associated jQuery jqXHR object for.
+		 * @return {jQuery.jqXHR} The jqXHR object which relates to the provided `request` object. This will only be a jqXHR object
+		 *   which represents an in-progress AJAX request. This method returns `null` if the request has completed, as the Ajax proxy 
+		 *   drops the reference to a completed AJAX request.
+		 */
+		getXhr : function( request ) {
+			return this.xhrObjs[ request.getUuid() ] || null;
+		},
 		
 		
 		/**

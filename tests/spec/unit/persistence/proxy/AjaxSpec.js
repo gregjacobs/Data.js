@@ -154,15 +154,46 @@ define( [
 			} );
 			
 			
-			xit( "should not error if the request has already been completed successfully", function() {
+			it( "should not error if the request has already been completed successfully", function() {
+				var request = new ReadRequest( { modelId: 1 } );
 				
+				// Complete the request successfully first
+				var proxyPromise = proxy.read( request );
+				mockAjax.resolveRequest( 0, {} );
+				
+				// Now abort the request (after it's been completed)
+				proxy.abort( request );
+				
+				expect( mockAjax.wasAborted( 0 ) ).toBe( false );
+				expect( proxyPromise.state() ).toBe( "resolved" );
 			} );
 			
 			
-			xit( "should not error if the request has already errored itself", function() {
+			it( "should not error if the request has already errored itself", function() {
+				var request = new ReadRequest( { modelId: 1 } );
 				
+				// Complete the request with error first
+				var proxyPromise = proxy.read( request );
+				mockAjax.rejectRequest( 0, "error" );
+				
+				// Now abort the request (after it's been completed)
+				proxy.abort( request );
+				
+				expect( mockAjax.wasAborted( 0 ) ).toBe( false );
+				expect( proxyPromise.state() ).toBe( "rejected" );
 			} );
 			
+			
+			it( "should remove references to the associated jqXHR object when requests are completed", function() {
+				var request = new ReadRequest( { modelId: 1 } );
+				expect( proxy.getXhr( request ) ).toBe( null );  // initial condition
+				
+				var proxyPromise = proxy.read( request );
+				expect( proxy.getXhr( request ) ).not.toBe( null );
+				
+				mockAjax.resolveRequest( 0, {} );
+				expect( proxy.getXhr( request ) ).toBe( null );  // reference should be removed, so method should return null
+			} );
 			
 		} );
 		
