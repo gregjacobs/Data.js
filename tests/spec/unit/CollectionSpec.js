@@ -14,7 +14,6 @@ define( [
 	'data/persistence/proxy/Memory',
 	'data/persistence/request/Read',
 	'data/persistence/operation/Load',
-	'data/persistence/operation/Promise',
 	
 	'spec/lib/ManualProxy',
 	'spec/lib/CollectionPersistenceVerifier',
@@ -38,7 +37,6 @@ define( [
 	MemoryProxy,
 	ReadRequest,
 	LoadOperation,
-	OperationPromise,
 	
 	ManualProxy,
 	CollectionPersistenceVerifier,

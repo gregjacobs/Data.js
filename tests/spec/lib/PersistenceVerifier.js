@@ -4,11 +4,11 @@ define( [
 	'Class',
 	
 	'data/Model',
+	'data/persistence/operation/Operation',
 	'data/persistence/operation/Load',
 	'data/persistence/operation/Save',
-	'data/persistence/operation/Destroy',
-	'data/persistence/operation/Promise'
-], function( _, Class, Model, LoadOperation, SaveOperation, DestroyOperation, OperationPromise ) {
+	'data/persistence/operation/Destroy'
+], function( _, Class, Model, Operation, LoadOperation, SaveOperation, DestroyOperation ) {
 	
 	/**
 	 * @class spec.lib.PersistenceVerifier
@@ -110,7 +110,7 @@ define( [
 		 * @param {Mixed...} extraArgs Any extra arguments to be passed to the method under test. These arguments will
 		 *   be passed to the method under test before the `options` object that this method passes.
 		 *   Ex: `persistenceVerifier.execute( 'loadPage', 1 );`
-		 * @return {data.persistence.operation.Promise} The OperationPromise object returned by the method under test.
+		 * @return {data.persistence.operation.Operation} The Operation object returned by the method under test.
 		 *   This will represent either the 'load', 'save', or 'destroy' operation.
 		 */
 		execute : function( methodName ) {
@@ -197,17 +197,17 @@ define( [
 			}
 			
 			// Finally, call the persistence method
-			var operationPromise = dataComponentInstance[ methodName ].apply( dataComponentInstance, args );
+			var operation = dataComponentInstance[ methodName ].apply( dataComponentInstance, args );
 			
 			
 			// -----------------------------------
 			
 			
-			// Verify that the method returned an OperationPromise object
-			expect( operationPromise instanceof OperationPromise ).toBe( true );
+			// Verify that the method returned an Operation object
+			expect( operation instanceof Operation ).toBe( true );
 			
 			// Attach promise handlers
-			operationPromise
+			operation
 				.done( function( dataComponent, operation ) {
 					me.doneCallCount++;
 					expect( dataComponent ).toBe( dataComponentInstance );
@@ -237,7 +237,7 @@ define( [
 			
 			this.onAfterExecute( methodName );
 			
-			return operationPromise;
+			return operation;
 		},
 		
 		

@@ -1,7 +1,8 @@
 /*global define, window, _, describe, beforeEach, afterEach, it, xit, expect, spyOn */
 define( [
+	'jquery',
+	
 	'data/persistence/operation/Operation',
-	'data/persistence/operation/Promise',
 	
 	'data/persistence/request/Request',
 	'data/persistence/request/Create',
@@ -15,8 +16,9 @@ define( [
 	'data/persistence/proxy/Proxy',  // Used as the `proxy` of the Operations
 	'spec/lib/ManualProxy'
 ], function(
+	jQuery,
+	
 	Operation,
-	OperationPromise,
 	
 	Request,
 	CreateRequest,
@@ -759,17 +761,10 @@ define( [
 			} );
 			
 			
-			it( "should return an OperationPromise instance that is a view of the Operation", function() {				
+			it( "should simply return the Operation itself (which is a 'deferred', but will act as the promise as well). This method is for jQuery promise compatibility", function() {				
 				var promise = operation.promise();
 				
-				expect( promise instanceof OperationPromise ).toBe( true );
-			} );
-			
-			it( "should return the same OperationPromise instance for multiple calls (testing lazy instantiation)", function() {				
-				var promise1 = operation.promise(),
-				    promise2 = operation.promise();
-				
-				expect( promise1 ).toBe( promise2 );
+				expect( promise ).toBe( operation );
 			} );
 			
 		} );
@@ -885,6 +880,68 @@ define( [
 				
 				operation.abort();
 				expect( alwaysCallCount ).toBe( 1 );  // confirm that the handler was called at all
+			} );
+			
+		} );
+		
+		
+		describe( "compatibility with jQuery.when()", function() {
+			
+			it( "should be allowed to be used as a single promise passed to jQuery.when()", function() {
+				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    isDone = false;
+
+				var masterPromise = jQuery.when( operation );
+				expect( masterPromise.state() ).toBe( 'pending' );
+				
+				// Attach a handler to make sure
+				masterPromise.done( function() { isDone = true; } );
+				
+				operation.resolve();
+				expect( masterPromise.state() ).toBe( 'resolved' );
+				expect( isDone ).toBe( true );
+			} );
+
+			
+			it( "should be allowed to be used as a multiple promises passed to jQuery.when(), only being resolved when all individual promises are resolved", function() {
+				var operation1 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    operation2 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    operation3 = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+
+				var masterPromise = jQuery.when( operation1, operation2, operation3 );
+				expect( masterPromise.state() ).toBe( 'pending' );
+				
+				// Resolve one at a time
+				operation1.resolve();
+				expect( masterPromise.state() ).toBe( 'pending' );
+
+				operation2.resolve();
+				expect( masterPromise.state() ).toBe( 'pending' );
+
+				operation3.resolve();
+				expect( masterPromise.state() ).toBe( 'resolved' );
+			} );
+
+			
+			it( "should be allowed to be used as a multiple promises passed to jQuery.when(), being rejected if just one of the individual promises are rejected", function() {
+				var operation1 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    operation2 = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
+				    operation3 = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+
+				var masterPromise = jQuery.when( operation1, operation2, operation3 );
+				expect( masterPromise.state() ).toBe( 'pending' );
+				
+				// Resolve the first one
+				operation1.resolve();
+				expect( masterPromise.state() ).toBe( 'pending' );
+
+				// Reject the second one
+				operation2.reject();
+				expect( masterPromise.state() ).toBe( 'rejected' );
+
+				// Even if this third one is resolved, it should still be "rejected"
+				operation3.resolve();
+				expect( masterPromise.state() ).toBe( 'rejected' );
 			} );
 			
 		} );

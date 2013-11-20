@@ -2,10 +2,8 @@
 define( [
 	'jquery',
 	'lodash',
-	'Class',
-	
-	'data/persistence/operation/Promise'
-], function( jQuery, _, Class, OperationPromise ) {
+	'Class'
+], function( jQuery, _, Class ) {
 	
 	/**
 	 * @abstract
@@ -13,7 +11,7 @@ define( [
 	 * 
 	 * Represents a high level persistence-related operation executed on a {@link data.Model Model} or 
 	 * {@link data.Collection Collection} (i.e. a {@link data.DataComponent DataComponent}. This includes load, save, 
-	 * or destroy (delete) operations. 
+	 * or destroy (delete) operations.
 	 * 
 	 * An Operation is made up of two parts:
 	 * 
@@ -23,6 +21,34 @@ define( [
 	 *    is operating on has not been updated with the result of these requests just yet. The Operation is not considered to be 
 	 *    {@link #isComplete complete} until this second part has finished.
 	 * 
+	 * The Operation object is also a Deferred (Promise) object, which implements the jQuery Promise interface. See the
+	 * "Use" section below.
+	 * 
+	 * 
+	 * ## Use
+	 * 
+	 * Besides the internal use by the framework to facilitate persistence operations, an Operation object is returned from each 
+	 * of the persistence-related methods of {@link data.Model Model} and {@link data.Collection Collection}, in order for client
+	 * code to observe them. Methods where an Operation object is returned from include:
+	 * 
+	 * - {@link data.Model#load}
+	 * - {@link data.Model#save}
+	 * - {@link data.Model#destroy}
+	 * - {@link data.Collection#load}
+	 * - {@link data.Collection#loadRange}
+	 * - {@link data.Collection#loadPage}
+	 * - {@link data.Collection#loadPageRange}
+	 * - {@link data.Collection#sync}
+	 * 
+	 * Operation also supports the same interface as standard jQuery promises (see: 
+	 * [http://api.jquery.com/category/deferred-object/](http://api.jquery.com/category/deferred-object/)), to allow observers
+	 * to respond to the Operation's completion. See {@link #done}, {@link #fail}, {@link #then}, and {@link #always} methods.
+	 * 
+	 * The Operation object also adds a few extra methods for client usage, centering around the ability to abort the operation:
+	 * - {@link #abort}, which aborts (cancels) an in-progress Operation entirely (the Model/Collection which created the Operation object 
+	 *   will ignore any result, should one later be provided), and 
+	 * - {@link #cancel}, which is used to subscribe one or more handlers for if the Operation has been {@link #abort aborted}.
+	 * 
 	 * 
 	 * ## Sequence of Operations with Collaborators
 	 * 
@@ -31,7 +57,7 @@ define( [
 	 * {@link data.persistence.request.Request Requests} (such as if multiple pages of data are being loaded at once). 
 	 * 
 	 * When all Requests are complete, and the Collection has added the new {@link data.Model Models}, then the Operation is resolved,
-	 * causing {@link data.persistence.operation.Promise#done done} handlers on the Operation's {@link #promise} object to be called.
+	 * causing {@link #done} handlers to be called.
 	 * 
 	 *       Collection        Operation                 Proxy
 	 *           |                 |                       |
@@ -63,7 +89,7 @@ define( [
 	 *           |                 |
 	 *           |     resolve     |
 	 *           X---------------->X
-	 *           |                 X-----------> `done` handlers are called on the OperationPromise
+	 *           |                 X-----------> `done` handlers are called on the Operation
 	 * 
 	 * 
 	 * 
@@ -75,21 +101,10 @@ define( [
 	 * 1. The ability to attach {@link #done}, {@link #fail}, {@link #cancel}, {@link #then}, and {@link #always} handlers, 
 	 *    to detect when the Operation has completed successfully, has failed, or has been aborted (canceled), and
 	 * 2. {@link #resolve}, {@link #reject}, and {@link #abort} methods for setting the completion state of the Operation. 
-	 *    These are called by the DataComponent (Model or Collection) which instantiated the Operation, with the exception
-	 *    of {@link #abort} which may be called by client code of the {@link #dataComponent} to cancel an Operation.
+	 *    {@link #resolve Resolve} and {@link #reject} are called by the DataComponent (Model or Collection) which instantiated the 
+	 *    Operation, while {@link #abort} may be called by client code to abort (cancel) an Operation.
 	 * 
-	 * 
-	 * ## The OperationPromise
-	 * 
-	 * This object's {@link #promise} object (an {@link data.persistence.operation.Promise OperationPromise}) 
-	 * is returned to clients when they call the load/save/destroy methods on {@link data.Model Models} and 
-	 * {@link data.Collection Collections}, so that they can respond to the Operation's completion. 
-	 * 
-	 * This Object supports the same interface as standard jQuery promises, but adds the extra method 
-	 * {@link data.persistence.operation.Promise#abort abort}, which can cancel the Operation, and the {@link #cancel}
-	 * method which is used to subscribe handlers for if the Operation is {@link #abort aborted}.
-	 * 
-	 * 
+	 *
 	 * ## Subclasses
 	 * 
 	 * Operation's subclasses represent the three varieties of high level operations:
@@ -237,16 +252,6 @@ define( [
 		 * using {@link #hasErrored}.
 		 */
 		error : false,
-		
-		/**
-		 * @protected
-		 * @property {data.persistence.operation.Promise} _promise
-		 * 
-		 * The OperationPromise object for the Operation, which is used to return to clients so that they can observe 
-		 * when the Operation has completed.
-		 * 
-		 * This property is lazily created in the {@link #promise} method.
-		 */
 		
 		
 		/**
@@ -537,7 +542,7 @@ define( [
 		 * 
 		 * {@link #cancel} handlers are called with two arguments:
 		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
 		 */
 		abort : function() {
@@ -578,15 +583,18 @@ define( [
 		// -----------------------------------
 		
 		// Deferred interface
-		
+
 		/**
-		 * Retrieves the Operation's {@link #promise}. This promise is what is returned to clients of the
-		 * {@link data.Model} / {@link data.Collection} API.
+		 * Returns the Operation itself (this object). 
 		 * 
-		 * @return {data.persistence.operation.Promise} The Operation's Promise object.
+		 * This method is purely for compatibility with jQuery's Promise API, and is also for methods like 
+		 * `jQuery.when()`, which uses the existence of this method as a duck-type check in order to 
+		 * determine if a Deferred or Promise object has been passed to it.  
+		 * 
+		 * @return {data.persistence.operation.Operation} This Operation object.
 		 */
 		promise : function() {
-			return this._promise || ( this._promise = new OperationPromise( { operation: this } ) );
+			return this;
 		},
 		
 		
@@ -636,7 +644,7 @@ define( [
 		 * 
 		 * Handlers are called with the following two arguments when the Operation completes successfully:
 		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} handlerFn
@@ -653,7 +661,7 @@ define( [
 		 * 
 		 * Handlers are called with the following two arguments when the Operation fails to complete successfully:
 		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} handlerFn
@@ -670,7 +678,7 @@ define( [
 		 * 
 		 * Handlers are called with the following two arguments when the Operation has been aborted (canceled):
 		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} handlerFn
@@ -689,7 +697,7 @@ define( [
 		 * 
 		 * Handlers are called with the following two arguments when the Operation has completed successfully or has failed:
 		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} successHandlerFn
@@ -708,7 +716,7 @@ define( [
 		 * Handlers are called with the following two arguments when the Operation has completed successfully, has failed,
 		 * or has been aborted (canceled):
 		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} handlerFn

@@ -1315,11 +1315,84 @@ define( [
 		 * 
 		 * ## Aborting a Load Operation
 		 * 
-		 * It is possible to abort a "load" operation using the returned OperationPromise's {@link data.persistence.operation.Promise#abort abort}
+		 * It is possible to abort a 'load' operation using the returned Operation's {@link data.persistence.operation.Operation#abort abort}
 		 * method. The `cancel` and `complete` callbacks are called, as well as `cancel` and `always` handlers on the Promise.
 		 * 
-		 * Note that the load request to the {@link #proxy} may not be aborted (canceled) itself, but even if it returns, the data 
-		 * will not populate the model in this case.
+		 * Note that the load request to the {@link #proxy} may or may not be aborted (canceled) itself, but even if it returns at a later
+		 * time, the data will not populate the Model in this case.
+		 * 
+		 * 
+		 * ## Examples
+		 * 
+		 * Simple model loading:
+		 * 
+		 *     var model = new UserModel();  // assume `UserModel` is pre-configured with an Ajax proxy
+		 *     
+		 *     // Load the model, and attach handlers to determine when the model has finished loading
+		 *     var operation = model.load();
+		 *     operation.done( function() { alert( "Model Loaded" ); } );
+		 *     operation.fail( function() { alert( "Model Failed To Load" ); } );
+		 * 
+		 * 
+		 * Passing options:
+		 *     
+		 *     var model = new UserModel();  // assume `UserModel` is pre-configured with an Ajax proxy
+		 *     
+		 *     var operation = model.load( { 
+		 *         params : {
+		 *             paramA : 1,
+		 *             paramB : 2
+		 *         }
+		 *     } );
+		 *     
+		 * 
+		 * Aborting an in-progress 'load' operation:
+		 * 
+		 *     var model = new UserModel();  // assume `UserModel` is pre-configured with an Ajax proxy
+		 *     
+		 *     var operation = model.load();
+		 *     
+		 *     // ...
+		 *     
+		 *     operation.abort();
+		 *     
+		 * 
+		 * Responding to all of the Operation's Promise events:
+		 * 
+		 *     var model = new UserModel();  // assume `UserModel` is pre-configured with an Ajax proxy
+		 *     
+		 *     // Load the model, and attach handlers to determine when the model has finished loading
+		 *     var operation = model.load()
+		 *         .done( function() { alert( "Model Loaded Successfully" ); } )
+		 *         .fail( function() { alert( "Model Load Error" ); } )
+		 *         .cancel( function() { alert( "Model Load Aborted" ); } )
+		 *         .always( function() { alert( "Model Load Complete (success, error, or aborted)" ); } )
+		 * 
+		 * 
+		 * Passing callbacks instead of using the Operation's Promise interface (not recommended as it may result in "callback soup"
+		 * for complex asynchonous operations, but supported):
+		 * 
+		 *     var model = new UserModel();  // assume `UserModel` is pre-configured with an Ajax proxy
+		 *     
+		 *     var operation = model.load( {
+		 *         success : function() { alert( "Model Loaded Successfully" ); },
+		 *         error   : function() { alert( "Model Load Error" ); },
+		 *         cancel  : function() { alert( "Model Load Aborted" ); },
+		 *         always  : function() { alert( "Model Load Complete (success, error, or aborted)" ); }
+		 *     } );
+		 *     
+		 * 
+		 * Determining when multiple models have loaded, taking advantage of jQuery's ability to combine multiple Promise
+		 * objects into a master Promise:
+		 * 
+		 *     var model1 = new UserModel(),
+		 *         model2 = new UserModel(),
+		 *         model3 = new UserModel();
+		 *     
+		 *     jQuery.when( model1.load(), model2.load(), model3.load() ).then( function() {
+		 *         alert( "All 3 models have loaded" );
+		 *     } );
+		 * 
 		 * 
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
@@ -1328,12 +1401,15 @@ define( [
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.failure] Function to call if the save fails.
 		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
-		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}.
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
 		 * @param {Object} [options.scope] The object to call the `success`, `failure`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to this Model.
-		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
-		 *   the load completes. The Promise is both resolved or rejected with the arguments listed above in the method description.
+		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object.
 		 */
 		load : function( options ) {
 			options = options || {};
@@ -1366,7 +1442,7 @@ define( [
 			);
 			operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is aborted (canceled) by the user
 			
-			return operation.promise();  // returns the OperationPromise object
+			return operation;
 		},
 		
 		
@@ -1457,20 +1533,21 @@ define( [
 		 * @param {Function} [options.success] Function to call if the save is successful.
 		 * @param {Function} [options.error] Function to call if the save fails.
 		 * @param {Function} [options.cancel] Function to call if the save has been canceled, by the returned
-		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}. See note in the description of the
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}. See note in the description of the
 		 *   return of this method for a caveat on aborting (canceling) "save" operations.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to the Model.
-		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
-		 *   the save completes. The Promise is both resolved or rejected with the arguments listed above in the method description.
+		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'save' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the save completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
 		 *   
-		 *   The "save" operation may be aborted (canceled) via the OperationPromise's {@link data.persistence.operation.Promise#abort abort}
-		 *   method. However, note that when aborting a "save" operation, it is possible that the request still made it through 
-		 *   and was saved on its external data store (such as a web server). This may cause an inconsistency between the state 
-		 *   of the model on the client-side, and the state of the model on the server-side. Therefore, it is not recommended that 
-		 *   the "save" operation be canceled, unless it is going to be attempted again after sufficient time where the data store
-		 *   (server) has finished its operation, or the page is going to be refreshed.
+		 *   The 'save' operation may be aborted (canceled) by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object. However, note that when aborting a 'save' operation, it is possible that the request still completed
+		 *   and the Model was saved on its external data store (such as a web server). This may cause an inconsistency between the 
+		 *   state of the model on the client-side, and the state of the model on the server-side. Therefore, it is not recommended that 
+		 *   the 'save' operation be canceled, unless it is going to be attempted again after sufficient time where the data store
+		 *   (server) has finished the original operation, or the page is going to be refreshed.
 		 */
 		save : function( options ) {
 			options = options || {};
@@ -1678,22 +1755,22 @@ define( [
 		 * @param {Function} [options.success] Function to call if the destroy (deletion) is successful.
 		 * @param {Function} [options.error] Function to call if the destroy (deletion) fails.
 		 * @param {Function} [options.cancel] Function to call if the destroy (deletion) has been canceled, by the returned
-		 *   OperationPromise being {@link data.persistence.operation.Promise#abort aborted}. See note in the description of the
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}. See note in the description of the
 		 *   return of this method for a caveat on aborting (canceling) "destroy" operations.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to the Model.
 		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the destroy (deletion) completes. The 
 		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
-		 * @return {data.persistence.operation.Promise} An OperationPromise object which may have handlers attached for when 
-		 *   the destroy (deletion) completes. The Promise is both resolved or rejected with the arguments listed above in the 
-		 *   method description.
+		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'destroy' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the destroy completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
 		 *   
-		 *   The "destroy" operation may be aborted (canceled) via the OperationPromise's {@link data.persistence.operation.Promise#abort abort}
-		 *   method. However, note that when aborting a "destroy" operation, it is possible that the request still made it through 
-		 *   and was destroyed on its external data store (such as a web server). This may cause an inconsistency between the state 
-		 *   of the model on the client-side, and the state of the model on the server-side. Therefore, it is not recommended that 
-		 *   the "destroy" operation be canceled, unless it is going to be attempted again, or the page is going to be refreshed.
+		 *   The 'destroy' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object. However, note that when aborting a 'destroy' operation, it is possible that the request still 
+		 *   completed and the Model was destroyed on its external data store (such as a web server). This may cause an inconsistency 
+		 *   between the state of the model on the client-side, and the state of the model on the server-side. Therefore, it is not 
+		 *   recommended that the 'destroy' operation be canceled, unless it is going to be attempted again, or the page is going to be refreshed.
 		 */
 		destroy : function( options ) {
 			options = options || {};
@@ -1736,7 +1813,7 @@ define( [
 				operation.cancel( _.bind( this.onDestroyCancel, this, operation ) );  // handle if the Operation is aborted (canceled) by the user
 			}
 			
-			return operation.promise();  // returns the OperationPromise object
+			return operation;
 		},
 		
 		

@@ -167,7 +167,7 @@ define( [
 		 * @param {data.Collection} collection The Collection instance to execute the method under test on.
 		 * @param {Object} [options] Any options to pass to the "load" method under test. This relates to the
 		 *   `options` parameter accepted by the "load" method.
-		 * @return {data.persistence.operation.Promise} The OperationPromise object returned from the
+		 * @return {data.persistence.operation.Operation} The Operation object returned from the
 		 *   "load" method under test ({@link data.Collection#load}, {@link data.Collection#loadRange}, 
 		 *   {@link data.Collection#loadPage}, {@link data.Collection#loadPageRange})
 		 */
@@ -400,10 +400,10 @@ define( [
 			    persistenceVerifier = new CollectionPersistenceVerifier( { collection: collection } );
 			
 			// Call the 'load' method with the persistenceVerifier
-			var operationPromise = persistenceVerifier.execute.apply( persistenceVerifier, [ loadMethodName ].concat( loadMethodArgs ) );
+			var operation = persistenceVerifier.execute.apply( persistenceVerifier, [ loadMethodName ].concat( loadMethodArgs ) );
 			
-			// Abort (cancel) the LoadOperation (from the OperationPromise)
-			operationPromise.abort();
+			// Abort (cancel) the LoadOperation
+			operation.abort();
 			
 			// Test that if the request completes after the LoadOperation has been aborted, that it has no effect
 			manualProxy.resolveRead( 0, [ { id: 1 } ] );  // Resolve the "read" request that the load operation performed (the first 'read' request), and
@@ -421,10 +421,10 @@ define( [
 			    persistenceVerifier = new CollectionPersistenceVerifier( { collection: collection } );
 			
 			// Call the 'load' method with the persistenceVerifier
-			var operationPromise = persistenceVerifier.execute.apply( persistenceVerifier, [ loadMethodName ].concat( loadMethodArgs ) );
+			var operation = persistenceVerifier.execute.apply( persistenceVerifier, [ loadMethodName ].concat( loadMethodArgs ) );
 			
-			// Abort (cancel) the LoadOperation (from the OperationPromise)
-			operationPromise.abort();
+			// Abort (cancel) the LoadOperation
+			operation.abort();
 			
 			// Test that if the request completes after the LoadOperation has been aborted, that it has no effect
 			manualProxy.rejectRead( 0 );  // Reject the "read" request that the load operation performed (the first 'read' request), and

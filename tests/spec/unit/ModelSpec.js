@@ -1951,10 +1951,10 @@ define( [
 				var model = new ManualProxyModel( { id: 1, a: 1, b: 2 } ),
 				    modelPersistenceVerifier = new ModelPersistenceVerifier( { model: model } );
 				
-				var operationPromise = modelPersistenceVerifier.execute( 'load' );
+				var operation = modelPersistenceVerifier.execute( 'load' );
 				
-				// Abort (cancel) the LoadOperation (from the OperationPromise)
-				operationPromise.abort();
+				// Abort (cancel) the LoadOperation
+				operation.abort();
 				
 				// Test that if the request completes after the LoadOperation has been aborted, that it has no effect
 				manualProxy.resolveRead( 0, { a: 98, b: 99 } );  // Resolve the "read" request that the load operation performed (the first 'read' request)
@@ -1969,10 +1969,10 @@ define( [
 				var model = new ManualProxyModel( { id: 1, a: 1, b: 2 } ),
 				    modelPersistenceVerifier = new ModelPersistenceVerifier( { model: model } );
 				
-				var operationPromise = modelPersistenceVerifier.execute( 'load' );
+				var operation = modelPersistenceVerifier.execute( 'load' );
 				
-				// Abort (cancel) the LoadOperation (from the OperationPromise)
-				operationPromise.abort();
+				// Abort (cancel) the LoadOperation
+				operation.abort();
 				
 				// Test that if the request fails after the LoadOperation has been aborted, that this has no effect
 				manualProxy.rejectRead( 0 );  // Reject the "read" request that the load operation performed (the first 'read' request), and
@@ -2129,10 +2129,10 @@ define( [
 					var model = new ManualProxyModel( { id: 1, a: 1, b: 2 } ),
 					    modelPersistenceVerifier = new ModelPersistenceVerifier( { model: model } );
 					
-					var operationPromise = modelPersistenceVerifier.execute( 'save' );
+					var operation = modelPersistenceVerifier.execute( 'save' );
 					
-					// Abort (cancel) the LoadOperation (from the OperationPromise)
-					operationPromise.abort();
+					// Abort (cancel) the LoadOperation
+					operation.abort();
 					
 					// Test that if the request completes after the LoadOperation has been aborted, that it has no effect.
 					manualProxy.resolveUpdate( 0, { a: 98, b: 99 } );            // Resolve the "update" request that the save operation performed (the first 'update' request)
@@ -2147,10 +2147,10 @@ define( [
 					var model = new ManualProxyModel( { id: 1, a: 1, b: 2 } ),
 					    modelPersistenceVerifier = new ModelPersistenceVerifier( { model: model } );
 					
-					var operationPromise = modelPersistenceVerifier.execute( 'save' );
+					var operation = modelPersistenceVerifier.execute( 'save' );
 					
-					// Abort (cancel) the LoadOperation (from the OperationPromise)
-					operationPromise.abort();
+					// Abort (cancel) the LoadOperation
+					operation.abort();
 					
 					// Test that if the request fails after the LoadOperation has been aborted, that this has no effect
 					manualProxy.rejectUpdate( 0 );  // Reject the "update" request that the save operation performed (the first 'update' request), and
@@ -2598,10 +2598,10 @@ define( [
 				var model = new ManualProxyModel( { id: 1, a: 1, b: 2 } ),
 				    modelPersistenceVerifier = new ModelPersistenceVerifier( { model: model } );
 				
-				var operationPromise = modelPersistenceVerifier.execute( 'destroy' );
+				var operation = modelPersistenceVerifier.execute( 'destroy' );
 				
-				// Abort (cancel) the DestroyOperation (from the OperationPromise)
-				operationPromise.abort();
+				// Abort (cancel) the DestroyOperation
+				operation.abort();
 				
 				// Test that if the request completes after the LoadOperation has been aborted, that it has no effect
 				manualProxy.resolveDestroy( 0 );  // Resolve the "destroy" request that the load operation performed (the first 'read' request)
@@ -2616,10 +2616,10 @@ define( [
 				var model = new ManualProxyModel( { id: 1, a: 1, b: 2 } ),
 				    modelPersistenceVerifier = new ModelPersistenceVerifier( { model: model } );
 				
-				var operationPromise = modelPersistenceVerifier.execute( 'destroy' );
+				var operation = modelPersistenceVerifier.execute( 'destroy' );
 				
-				// Abort (cancel) the DestroyOperation (from the OperationPromise)
-				operationPromise.abort();
+				// Abort (cancel) the DestroyOperation
+				operation.abort();
 				
 				// Test that if the request fails after the LoadOperation has been aborted, that this has no effect
 				manualProxy.rejectDestroy( 0 );  // Reject the "destroy" request that the load operation performed (the first 'read' request), and
