@@ -11,7 +11,6 @@ define( [
 	
 	'data/persistence/operation/Load',
 	'data/persistence/request/Read',
-	'data/persistence/request/Batch',
 	'data/persistence/proxy/Proxy',
 	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
 ], function(
@@ -26,7 +25,6 @@ define( [
 	
 	LoadOperation,
 	ReadRequest,
-	RequestBatch,
 	Proxy
 ) {
 
