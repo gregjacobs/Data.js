@@ -69,6 +69,72 @@ define( [
 			} );
 			
 			
+			describe( "notify" + capitalizedActionName + "()", function() {
+				
+				it( "should notify of progress for the '" + actionName + "' request at `requestNum`", function() {
+					var request1 = new RequestClass(),
+					    request2 = new RequestClass(),
+					    request1NotifyCount = 0,
+					    request2NotifyCount = 0;
+					
+					// Add Requests to the proxy. Example call here: manualProxy.create( request )
+					// Also attach 'progress' handlers to be notified of progress
+					var promise1 = manualProxy[ actionName ]( request1 ).progress( function() { request1NotifyCount++; } );
+					var promise2 = manualProxy[ actionName ]( request2 ).progress( function() { request2NotifyCount++; } );
+					
+					// Test initial conditions - not resolved yet
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'pending' );
+					
+					// Notify the first. Example call here: manualProxy.notifyCreate( 0 )
+					manualProxy[ 'notify' + capitalizedActionName ]( 0 );
+					expect( request1NotifyCount ).toBe( 1 );
+					expect( request2NotifyCount ).toBe( 0 );
+					
+					// Notify the second. Example call here: manualProxy.notifyCreate( 1 )
+					manualProxy[ 'notify' + capitalizedActionName ]( 1 );
+					expect( request1NotifyCount ).toBe( 1 );
+					expect( request2NotifyCount ).toBe( 1 );
+					
+					// Both promises should still be pending
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'pending' );
+				} );
+				
+				
+				it( "should notify of progress for the '" + actionName + "' request at `requestNum`, out of order", function() {
+					var request1 = new RequestClass(),
+					    request2 = new RequestClass(),
+					    request1NotifyCount = 0,
+					    request2NotifyCount = 0;
+					
+					// Add Requests to the proxy. Example call here: manualProxy.create( request )
+					// Also attach 'progress' handlers to be notified of progress
+					var promise1 = manualProxy[ actionName ]( request1 ).progress( function() { request1NotifyCount++; } );
+					var promise2 = manualProxy[ actionName ]( request2 ).progress( function() { request2NotifyCount++; } );
+					
+					// Test initial conditions - not resolved yet
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'pending' );
+					
+					// Notify the second. Example call here: manualProxy.notifyCreate( 1 )
+					manualProxy[ 'notify' + capitalizedActionName ]( 1 );
+					expect( request1NotifyCount ).toBe( 0 );
+					expect( request2NotifyCount ).toBe( 1 );
+					
+					// Notify the first. Example call here: manualProxy.notifyCreate( 0 )
+					manualProxy[ 'notify' + capitalizedActionName ]( 0 );
+					expect( request1NotifyCount ).toBe( 1 );
+					expect( request2NotifyCount ).toBe( 1 );
+					
+					// Both promises should still be pending
+					expect( promise1.state() ).toBe( 'pending' );
+					expect( promise2.state() ).toBe( 'pending' );
+				} );
+				
+			} );
+			
+			
 			describe( "resolve" + capitalizedActionName + "()", function() {
 				
 				it( "should resolve the '" + actionName + "' request at `requestNum`", function() {

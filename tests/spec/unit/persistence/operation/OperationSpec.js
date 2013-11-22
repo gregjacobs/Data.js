@@ -845,6 +845,26 @@ define( [
 			} );
 			
 			
+			it( "should register a handler to be called when the Proxy notifies of progress", function() {
+				expect( progressCallCount ).toBe( 0 );  // initial condition
+				
+				operation.executeRequests();  // "begin" executing requests - sends them to the `manualProxy`
+				
+				manualProxy.notifyRead( 0 );
+				expect( progressCallCount ).toBe( 1 );
+				
+				manualProxy.notifyRead( 1 );
+				expect( progressCallCount ).toBe( 2 );
+				
+				// Now resolve the requests, which should each produce another 'progress' event
+				manualProxy.resolveRead( 0 );
+				expect( progressCallCount ).toBe( 3 );
+				
+				manualProxy.resolveRead( 1 );
+				expect( progressCallCount ).toBe( 4 );
+			} );
+			
+			
 			it( "should register a handler to be called when one of the Operation's Requests completes, but the handler should not be called if the Request errors", function() {
 				expect( progressCallCount ).toBe( 0 );  // initial condition
 				

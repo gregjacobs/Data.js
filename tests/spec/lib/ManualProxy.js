@@ -212,6 +212,23 @@ define( [
 		},
 		
 		
+		/**
+		 * Generalized notification method which is called internally from {@link #notifyCreate}, {@link #notifyRead},
+		 * {@link #notifyUpdate}, and {@link #notifyDestroy}. This has the effect of calling `progress` handlers
+		 * of the Request's Deferred.
+		 * 
+		 * @protected
+		 * @param {String} actionName One of: 'create', 'read', 'update', 'destroy'
+		 * @param {Number} requestIdx The request number to notify.
+		 */
+		notify : function( actionName, requestIdx ) {
+			var storedReqObj = this.requests[ actionName ][ requestIdx ],
+			    deferred = storedReqObj.deferred;
+			
+			deferred.notify();
+		},
+		
+		
 		// ------------------------------------
 		
 		
@@ -270,6 +287,15 @@ define( [
 			this.reject( 'create', requestIdx, error );
 		},
 		
+		/**
+		 * Notifies (calls `progress` handlers of) the 'create' request at the given `requestIdx`.
+		 * 
+		 * @param {Number} requestIdx The index of the request to notify.
+		 */
+		notifyCreate : function( requestIdx ) {
+			this.notify( 'create', requestIdx );
+		},
+		
 		
 		/**
 		 * Reads one or more Models from the persistent storage medium.
@@ -324,6 +350,15 @@ define( [
 		 */
 		rejectRead : function( requestIdx, error ) {
 			this.reject( 'read', requestIdx, error );
+		},
+		
+		/**
+		 * Notifies (calls `progress` handlers of) the 'read' request at the given `requestIdx`.
+		 * 
+		 * @param {Number} requestIdx The index of the request to notify.
+		 */
+		notifyRead : function( requestIdx ) {
+			this.notify( 'read', requestIdx );
 		},
 		
 		
@@ -383,6 +418,15 @@ define( [
 			this.reject( 'update', requestIdx, error );
 		},
 		
+		/**
+		 * Notifies (calls `progress` handlers of) the 'update' request at the given `requestIdx`.
+		 * 
+		 * @param {Number} requestIdx The index of the request to notify.
+		 */
+		notifyUpdate : function( requestIdx ) {
+			this.notify( 'update', requestIdx );
+		},
+		
 		
 		/**
 		 * Destroys (deletes) one or more Models on the persistent storage medium.
@@ -439,6 +483,15 @@ define( [
 		 */
 		rejectDestroy : function( requestIdx, error ) {
 			this.reject( 'destroy', requestIdx, error );
+		},
+		
+		/**
+		 * Notifies (calls `progress` handlers of) the 'destroy' request at the given `requestIdx`.
+		 * 
+		 * @param {Number} requestIdx The index of the request to notify.
+		 */
+		notifyDestroy : function( requestIdx ) {
+			this.notify( 'destroy', requestIdx );
 		}
 		
 	} );

@@ -63,6 +63,46 @@ define( [
 	 * For a full example implementation, see the {@link data.persistence.proxy.Ajax Ajax} proxy.
 	 * 
 	 * 
+	 * ## Notifying of progress
+	 * 
+	 * Normally, if a Proxy does not notify of any progress explicitly, then a Requests's parent
+	 * {@link data.persistence.operation.Operation Operation} is notified of progress as each 
+	 * {@link data.persistence.request.Request Request} completes. 
+	 * 
+	 * Proxies can notify observers of progress being made within the proxy at a Request level though, for finer grained
+	 * progress notification. The Deferred object which a Proxy creates may have the `notify()` method called on it, which
+	 * will in turn notify its parent Operation. For example:
+	 * 
+	 *      destroy : function( request ) {
+	 *         var me = this,  // for closures
+	 *             deferred = new jQuery.Deferred(),
+	 *             promises = [];
+	 *         
+	 *         // Assume the `request` object (a {@link data.persistence.request.Destroy DestroyRequest} object) has 2 models 
+	 *         // to destroy on a server via 2 individual ajax requests
+	 *         _.forEach( request.getModels(), function( model ) {
+	 *             var promise = jQuery.ajax( {
+	 *                 url : '...',
+	 *                 dataType: 'json',
+	 *                 
+	 *                 success : function( data ) {
+	 *                     deferred.notify();  // notify of progress when each individual ajax request is complete
+	 *                 },
+	 *                 error : function( jqXHR, textStatus, errorThrown ) {
+	 *                     deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );  // as soon as one ajax request errors, reject the Deferred
+	 *                 }
+	 *             } );
+	 *             
+	 *             promises.push( promise );
+	 *         } );
+	 *         
+	 *         // Only resolve the main Deferred when all individual ajax promises are resolved
+	 *         jQuery.when.apply( jQuery, promises ).then( function() { deferred.resolve(); } );
+	 *         
+	 *         return deferred.promise();
+	 *     }
+	 * 
+	 * 
 	 * ## Implementing the {@link #abort} method.
 	 * 
 	 * Proxy gives a hook method for when a persistence operation is {@link data.persistence.operation.Operation#abort aborted}. 
@@ -191,7 +231,9 @@ define( [
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   The Promise's Deferred may be resolved with a {@link data.persistence.ResultSet} object as its
 		 *   argument, if there is return data from the 'create' request. If there is an error, the underlying
-		 *   Deferred may be rejected with an error string/object as its first argument.
+		 *   Deferred may be rejected with an error string/object as its first argument. The `notify()` method on the
+		 *   Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} of
+		 *   progress.
 		 */
 		create : Class.abstractMethod,
 		
@@ -215,6 +257,8 @@ define( [
 		 *   The Promise's Deferred should be resolved with a {@link data.persistence.ResultSet} object as its
 		 *   argument, which contains the return data from the 'read' request. This usually comes from the {@link #reader}.
 		 *   If there is an error, the underlying Deferred may be rejected with an error string/object as its first argument.
+		 *   The `notify()` method on the Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} 
+		 *   of progress.
 		 */
 		read : Class.abstractMethod,
 		
@@ -229,7 +273,9 @@ define( [
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   The Promise's Deferred may be resolved with a {@link data.persistence.ResultSet} object as its
 		 *   argument, if there is return data from the 'update' request. If there is an error, the underlying
-		 *   Deferred may be rejected with an error string/object as its first argument.
+		 *   Deferred may be rejected with an error string/object as its first argument. The `notify()` method 
+		 *   on the Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} 
+		 *   of progress.
 		 */
 		update : Class.abstractMethod,
 		
@@ -245,7 +291,8 @@ define( [
 		 *   the destruction (deletion) on the persistent storage medium.
 		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
 		 *   If there is an error, the underlying Deferred may be rejected with an error string/object as 
-		 *   its first argument.
+		 *   its first argument. The `notify()` method  on the Deferred may also be called to notify a parent 
+		 *   {@link data.persistence.operation.Operation Operation} of progress.
 		 */
 		destroy : Class.abstractMethod,
 		

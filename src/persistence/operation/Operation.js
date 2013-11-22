@@ -330,7 +330,10 @@ define( [
 			// Operation's "requestsDeferred"
 			var requestsPromises = _.map( this.requests, function( request ) {  // Execute all requests and return an array of Promise objects, one for each Request 
 				var promise = proxy[ request.getAction() ]( request )
-					.done( function( resultSet ) {
+					.progress( function() { 
+						me.deferred.notify( dataComponent, me );  // notify of "progress" (calls `progress` handlers)
+					} )
+					.done( function( resultSet ) {  // request successful
 						if( resultSet ) request.setResultSet( resultSet );
 						request.setSuccess();
 						
