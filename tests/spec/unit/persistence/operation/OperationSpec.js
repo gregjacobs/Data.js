@@ -813,11 +813,68 @@ define( [
 		} );
 		
 		
+		describe( 'progress()', function() {
+			var requests,
+			    operation,
+			    progressCallCount;
+			
+			beforeEach( function() {
+				requests = [ new ReadRequest(), new ReadRequest() ];
+				operation = new ConcreteOperation( { dataComponent: model, proxy: manualProxy, requests: requests } );
+				
+				progressCallCount = 0;
+				operation.progress( function( dataComponent, op ) { 
+					progressCallCount++;
+					
+					expect( dataComponent ).toBe( model );
+					expect( op ).toBe( operation );
+				} );
+			} );
+			
+			
+			it( "should register a handler to be called when one of the Operation's Requests completes", function() {
+				expect( progressCallCount ).toBe( 0 );  // initial condition
+				
+				operation.executeRequests();  // "begin" executing requests - sends them to the `manualProxy`
+				
+				manualProxy.resolveRead( 0 );
+				expect( progressCallCount ).toBe( 1 );
+				
+				manualProxy.resolveRead( 1 );
+				expect( progressCallCount ).toBe( 2 );
+			} );
+			
+			
+			it( "should register a handler to be called when one of the Operation's Requests completes, but the handler should not be called if the Request errors", function() {
+				expect( progressCallCount ).toBe( 0 );  // initial condition
+				
+				operation.executeRequests();  // "begin" executing requests - sends them to the `manualProxy`
+				
+				manualProxy.resolveRead( 0 );
+				expect( progressCallCount ).toBe( 1 );
+				
+				manualProxy.rejectRead( 1 );
+				expect( progressCallCount ).toBe( 1 );  // should still be 1, since the 2nd request failed (errored)
+			} );
+			
+			
+			it( "should return `this`, making it chainable", function() {
+				expect( operation.progress() ).toBe( operation );
+			} );
+			
+		} );
+		
+		
 		describe( 'done()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
 			
 			it( "should register a handler to be called upon Operation success", function() {
-				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
-				    doneCallCount = 0;
+				var doneCallCount = 0;
 				
 				operation.done( function( dataComponent, op ) { 
 					doneCallCount++;
@@ -830,14 +887,24 @@ define( [
 				expect( doneCallCount ).toBe( 1 );  // confirm that the handler was called at all
 			} );
 			
+			
+			it( "should return `this`, making it chainable", function() {
+				expect( operation.done() ).toBe( operation );
+			} );
+			
 		} );
 		
 		
 		describe( 'fail()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
 			
 			it( "should register a handler to be called upon Operation error", function() {
-				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
-				    errorCallCount = 0;
+				var errorCallCount = 0;
 				
 				operation.fail( function( dataComponent, op ) { 
 					errorCallCount++;
@@ -850,14 +917,24 @@ define( [
 				expect( errorCallCount ).toBe( 1 );  // confirm that the handler was called at all
 			} );
 			
+			
+			it( "should return `this`, making it chainable", function() {
+				expect( operation.fail() ).toBe( operation );
+			} );
+			
 		} );
 		
 		
 		describe( 'cancel()', function() {
+			var operation;
 			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
+				    
 			it( "should register a handler to be called if the Operation is aborted (canceled)", function() {
-				var operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } ),
-				    cancelCallCount = 0;
+				var cancelCallCount = 0;
 				
 				operation.cancel( function( dataComponent, op ) { 
 					cancelCallCount++;
@@ -870,22 +947,33 @@ define( [
 				expect( cancelCallCount ).toBe( 1 );  // confirm that the handler was called at all
 			} );
 			
+			
+			it( "should return `this`, making it chainable", function() {
+				expect( operation.cancel() ).toBe( operation );
+			} );
+			
 		} );
 		
 		
 		describe( 'then()', function() {
-			var operation,
+			var request1,
+			    request2,
+			    operation,
 			    localDoneCount,
-			    localFailCount;
+			    localFailCount,
+			    localProgressCount;
 			
 			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+				request1 = new ReadRequest();
+				request2 = new ReadRequest();
+				operation = new ConcreteOperation( { dataComponent: model, proxy: manualProxy, requests: [ request1, request2 ] } );
 				
-				localDoneCount = localFailCount = 0;
+				localDoneCount = localFailCount = localProgressCount = 0;
 				
 				operation.then(
 					function() { localDoneCount++; },
-					function() { localFailCount++; }
+					function() { localFailCount++; },
+					function() { localProgressCount++; }
 				);
 			} );
 			
@@ -905,59 +993,64 @@ define( [
 				expect( localFailCount ).toBe( 1 );
 			} );
 			
+			
+			it( "should register a `progress` handler", function() {
+				expect( localProgressCount ).toBe( 0 );  // initial condition
+				
+				operation.executeRequests();  // "begin" executing requests - sends them to the `manualProxy`
+				
+				manualProxy.resolveRead( 0 );
+				expect( localProgressCount ).toBe( 1 );
+				
+				manualProxy.resolveRead( 1 );
+				expect( localProgressCount ).toBe( 2 );
+			} );
+			
+			
+			it( "should return `this`, making it chainable", function() {
+				expect( operation.then() ).toBe( operation );
+			} );
+			
 		} );
 		
 		
 		describe( 'always()', function() {
-			var operation;
+			var operation,
+			    alwaysCallCount;
 			
 			beforeEach( function() {
 				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
-			} );
-			
-			
-			it( "should register a handler to be called upon Operation success", function() {
-				var alwaysCallCount = 0;
 				
+				alwaysCallCount = 0;
 				operation.always( function( dataComponent, op ) { 
 					alwaysCallCount++;
 					
 					expect( dataComponent ).toBe( model );
 					expect( op ).toBe( operation );
 				} );
-				
+			} );
+			
+			
+			it( "should register a handler to be called upon Operation success", function() {
 				operation.resolve();
 				expect( alwaysCallCount ).toBe( 1 );  // confirm that the handler was called at all
 			} );
 			
 			
 			it( "should register a handler to be called upon Operation error", function() {
-				var alwaysCallCount = 0;
-				
-				operation.always( function( dataComponent, op ) {
-					alwaysCallCount++;
-					
-					expect( dataComponent ).toBe( model );
-					expect( op ).toBe( operation );
-				} );
-				
 				operation.reject();
 				expect( alwaysCallCount ).toBe( 1 );  // confirm that the handler was called at all
 			} );
 			
 			
 			it( "should register a handler to be called upon Operation cancellation", function() {
-				var alwaysCallCount = 0;
-				
-				operation.always( function( dataComponent, op ) {
-					alwaysCallCount++;
-					
-					expect( dataComponent ).toBe( model );
-					expect( op ).toBe( operation );
-				} );
-				
 				operation.abort();
 				expect( alwaysCallCount ).toBe( 1 );  // confirm that the handler was called at all
+			} );
+			
+			
+			it( "should return `this`, making it chainable", function() {
+				expect( operation.always() ).toBe( operation );
 			} );
 			
 		} );

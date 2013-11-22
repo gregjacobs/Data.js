@@ -1931,7 +1931,7 @@ define( [
 				modelPersistenceVerifier.execute( 'load' );
 				
 				manualProxy.resolveRead( 0, {} );  // Resolve the "read" request that the load operation performed (the first 'read' request), and 
-				modelPersistenceVerifier.verify( 'success' );  // verify that the appropriate events/callbacks/handlers were called
+				modelPersistenceVerifier.verify( 'success', { expectedProgressCount: 1 } );  // verify that the appropriate events/callbacks/handlers were called
 			} );
 			
 			
@@ -2084,7 +2084,7 @@ define( [
 					modelPersistenceVerifier.execute( 'save' );
 					
 					manualProxy.resolveCreate( 0 );  // Resolve the "create" request that the save operation performed (the first 'create' request), and 
-					modelPersistenceVerifier.verify( 'success' );  // verify that the appropriate events/callbacks/handlers were called
+					modelPersistenceVerifier.verify( 'success', { expectedProgressCount: 1 } );  // verify that the appropriate events/callbacks/handlers were called
 				} );
 				
 				
@@ -2108,7 +2108,7 @@ define( [
 					modelPersistenceVerifier.execute( 'save' );
 					
 					manualProxy.resolveUpdate( 0 );  // Resolve the "update" request that the save operation performed (the first 'update' request), and 
-					modelPersistenceVerifier.verify( 'success' );  // verify that the appropriate events/callbacks/handlers were called
+					modelPersistenceVerifier.verify( 'success', { expectedProgressCount: 1 } );  // verify that the appropriate events/callbacks/handlers were called
 				} );
 				
 				
@@ -2381,7 +2381,7 @@ define( [
 					// State after parent model has saved
 					parentModelProxy.resolveCreate( 0 );
 					expect( promise.state() ).toBe( 'resolved' );
-					modelPersistenceVerifier.verify( 'success' );
+					modelPersistenceVerifier.verify( 'success', { expectedProgressCount: 1 } );
 				} );
 				
 				
@@ -2412,7 +2412,7 @@ define( [
 					expect( collection1.sync ).not.toHaveBeenCalled();  // make sure it still hasn't been called
 					expect( model1.save ).not.toHaveBeenCalled();       // make sure it still hasn't been called
 					
-					modelPersistenceVerifier.verify( 'success' );
+					modelPersistenceVerifier.verify( 'success', { expectedProgressCount: 1 } );
 				} );
 				
 				
@@ -2574,7 +2574,7 @@ define( [
 				modelPersistenceVerifier.execute( 'destroy' );
 				
 				manualProxy.resolveDestroy( 0 );  // Resolve the "destroy" request that the destroy operation performed (the first 'destroy' request), and 
-				modelPersistenceVerifier.verify( 'success' );  // verify that the appropriate events/callbacks/handlers were called
+				modelPersistenceVerifier.verify( 'success', { expectedProgressCount: 1 } );  // verify that the appropriate events/callbacks/handlers were called
 				
 				expect( model.isDestroyed() ).toBe( true );
 			} );

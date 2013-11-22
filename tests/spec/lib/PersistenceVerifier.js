@@ -32,16 +32,19 @@ define( [
 			
 			// Initialize counts for verification of test outcome
 			this.beginEventCount = 0;
+			this.progressEventCount = 0;
 			this.successEventCount = 0;
 			this.errorEventCount = 0;
 			this.cancelEventCount = 0;
 			this.completeEventCount = 0;
 			
+			this.progressCbCallCount = 0;
 			this.successCbCallCount = 0;
 			this.errorCbCallCount = 0;
 			this.cancelCbCallCount = 0;
 			this.completeCbCallCount = 0;
 			
+			this.progressCallCount = 0;
 			this.doneCallCount = 0;
 			this.failCallCount = 0;
 			this.cancelCallCount = 0;
@@ -130,26 +133,31 @@ define( [
 			this.onBeforeExecute( methodName );
 			
 			// Assign event handlers
-			dataComponentInstance.on( eventName + 'begin', function( model, operation ) {    // ex: 'loadbegin' event
+			dataComponentInstance.on( eventName + 'begin', function( model, operation ) {     // ex: 'loadbegin' event
 				me.beginEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 			} );
-			dataComponentInstance.on( eventName + 'success', function( model, operation ) {  // ex: 'loadsuccess' event
+			dataComponentInstance.on( eventName + 'progress', function( model, operation ) {  // ex: 'loadprogress' event
+				me.progressEventCount++;
+				expect( model ).toBe( dataComponentInstance );
+				expect( operation instanceof OperationClass ).toBe( true );
+			} );
+			dataComponentInstance.on( eventName + 'success', function( model, operation ) {   // ex: 'loadsuccess' event
 				me.successEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 				expect( operation instanceof OperationClass ).toBe( true );
 			} );
-			dataComponentInstance.on( eventName + 'error', function( model, operation ) {    // ex: 'loaderror' event
+			dataComponentInstance.on( eventName + 'error', function( model, operation ) {     // ex: 'loaderror' event
 				me.errorEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 				expect( operation instanceof OperationClass ).toBe( true );
 			} );
-			dataComponentInstance.on( eventName + 'cancel', function( model, operation ) {   // ex: 'loadcancel' event
+			dataComponentInstance.on( eventName + 'cancel', function( model, operation ) {    // ex: 'loadcancel' event
 				me.cancelEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 				expect( operation instanceof OperationClass ).toBe( true );
 			} );
-			dataComponentInstance.on( eventName, function( model, operation ) {              // ex: 'load' event
+			dataComponentInstance.on( eventName, function( model, operation ) {               // ex: 'load' event
 				me.completeEventCount++;
 				expect( model ).toBe( dataComponentInstance );
 				expect( operation instanceof OperationClass ).toBe( true );
@@ -158,29 +166,35 @@ define( [
 			
 			// Create the options object for the persistence method
 			var options = {
+				progress : function( dataComponent, operation ) {
+					me.progressCbCallCount++;
+					expect( dataComponent ).toBe( dataComponentInstance );
+					expect( operation instanceof OperationClass ).toBe( true );
+					expect( this ).toBe( scopeObj );  // make sure `scope` was set
+				},
 				success : function( dataComponent, operation ) {
 					me.successCbCallCount++;
 					expect( dataComponent ).toBe( dataComponentInstance );
 					expect( operation instanceof OperationClass ).toBe( true );
-					expect( this ).toBe( scopeObj );  // make sure `scope` was passed
+					expect( this ).toBe( scopeObj );  // make sure `scope` was set
 				},
 				error : function( dataComponent, operation ) {
 					me.errorCbCallCount++;
 					expect( dataComponent ).toBe( dataComponentInstance );
 					expect( operation instanceof OperationClass ).toBe( true );
-					expect( this ).toBe( scopeObj );  // make sure `scope` was passed
+					expect( this ).toBe( scopeObj );  // make sure `scope` was set
 				},
 				cancel : function( dataComponent, operation ) {
 					me.cancelCbCallCount++;
 					expect( dataComponent ).toBe( dataComponentInstance );
 					expect( operation instanceof OperationClass ).toBe( true );
-					expect( this ).toBe( scopeObj );  // make sure `scope` was passed
+					expect( this ).toBe( scopeObj );  // make sure `scope` was set
 				},
 				complete : function( dataComponent, operation ) {
 					me.completeCbCallCount++;
 					expect( dataComponent ).toBe( dataComponentInstance );
 					expect( operation instanceof OperationClass ).toBe( true );
-					expect( this ).toBe( scopeObj );  // make sure `scope` was passed
+					expect( this ).toBe( scopeObj );  // make sure `scope` was set
 				},
 				scope : scopeObj
 			};
@@ -208,6 +222,11 @@ define( [
 			
 			// Attach promise handlers
 			operation
+				.progress( function( dataComponent, operation ) {
+					me.progressCallCount++;
+					expect( dataComponent ).toBe( dataComponentInstance );
+					expect( operation instanceof OperationClass ).toBe( true );
+				} )
 				.done( function( dataComponent, operation ) {
 					me.doneCallCount++;
 					expect( dataComponent ).toBe( dataComponentInstance );
@@ -280,26 +299,34 @@ define( [
 		 * 
 		 * @param {String} expectedOutcome The expected outcome after the persistence operation ('load', 'save', or 'destroy')
 		 * has been completed. Must be one of: 'success', 'error', or 'cancel'.
+		 * @param {Object} [options] An object which may have the following properties:
+		 * @param {Number} [options.expectedProgressCount=0] The number of expected "progress" events.
 		 */
-		verify : function( expectedOutcome ) {
+		verify : function( expectedOutcome, options ) {
 			if( !_.contains( [ 'success', 'error', 'cancel' ], expectedOutcome ) ) 
 				throw new Error( "`expectedOutcome` arg must be one of: 'success', 'error', 'cancel'" );
+			
+			options = options || {};
+			var expectedProgressCount = options.expectedProgressCount || 0;
 			
 			// Call hook method for subclasses to check the state of the model during verification
 			this.onVerify( expectedOutcome );
 			
 			// Make sure the appropriate events/callbacks/handlers executed
 			expect( this.beginEventCount ).toBe( 1 );    // make sure it wasn't fired again
+			expect( this.progressEventCount ).toBe( expectedProgressCount );                 // ex: 'loadprogress' event
 			expect( this.successEventCount ).toBe( expectedOutcome === 'success' ? 1 : 0 );  // ex: 'loadsuccess' event
 			expect( this.errorEventCount ).toBe( expectedOutcome === 'error' ? 1 : 0 );      // ex: 'loaderror' event
 			expect( this.cancelEventCount ).toBe( expectedOutcome === 'cancel' ? 1 : 0 );    // ex: 'loadcancel' event
 			expect( this.completeEventCount ).toBe( 1 );                                     // ex: 'load' event, which really means "load complete"
 			
+			expect( this.progressCbCallCount ).toBe( expectedProgressCount );
 			expect( this.successCbCallCount ).toBe( expectedOutcome === 'success' ? 1 : 0 );
 			expect( this.errorCbCallCount ).toBe( expectedOutcome === 'error' ? 1 : 0 );
 			expect( this.cancelCbCallCount ).toBe( expectedOutcome === 'cancel' ? 1 : 0 );
 			expect( this.completeCbCallCount ).toBe( 1 );
 			
+			expect( this.progressCallCount ).toBe( expectedProgressCount );
 			expect( this.doneCallCount ).toBe( expectedOutcome === 'success' ? 1 : 0 );
 			expect( this.failCallCount ).toBe( expectedOutcome === 'error' ? 1 : 0 );
 			expect( this.cancelCallCount ).toBe( expectedOutcome === 'cancel' ? 1 : 0 );

@@ -461,6 +461,16 @@ define( [
 				'load',
 				
 				/**
+				 * Fires when an active LoadOperation has made progress. This is fired when an individual request has 
+				 * completed, or when the {@link #proxy} reports progress otherwise.
+				 * 
+				 * @event loadprogress
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which has made progress.
+				 */
+				'loadprogress',
+				
+				/**
 				 * Fires when the Model has successfully loaded data from its {@link #method-load} method.
 				 * 
 				 * @event loadsuccess
@@ -496,6 +506,16 @@ define( [
 				 * @param {data.Model} This Model instance.
 				 */
 				'savebegin',
+				
+				/**
+				 * Fires when the active SaveOperation has made progress. This is fired when an individual request has 
+				 * completed, or when the {@link #proxy} reports progress otherwise.
+				 * 
+				 * @event saveprogress
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Save} operation The SaveOperation which has made progress.
+				 */
+				'saveprogress',
 				
 				/**
 				 * Fires when the Model is {@link #method-save saved} to its external data store (such as a web server),
@@ -555,6 +575,16 @@ define( [
 				 * @param {data.Model} This Model instance.
 				 */
 				'destroybegin',
+				
+				/**
+				 * Fires when the active DestroyOperation has made progress. This is fired when an individual request has 
+				 * completed, or when the {@link #proxy} reports progress otherwise.
+				 * 
+				 * @event destroyprogress
+				 * @param {data.Model} model This Model instance.
+				 * @param {data.persistence.operation.Destroy} operation The DestroyOperation which has made progress.
+				 */
+				'destroyprogress',
 				
 				/**
 				 * Fires when the Model has been {@link #method-destroy destroyed} on its external data store (such as a 
@@ -1402,6 +1432,8 @@ define( [
 		 * @param {Function} [options.failure] Function to call if the save fails.
 		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
 		 * @param {Object} [options.scope] The object to call the `success`, `failure`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to this Model.
@@ -1415,6 +1447,7 @@ define( [
 			options = options || {};
 			var emptyFn    = Data.emptyFn,
 			    scope      = options.scope || options.context || this,
+			    progressCb = _.bind( options.progress || emptyFn, scope ),
 			    successCb  = _.bind( options.success  || emptyFn, scope ),
 			    errorCb    = _.bind( options.error    || emptyFn, scope ),
 			    cancelCb   = _.bind( options.cancel   || emptyFn, scope ),
@@ -1434,12 +1467,13 @@ define( [
 			    operation = new LoadOperation( { dataComponent: this, proxy: this.proxy, requests: request } );
 			
 			// Attach any user-provided callbacks to the operation. The `scope` was attached above.
-			operation.done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
+			operation.progress( progressCb ).done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
 			
 			operation.executeRequests().then(
 				_.bind( this.onLoadSuccess, this ),
 				_.bind( this.onLoadError, this )
 			);
+			operation.progress( _.bind( this.onLoadProgress, this, operation ) );
 			operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is aborted (canceled) by the user
 			
 			return operation;
@@ -1447,10 +1481,22 @@ define( [
 		
 		
 		/**
+		 * Handles the {@link #proxy} making progress on the current load operation.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which are required to complete the load operation.
+		 */
+		onLoadProgress : function( operation ) {
+			this.fireEvent( 'loadprogress', this, operation );
+		},
+		
+		
+		/**
 		 * Handles the {@link #proxy} successfully loading a set of data as a result of the {@link #method-load}
 		 * method being called.
 		 * 
-		 * Resolves the `jQuery.Deferred` object created by {@link #method-load}.
+		 * Resolves the `operation` object created by {@link #method-load}.
 		 * 
 		 * @protected
 		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
@@ -1475,7 +1521,7 @@ define( [
 		 * Handles the {@link #proxy} failing to load a set of data as a result of the {@link #method-load} method 
 		 * being called.
 		 * 
-		 * Rejects the `jQuery.Deferred` object created by {@link #method-load}.
+		 * Rejects the `operation` object created by {@link #method-load}.
 		 * 
 		 * @protected
 		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
@@ -1535,6 +1581,8 @@ define( [
 		 * @param {Function} [options.cancel] Function to call if the save has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}. See note in the description of the
 		 *   return of this method for a caveat on aborting (canceling) "save" operations.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to the Model.
@@ -1555,6 +1603,7 @@ define( [
 			    syncRelated = ( options.syncRelated === undefined ) ? true : options.syncRelated,  // defaults to true
 			    emptyFn     = Data.emptyFn,
 			    scope       = options.scope || options.context || this,
+			    progressCb  = _.bind( options.progress || emptyFn, scope ),
 			    successCb   = _.bind( options.success  || emptyFn, scope ),
 			    errorCb     = _.bind( options.error    || emptyFn, scope ),
 			    cancelCb    = _.bind( options.cancel   || emptyFn, scope ),
@@ -1584,8 +1633,8 @@ define( [
 			}
 			
 			// Set up any callbacks provided in the options
-			saveOperation.done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
-						
+			saveOperation.progress( progressCb ).done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
+			
 			return saveOperation.promise();
 		},
 		
@@ -1625,8 +1674,8 @@ define( [
 				_.bind( this.onSaveError, this )
 			);
 			
-			// handle if the Operation is aborted (canceled) by the user
-			operation.cancel( _.bind( this.onSaveCancel, this, operation ) );
+			operation.progress( _.bind( this.onSaveProgress, this, operation ) );
+			operation.cancel( _.bind( this.onSaveCancel, this, operation ) );  // handle if the Operation is aborted (canceled) by the user
 		},
 		
 		
@@ -1671,6 +1720,18 @@ define( [
 				.value();
 			
 			return jQuery.when.apply( jQuery, modelSavePromises );
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} making progress on the current save operation.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Save} operation The SaveOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which are required to complete the operation.
+		 */
+		onSaveProgress : function( operation ) {
+			this.fireEvent( 'saveprogress', this, operation );
 		},
 		
 		
@@ -1757,6 +1818,8 @@ define( [
 		 * @param {Function} [options.cancel] Function to call if the destroy (deletion) has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}. See note in the description of the
 		 *   return of this method for a caveat on aborting (canceling) "destroy" operations.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as `context` if you prefer. Defaults to the Model.
@@ -1776,6 +1839,7 @@ define( [
 			options = options || {};
 			var emptyFn     = Data.emptyFn,
 			    scope       = options.scope || options.context || this,
+			    progressCb  = _.bind( options.progress || emptyFn, scope ),
 			    successCb   = _.bind( options.success  || emptyFn, scope ),
 			    errorCb     = _.bind( options.error    || emptyFn, scope ),
 			    cancelCb    = _.bind( options.cancel   || emptyFn, scope ),
@@ -1797,7 +1861,7 @@ define( [
 			    operation = new DestroyOperation( { dataComponent: this, proxy: this.proxy, requests: request } );
 			
 			// Attach any user-provided callbacks to the operation. The `scope` was attached above.
-			operation.done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
+			operation.progress( progressCb ).done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
 			
 			if( this.isNew() ) {
 				// If it is a new model, there is nothing on the server to destroy. Simply call the success handler to 
@@ -1810,10 +1874,23 @@ define( [
 					_.bind( this.onDestroySuccess, this ),
 					_.bind( this.onDestroyError, this )
 				);
+				operation.progress( _.bind( this.onDestroyProgress, this, operation ) );
 				operation.cancel( _.bind( this.onDestroyCancel, this, operation ) );  // handle if the Operation is aborted (canceled) by the user
 			}
 			
 			return operation;
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} making progress on the current destroy operation.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Destroy} operation The DestroyOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which are required to complete the operation.
+		 */
+		onDestroyProgress : function( operation ) {
+			this.fireEvent( 'destroyprogress', this, operation );
 		},
 		
 		

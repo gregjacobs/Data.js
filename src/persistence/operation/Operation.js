@@ -323,15 +323,18 @@ define( [
 			
 			var me = this,  // for closures
 			    proxy = this.proxy,
-			    requestsDeferred = this.requestsDeferred;  // The Operation's requestDeferred
+			    requestsDeferred = this.requestsDeferred,  // The Operation's requestDeferred
+			    dataComponent = this.dataComponent;
 			
 			// Execute all individual requests, and when they are complete, resolve or reject the 
 			// Operation's "requestsDeferred"
 			var requestsPromises = _.map( this.requests, function( request ) {  // Execute all requests and return an array of Promise objects, one for each Request 
 				var promise = proxy[ request.getAction() ]( request )
-					.done( function( resultSet ) { 
+					.done( function( resultSet ) {
 						if( resultSet ) request.setResultSet( resultSet );
 						request.setSuccess();
+						
+						me.deferred.notify( dataComponent, me );  // notify of "progress" (calls `progress` handlers)
 					} )
 					.fail( function( error ) { request.setError( error ); } );
 				
@@ -563,22 +566,27 @@ define( [
 		
 		
 		/**
-		 * Adds a handler for when the Operation has made some progress.
+		 * Adds a handler for when the Operation has made progress. Progress is defined as one of the Operation's
+		 * {@link #requests} having been completed successfully. 
 		 * 
-		 * Handlers are called with the following two arguments when the Operation has been notified of progress (i.e. one
+		 * Note that the Operation shouldn't necessarily be considered "complete" if all of its {@link #requests} have completed 
+		 * successfully. The Operation may still be in an "in progress" state if its {@link #dataComponent} ({@link data.Model Model} 
+		 * or {@link data.Collection Collection}) has not yet processed the Operation's results. (For instance, the 
+		 * {@link #dataComponent} may be waiting for other Operations to complete alongside this one, before it will process the 
+		 * result.) Therefore, do not rely on the completion of all {@link #requests} in order to consider the Operation "complete."
+		 * 
+		 * 
+		 * Handlers are called with the following arguments when the Operation has been notified of progress (i.e. one
 		 * of its requests has been completed):
 		 * 
 		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
 		 * 
-		 * **NOTE**: This is currently unimplemented from the "notification" side of things, but the method is provided 
-		 * as a no-op for compatibility with jQuery's Promise interface.
-		 * 
 		 * @param {Function} handlerFn
 		 * @chainable
 		 */
 		progress : function( handlerFn ) {
-			//this.deferred.progress( handlerFn );  -- not yet implemented
+			this.deferred.progress( handlerFn );
 			return this;
 		},
 		
@@ -635,7 +643,8 @@ define( [
 		
 		
 		/**
-		 * Adds handler functions for if the Operation completes successfully, or fails to complete successfully.
+		 * Adds handler functions for if the Operation completes successfully, fails to complete successfully, and when notified
+		 * that progress has been made.
 		 * 
 		 * Note: This method does *not* support jQuery's "filtering" functionality.
 		 * 
@@ -646,10 +655,11 @@ define( [
 		 * 
 		 * @param {Function} successHandlerFn
 		 * @param {Function} [failureHandlerFn]
+		 * @param {Function} [progressHandlerFn]
 		 * @chainable
 		 */
-		then : function( successHandlerFn, failureHandlerFn ) {
-			this.deferred.then( successHandlerFn, failureHandlerFn );
+		then : function( successHandlerFn, failureHandlerFn, progressHandlerFn ) {
+			this.deferred.then( successHandlerFn, failureHandlerFn, progressHandlerFn );
 			return this;
 		},
 		

@@ -414,6 +414,16 @@ define( [
 				'load',
 				
 				/**
+				 * Fires when an active LoadOperation has made progress. This is fired when an individual request has 
+				 * completed, or when the {@link #proxy} reports progress otherwise.
+				 * 
+				 * @event loadprogress
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which has made progress.
+				 */
+				'loadprogress',
+				
+				/**
 				 * Fires when the Collection has successfully loaded data from one of its "load" methods ({@link #method-load},
 				 * {@link #loadPage}, {@link #loadRange}, {@link #loadPageRange}).
 				 * 
@@ -1284,11 +1294,13 @@ define( [
 		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
 		 *   for the request. See {@link data.persistence.request.Request#params} for details.
 		 * @param {Boolean} [options.addModels=false] `true` to add the loaded models to the Collection instead of 
-		 *   replacing the existing ones. 
+		 *   replacing the existing ones.
 		 * @param {Function} [options.success] Function to call if the loading is successful.
 		 * @param {Function} [options.error] Function to call if the loading fails.
 		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
@@ -1319,13 +1331,14 @@ define( [
 				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
-				operation.done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
+				operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 				
 				// Add the Operation to the list of active load operations (which fires the 
 				// 'loadbegin' event if it begins overall Collection loading)
 				this.addActiveLoadOperation( operation );
 				
 				operation.executeRequests().always( _.bind( this.handleLoadRequestsComplete, this ) );
+				operation.progress( _.bind( this.onLoadProgress, this, operation ) );
 				operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
 				
 				return operation;
@@ -1365,6 +1378,8 @@ define( [
 		 * @param {Function} [options.error] Function to call if the loading fails.
 		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
@@ -1400,13 +1415,14 @@ define( [
 				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
 				
 				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
-				operation.done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
+				operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 				
 				// Add the Operation to the list of active load operations (which fires the 
 				// 'loadbegin' event if it begins overall Collection loading)
 				this.addActiveLoadOperation( operation );
 				
 				operation.executeRequests().always( _.bind( this.handleLoadRequestsComplete, this ) );
+				operation.progress( _.bind( this.onLoadProgress, this, operation ) );
 				operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
 				
 				return operation;
@@ -1439,6 +1455,8 @@ define( [
 		 * @param {Function} [options.error] Function to call if the loading fails.
 		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
@@ -1486,6 +1504,8 @@ define( [
 		 * @param {Function} [options.error] Function to call if the loading fails.
 		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
@@ -1535,7 +1555,7 @@ define( [
 			}
 			
 			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
-			operation.done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
+			operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 			
 			// Add the Operation to the list of active load operations (which fires the 
 			// 'loadbegin' event if it begins overall Collection loading)
@@ -1548,6 +1568,7 @@ define( [
 				} )
 				.always( _.bind( this.handleLoadRequestsComplete, this ) );
 			
+			operation.progress( _.bind( this.onLoadProgress, this, operation ) );
 			operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
 			
 			return operation;
@@ -1576,6 +1597,19 @@ define( [
 			} else {
 				this.onLoadError( loadOperation );
 			}
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} making progress on an active 'load' operation (from {@link #method-load}, {@link #loadRange}, 
+		 * {@link #loadPage}, or {@link #loadPageRange}).
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which are required to complete the load operation.
+		 */
+		onLoadProgress : function( operation ) {
+			this.fireEvent( 'loadprogress', this, operation );
 		},
 		
 		
@@ -1702,15 +1736,15 @@ define( [
 		
 		
 		/**
-		 * Normalizes the `options` argument to each of the "load" methods. This includes the {@link #method-load},
-		 * {@link #loadRange}, {@link #loadPage}, and {@link #loadPageRange} methods.
+		 * Normalizes the `options` argument for the options that are common to each of the "load" methods. This includes 
+		 * {@link #method-load}, {@link #loadRange}, {@link #loadPage}, and {@link #loadPageRange} methods.
 		 * 
 		 * This method only operates on the properties listed below. It provides a default empty function for each of the 
-		 * `success`, `error`, and `complete` functions, and binds them to the `scope` (or `context`). All other properties
-		 * that exist on the `options` object will remain unchanged. 
+		 * `success`, `error`, `cancel`, `progress`, and `complete` functions, and binds them to the `scope` (or `context`). 
+		 * All other properties that exist on the `options` object will remain unchanged. 
 		 * 
 		 * @protected
-		 * @param {Object} options The options object provided to any of the "load" methods. If `undefined` or `null` is
+		 * @param {Object} [options] The options object provided to any of the "load" methods. If `undefined` or `null` is
 		 *   provided, a normalized options object will still be returned, simply with defaults filled out.
 		 * @param {Function} [options.success] Function to call if the loading is successful. Will be defaulted to an
 		 *   empty function as part of this method's normalization process.
@@ -1718,6 +1752,8 @@ define( [
 		 *   empty function as part of this method's normalization process.
 		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure. Will be defaulted to an empty function as part of this method's normalization process.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
@@ -1734,6 +1770,7 @@ define( [
 			options.success  = _.bind( options.success  || emptyFn, scope );
 			options.error    = _.bind( options.error    || emptyFn, scope );
 			options.cancel   = _.bind( options.cancel   || emptyFn, scope );
+			options.progress = _.bind( options.progress || emptyFn, scope );
 			options.complete = _.bind( options.complete || emptyFn, scope );
 			
 			return options;
@@ -1751,6 +1788,8 @@ define( [
 		 * @param {Function} [options.success] Function to call if the synchronization is successful.
 		 * @param {Function} [options.error] Function to call if the synchronization fails. The sychronization will be considered
 		 *   failed if one or more Models does not persist successfully.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as the property `context`, if you prefer. Defaults to the Collection.

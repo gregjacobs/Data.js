@@ -373,7 +373,7 @@ define( [
 			persistenceVerifier.execute.apply( persistenceVerifier, [ loadMethodName ].concat( loadMethodArgs ) );
 			
 			manualProxy.resolveRead( 0, [ { id: 1 } ] );  // Resolve the "read" request that the load operation performed (the first 'read' request), and 
-			persistenceVerifier.verify( 'success' );  // verify that the appropriate events/callbacks/handlers were called
+			persistenceVerifier.verify( 'success', { expectedProgressCount: 1 } );  // verify that the appropriate events/callbacks/handlers were called
 		},
 		
 		
