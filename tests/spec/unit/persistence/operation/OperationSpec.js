@@ -501,7 +501,7 @@ define( [
 		
 		// -----------------------------------
 		
-		// Operation's state interface
+		// Operation's Deferred/State interface
 		
 		
 		describe( 'resolve()', function() {
@@ -535,36 +535,6 @@ define( [
 		} );
 		
 		
-		describe( 'wasSuccessful()', function() {
-			var operation;
-			
-			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
-			} );
-			
-			
-			it( "should return `false` for a brand new Operation", function() {
-				expect( operation.wasSuccessful() ).toBe( false );
-			} );
-			
-			it( "should return `true` after the Operation has been resolved", function() {
-				operation.resolve();
-				expect( operation.wasSuccessful() ).toBe( true );
-			} );
-			
-			it( "should return `false` after the Operation has been rejected", function() {
-				operation.reject();
-				expect( operation.wasSuccessful() ).toBe( false );
-			} );
-			
-			it( "should return `false` after the Operation has been aborted", function() {
-				operation.abort();
-				expect( operation.wasSuccessful() ).toBe( false );
-			} );
-			
-		} );
-		
-		
 		describe( 'reject()', function() {
 			var operation;
 			
@@ -593,36 +563,6 @@ define( [
 				expect( operation.wasAborted() ).toBe( false );
 				expect( operation.isComplete() ).toBe( true );
 			} );
-		} );
-		
-		
-		describe( 'hasErrored()', function() {
-			var operation;
-			
-			beforeEach( function() {
-				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
-			} );
-			
-			
-			it( "should return `false` for a brand new Operation", function() {
-				expect( operation.hasErrored() ).toBe( false );
-			} );
-			
-			it( "should return `false` after the Operation has been resolved", function() {
-				operation.resolve();
-				expect( operation.hasErrored() ).toBe( false );
-			} );
-			
-			it( "should return `true` after the Operation has been rejected", function() {
-				operation.reject();
-				expect( operation.hasErrored() ).toBe( true );
-			} );
-			
-			it( "should return `false` after the Operation has been aborted", function() {
-				operation.abort();
-				expect( operation.hasErrored() ).toBe( false );
-			} );
-			
 		} );
 		
 		
@@ -684,6 +624,66 @@ define( [
 				
 				operation.abort();
 				expect( proxy.abort ).not.toHaveBeenCalled();
+			} );
+			
+		} );
+		
+		
+		describe( 'wasSuccessful()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
+			
+			it( "should return `false` for a brand new Operation", function() {
+				expect( operation.wasSuccessful() ).toBe( false );
+			} );
+			
+			it( "should return `true` after the Operation has been resolved", function() {
+				operation.resolve();
+				expect( operation.wasSuccessful() ).toBe( true );
+			} );
+			
+			it( "should return `false` after the Operation has been rejected", function() {
+				operation.reject();
+				expect( operation.wasSuccessful() ).toBe( false );
+			} );
+			
+			it( "should return `false` after the Operation has been aborted", function() {
+				operation.abort();
+				expect( operation.wasSuccessful() ).toBe( false );
+			} );
+			
+		} );
+		
+		
+		describe( 'hasErrored()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
+			
+			it( "should return `false` for a brand new Operation", function() {
+				expect( operation.hasErrored() ).toBe( false );
+			} );
+			
+			it( "should return `false` after the Operation has been resolved", function() {
+				operation.resolve();
+				expect( operation.hasErrored() ).toBe( false );
+			} );
+			
+			it( "should return `true` after the Operation has been rejected", function() {
+				operation.reject();
+				expect( operation.hasErrored() ).toBe( true );
+			} );
+			
+			it( "should return `false` after the Operation has been aborted", function() {
+				operation.abort();
+				expect( operation.hasErrored() ).toBe( false );
 			} );
 			
 		} );
@@ -751,7 +751,7 @@ define( [
 		
 		// -----------------------------------
 		
-		// Promise Interface
+		// Operation's Promise Interface
 		
 		describe( 'promise()', function() {
 			var operation;
@@ -761,10 +761,53 @@ define( [
 			} );
 			
 			
-			it( "should simply return the Operation itself (which is a 'deferred', but will act as the promise as well). This method is for jQuery promise compatibility", function() {				
+			it( "should simply return the Operation itself (which is a 'deferred', but will act as the promise as well). This method is for jQuery promise compatibility when using jQuery.when()", function() {				
 				var promise = operation.promise();
 				
 				expect( promise ).toBe( operation );
+			} );
+			
+		} );
+		
+		
+		describe( 'status()', function() {
+			var operation,
+			    request;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy, requests: request } );
+			} );
+			
+			
+			it( "should return 'pending' when the Operation has not yet been started, or is in progress", function() {				
+				expect( operation.state() ).toBe( 'pending' );
+				
+				operation.executeRequests();
+				expect( operation.state() ).toBe( 'pending' );
+			} );
+			
+			
+			it( "should return 'resolved' when the Operation has been resolved (i.e. it has completed successfully)", function() {				
+				expect( operation.state() ).toBe( 'pending' );  // initial condition
+				
+				operation.resolve();
+				expect( operation.state() ).toBe( 'resolved' );
+			} );
+			
+			
+			it( "should return 'rejected' when the Operation has been rejected (i.e. it has errored)", function() {				
+				expect( operation.state() ).toBe( 'pending' );  // initial condition
+				
+				operation.reject();
+				expect( operation.state() ).toBe( 'rejected' );
+			} );
+			
+			
+			it( "should return 'aborted' when the Operation has been aborted by the user", function() {				
+				expect( operation.state() ).toBe( 'pending' );  // initial condition
+				
+				operation.abort();
+				expect( operation.state() ).toBe( 'aborted' );
 			} );
 			
 		} );
@@ -825,6 +868,41 @@ define( [
 				
 				operation.abort();
 				expect( cancelCallCount ).toBe( 1 );  // confirm that the handler was called at all
+			} );
+			
+		} );
+		
+		
+		describe( 'then()', function() {
+			var operation,
+			    localDoneCount,
+			    localFailCount;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+				
+				localDoneCount = localFailCount = 0;
+				
+				operation.then(
+					function() { localDoneCount++; },
+					function() { localFailCount++; }
+				);
+			} );
+			
+			
+			it( "should register a `done` handler", function() {
+				expect( localDoneCount ).toBe( 0 );  // initial condition
+				
+				operation.resolve();
+				expect( localDoneCount ).toBe( 1 );
+			} );
+			
+			
+			it( "should register a `fail` handler", function() {
+				expect( localFailCount ).toBe( 0 );  // initial condition
+				
+				operation.reject();
+				expect( localFailCount ).toBe( 1 );
 			} );
 			
 		} );

@@ -2,8 +2,10 @@
 define( [
 	'jquery',
 	'lodash',
-	'Class'
-], function( jQuery, _, Class ) {
+	'Class',
+	
+	'data/persistence/operation/Deferred'
+], function( jQuery, _, Class, OperationDeferred ) {
 	
 	/**
 	 * @abstract
@@ -176,21 +178,15 @@ define( [
 		
 		/**
 		 * @protected
-		 * @property {jQuery.Deferred} deferred
+		 * @property {data.persistence.operation.Deferred} deferred
 		 * 
-		 * The Operation's internal Deferred object, which is resolved or rejected based on the successful completion or 
-		 * failure of the Operation. Handlers for this Deferred are attached via the {@link #done}, {@link #fail}, 
-		 * {@link #then}, or {@link #always} methods of the Operation itself. The {@link #cancel} method is handled
-		 * separately by the {@link #cancelDeferred}.
+		 * The Operation's internal OperationDeferred object, which is resolved, rejected based on the successful completion or
+		 * failure of the Operation. The Operation may also be {@link #aborted}.
+		 * 
+		 * Handlers for the Deferred are attached via the {@link #done}, {@link #fail}, {@link #cancel}, {@link #then}, or 
+		 * {@link #always} methods of the Operation itself.
 		 */
 		
-		/**
-		 * @protected
-		 * @property {jQuery.Deferred} cancelDeferred
-		 * 
-		 * The Operation's internal Deferred object which is solely responsible for keeping track of {@link #cancel}
-		 * handlers, and will be resolved if the Operation has been {@link #abort aborted}.
-		 */
 		
 		/**
 		 * @protected
@@ -213,46 +209,6 @@ define( [
 		 */
 		requestsCompleted : false,
 		
-		/**
-		 * @protected
-		 * @property {Boolean} completed
-		 * 
-		 * Set to `true` when the Operation has been completed. Note that the Operation's {@link #requests} may have
-		 * been completed, but the Operation itself is not necessarily completed until after its {@link #dataComponent} 
-		 * has processed the results of the request(s).
-		 * 
-		 * This flag is also set to `true` if the Operation errored, or has been aborted.
-		 */
-		completed : false,
-		
-		/**
-		 * @protected
-		 * @property {Boolean} aborted
-		 * 
-		 * Set to `true` if the Operation has been {@link #abort aborted} while still in progress. Note that 
-		 * its {@link #requests} may still complete, but the {@link #dataComponent} associated with this Operation will 
-		 * ignore their results.
-		 */
-		aborted : false,
-		
-		/**
-		 * @private
-		 * @property {Boolean} success
-		 * 
-		 * Property which is set to true upon successful completion of the Operation. Retrieve
-		 * using {@link #wasSuccessful}.
-		 */
-		success : false,
-		
-		/**
-		 * @private
-		 * @property {Boolean} error
-		 * 
-		 * Property which is set to true upon failure to complete the Operation. Retrieve
-		 * using {@link #hasErrored}.
-		 */
-		error : false,
-		
 		
 		/**
 		 * Creates a new Operation instance.
@@ -268,9 +224,8 @@ define( [
 			// </debug>
 			
 			this.id = ++Operation.idCounter;
-			this.deferred = new jQuery.Deferred();
-			this.cancelDeferred = new jQuery.Deferred();  // need a separate Deferred to keep track of "cancel" handlers
-			this.requestsDeferred = new jQuery.Deferred();
+			this.deferred = new OperationDeferred();
+			this.requestsDeferred = new jQuery.Deferred();  // need a separate Deferred to keep track of the completion of the Operation's Requests
 			
 			// normalize the `requests` config to an array
 			this.requests = ( this.requests ) ? [].concat( this.requests ) : [];
@@ -462,7 +417,7 @@ define( [
 		
 		// -----------------------------------
 		
-		// Operation's state interface
+		// Operation's Deferred/State interface
 		
 		
 		/**
@@ -475,23 +430,7 @@ define( [
 		 * - **operation** (Operation): This Operation object.
 		 */
 		resolve : function() {
-			if( !this.completed ) {
-				this.success = true;
-				this.completed = true;
-				
-				this.deferred.resolve( this.dataComponent, this );
-			}
-		},
-		
-		
-		/**
-		 * Determines if all of the {@link #requests} completed successfully. All {@link #requests}
-		 * must have completed successfully for this Operation to be considered successful.
-		 * 
-		 * @return {Boolean}
-		 */
-		wasSuccessful : function() {
-			return this.success;
+			this.deferred.resolve( this.dataComponent, this );
 		},
 		
 		
@@ -505,23 +444,7 @@ define( [
 		 * - **operation** (Operation): This Operation object.
 		 */
 		reject : function() {
-			if( !this.completed ) {
-				this.error = true;
-				this.completed = true;
-				
-				this.deferred.reject( this.dataComponent, this );
-			}
-		},
-		
-		
-		/**
-		 * Determines if the Operation failed to complete successfully. If any of the {@link #requests}
-		 * have errored, this method returns `true`.
-		 * 
-		 * @return {Boolean}
-		 */
-		hasErrored : function() {
-			return this.error;
+			this.deferred.reject( this.dataComponent, this );
 		},
 		
 		
@@ -546,16 +469,36 @@ define( [
 		 * - **operation** (Operation): This Operation object.
 		 */
 		abort : function() {
-			if( !this.completed ) {
-				this.completed = true;
-				this.aborted = true;
-				
+			if( !this.isComplete() ) {
 				// Abort any remaining incomplete requests with the proxy. Proxies may or may not implement
 				// the abort() method specifically, but it defaults to an empty function on the Proxy class.
 				_.forEach( this.getIncompleteRequests(), function( req ) { this.proxy.abort( req ); }, this ); 
 				
-				this.cancelDeferred.resolve( this.dataComponent, this );
+				this.deferred.abort( this.dataComponent, this );
 			}
+		},
+		
+		
+		/**
+		 * Determines if the Operation itself was successful. In order to be considered successful, all of the Operation's 
+		 * {@link #requests} must have completed successfully, and the {@link #dataComponent} must have set its status to
+		 * {@link #resolve resolved}.
+		 * 
+		 * @return {Boolean}
+		 */
+		wasSuccessful : function() {
+			return ( this.state() === 'resolved' );
+		},
+		
+		
+		/**
+		 * Determines if the Operation failed to complete successfully. If any of the {@link #requests}
+		 * have errored, this method returns `true`.
+		 * 
+		 * @return {Boolean}
+		 */
+		hasErrored : function() {
+			return ( this.state() === 'rejected' );
 		},
 		
 		
@@ -565,7 +508,7 @@ define( [
 		 * @return {Boolean}
 		 */
 		wasAborted : function() {
-			return this.aborted;
+			return ( this.state() === 'aborted' );
 		},
 		
 		
@@ -576,13 +519,13 @@ define( [
 		 * @return {Boolean} `true` if all {@link #requests} are complete, `false` if any are not yet complete.
 		 */
 		isComplete : function() {
-			return this.completed;
+			return ( this.state() !== 'pending' );
 		},
 		
 		
 		// -----------------------------------
 		
-		// Deferred interface
+		// Promise interface
 
 		/**
 		 * Returns the Operation itself (this object). 
@@ -599,15 +542,18 @@ define( [
 		
 		
 		/**
-		 * Determines the state of the Operation's {@link #promise Promise} (Deferred) object. This method is
-		 * here for compatibility with jQuery's Deferred/Promise interface.
+		 * Determines the state of the Operation's {@link #deferred} object. This method is here for compatibility with 
+		 * jQuery's Deferred/Promise interface.
 		 * 
 		 * This method will return one of the following values:
-		 * - **"pending"**: The Deferred object is not yet in a completed state (neither "rejected" nor "resolved").
-		 * - **"resolved"**: The Deferred object is in the resolved state, when the Operation has been 
-		 *   {@link #wasSuccessful successful}.
-		 * - **"rejected"**: The Deferred object is in the rejected state, when the Operation has 
+		 * - **"pending"**: The OperationDeferred object is not yet in a completed state (neither "rejected", "resolved", nor 
+		 *   "aborted").
+		 * - **"resolved"**: The OperationDeferred object is in its 'resolved' state, when the Operation has completed
+		 *   {@link #wasSuccessful successfully}.
+		 * - **"rejected"**: The OperationDeferred object is in its 'rejected' state, when the Operation has 
 		 *   {@link #hasErrored errored}.
+		 * - **"aborted"**: The OperationDeferred object is in its 'aborted' state, when the Operation has been
+		 *   {@link #wasAborted aborted}.
 		 * 
 		 * @return {String} See return values, above.
 		 */
@@ -625,10 +571,8 @@ define( [
 		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
 		 * - **operation** (Operation): This Operation object.
 		 * 
-		 * 
-		 * **NOTE**: This is currently unimplemented from the "notification" side of things, but the method is currently provided 
+		 * **NOTE**: This is currently unimplemented from the "notification" side of things, but the method is provided 
 		 * as a no-op for compatibility with jQuery's Promise interface.
-		 * 
 		 * 
 		 * @param {Function} handlerFn
 		 * @chainable
@@ -685,7 +629,7 @@ define( [
 		 * @chainable
 		 */
 		cancel : function( handlerFn ) {
-			this.cancelDeferred.done( handlerFn );
+			this.deferred.cancel( handlerFn );
 			return this;
 		},
 		
@@ -693,7 +637,7 @@ define( [
 		/**
 		 * Adds handler functions for if the Operation completes successfully, or fails to complete successfully.
 		 * 
-		 * Note: This method does not support jQuery's "filtering" functionality.
+		 * Note: This method does *not* support jQuery's "filtering" functionality.
 		 * 
 		 * Handlers are called with the following two arguments when the Operation has completed successfully or has failed:
 		 * 
@@ -701,7 +645,7 @@ define( [
 		 * - **operation** (Operation): This Operation object.
 		 * 
 		 * @param {Function} successHandlerFn
-		 * @param {Function} failureHandlerFn
+		 * @param {Function} [failureHandlerFn]
 		 * @chainable
 		 */
 		then : function( successHandlerFn, failureHandlerFn ) {
@@ -724,7 +668,6 @@ define( [
 		 */
 		always : function( handlerFn ) {
 			this.deferred.always( handlerFn );
-			this.cancelDeferred.always( handlerFn );
 			return this;
 		}
 		
