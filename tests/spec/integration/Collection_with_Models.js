@@ -1,4 +1,4 @@
-/*global define, window, _, describe, beforeEach, afterEach, it, expect */
+/*global define, window, describe, beforeEach, afterEach, it, expect */
 define( [
 	'jquery',
 	'data/Data',

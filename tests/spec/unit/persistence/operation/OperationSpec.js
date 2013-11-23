@@ -1,4 +1,4 @@
-/*global define, window, _, describe, beforeEach, afterEach, it, xit, expect, spyOn */
+/*global define, window, describe, beforeEach, afterEach, it, xit, expect, spyOn */
 define( [
 	'jquery',
 	

@@ -1,4 +1,4 @@
-/*global define, window, jQuery, _, describe, beforeEach, afterEach, it, expect, JsMockito */
+/*global define, window, jQuery, describe, beforeEach, afterEach, it, expect, JsMockito */
 define( [
 	'lodash',
 	'Class',

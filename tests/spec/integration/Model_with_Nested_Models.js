@@ -1,4 +1,4 @@
-/*global define, window, _, describe, beforeEach, afterEach, it, xit, expect */
+/*global define, window, describe, beforeEach, afterEach, it, xit, expect */
 define( [
 	'lodash',
 	'data/Model'

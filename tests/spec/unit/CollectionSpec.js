@@ -1,4 +1,4 @@
-/*global define, window, _, describe, beforeEach, afterEach, it, xit, expect, spyOn, JsMockito */
+/*global define, window, describe, beforeEach, afterEach, it, xit, expect, spyOn, JsMockito */
 define( [
 	'jquery',
 	'lodash',
@@ -1770,7 +1770,7 @@ define( [
 			}
 			
 			
-			it( "sync() should create (save) models that are new", function() {
+			it( "should create (save) models that are new", function() {
 				var models = createModels( 2 );
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
 				JsMockito.when( models[ 0 ] ).save().then( function() { return (new jQuery.Deferred()).resolve( models[ 0 ] ); } );
@@ -1786,7 +1786,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should save models that have been modified", function() {
+			it( "should save models that have been modified", function() {
 				var models = createModels( 2 );
 				JsMockito.when( models[ 0 ] ).isModified().thenReturn( true );
 				JsMockito.when( models[ 0 ] ).save().then( function() { return (new jQuery.Deferred()).resolve( models[ 0 ] ); } );
@@ -1802,7 +1802,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should destroy models that have been removed from the collection", function() {
+			it( "should destroy models that have been removed from the collection", function() {
 				var models = createModels( 2 );
 				JsMockito.when( models[ 0 ] ).destroy().then( function() { return (new jQuery.Deferred()).resolve( models[ 0 ] ); } );
 				
@@ -1818,7 +1818,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should destroy models that have been removed from the collection in more than one call to remove() (to make sure the 'removedModels' is cumulative)", function() {
+			it( "should destroy models that have been removed from the collection in more than one call to remove() (to make sure the 'removedModels' is cumulative)", function() {
 				var models = createModels( 2 );
 				JsMockito.when( models[ 0 ] ).destroy().then( function() { return (new jQuery.Deferred()).resolve( models[ 0 ] ); } );
 				JsMockito.when( models[ 1 ] ).destroy().then( function() { return (new jQuery.Deferred()).resolve( models[ 1 ] ); } );
@@ -1836,7 +1836,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should destroy models that have been removed from the collection, but if one fails, only that one should be attempted to be destroyed again upon the next sync()", function() {
+			it( "should destroy models that have been removed from the collection, but if one fails, only that one should be attempted to be destroyed again upon the next sync()", function() {
 				var models = createModels( 2 );
 				JsMockito.when( models[ 0 ] ).destroy().then( function() { return (new jQuery.Deferred()).resolve( models[ 0 ] ); } );
 				JsMockito.when( models[ 1 ] ).destroy().then( 
@@ -1858,7 +1858,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should destroy models that have been removed from the collection only on the first call to sync(). They should not be destroyed again afterwards.", function() {
+			it( "should destroy models that have been removed from the collection only on the first call to sync(). They should not be destroyed again afterwards.", function() {
 				var models = createModels( 2 );
 				JsMockito.when( models[ 0 ] ).destroy().then( function() { return (new jQuery.Deferred()).resolve( models[ 0 ] ); } );
 				JsMockito.when( models[ 1 ] ).destroy().then( function() { return (new jQuery.Deferred()).resolve( models[ 1 ] ); } );
@@ -1877,7 +1877,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should save models that are new and modified, and destroy models that have been removed.", function() {
+			it( "should save models that are new and modified, and destroy models that have been removed.", function() {
 				var models = createModels( 4 );
 				
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
@@ -1909,7 +1909,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should call the 'success' and 'complete' callbacks when no persistence requests need to be done on any of the Collection's models", function() {
+			it( "should call the 'success' and 'complete' callbacks when no persistence requests need to be done on any of the Collection's models", function() {
 				var models = createModels( 4 );
 				var collection = new Collection( models );
 				
@@ -1929,7 +1929,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should call the 'success' and 'complete' callbacks if all persistence requests succeed", function() {
+			it( "should call the 'success' and 'complete' callbacks if all persistence requests succeed", function() {
 				var models = createModels( 4 );
 				
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
@@ -1964,7 +1964,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should call the 'error' and 'complete' callbacks if all persistence requests fail", function() {
+			it( "should call the 'error' and 'complete' callbacks if all persistence requests fail", function() {
 				var models = createModels( 4 );
 				
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
@@ -1999,7 +1999,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should call the 'error' and 'complete' callbacks if just one of the persistence requests fail (in this case, the first persistence request)", function() {
+			it( "should call the 'error' and 'complete' callbacks if just one of the persistence requests fail (in this case, the first persistence request)", function() {
 				var models = createModels( 4 );
 				
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
@@ -2034,7 +2034,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should call the 'error' and 'complete' callbacks if just one of the persistence requests fail (in this case, a middle persistence request)", function() {
+			it( "should call the 'error' and 'complete' callbacks if just one of the persistence requests fail (in this case, a middle persistence request)", function() {
 				var models = createModels( 4 );
 				
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
@@ -2069,7 +2069,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should call the 'error' and 'complete' callbacks if just one of the persistence requests fail (in this case, the last persistence request)", function() {
+			it( "should call the 'error' and 'complete' callbacks if just one of the persistence requests fail (in this case, the last persistence request)", function() {
 				var models = createModels( 4 );
 				
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
@@ -2104,7 +2104,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should return a jQuery.Promise object which has its `done` and `always` callbacks executed when no models in the Collection need to be persisted", function() {
+			it( "should return a jQuery.Promise object which has its `done` and `always` callbacks executed when no models in the Collection need to be persisted", function() {
 				var models = createModels( 4 );				
 				var collection = new Collection( models );
 				
@@ -2123,7 +2123,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should return a jQuery.Promise object which has its `done` and `always` callbacks executed when the sync of Models in the Collection succeeds", function() {
+			it( "should return a jQuery.Promise object which has its `done` and `always` callbacks executed when the sync of Models in the Collection succeeds", function() {
 				var models = createModels( 4 );
 				
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
@@ -2157,7 +2157,7 @@ define( [
 			} );
 			
 			
-			it( "sync() should return a jQuery.Promise object which has its `fail` and `always` callbacks executed when at least one of the requests of the sync fails", function() {
+			it( "should return a jQuery.Promise object which has its `fail` and `always` callbacks executed when at least one of the requests of the sync fails", function() {
 				var models = createModels( 4 );
 				
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );

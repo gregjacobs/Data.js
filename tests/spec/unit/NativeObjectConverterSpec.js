@@ -1,4 +1,4 @@
-/*global define, _, describe, beforeEach, afterEach, it, expect */
+/*global define, describe, beforeEach, afterEach, it, expect */
 define( [
 	'jquery',
 	'lodash',

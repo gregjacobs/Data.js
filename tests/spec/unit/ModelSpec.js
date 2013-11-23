@@ -1,4 +1,4 @@
-/*global define, window, _, jasmine, describe, xdescribe, beforeEach, afterEach, it, xit, expect, spyOn, JsMockito */
+/*global define, window, jasmine, describe, xdescribe, beforeEach, afterEach, it, xit, expect, spyOn, JsMockito */
 /*jshint browser:true, sub:true */
 define( [
 	'jquery',

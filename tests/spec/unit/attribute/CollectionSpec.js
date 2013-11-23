@@ -1,4 +1,4 @@
-/*global define, window, _, describe, beforeEach, afterEach, it, expect, JsMockito */
+/*global define, window, describe, beforeEach, afterEach, it, expect, JsMockito */
 define( [
 	'data/Model',
 	'data/Collection',

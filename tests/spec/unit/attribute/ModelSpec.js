@@ -1,4 +1,4 @@
-/*global define, _, describe, beforeEach, afterEach, it, expect, JsMockito */
+/*global define, describe, beforeEach, afterEach, it, expect, JsMockito */
 /*jshint browser:true */
 define( [
 	'data/attribute/Model',

@@ -1,4 +1,4 @@
-/*global define, window, jQuery, _, describe, beforeEach, afterEach, it, expect, spyOn */
+/*global define, window, jQuery, describe, beforeEach, afterEach, it, expect, spyOn */
 define( [
 	'data/Model',
 	'data/persistence/proxy/Memory',
