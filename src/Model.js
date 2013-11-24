@@ -72,12 +72,14 @@ define( [
 	var Model = Class.extend( DataComponent, {
 		
 		inheritedStatics : {
+			
 			/**
-			 * A static property that is unique to each data.Model subclass, which uniquely identifies the subclass.
 			 * @private
 			 * @inheritable
 			 * @static
 			 * @property {String} __Data_modelTypeId
+			 * 
+			 * A static property that is unique to each data.Model subclass, which uniquely identifies the subclass.
 			 */
 			
 			
@@ -85,7 +87,9 @@ define( [
 			/**
 			 * @ignore
 			 */
-			onClassExtended : function( newModelClass ) {
+			onClassCreated : function( newModelClass ) {
+				DataComponent.onClassCreated( newModelClass );  // call "superclass" method
+				
 				// Assign a unique id to this class, which is used in maps that hold the class
 				newModelClass.__Data_modelTypeId = _.uniqueId();
 				
@@ -135,19 +139,6 @@ define( [
 			getAttributes : function() {
 				// Note: `this` refers to the class (constructor function) that the static method was called on
 				return this.prototype.attributes;
-			},
-			
-			
-			/**
-			 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for the Model class. To retrieve
-			 * a proxy that may belong to a particular model, use the instance level {@link #method-getProxy}.
-			 * 
-			 * @inheritable
-			 * @static
-			 * @return {data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
-			 */
-			getProxy : function() {
-				return this.prototype.proxy || null;
 			}
 			
 		},
@@ -367,12 +358,6 @@ define( [
 			
 			// Call superclass constructor
 			this._super( arguments );
-			
-			// If this class has a proxy definition that is an object literal, instantiate it *onto the prototype*
-			// (so one Proxy instance can be shared for every model)
-			if( this.proxy && typeof this.proxy === 'object' && !( this.proxy instanceof Proxy ) ) {
-				this.constructor.prototype.proxy = Proxy.create( this.proxy );
-			}
 			
 			
 			this.addEvents(				
@@ -1264,32 +1249,6 @@ define( [
 		// --------------------------------
 		
 		// Persistence Functionality
-		
-			
-		/**
-		 * Sets the {@link data.persistence.proxy.Proxy} that for this particular model instance. Setting a proxy
-		 * with this method will only affect this particular model instance, not any others.
-		 * 
-		 * To configure a proxy that will be used for all instances of the Model, set one in a Model sublass.
-		 * 
-		 * @param {data.persistence.proxy.Proxy} The Proxy to set to this model instance.
-		 */
-		setProxy : function( proxy ) {
-			this.proxy = proxy;
-		},
-		
-			
-		/**
-		 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for this model instance. To retrieve
-		 * the proxy that belongs to the Model class itself, use the static {@link #static-method-getProxy getProxy} 
-		 * method. Note that unless the model instance is configured with a different proxy, it will inherit the
-		 * Model's static proxy.
-		 * 
-		 * @return {data.persistence.proxy.Proxy} The Proxy configured for the model, or null.
-		 */
-		getProxy : function() {
-			return this.proxy || null;
-		},
 		
 		
 		/**

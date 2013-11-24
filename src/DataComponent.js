@@ -2,8 +2,10 @@
 define( [
 	'lodash',
 	'Class',
-	'Observable'
-], function( _, Class, Observable ) {
+	'Observable',
+	
+	'data/persistence/proxy/Proxy'
+], function( _, Class, Observable, Proxy ) {
 
 	/**
 	 * @private
@@ -16,8 +18,41 @@ define( [
 	 * 
 	 * This class is used internally by the framework, and shouldn't be used directly.
 	 */
-	var DataComponent = Class.extend( Observable, {
+	var DataComponent = Observable.extend( {
 		abstractClass : true,
+		
+		inheritedStatics : {
+			
+			/**
+			 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for the DataComponent class. To retrieve
+			 * a proxy that may belong to a particular DataComponent instance, use the instance level {@link #method-getProxy}.
+			 * 
+			 * @inheritable
+			 * @static
+			 * @return {data.persistence.proxy.Proxy} The Proxy configured with the Model, or null.
+			 */
+			getProxy : function() {
+				return this.prototype.proxy || null;
+			},
+			
+			
+			/**
+			 * Subclass-specific setup. This method instantiates any anonymous proxy configuration object
+			 * set to the prototype of the class into a {@link data.persistence.proxy.Proxy} instance.
+			 * 
+			 * @ignore
+			 */
+			onClassCreated : function( newDataComponentClass ) {
+				var proto = newDataComponentClass.prototype;
+				
+				// Instantiate an anonymous proxy configuration object on the class's prototype into a Proxy instance
+				if( proto.hasOwnProperty( 'proxy' ) && proto.proxy && !( proto.proxy instanceof Proxy ) ) {
+					proto.proxy = Proxy.create( proto.proxy );
+				}
+			}
+			
+		},
+		
 		
 		/**
 		 * @cfg {data.persistence.proxy.Proxy} proxy
@@ -27,7 +62,6 @@ define( [
 		 * source. (Note that the way that the DataComponent loads/saves its data is dependent on the particular
 		 * implementation.)
 		 */
-		proxy : null,
 		
 		
 		/**
@@ -39,6 +73,9 @@ define( [
 		 */
 		
 		
+		/**
+		 * @constructor
+		 */
 		constructor : function() {
 			// Call the superclass's constructor (Observable)
 			this._super( arguments );
@@ -102,15 +139,58 @@ define( [
 		 */
 		rollback : Class.abstractMethod,
 		
+			
+		/**
+		 * Sets a {@link data.persistence.proxy.Proxy} to this particular DataComponent instance. Setting a 
+		 * proxy with this method will only affect this particular DataComponent instance, not any others.
+		 * 
+		 * To configure a proxy that will be shared between all instances of the DataComponent, set one in a DataComponent 
+		 * subclass. Example of doing this:
+		 * 
+		 *     define( [
+		 *         'data/Model',
+		 *         'data/persistence/proxy/Ajax'
+		 *     ], function( Model, AjaxProxy ) {
+		 *         
+		 *         var UserModel = Model.extend( {
+		 *             attributes : [ 'id', 'firstName', 'lastName' ],
+		 *         
+		 *             proxy : new AjaxProxy( {
+		 *                 url : '/users'
+		 *             } )
+		 *         } );
+		 *         
+		 *         return UserModel;
+		 *         
+		 *     } );
+		 * 
+		 * @param {data.persistence.proxy.Proxy/Object} The Proxy to set to this DataComponent instance. May also be an
+		 *   anonymous Proxy configuration object, which must have a `type` property. Ex: `{ type: 'ajax', url: '...' }`.
+		 */
+		setProxy : function( proxy ) {
+			this.proxy = proxy;
+		},
+		
 		
 		/**
-		 * Gets the {@link #proxy} that is currently configured for this DataComponent. Note that
-		 * the same proxy instance is shared between all instances of the DataComponent.
+		 * Retrieves the {@link data.persistence.proxy.Proxy Proxy} that is configured for this DataComponent. This will be
+		 * any Proxy set to the DataComponent instance itself using {@link #setProxy}, or otherwise will be the Proxy set to
+		 * the DataComponent's prototype. (See example of how to set up a proxy on the prototype in {@link #setProxy}.) 
 		 * 
-		 * @return {data.persistence.proxy.Proxy} The configured persistence proxy, or `null` if there is none configured.
+		 * Note: To retrieve the proxy that belongs to the DataComponent class (or subclass) itself, use the static 
+		 * {@link #static-method-getProxy} method.
+		 * 
+		 * @return {data.persistence.proxy.Proxy} The Proxy configured for the DataComponent, or `null`.
 		 */
 		getProxy : function() {
-			return this.proxy;
+			var proxy = this.proxy;
+			
+			// Lazily instantiate an anonymous config object into a Proxy instance, if that is what exists
+			if( proxy && !( proxy instanceof Proxy ) ) {
+				this.proxy = proxy = Proxy.create( proxy );
+			}
+			
+			return proxy || null;
 		}
 		
 	} );

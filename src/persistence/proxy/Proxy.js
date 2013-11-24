@@ -120,7 +120,7 @@ define( [
 	 * the Request eventually completes at a later time. However, it is useful to implement if resources can be saved or
 	 * if any cleanup needs to be made.
 	 */
-	var Proxy = Class.extend( Observable, {
+	var Proxy = Observable.extend( {
 		abstractClass : true,
 		
 		

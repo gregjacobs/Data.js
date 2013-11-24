@@ -210,6 +210,19 @@ define( [
 				expect( attributes.hasOwnProperty( 'c' ) ).toBe( true );  // orig YUI Test err msg: "SubSubClassModel should have the 'c' attribute defined in its final 'attributes' hash."
 			} );
 			
+			
+			// check that functionality from the superclass onClassCreated (i.e. DataComponent's onClassCreated()) is still executed
+			it( "should allow the superclass to instantiate an anonymous proxy config object into a Proxy instance", function() {
+				var MyModel = Model.extend( {
+					proxy : {
+						type : 'memory'
+					}
+				} );
+				
+				var proxy = MyModel.getProxy();
+				expect( proxy instanceof MemoryProxy ).toBe( true );
+			} );
+			
 		} );
 		
 		
@@ -253,69 +266,6 @@ define( [
 		
 		
 		describe( "constructor", function() {
-			
-			describe( "Test lazy instantiating a proxy", function() {
-				
-				it( "Attempting to instantiate a proxy with no 'type' attribute should throw an error", function() {
-					expect( function() {
-						var TestModel = Class.extend( Model, {
-							attributes: [ 'attribute1' ],
-							proxy : {}
-						} );
-						
-						var model = new TestModel();
-					} ).toThrow( "data.persistence.proxy.Proxy.create(): No `type` property provided on proxy config object" );
-				} );
-				
-				
-				it( "Attempting to instantiate a proxy with an invalid 'type' attribute should throw an error", function() {
-					expect( function() {
-						var TestModel = Class.extend( Model, {
-							attributes: [ 'attribute1' ],
-							proxy : { 
-								type : 'nonExistentProxy'
-							}
-						} );
-						
-						var model = new TestModel();
-					} ).toThrow( "data.persistence.proxy.Proxy.create(): Unknown Proxy type: 'nonexistentproxy'" );
-				} );
-				
-				
-				it( "Providing a valid config object should instantiate the Proxy *on class's the prototype*", function() {
-					var TestModel = Class.extend( Model, {
-						attributes: [ 'attribute1' ],
-						proxy : { 
-							type : 'rest'  // a valid proxy type
-						}
-					} );
-					
-					var model = new TestModel();
-					expect( TestModel.prototype.proxy instanceof RestProxy ).toBe( true );
-				} );
-				
-				
-				it( "Providing a valid config object should instantiate the Proxy *on the correct subclass's prototype*, shadowing superclasses", function() {
-					var TestModel = Class.extend( Model, {
-						attributes: [ 'attribute1' ],
-						proxy : { 
-							type : 'nonExistentProxy'  // an invalid proxy type
-						}
-					} );
-					
-					var TestSubModel = Class.extend( TestModel, {
-						attributes: [ 'attribute1' ],
-						proxy : { 
-							type : 'rest'  // a valid proxy type
-						}
-					} );
-					
-					var model = new TestSubModel();
-					expect( TestSubModel.prototype.proxy instanceof RestProxy ).toBe( true );
-				} );
-				
-			} );
-			
 			
 			describe( "`change` event upon initialization", function() {
 				

@@ -57,8 +57,25 @@ define( [
 			destroy : Data.emptyFn
 		} );
 		
+			
+		describe( "onClassCreated() static method", function() {
+			
+			// check that functionality from the superclass onClassCreated (i.e. DataComponent's onClassCreated()) is still executed
+			it( "should allow the superclass to instantiate an anonymous proxy config object into a Proxy instance", function() {
+				var MyCollection = Collection.extend( {
+					proxy : {
+						type : 'memory'
+					}
+				} );
+				
+				var proxy = MyCollection.getProxy();
+				expect( proxy instanceof MemoryProxy ).toBe( true );
+			} );
+			
+		} );
 		
-		describe( "Test the constructor", function() {
+		
+		describe( "constructor", function() {
 			var MyModel = Model.extend( {
 				attributes : [ 'attr' ]
 			} );
