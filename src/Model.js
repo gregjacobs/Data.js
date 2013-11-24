@@ -1395,7 +1395,7 @@ define( [
 		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
 		 * @param {Object} [options.scope] The object to call the `success`, `failure`, and `complete` callbacks in. This may also
-		 *   be provided as `context` if you prefer. Defaults to this Model.
+		 *   be provided as `context` if you prefer.
 		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
 		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
 		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1403,14 +1403,7 @@ define( [
 		 *   method on this object.
 		 */
 		load : function( options ) {
-			options = options || {};
-			var emptyFn    = Data.emptyFn,
-			    scope      = options.scope || options.context || this,
-			    progressCb = _.bind( options.progress || emptyFn, scope ),
-			    successCb  = _.bind( options.success  || emptyFn, scope ),
-			    errorCb    = _.bind( options.error    || emptyFn, scope ),
-			    cancelCb   = _.bind( options.cancel   || emptyFn, scope ),
-			    completeCb = _.bind( options.complete || emptyFn, scope );
+			options = DataComponent.normalizePersistenceOptions( options );
 			
 			// <debug>
 			if( !this.proxy ) throw new Error( "data.Model::load() error: Cannot load. No proxy configured." );
@@ -1426,7 +1419,7 @@ define( [
 			    operation = new LoadOperation( { dataComponent: this, proxy: this.proxy, requests: request } );
 			
 			// Attach any user-provided callbacks to the operation. The `scope` was attached above.
-			operation.progress( progressCb ).done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
+			operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 			
 			operation.executeRequests().then(
 				_.bind( this.onLoadSuccess, this ),
@@ -1544,7 +1537,7 @@ define( [
 		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
-		 *   be provided as `context` if you prefer. Defaults to the Model.
+		 *   be provided as `context` if you prefer. 
 		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'save' operation. This
 		 *   object acts as a Promise object as well, which may have handlers attached for when the save completes. The 
 		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1556,17 +1549,11 @@ define( [
 		 *   the 'save' operation be canceled, unless it is going to be attempted again after sufficient time where the data store
 		 *   (server) has finished the original operation, or the page is going to be refreshed.
 		 */
-		save : function( options ) {
-			options = options || {};
-			var me          = this,  // for closures
-			    syncRelated = ( options.syncRelated === undefined ) ? true : options.syncRelated,  // defaults to true
-			    emptyFn     = Data.emptyFn,
-			    scope       = options.scope || options.context || this,
-			    progressCb  = _.bind( options.progress || emptyFn, scope ),
-			    successCb   = _.bind( options.success  || emptyFn, scope ),
-			    errorCb     = _.bind( options.error    || emptyFn, scope ),
-			    cancelCb    = _.bind( options.cancel   || emptyFn, scope ),
-			    completeCb  = _.bind( options.complete || emptyFn, scope );
+		save : function( options ) {			
+			options = DataComponent.normalizePersistenceOptions( options );
+			
+			var me = this,  // for closures
+			    syncRelated = ( options.syncRelated === undefined ) ? true : options.syncRelated;  // defaults to true
 			
 			// <debug>
 			if( !this.proxy ) throw new Error( "data.Model::save() error: Cannot save. No proxy." );  // No proxy, cannot save. Throw an error
@@ -1592,7 +1579,7 @@ define( [
 			}
 			
 			// Set up any callbacks provided in the options
-			saveOperation.progress( progressCb ).done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
+			saveOperation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 			
 			return saveOperation.promise();
 		},
@@ -1781,7 +1768,7 @@ define( [
 		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
-		 *   be provided as `context` if you prefer. Defaults to the Model.
+		 *   be provided as `context` if you prefer. 
 		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the destroy (deletion) completes. The 
 		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
 		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'destroy' operation. This
@@ -1795,14 +1782,7 @@ define( [
 		 *   recommended that the 'destroy' operation be canceled, unless it is going to be attempted again, or the page is going to be refreshed.
 		 */
 		destroy : function( options ) {
-			options = options || {};
-			var emptyFn     = Data.emptyFn,
-			    scope       = options.scope || options.context || this,
-			    progressCb  = _.bind( options.progress || emptyFn, scope ),
-			    successCb   = _.bind( options.success  || emptyFn, scope ),
-			    errorCb     = _.bind( options.error    || emptyFn, scope ),
-			    cancelCb    = _.bind( options.cancel   || emptyFn, scope ),
-			    completeCb  = _.bind( options.complete || emptyFn, scope );
+			options = DataComponent.normalizePersistenceOptions( options );
 			
 			// No proxy, cannot destroy. Throw an error
 			// <debug>
@@ -1820,7 +1800,7 @@ define( [
 			    operation = new DestroyOperation( { dataComponent: this, proxy: this.proxy, requests: request } );
 			
 			// Attach any user-provided callbacks to the operation. The `scope` was attached above.
-			operation.progress( progressCb ).done( successCb ).fail( errorCb ).cancel( cancelCb ).always( completeCb );
+			operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 			
 			if( this.isNew() ) {
 				// If it is a new model, there is nothing on the server to destroy. Simply call the success handler to 

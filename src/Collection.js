@@ -1257,7 +1257,7 @@ define( [
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
+		 *   This may also be provided as the property `context`, if you prefer. 
 		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
 		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
 		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1270,7 +1270,7 @@ define( [
 				return this.loadPage( 1, options );
 				
 			} else {
-				options = this.normalizeLoadOptions( options );
+				options = DataComponent.normalizePersistenceOptions( options );
 				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 				
 				// <debug>
@@ -1283,7 +1283,7 @@ define( [
 				var request = new ReadRequest( { params: options.params } ),
 				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
 				
-				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
+				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
 				operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 				
 				// Add the Operation to the list of active load operations (which fires the 
@@ -1336,7 +1336,7 @@ define( [
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
+		 *   This may also be provided as the property `context`, if you prefer. 
 		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
 		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
 		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1354,7 +1354,7 @@ define( [
 				return this.loadPageRange( startPage, endPage, options );
 				
 			} else {
-				options = this.normalizeLoadOptions( options );
+				options = DataComponent.normalizePersistenceOptions( options );
 				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 				
 				// <debug>
@@ -1367,7 +1367,7 @@ define( [
 				var request = new ReadRequest( { params: options.params, start: startIdx, limit : endIdx - startIdx } ),
 				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
 				
-				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
+				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
 				operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 				
 				// Add the Operation to the list of active load operations (which fires the 
@@ -1413,7 +1413,7 @@ define( [
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
+		 *   This may also be provided as the property `context`, if you prefer. 
 		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
 		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
 		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1462,7 +1462,7 @@ define( [
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
 		 *   of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`, if you prefer. Defaults to this Collection.
+		 *   This may also be provided as the property `context`, if you prefer. 
 		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
 		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
 		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
@@ -1481,7 +1481,7 @@ define( [
 			}
 			// </debug>
 			
-			options = this.normalizeLoadOptions( options );
+			options = DataComponent.normalizePersistenceOptions( options );
 			var me = this,  // for closures
 			    proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null ),
 			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad;
@@ -1507,7 +1507,7 @@ define( [
 				operation.addRequest( request );
 			}
 			
-			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizeLoadOptions()
+			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
 			operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 			
 			// Add the Operation to the list of active load operations (which fires the 
@@ -1688,47 +1688,6 @@ define( [
 		},
 		
 		
-		/**
-		 * Normalizes the `options` argument for the options that are common to each of the "load" methods. This includes 
-		 * {@link #method-load}, {@link #loadRange}, {@link #loadPage}, and {@link #loadPageRange} methods.
-		 * 
-		 * This method only operates on the properties listed below. It provides a default empty function for each of the 
-		 * `success`, `error`, `cancel`, `progress`, and `complete` functions, and binds them to the `scope` (or `context`). 
-		 * All other properties that exist on the `options` object will remain unchanged. 
-		 * 
-		 * @protected
-		 * @param {Object} [options] The options object provided to any of the "load" methods. If `undefined` or `null` is
-		 *   provided, a normalized options object will still be returned, simply with defaults filled out.
-		 * @param {Function} [options.success] Function to call if the loading is successful. Will be defaulted to an
-		 *   empty function as part of this method's normalization process.
-		 * @param {Function} [options.error] Function to call if the loading fails. Will be defaulted to an
-		 *   empty function as part of this method's normalization process.
-		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
-		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
-		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
-		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
-		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
-		 *   of success or failure. Will be defaulted to an empty function as part of this method's normalization process.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`. Defaults to this Collection. This method binds each of
-		 *   the callbacks to this object.
-		 * @return {Object} The normalized `options` object.
-		 */
-		normalizeLoadOptions : function( options ) {
-			options = options || {};
-			
-			var emptyFn = function() {},
-			    scope   = options.scope || options.context || this;
-			
-			options.success  = _.bind( options.success  || emptyFn, scope );
-			options.error    = _.bind( options.error    || emptyFn, scope );
-			options.cancel   = _.bind( options.cancel   || emptyFn, scope );
-			options.progress = _.bind( options.progress || emptyFn, scope );
-			options.complete = _.bind( options.complete || emptyFn, scope );
-			
-			return options;
-		},
-		
 		
 		/**
 		 * Synchronizes the Collection by persisting each of the {@link data.Model Models} that have changes. New Models are created,
@@ -1750,9 +1709,8 @@ define( [
 		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
 		 */
 		sync : function( options ) {
-			options = options || {};
-			var scope = options.scope || options.context || this,
-			    models = this.getModels(),
+			options = DataComponent.normalizePersistenceOptions( options );
+			var models = this.getModels(),
 			    newModels = [],
 			    modifiedModels = [],
 			    removedModels = this.removedModels,
@@ -1772,13 +1730,13 @@ define( [
 			
 			// Callbacks for the options to this function
 			var successCallback = function() {
-				if( options.success ) { options.success.call( scope ); }
+				options.success();
 			};
 			var errorCallback = function() {
-				if( options.error ) { options.error.call( scope ); }
+				options.error();
 			};
 			var completeCallback = function() {
-				if( options.complete ) { options.complete.call( scope ); }
+				options.complete();
 			};
 			
 			// A callback where upon successful destruction of a model, remove the model from the removedModels array, so that we don't try to destroy it again from another call to sync()
