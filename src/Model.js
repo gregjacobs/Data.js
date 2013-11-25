@@ -8,6 +8,7 @@ define( [
 	'data/Data',
 	'data/DataComponent',
 	
+	'data/persistence/Util',
 	'data/persistence/proxy/Proxy',
 	'data/persistence/operation/Load',
 	'data/persistence/operation/Save',
@@ -44,6 +45,7 @@ define( [
 	Data,
 	DataComponent,
 	
+	PersistenceUtil,
 	Proxy,
 	LoadOperation,
 	SaveOperation,
@@ -1403,7 +1405,7 @@ define( [
 		 *   method on this object.
 		 */
 		load : function( options ) {
-			options = DataComponent.normalizePersistenceOptions( options );
+			options = PersistenceUtil.normalizePersistenceOptions( options );
 			
 			// <debug>
 			if( !this.proxy ) throw new Error( "data.Model::load() error: Cannot load. No proxy configured." );
@@ -1550,7 +1552,7 @@ define( [
 		 *   (server) has finished the original operation, or the page is going to be refreshed.
 		 */
 		save : function( options ) {			
-			options = DataComponent.normalizePersistenceOptions( options );
+			options = PersistenceUtil.normalizePersistenceOptions( options );
 			
 			var me = this,  // for closures
 			    syncRelated = ( options.syncRelated === undefined ) ? true : options.syncRelated;  // defaults to true
@@ -1782,7 +1784,7 @@ define( [
 		 *   recommended that the 'destroy' operation be canceled, unless it is going to be attempted again, or the page is going to be refreshed.
 		 */
 		destroy : function( options ) {
-			options = DataComponent.normalizePersistenceOptions( options );
+			options = PersistenceUtil.normalizePersistenceOptions( options );
 			
 			// No proxy, cannot destroy. Throw an error
 			// <debug>

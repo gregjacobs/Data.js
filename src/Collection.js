@@ -9,6 +9,7 @@ define( [
 	'data/DataComponent',
 	'data/NativeObjectConverter',
 	
+	'data/persistence/Util',
 	'data/persistence/operation/Load',
 	'data/persistence/request/Read',
 	'data/persistence/proxy/Proxy',
@@ -23,6 +24,7 @@ define( [
 	DataComponent,
 	NativeObjectConverter,
 	
+	PersistenceUtil,
 	LoadOperation,
 	ReadRequest,
 	Proxy
@@ -1270,7 +1272,7 @@ define( [
 				return this.loadPage( 1, options );
 				
 			} else {
-				options = DataComponent.normalizePersistenceOptions( options );
+				options = PersistenceUtil.normalizePersistenceOptions( options );
 				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 				
 				// <debug>
@@ -1354,7 +1356,7 @@ define( [
 				return this.loadPageRange( startPage, endPage, options );
 				
 			} else {
-				options = DataComponent.normalizePersistenceOptions( options );
+				options = PersistenceUtil.normalizePersistenceOptions( options );
 				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
 				
 				// <debug>
@@ -1481,7 +1483,7 @@ define( [
 			}
 			// </debug>
 			
-			options = DataComponent.normalizePersistenceOptions( options );
+			options = PersistenceUtil.normalizePersistenceOptions( options );
 			var me = this,  // for closures
 			    proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null ),
 			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad;
@@ -1709,7 +1711,7 @@ define( [
 		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
 		 */
 		sync : function( options ) {
-			options = DataComponent.normalizePersistenceOptions( options );
+			options = PersistenceUtil.normalizePersistenceOptions( options );
 			var models = this.getModels(),
 			    newModels = [],
 			    modifiedModels = [],
