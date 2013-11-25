@@ -1693,22 +1693,40 @@ define( [
 		
 		/**
 		 * Synchronizes the Collection by persisting each of the {@link data.Model Models} that have changes. New Models are created,
-		 * existing Models are modified, and removed Models are deleted.
+		 * existing Models are modified, and removed Models are destroyed (deleted).
+		 * 
+		 * Synchronizing a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
+		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
+		 * the synchronization is complete.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `request` : {@link data.persistence.request.Write} The WriteRequest that was executed.
+		 * - `operation` : {@link data.persistence.operation.Operation} The Operation that was executed, which provides
+		 *   information about the operation and the request(s) that took place.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Function} [options.success] Function to call if the synchronization is successful.
 		 * @param {Function} [options.error] Function to call if the synchronization fails. The sychronization will be considered
 		 *   failed if one or more Models does not persist successfully.
+		 * @param {Function} [options.cancel] Function to call if the sync has been canceled, by the returned
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}. See note in the description of the
+		 *   return of this method for a caveat on aborting (canceling) "sync" operations.
 		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
 		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as the property `context`, if you prefer. Defaults to the Collection.
-		 * @return {jQuery.Promise} A Promise object which may have handlers attached for when the sync completes. The 
-		 *   Promise is both resolved or rejected with the arguments listed above in the method description.
+		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'sync' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the sync completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+		 *   
+		 *   The 'sync' operation may be aborted (canceled) by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object. However, note that when aborting a 'sync' operation, it is possible that one or more requests still 
+		 *   completed, and Models were persisted to their external data store (such as a web server). This may cause an inconsistency 
+		 *   between the state of the model on the client-side, and the state of the model on the server-side. Therefore, it is not 
+		 *   recommended that the 'sync' operation be canceled, unless it is going to be attempted again after sufficient time where the 
+		 *   data store (server) has finished the original operation, or the page is going to be refreshed.
 		 */
 		sync : function( options ) {
 			options = PersistenceUtil.normalizePersistenceOptions( options );
@@ -1730,16 +1748,6 @@ define( [
 			}
 			
 			
-			// Callbacks for the options to this function
-			var successCallback = function() {
-				options.success();
-			};
-			var errorCallback = function() {
-				options.error();
-			};
-			var completeCallback = function() {
-				options.complete();
-			};
 			
 			// A callback where upon successful destruction of a model, remove the model from the removedModels array, so that we don't try to destroy it again from another call to sync()
 			var destroySuccess = function( model ) {
@@ -1768,8 +1776,9 @@ define( [
 			
 			// The "overall" promise that will either succeed if all persistence requests are made successfully, or fail if just one does not.
 			var overallPromise = jQuery.when.apply( null, promises );  // apply all of the promises as arguments
-			overallPromise.done( successCallback, completeCallback );
-			overallPromise.fail( errorCallback, completeCallback );
+			
+			// Attach the callbacks provided to the method
+			overallPromise.progress( options.progress ).done( options.success ).fail( options.error )/*.cancel( options.cancel )*/.always( options.complete );
 			
 			return overallPromise;  // Return a jQuery.Promise object for all the promises
 		}
