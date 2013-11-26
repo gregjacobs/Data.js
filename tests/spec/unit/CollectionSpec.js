@@ -1764,6 +1764,10 @@ define( [
 		
 		describe( "Test sync()", function() {
 			
+			var TestModel = Model.extend( {
+				attributes : [ 'id', 'name' ]
+			} );
+			
 			function createModels( howMany ) {
 				var models = [],
 				    ConcreteAttribute = Attribute.extend( { constructor: function(){} } );
@@ -1788,6 +1792,13 @@ define( [
 			
 			
 			it( "should create (save) models that are new", function() {
+				var models = [ new TestModel(), new TestModel() ];
+				
+				// TODO
+			} );
+			
+			
+			it( "should create (save) models that are new", function() {
 				var models = createModels( 2 );
 				JsMockito.when( models[ 0 ] ).isNew().thenReturn( true );
 				JsMockito.when( models[ 0 ] ).save().then( function() { return (new jQuery.Deferred()).resolve( models[ 0 ] ); } );
@@ -1803,7 +1814,7 @@ define( [
 			} );
 			
 			
-			it( "should save models that have been modified", function() {
+			it( "should update (save) models that have been modified", function() {
 				var models = createModels( 2 );
 				JsMockito.when( models[ 0 ] ).isModified().thenReturn( true );
 				JsMockito.when( models[ 0 ] ).save().then( function() { return (new jQuery.Deferred()).resolve( models[ 0 ] ); } );

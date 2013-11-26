@@ -10,6 +10,7 @@ define( [
 	'data/NativeObjectConverter',
 	
 	'data/persistence/Util',
+	'data/persistence/operation/Batch',
 	'data/persistence/operation/Load',
 	'data/persistence/request/Read',
 	'data/persistence/proxy/Proxy',
@@ -25,6 +26,7 @@ define( [
 	NativeObjectConverter,
 	
 	PersistenceUtil,
+	OperationBatch,
 	LoadOperation,
 	ReadRequest,
 	Proxy
@@ -739,17 +741,7 @@ define( [
 			// If the model was destroyed, we need to remove it from the collection
 			if( eventName === 'destroy' ) {
 				var model = arguments[ 1 ];  // arguments[ 1 ] is the model for the 'destroy' event
-				this.remove( model );   // if the model is destroyed on its own, remove it from the collection. If it has been destroyed from the collection's sync() method, then this will just have no effect.
-				
-				// If the model was destroyed manually on its own, remove the model from the removedModels array, so we don't try to destroy it (again)
-				// when sync() is executed.
-				var removedModels = this.removedModels;
-				for( var i = 0, len = removedModels.length; i < len; i++ ) {
-					if( removedModels[ i ] === model ) {
-						removedModels.splice( i, 1 );
-						break;
-					}
-				}
+				this.onModelDestroy( model );
 			}
 			
 			// Relay the event from the collection, passing the collection itself, and the original arguments
@@ -1731,56 +1723,42 @@ define( [
 		sync : function( options ) {
 			options = PersistenceUtil.normalizePersistenceOptions( options );
 			var models = this.getModels(),
-			    newModels = [],
-			    modifiedModels = [],
-			    removedModels = this.removedModels,
+			    removedModels = this.removedModels.slice( 0 ),  // make shallow copy
 			    i, len;
 			
-			// Put together an array of all of the new models, and the modified models
-			for( i = 0, len = models.length; i < len; i++ ) {
-				var model = models[ i ];
-				
-				if( model.isNew() ) {
-					newModels.push( model );
-				} else if( model.isModified( { persistedOnly: true } ) ) {  // only check "persisted" attributes
-					modifiedModels.push( model );
-				}
-			}
-			
-			
-			
-			// A callback where upon successful destruction of a model, remove the model from the removedModels array, so that we don't try to destroy it again from another call to sync()
-			var destroySuccess = function( model ) {
-				for( var i = 0, len = removedModels.length; i < len; i++ ) {
-					if( removedModels[ i ] === model ) {
-						removedModels.splice( i, 1 );
-						break;
-					}
-				}
-			};
-			
-			
 			// Now synchronize the models
-			var promises = [],
-			    modelsToSave = newModels.concat( modifiedModels );
+			var me = this,  // for closure
+			    modelsToSave = _.filter( models, function( model ) { return model.isNew() || model.isModified( { persistedOnly: true } ); } );
 			
-			for( i = 0, len = modelsToSave.length; i < len; i++ ) {
-				var savePromise = modelsToSave[ i ].save();
-				promises.push( savePromise );
-			}
-			for( i = removedModels.length - 1; i >= 0; i-- ) {  // Loop this one backwards, as destroyed models will be removed from the array as they go if they happen synchronously
-				var destroyPromise = removedModels[ i ].destroy();
-				destroyPromise.done( destroySuccess );  // Upon successful destruction, we want to remove the model from the removedModels array, so that we don't try to destroy it again
-				promises.push( destroyPromise );
-			}
+			var saveOperations = _.map( modelsToSave, function( model ) { return model.save(); } );
+			var destroyOperations = _.map( removedModels, function( model ) { 
+				return model.destroy().done( function() { me.onModelDestroy( model ); } ); // Upon successful destruction of each model being destroyed, we want to remove that model from the `removedModels` array, so that we don't try to destroy it again
+			} );
 			
-			// The "overall" promise that will either succeed if all persistence requests are made successfully, or fail if just one does not.
-			var overallPromise = jQuery.when.apply( null, promises );  // apply all of the promises as arguments
+			var operations = saveOperations.concat( destroyOperations ),
+			    operationBatch = new OperationBatch( { dataComponent: this, operations: operations } );
 			
 			// Attach the callbacks provided to the method
-			overallPromise.progress( options.progress ).done( options.success ).fail( options.error )/*.cancel( options.cancel )*/.always( options.complete );
+			operationBatch.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 			
-			return overallPromise;  // Return a jQuery.Promise object for all the promises
+			return operationBatch;
+		},
+		
+		
+		/**
+		 * Handles when a Model that existed within the Collection has been {@link data.Model#destroy destroyed}.
+		 * 
+		 * @protected
+		 * @param {data.Model} model The Model that has been destroyed.
+		 */
+		onModelDestroy : function( model ) {
+			// If the model is destroyed on its own, remove it from the collection. If it has been destroyed from the 
+			// collection's sync() method, then this will simply have no effect.
+			this.remove( model );
+			
+			// Remove the model from the removedModels array, so that we don't try to destroy it again from another 
+			// call to sync()
+			_.pull( this.removedModels, model );
 		}
 	
 	} );
