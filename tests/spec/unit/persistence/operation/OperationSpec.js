@@ -504,6 +504,36 @@ define( [
 		// Operation's Deferred/State interface
 		
 		
+		describe( 'notify()', function() {
+			var operation;
+			
+			beforeEach( function() {
+				operation = new ConcreteOperation( { dataComponent: model, proxy: proxy } );
+			} );
+			
+			
+			it( "should call `progress` handlers with the args: [ dataComponent, operation ]", function() {
+				var progressCallCount = 0;
+				
+				operation.progress( function( dataComponent, op ) { 
+					progressCallCount++;
+					
+					expect( dataComponent ).toBe( model );
+					expect( op ).toBe( operation );
+				} );
+				
+				operation.notify();
+				
+				expect( progressCallCount ).toBe( 1 );
+				expect( operation.state() ).toBe( 'pending' );
+				expect( operation.wasSuccessful() ).toBe( false );
+				expect( operation.hasErrored() ).toBe( false );
+				expect( operation.wasAborted() ).toBe( false );
+				expect( operation.isComplete() ).toBe( false );
+			} );
+		} );
+		
+		
 		describe( 'resolve()', function() {
 			var operation;
 			
@@ -516,6 +546,7 @@ define( [
 				operation.resolve();
 				operation.reject();  // attempt to reject, which should have been blocked
 				
+				expect( operation.state() ).toBe( 'resolved' );
 				expect( operation.wasSuccessful() ).toBe( true );
 				expect( operation.hasErrored() ).toBe( false );
 				expect( operation.wasAborted() ).toBe( false );
@@ -527,6 +558,7 @@ define( [
 				operation.resolve();
 				operation.abort();  // attempt to abort, which should have been blocked
 				
+				expect( operation.state() ).toBe( 'resolved' );
 				expect( operation.wasSuccessful() ).toBe( true );
 				expect( operation.hasErrored() ).toBe( false );
 				expect( operation.wasAborted() ).toBe( false );
@@ -547,6 +579,7 @@ define( [
 				operation.reject();
 				operation.resolve();  // attempt to resolve, which should have been blocked
 				
+				expect( operation.state() ).toBe( 'rejected' );
 				expect( operation.wasSuccessful() ).toBe( false );
 				expect( operation.hasErrored() ).toBe( true );
 				expect( operation.wasAborted() ).toBe( false );
@@ -558,6 +591,7 @@ define( [
 				operation.reject();
 				operation.abort();  // attempt to abort, which should have been blocked
 				
+				expect( operation.state() ).toBe( 'rejected' );
 				expect( operation.wasSuccessful() ).toBe( false );
 				expect( operation.hasErrored() ).toBe( true );
 				expect( operation.wasAborted() ).toBe( false );
@@ -578,6 +612,7 @@ define( [
 				operation.abort();
 				operation.resolve();  // attempt to resolve, which should have been blocked
 				
+				expect( operation.state() ).toBe( 'aborted' );
 				expect( operation.wasSuccessful() ).toBe( false );
 				expect( operation.hasErrored() ).toBe( false );
 				expect( operation.wasAborted() ).toBe( true );
@@ -589,6 +624,7 @@ define( [
 				operation.abort();
 				operation.reject();  // attempt to reject, which should have been blocked
 				
+				expect( operation.state() ).toBe( 'aborted' );
 				expect( operation.wasSuccessful() ).toBe( false );
 				expect( operation.hasErrored() ).toBe( false );
 				expect( operation.wasAborted() ).toBe( true );
@@ -607,6 +643,7 @@ define( [
 				operation.setRequests( requests );
 				
 				operation.abort();
+				expect( operation.state() ).toBe( 'aborted' );
 				expect( proxy.abort.calls.length ).toBe( 2 );
 				expect( proxy.abort ).toHaveBeenCalledWith( requests[ 1 ] );
 				expect( proxy.abort ).toHaveBeenCalledWith( requests[ 2 ] );
@@ -623,6 +660,7 @@ define( [
 				operation.setRequests( requests );
 				
 				operation.abort();
+				expect( operation.state() ).toBe( 'aborted' );
 				expect( proxy.abort ).not.toHaveBeenCalled();
 			} );
 			

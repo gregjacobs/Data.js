@@ -144,7 +144,7 @@ define( [
 		
 		
 		/**
-		 * @cfg {data.DataComponent} dataComponent
+		 * @cfg {data.DataComponent} dataComponent (required)
 		 * 
 		 * The DataComponent ({@link data.Model Model) or {@link data.Collection Collection} that the Operation is
 		 * operating on.
@@ -199,16 +199,6 @@ define( [
 		 */
 		started : false,
 		
-		/**
-		 * @protected
-		 * @property {Boolean} requestsCompleted
-		 * 
-		 * Set to `true` when the Operation's {@link #requests} have been completed. Note that the Operation itself
-		 * may not yet be {@link #completed} at this point, as its {@link #dataComponent} may not yet have processed
-		 * the results of the request(s).
-		 */
-		requestsCompleted : false,
-		
 		
 		/**
 		 * Creates a new Operation instance.
@@ -220,6 +210,7 @@ define( [
 			_.assign( this, cfg );
 			
 			// <debug>
+			if( !this.dataComponent ) throw new Error( "`dataComponent` cfg required" );
 			if( !this.proxy ) throw new Error( "`proxy` cfg required" );
 			// </debug>
 			
@@ -324,20 +315,18 @@ define( [
 			var me = this,  // for closures
 			    proxy = this.proxy,
 			    requestsDeferred = this.requestsDeferred,  // The Operation's requestDeferred
-			    dataComponent = this.dataComponent;
+			    notify = _.bind( this.notify, this );
 			
 			// Execute all individual requests, and when they are complete, resolve or reject the 
 			// Operation's "requestsDeferred"
 			var requestsPromises = _.map( this.requests, function( request ) {  // Execute all requests and return an array of Promise objects, one for each Request 
 				var promise = proxy[ request.getAction() ]( request )
-					.progress( function() { 
-						me.deferred.notify( dataComponent, me );  // notify of "progress" (calls `progress` handlers)
-					} )
+					.progress( notify )  // notify of "progress" (calls `progress` handlers)
 					.done( function( resultSet ) {  // request successful
 						if( resultSet ) request.setResultSet( resultSet );
 						request.setSuccess();
 						
-						me.deferred.notify( dataComponent, me );  // notify of "progress" (calls `progress` handlers)
+						notify();  // notify of "progress" (calls `progress` handlers)
 					} )
 					.fail( function( error ) { request.setError( error ); } );
 				
@@ -451,6 +440,19 @@ define( [
 		 */
 		reject : function() {
 			this.deferred.reject( this.dataComponent, this );
+		},
+		
+		
+		/**
+		 * Calls {@link #progress} handlers of the Operation.
+		 * 
+		 * {@link #progress} handlers are called with two arguments:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operationBatch** (Operation): This Operation object.
+		 */
+		notify : function() {
+			this.deferred.notify( this.dataComponent, this );
 		},
 		
 		
