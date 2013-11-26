@@ -1,9 +1,10 @@
 /*global define, window, describe, beforeEach, afterEach, it, expect, spyOn */
 define( [
 	'jquery',
+	'lodash',
 	
 	'data/persistence/operation/Deferred'
-], function( jQuery, OperationDeferred ) {
+], function( jQuery, _, OperationDeferred ) {
 	
 	describe( 'data.persistence.operation.OperationDeferred', function() {
 		// For tests to use to check all 3 "finalized" states
