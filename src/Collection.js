@@ -1704,8 +1704,8 @@ define( [
 		 * All of the callbacks, and the promise handlers are called with the following arguments:
 		 * 
 		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `operation` : {@link data.persistence.operation.Operation} The Operation that was executed, which provides
-		 *   information about the operation and the request(s) that took place.
+		 * - `operationBatch` : {@link data.persistence.operation.Batch} The OperationBatch that was executed, which provides
+		 *   information about the operation(s) and request(s) that took place to complete the synchronization.
 		 * 
 		 * @param {Object} [options] An object which may contain the following properties:
 		 * @param {Function} [options.success] Function to call if the synchronization is successful.
@@ -1719,7 +1719,7 @@ define( [
 		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
 		 *   be provided as the property `context`, if you prefer. Defaults to the Collection.
-		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'sync' operation. This
+		 * @return {data.persistence.operation.Batch} An OperationBatch object which represents the 'sync' operation. This
 		 *   object acts as a Promise object as well, which may have handlers attached for when the sync completes. The 
 		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
 		 *   
@@ -1733,16 +1733,16 @@ define( [
 		sync : function( options ) {
 			options = PersistenceUtil.normalizePersistenceOptions( options );
 			var models = this.getModels(),
-			    removedModels = this.removedModels.slice( 0 ),  // make shallow copy
+			    removedModels = this.removedModels.slice( 0 ),  // make shallow copy - we don't want synchronous destroy() requests to end up removing Models from this array (due to the `onModelDestroy()` method) while we loop over it
 			    i, len;
 			
 			// Now synchronize the models
 			var me = this,  // for closure
-			    modelsToSave = _.filter( models, function( model ) { return model.isNew() || model.isModified( { persistedOnly: true } ); } );
+			    modelsToSave = _.filter( models, function( model ) { return model.isNew() || model.isModified( { persistedOnly: true } ); } );  // retrieve new models, or modified models which have persisted attributes modified 
 			
 			var saveOperations = _.map( modelsToSave, function( model ) { return model.save(); } );
 			var destroyOperations = _.map( removedModels, function( model ) { 
-				return model.destroy().done( function() { me.onModelDestroy( model ); } ); // Upon successful destruction of each model being destroyed, we want to remove that model from the `removedModels` array, so that we don't try to destroy it again
+				return model.destroy().done( function() { me.onModelDestroy( model ); } ); // Upon successful destruction of each model being destroyed, we want to remove that model from the `removedModels` array, so that we don't try to destroy it again in another sync() operation
 			} );
 			
 			var operations = saveOperations.concat( destroyOperations ),
