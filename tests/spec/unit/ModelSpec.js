@@ -211,7 +211,11 @@ define( [
 			} );
 			
 			
-			// check that functionality from the superclass onClassCreated (i.e. DataComponent's onClassCreated()) is still executed
+			// ------------------------------------
+			
+			
+			// check that functionality from the superclass `onClassCreated` (i.e. DataComponent's onClassCreated()) is still executed
+			
 			it( "should allow the superclass to instantiate an anonymous proxy config object into a Proxy instance", function() {
 				var MyModel = Model.extend( {
 					proxy : {
@@ -221,6 +225,34 @@ define( [
 				
 				var proxy = MyModel.getProxy();
 				expect( proxy instanceof MemoryProxy ).toBe( true );
+				expect( MyModel.prototype.proxy ).toBe( proxy );  // make sure the Proxy was instantiated on the Model's prototype
+			} );
+			
+			
+			it( "should allow the superclass to instantiate an anonymous proxy config object into a Proxy instance for a hierarchy of Model classes", function() {
+				var MyModel = Model.extend( {
+					proxy : {
+						type : 'memory',
+						id : 1   // just a property used by the tests
+					}
+				} );
+				
+				var MyModel2 = MyModel.extend( {
+					proxy : {
+						type : 'memory',
+						id : 2
+					}
+				} );
+				
+				var proxy = MyModel.getProxy();
+				expect( proxy instanceof MemoryProxy ).toBe( true );
+				expect( MyModel.prototype.proxy ).toBe( proxy );   // make sure the Proxy was instantiated on the Model's prototype
+				expect( proxy.id ).toBe( 1 );
+				
+				var proxy2 = MyModel2.getProxy();
+				expect( proxy2 instanceof MemoryProxy ).toBe( true );
+				expect( MyModel2.prototype.proxy ).toBe( proxy2 );  // make sure the Proxy was instantiated on the Model's prototype
+				expect( proxy2.id ).toBe( 2 );
 			} );
 			
 		} );
@@ -1796,6 +1828,20 @@ define( [
 			} );
 			
 			
+			it( "should call `getProxy()` internally, to make sure that it receives an instantiated Proxy instance if an anonymous config object was set to the Model instance via setProxy()", function() {
+				var AnonymousProxyModel = Model.extend( {
+					attributes : [ 'id', 'name' ]
+				} );
+				
+				var model = new AnonymousProxyModel();
+				model.setProxy( { type: 'manual' } );  // provide anonymous config object
+				
+				// Make sure that the load() method can use the instantiated proxy (i.e. it can call the Proxy's `read()` method)
+				expect( function() { model.load(); } ).not.toThrow();
+				expect( model.getProxy().getReadRequestCount() ).toBe( 1 );  // Double check that the Proxy's read() method was actually invoked
+			} );
+			
+			
 			it( "should delegate to its proxy's read() method, with the model's ID, to retrieve the data", function() {
 				var model = new ManualProxyModel( { id: 1 } );
 				model.load();
@@ -1957,6 +2003,20 @@ define( [
 				expect( function() {
 					model.save();
 				} ).toThrow( "data.Model::save() error: Cannot save. No proxy." );
+			} );
+			
+			
+			it( "should call `getProxy()` internally, to make sure that it receives an instantiated Proxy instance if an anonymous config object was set to the Model instance via setProxy()", function() {
+				var AnonymousProxyModel = Model.extend( {
+					attributes : [ 'id', 'name' ]
+				} );
+				
+				var model = new AnonymousProxyModel();
+				model.setProxy( { type: 'manual' } );  // provide anonymous config object
+				
+				// Make sure that the load() method can use the instantiated proxy (i.e. it can call the Proxy's `create()` method)
+				expect( function() { model.save(); } ).not.toThrow();
+				expect( model.getProxy().getCreateRequestCount() ).toBe( 1 );  // Double check that the Proxy's create() method was actually invoked
 			} );
 			
 			
@@ -2493,6 +2553,20 @@ define( [
 				expect( function() {
 					model.destroy();
 				} ).toThrow( "data.Model::destroy() error: Cannot destroy model on server. No proxy." );
+			} );
+			
+			
+			it( "should call `getProxy()` internally, to make sure that it receives an instantiated Proxy instance if an anonymous config object was set to the Model instance via setProxy()", function() {
+				var AnonymousProxyModel = Model.extend( {
+					attributes : [ 'id', 'name' ]
+				} );
+				
+				var model = new AnonymousProxyModel( { id: 1 } );
+				model.setProxy( { type: 'manual' } );  // provide anonymous config object
+				
+				// Make sure that the load() method can use the instantiated proxy (i.e. it can call the Proxy's `destroy()` method)
+				expect( function() { model.destroy(); } ).not.toThrow();
+				expect( model.getProxy().getDestroyRequestCount() ).toBe( 1 );  // Double check that the Proxy's destroy() method was actually invoked
 			} );
 			
 			

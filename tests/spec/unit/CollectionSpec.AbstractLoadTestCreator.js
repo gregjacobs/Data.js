@@ -95,6 +95,8 @@ define( [
 		buildTests: function() {
 			it( "should throw an error if no proxy is configured", _.bind( this.test_errorIfNoProxy, this ) );
 			it( "should throw an error if it has no proxy but has a Model, but that model has no proxy configured", _.bind( this.test_errorIfNoProxyOnModel, this ) );
+			it( "should call `getProxy()` on the Collection internally, to make sure that it receives an instantiated Proxy instance if an anonymous config object was set to the Collection instance via setProxy()", _.bind( this.test_shouldCallGetProxyInternallyToRetrieveProxyInstance, this ) );
+			
 			it( "should call the proxy's read() method, when the proxy is configured on the Collection", _.bind( this.test_shouldCallProxyRead, this ) );
 			it( "should call the proxy's read() method, when the proxy is configured on the Collection's Model", _.bind( this.test_shouldCallModelProxyRead, this ) );
 			it( "should call the proxy's read() method with any `params` option provided to the method", _.bind( this.test_shouldPassParamsToProxy, this ) );
@@ -208,6 +210,23 @@ define( [
 			expect( function() {
 				me.executeLoadMethod( collection );
 			} ).toThrow( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+		},
+		
+			
+		test_shouldCallGetProxyInternallyToRetrieveProxyInstance : function() {
+			var AnonymousProxyCollection = Collection.extend( _.assign( {}, this.getDefaultCollectionConfig(), {
+				// note: no proxy, and a model that doesn't have a proxy
+				model : Model.extend( { /* no proxy on model */ } )
+			} ) );
+			
+			var me = this,
+			    collection = new AnonymousProxyCollection( { id: 1 } );
+			
+			collection.setProxy( { type: 'manual' } );  // provide anonymous config object
+			
+			// Make sure that the load() method can use the instantiated proxy (i.e. it can call the Proxy's `read()` method)
+			expect( function() { me.executeLoadMethod( collection ); } ).not.toThrow();
+			expect( collection.getProxy().getReadRequestCount() ).toBe( 1 );  // Double check that the Proxy's read() method was actually invoked
 		},
 		
 		

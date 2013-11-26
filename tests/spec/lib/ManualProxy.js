@@ -496,6 +496,9 @@ define( [
 		
 	} );
 	
+	
+	Proxy.register( 'manual', ManualProxy );
+	
 	return ManualProxy;
 	
 } );

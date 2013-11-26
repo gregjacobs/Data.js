@@ -1406,9 +1406,10 @@ define( [
 		 */
 		load : function( options ) {
 			options = PersistenceUtil.normalizePersistenceOptions( options );
+			var proxy = this.getProxy();
 			
 			// <debug>
-			if( !this.proxy ) throw new Error( "data.Model::load() error: Cannot load. No proxy configured." );
+			if( !proxy ) throw new Error( "data.Model::load() error: Cannot load. No proxy configured." );
 			// </debug>
 			
 			// Set the `loading` flag while the Model is loading. Will be set to false in onLoadSuccess or onLoadError
@@ -1418,7 +1419,7 @@ define( [
 			// Make a request to load the data from the proxy
 			var id = ( this.hasIdAttribute() ) ? this.getId() : undefined,
 			    request = new ReadRequest( { modelId: id, params: options.params } ),
-			    operation = new LoadOperation( { dataComponent: this, proxy: this.proxy, requests: request } );
+			    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request } );
 			
 			// Attach any user-provided callbacks to the operation. The `scope` was attached above.
 			operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
@@ -1558,7 +1559,7 @@ define( [
 			    syncRelated = ( options.syncRelated === undefined ) ? true : options.syncRelated;  // defaults to true
 			
 			// <debug>
-			if( !this.proxy ) throw new Error( "data.Model::save() error: Cannot save. No proxy." );  // No proxy, cannot save. Throw an error
+			if( !this.getProxy() ) throw new Error( "data.Model::save() error: Cannot save. No proxy." );  // No proxy, cannot save. Throw an error
 			if( !this.hasIdAttribute() ) throw new Error( "data.Model::save() error: Cannot save. Model does not have an idAttribute that relates to a valid attribute." );
 			// </debug>
 			
@@ -1601,7 +1602,7 @@ define( [
 			// Create and return the SaveOperation object
 			var RequestClass = this.isNew() ? CreateRequest : UpdateRequest,
 			    writeRequest = new RequestClass( { models : [ this ], params: options.params } ),
-			    operation = new SaveOperation( { dataComponent: this, proxy: this.proxy, requests: writeRequest } );
+			    operation = new SaveOperation( { dataComponent: this, proxy: this.getProxy(), requests: writeRequest } );
 			
 			return operation;
 		},
@@ -1785,10 +1786,11 @@ define( [
 		 */
 		destroy : function( options ) {
 			options = PersistenceUtil.normalizePersistenceOptions( options );
+			var proxy = this.getProxy();
 			
 			// No proxy, cannot destroy. Throw an error
 			// <debug>
-			if( !this.proxy ) throw new Error( "data.Model::destroy() error: Cannot destroy model on server. No proxy." );
+			if( !proxy ) throw new Error( "data.Model::destroy() error: Cannot destroy model on server. No proxy." );
 			// </debug>
 			
 			
@@ -1799,7 +1801,7 @@ define( [
 			
 			var id = ( this.hasIdAttribute() ) ? this.getId() : undefined,
 			    request = new DestroyRequest( { models : [ this ], params : options.params } ),
-			    operation = new DestroyOperation( { dataComponent: this, proxy: this.proxy, requests: request } );
+			    operation = new DestroyOperation( { dataComponent: this, proxy: proxy, requests: request } );
 			
 			// Attach any user-provided callbacks to the operation. The `scope` was attached above.
 			operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );

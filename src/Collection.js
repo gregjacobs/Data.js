@@ -1125,6 +1125,19 @@ define( [
 		
 		
 		/**
+		 * Retrieves the {@link data.persistence.proxy.Proxy Proxy} that should be used for all persistence methods of 
+		 * the Collection. This is either a {@link #proxy} that exists directly on the Collection itself, or the 
+		 * {@link #model model's} proxy. If neither entity has a proxy configured, returns `null`.
+		 * 
+		 * @protected
+		 * @return {data.persistence.proxy.Proxy} The Proxy on the Collection, the Collection's {@link #model}, or `null`.
+		 */
+		getEffectiveProxy : function() {
+			return this.getProxy() || ( this.model ? this.model.getProxy() : null );
+		},
+		
+		
+		/**
 		 * Determines if the Collection is currently loading data from its {@link #proxy}, via any of the "load" methods
 		 * ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}).
 		 * 
@@ -1265,7 +1278,7 @@ define( [
 				
 			} else {
 				options = PersistenceUtil.normalizePersistenceOptions( options );
-				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
+				var proxy = this.getEffectiveProxy();
 				
 				// <debug>
 				// No persistence proxy, cannot load. Throw an error
@@ -1349,7 +1362,7 @@ define( [
 				
 			} else {
 				options = PersistenceUtil.normalizePersistenceOptions( options );
-				var proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null );
+				var proxy = this.getEffectiveProxy();
 				
 				// <debug>
 				// No persistence proxy, cannot load. Throw an error
@@ -1477,14 +1490,11 @@ define( [
 			
 			options = PersistenceUtil.normalizePersistenceOptions( options );
 			var me = this,  // for closures
-			    proxy = this.getProxy() || ( this.model ? this.model.getProxy() : null ),
+			    proxy = this.getEffectiveProxy(),
 			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad;
 			
 			// <debug>
-			// No persistence proxy, cannot load. Throw an error
-			if( !proxy ) {
-				throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
-			}
+			if( !proxy ) throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
 			// </debug>
 			
 			var operation = new LoadOperation( { dataComponent: this, proxy: proxy, addModels: addModels } );
