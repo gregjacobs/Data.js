@@ -1745,7 +1745,7 @@ define( [
 				return model.destroy().done( function() { me.onModelDestroy( model ); } ); // Upon successful destruction of each model being destroyed, we want to remove that model from the `removedModels` array, so that we don't try to destroy it again in another sync() operation
 			} );
 			
-			var operations = saveOperations.concat( destroyOperations ),
+			var operations = [].concat( saveOperations, destroyOperations ),
 			    operationBatch = new OperationBatch( { dataComponent: this, operations: operations } );
 			
 			// Attach the callbacks provided to the method
