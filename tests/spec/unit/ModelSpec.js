@@ -57,10 +57,11 @@ define( [
 		// A concrete DataComponent for tests to use
 		var ConcreteDataComponent = DataComponent.extend( { 
 			// Implementation of abstract interface
-			getData : Data.emptyFn,
+			getData    : Data.emptyFn,
 			isModified : Data.emptyFn,
-			commit : Data.emptyFn,
-			rollback : Data.emptyFn
+			commit     : Data.emptyFn,
+			rollback   : Data.emptyFn,
+			isLoading  : Data.emptyFn
 		} );
 		
 		// A concrete DataComponentAttribute for Models to be configured with

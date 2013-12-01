@@ -16,7 +16,8 @@ define( [
 			getData    : emptyFn,
 			isModified : emptyFn,
 			commit     : emptyFn,
-			rollback   : emptyFn
+			rollback   : emptyFn,
+			isLoading  : emptyFn
 		} );
 		
 		var ConcreteProxy = Proxy.extend( {

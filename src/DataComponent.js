@@ -6,6 +6,9 @@ define( [
 	
 	'data/persistence/proxy/Proxy'
 ], function( _, Class, Observable, Proxy ) {
+	
+	var abstractMethod = Class.abstractMethod;
+	
 
 	/**
 	 * @private
@@ -106,7 +109,7 @@ define( [
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
 		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
-		getData : Class.abstractMethod,
+		getData : abstractMethod,
 		
 		
 		/**
@@ -119,7 +122,7 @@ define( [
 		 *   attribute of a Model is modified within the DataComponent.
 		 * @return {Boolean}
 		 */
-		isModified : Class.abstractMethod,
+		isModified : abstractMethod,
 		
 		
 		/**
@@ -128,7 +131,7 @@ define( [
 		 * @abstract
 		 * @method commit
 		 */
-		commit : Class.abstractMethod,
+		commit : abstractMethod,
 		
 		
 		/**
@@ -138,7 +141,17 @@ define( [
 		 * @abstract
 		 * @method rollback
 		 */
-		rollback : Class.abstractMethod,
+		rollback : abstractMethod,
+		
+		
+		/**
+		 * Determines if the DataComponent is currently loading data, through its {@link #proxy}.
+		 * 
+		 * @abstract
+		 * @method isLoading
+		 * @return {Boolean} `true` if the DataComponent is currently loading, `false` otherwise.
+		 */
+		isLoading : abstractMethod,
 		
 			
 		/**
