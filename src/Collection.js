@@ -43,13 +43,15 @@ define( [
 	 *     
 	 *     myApp.Todos = Collection.extend( {
 	 *         model: myApp.Todo
+	 *         
+	 *         // any other configuration options
 	 *     } );
 	 * 
 	 * 
 	 * Note: Configuration options should be placed on the prototype of a Collection subclass.
 	 * 
 	 * 
-	 * ### Model Events
+	 * ## Model Events
 	 * 
 	 * Collections automatically relay all of their {@link data.Model Models'} events as if the Collection
 	 * fired it. The collection instance provides itself in the handler though. For example, Models' 
@@ -1750,6 +1752,7 @@ define( [
 			
 			// Attach the callbacks provided to the method
 			operationBatch.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
+			//operationBatch.done( function() { me.modified = false; } );
 			
 			return operationBatch;
 		},

@@ -1502,88 +1502,82 @@ define( [
 		
 		
 		describe( "Test isModified()", function() {
-			var thisSuite,
-			    MyCollection;
+			var unmodifiedModel1,
+			    unmodifiedModel2,
+			    modifiedModel1,
+			    modifiedModel2;
 			
 			beforeEach( function() {
-				thisSuite = {};
+				unmodifiedModel1 = new Model();
+				spyOn( unmodifiedModel1, 'isModified' ).andReturn( false );
 				
-				thisSuite.unmodifiedModel1 = JsMockito.mock( Model );
-				JsMockito.when( thisSuite.unmodifiedModel1 ).getClientId().thenReturn( 1 );
-				JsMockito.when( thisSuite.unmodifiedModel1 ).isModified().thenReturn( false );
+				unmodifiedModel2 = new Model();
+				spyOn( unmodifiedModel2, 'isModified' ).andReturn( false );
 				
-				thisSuite.unmodifiedModel2 = JsMockito.mock( Model );
-				JsMockito.when( thisSuite.unmodifiedModel2 ).getClientId().thenReturn( 2 );
-				JsMockito.when( thisSuite.unmodifiedModel2 ).isModified().thenReturn( false );
+				modifiedModel1 = new Model();
+				spyOn( modifiedModel1, 'isModified' ).andReturn( true );
 				
-				thisSuite.modifiedModel1 = JsMockito.mock( Model );
-				JsMockito.when( thisSuite.modifiedModel1 ).getClientId().thenReturn( 3 );
-				JsMockito.when( thisSuite.modifiedModel1 ).isModified().thenReturn( true );
-				
-				thisSuite.modifiedModel2 = JsMockito.mock( Model );
-				JsMockito.when( thisSuite.modifiedModel2 ).getClientId().thenReturn( 4 );
-				JsMockito.when( thisSuite.modifiedModel2 ).isModified().thenReturn( true );
-								
-				MyCollection = Collection.extend( {} );
+				modifiedModel2 = new Model();
+				spyOn( modifiedModel2, 'isModified' ).andReturn( true );
 			} );
 			
 			
 			it( "isModified() should return false if no Models within the collection have been modified", function() {
-				var collection = new MyCollection( [ thisSuite.unmodifiedModel1 ] );
+				var collection = new Collection( [ unmodifiedModel1 ] );
 				
 				expect( collection.isModified() ).toBe( false );
 			} );
 			
 			
 			it( "isModified() should return true if a Model within the collection has been modified", function() {
-				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.modifiedModel1 ] );
+				var collection = new Collection( [ unmodifiedModel1, modifiedModel1 ] );
 				
 				expect( collection.isModified() ).toBe( true );
 			} );
 			
 			
 			it( "isModified() should return true if a model has been added to the Collection since the last commit/rollback", function() {
-				var collection = new MyCollection();
+				var collection = new Collection();
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
-				collection.add( thisSuite.unmodifiedModel1 );
+				collection.add( unmodifiedModel1 );
 				expect( collection.isModified() ).toBe( true );  // orig YUI Test err msg: "The collection should now be modified, since a Model was added."
 			} );
 			
 			
 			it( "isModified() should return true if a model has been removed from the Collection since the last commit/rollback", function() {
-				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.unmodifiedModel2 ] );
+				var collection = new Collection( [ unmodifiedModel1, unmodifiedModel2 ] );
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
-				collection.remove( thisSuite.unmodifiedModel1 );
+				collection.remove( unmodifiedModel1 );
 				expect( collection.isModified() ).toBe( true );  // orig YUI Test err msg: "The collection should now be modified, since a Model was removed."
 			} );
 			
 			
 			it( "isModified() should return true if a model has been reordered in the Collection since the last commit/rollback", function() {
-				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.unmodifiedModel2 ] );
+				var collection = new Collection( [ unmodifiedModel1, unmodifiedModel2 ] );
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
-				collection.add( thisSuite.unmodifiedModel1, { at: 1 } );  // move unmodifiedmodel1 to the 2nd position
+				collection.add( unmodifiedModel1, { at: 1 } );  // move unmodifiedmodel1 to the 2nd position
 				expect( collection.isModified() ).toBe( true );  // orig YUI Test err msg: "The collection should now be modified, since a Model was reordered."
 			} );
 			
 			
 			it( "isModified() should return false when there is a change, but commit()/rollback() has been called", function() {
-				var collection = new MyCollection();
+				var collection = new Collection();
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
 				// Add but then commit()
-				collection.add( thisSuite.unmodifiedModel1 );
+				collection.add( unmodifiedModel1 );
 				collection.commit();
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered modified, since a Model was added, and then committed."
 				
 				// Add but then rollback()
-				collection.add( thisSuite.unmodifiedModel2 );
+				collection.add( unmodifiedModel2 );
 				collection.rollback();
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered modified, since a Model was added, and then rolled back."
 			} );
