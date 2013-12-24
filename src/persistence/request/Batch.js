@@ -15,20 +15,6 @@ define( [
 	 */
 	var RequestBatch = Class.extend( Object, {
 		
-		statics : {
-			
-			/**
-			 * @private
-			 * @static
-			 * @property {Number} idCounter
-			 * 
-			 * The counter used to create unique, increasing IDs for RequestBatch instances. 
-			 */
-			idCounter : 0
-			
-		},
-		
-		
 		/**
 		 * @cfg {data.persistence.request.Request/data.persistence.request.Request[]} requests
 		 * 
@@ -55,7 +41,7 @@ define( [
 		constructor : function( cfg ) {
 			_.assign( this, cfg );
 			
-			this.id = ++RequestBatch.idCounter;
+			this.id = +_.uniqueId();
 			
 			// normalize the `requests` config to an array
 			this.requests = ( this.requests ) ? [].concat( this.requests ) : [];
@@ -83,13 +69,48 @@ define( [
 		
 		
 		/**
+		 * Retrieves all of the {@link data.persistence.request.Create Create} requests in the Batch.
+		 * 
+		 * @return {data.persistence.request.Create[]}
+		 */
+		getCreateRequests : function() {
+			return _.filter( this.requests, function( req ) { return req.getAction() === 'create'; } );
+		},
+		
+		
+		/**
+		 * Retrieves all of the {@link data.persistence.request.Update Update} requests in the Batch.
+		 * 
+		 * @return {data.persistence.request.Update[]}
+		 */
+		getUpdateRequests : function() {
+			return _.filter( this.requests, function( req ) { return req.getAction() === 'update'; } );
+		},
+		
+		
+		/**
+		 * Retrieves all of the {@link data.persistence.request.Destroy Destroy} requests in the Batch.
+		 * 
+		 * @return {data.persistence.request.Destroy[]}
+		 */
+		getDestroyRequests : function() {
+			return _.filter( this.requests, function( req ) { return req.getAction() === 'destroy'; } );
+		},
+		
+		
+		// -----------------------------------
+		
+		// Completion Methods
+		
+		
+		/**
 		 * Determines if the Batch of {@link #requests} completed successfully. All {@link #requests}
 		 * must have completed successfully for the Batch to be considered successful.
 		 * 
 		 * @return {Boolean}
 		 */
 		wasSuccessful : function() {
-			return !_.find( this.requests, function( op ) { return op.hasErrored(); } );  // _.find() returns `undefined` if no errored requests are found
+			return _.all( this.requests, function( req ) { return req.wasSuccessful(); } );
 		},
 		
 		
@@ -112,7 +133,7 @@ define( [
 		 *   successfully.
 		 */
 		getSuccessfulRequests : function() {
-			return _.filter( this.requests, function( op ) { return !op.hasErrored(); } );
+			return _.filter( this.requests, function( req ) { return req.wasSuccessful(); } );
 		},
 		
 		
@@ -122,7 +143,7 @@ define( [
 		 * @return {data.persistence.request.Request[]} An array of the Requests which have errored.
 		 */
 		getErroredRequests : function() {
-			return _.filter( this.requests, function( op ) { return op.hasErrored(); } );
+			return _.filter( this.requests, function( req ) { return req.hasErrored(); } );
 		},
 		
 		
@@ -132,7 +153,7 @@ define( [
 		 * @return {Boolean} `true` if all Requests are complete, `false` if any are not yet complete.
 		 */
 		isComplete : function() {
-			return _.all( this.requests, function( op ) { return op.isComplete(); } );
+			return _.all( this.requests, function( req ) { return req.isComplete(); } );
 		}
 		
 	} );
