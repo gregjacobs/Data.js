@@ -12,8 +12,15 @@ define( [
 	'data/persistence/Util',
 	'data/persistence/operation/Batch',
 	'data/persistence/operation/Load',
+	
+	'data/persistence/request/Batch',
+	'data/persistence/request/Create',
 	'data/persistence/request/Read',
+	'data/persistence/request/Update',
+	'data/persistence/request/Destroy',
+	
 	'data/persistence/proxy/Proxy',
+	
 	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
 ], function(
 	require,
@@ -28,7 +35,13 @@ define( [
 	PersistenceUtil,
 	OperationBatch,
 	LoadOperation,
+	
+	RequestBatch,
+	CreateRequest,
 	ReadRequest,
+	UpdateRequest,
+	DestroyRequest,
+	
 	Proxy
 ) {
 
@@ -872,7 +885,6 @@ define( [
 		},
 
 		
-		
 		/**
 		 * Retrieves the number of models that the Collection currently holds.
 		 * 
@@ -978,52 +990,6 @@ define( [
 		},
 		
 		
-		// ----------------------------
-		
-		
-		/**
-		 * Commits any changes in the Collection, so that it is no longer considered "modified".
-		 * 
-		 * @override
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.shallow=false] True to only commit only the additions/removals/reorders
-		 *   of the Collection itself, but not its child Models.
-		 */
-		commit : function( options ) {
-			options = options || {};
-			
-			this.modified = false;  // reset flag
-			
-			if( !options.shallow ) {
-				var models = this.models;
-				for( var i = 0, len = models.length; i < len; i++ ) {
-					models[ i ].commit();
-				}
-			}
-		},
-		
-		
-		
-		/**
-		 * Rolls any changes to the Collection back to its state when it was last {@link #commit committed}
-		 * or rolled back.
-		 */
-		rollback : function() {
-			this.modified = false;  // reset flag
-			
-			// TODO: Implement rolling back the collection's state to the array of models that it had before any
-			// changes were made
-			
-			
-			// TODO: Determine if child models should also be rolled back. Possibly a flag argument for this?
-			// But for now, maintain consistency with isModified()
-			var models = this.models;
-			for( var i = 0, len = models.length; i < len; i++ ) {
-				models[ i ].rollback();
-			}
-		},
-		
-		
 		/**
 		 * Determines if the Collection has been added to, removed from, reordered, or 
 		 * has any {@link data.Model models} which are modified.
@@ -1123,7 +1089,86 @@ define( [
 		
 		// ----------------------------
 		
-		// Persistence functionality
+		// Persistence-related methods
+		
+		/**
+		 * Retrieves the {@link #models} within the Collection that are {@link data.Model#isNew "new"}. These are
+		 * models that do not yet have an ID associated with them, and will be 'created' if the Collection's
+		 * {@link #sync} method is called.
+		 * 
+		 * Note: This does not mean the "added" models since the last {@link #sync}. These are just models that
+		 * have not yet been persisted.
+		 * 
+		 * @return {data.Model[]} The "new" models.
+		 */
+		getNewModels : function() {
+			return _.filter( this.models, function( model ) { return model.isNew(); } );
+		},
+		
+		
+		/**
+		 * Retrieves the {@link #models} within the Collection that have been updated (i.e. models that have been
+		 * {@link data.Model#isModified modified}, but are not {@link data.Model#isNew "new"}).
+		 *  
+		 * These are models within the Collection that have been previously persisted (they have an ID associated 
+		 * with them), and will be 'updated' if the Collection's {@link #sync} method is called.
+		 * 
+		 * @param {Object} [options] An object (map) of options to change the behavior of this method, which may include:
+		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return the models that have
+		 *   {@link data.attribute.Attribute#persist persisted} attributes modified. The method will not return a model
+		 *   if only an unpersisted attribute has been modified. 
+		 * @return {data.Model[]} The updated models.
+		 */
+		getUpdatedModels : function( options ) {
+			return _.filter( this.models, function( model ) { return !model.isNew() && model.isModified( options ); } );
+		},
+		
+		
+		/**
+		 * Retrieves the {@link #models} that have been removed from the Collection since the last {@link #sync}
+		 * operation.
+		 * 
+		 * @return {data.Model[]} The removed models.
+		 */
+		getRemovedModels : function() {
+			return _.clone( this.removedModels );  // shallow copy
+		},
+		
+		
+		/**
+		 * Commits any changes in the Collection, so that it is no longer considered "modified".
+		 * 
+		 * @override
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Boolean} [options.shallow=false] True to only commit only the additions/removals/reorders
+		 *   of the Collection itself, but not its child Models.
+		 */
+		commit : function( options ) {
+			options = options || {};
+			
+			this.modified = false;  // reset flag
+			
+			if( !options.shallow ) {
+				_.forEach( this.models, function( model ) { model.commit(); } );
+			}
+		},
+		
+		
+		/**
+		 * Rolls any changes to the Collection back to its state when it was last {@link #commit committed}
+		 * or rolled back.
+		 */
+		rollback : function() {
+			this.modified = false;  // reset flag
+			
+			// TODO: Implement rolling back the collection's state to the array of models that it had before any
+			// changes were made
+			
+			
+			// TODO: Determine if child models should also be rolled back. Possibly a flag argument for this?
+			// But for now, maintain consistency with isModified()
+			_.forEach( this.models, function( model ) { model.rollback(); } );
+		},
 		
 		
 		/**
@@ -1734,6 +1779,23 @@ define( [
 		 */
 		sync : function( options ) {
 			options = PersistenceUtil.normalizePersistenceOptions( options );
+			var newModels = this.getNewModels(),
+			    updatedModels = this.getUpdatedModels( { persistedOnly: true } ),  // only models which have 'persisted' attributes modified
+			    removedModels = this.getRemovedModels(),
+			    requests = [],
+			    createRequest, updateRequest, destroyRequest;
+			
+			if( newModels.length > 0 ) 
+				requests.push( createRequest = new CreateRequest( { models: newModels } ) );
+			if( updatedModels.length > 0 ) 
+				requests.push( updateRequest = new UpdateRequest( { models: updatedModels } ) );
+			if( removedModels.length > 0 ) 
+				requests.push( destroyRequest = new DestroyRequest( { models: removedModels } ) );
+			
+			var requestBatch = new RequestBatch( { requests: requests } );
+			var promise = this.getEffectiveProxy().batch( requestBatch );
+			
+			/*
 			var models = this.getModels(),
 			    removedModels = this.removedModels.slice( 0 ),  // make shallow copy - we don't want synchronous destroy() requests to end up removing Models from this array (due to the `onModelDestroy()` method) while we loop over it
 			    i, len;
@@ -1754,7 +1816,7 @@ define( [
 			operationBatch.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
 			//operationBatch.done( function() { me.modified = false; } );
 			
-			return operationBatch;
+			return operationBatch;*/
 		},
 		
 		
