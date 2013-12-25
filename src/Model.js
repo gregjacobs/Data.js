@@ -235,7 +235,7 @@ define( [
 		 * @private
 		 * @property {Object} attributes
 		 * 
-		 * A hash of the combined Attributes, which have been put together from the current Model subclass, and all of
+		 * An Object map of the combined Attributes, which have been put together from the current Model subclass, and all of
 		 * its superclasses.
 		 */
 		
@@ -243,14 +243,14 @@ define( [
 		 * @private
 		 * @property {Object} data
 		 * 
-		 * A hash that holds the current data for the {@link data.attribute.Attribute Attributes}. The property names in this object match 
-		 * the attribute names.  This hash holds the current data as it is modified by {@link #set}.
+		 * An Object (map) that holds the current data for the {@link data.attribute.Attribute Attributes}. The property names in this object match 
+		 * the attribute names.  This map holds the current data as it is modified by {@link #set}.
 		 */
 		
 		/**
 		 * @private 
 		 * @property {Object} modifiedData
-		 * A hash that serves two functions:
+		 * A map that serves two functions:
 		 * 
 		 * 1) Properties are set to it when an attribute is modified. The property name is the attribute {@link data.attribute.Attribute#name}. 
 		 *    This allows it to be used to determine which attributes have been modified. 
@@ -341,7 +341,7 @@ define( [
 		 * Creates a new Model instance.
 		 * 
 		 * @constructor 
-		 * @param {Object} [data] Any initial data for the {@link #cfg-attributes attributes}, specified in an object (hash map). See {@link #set}.
+		 * @param {Object} [data] Any initial data for the {@link #cfg-attributes attributes}, specified in an Object (map). See {@link #set}.
 		 *   If not passing any initial data, but want to pass the second argument (`options`), provide `null`.
 		 * @param {Object} [options] Any options for Model construction/initialization. This may be an object with the following properties:
 		 * @param {Boolean} [options.ignoreUnknownAttrs=false] Set to `true` if unknown attributes should be ignored in the data object provided
@@ -626,7 +626,7 @@ define( [
 			
 			
 			// Set the default values for attributes that don't have an initial value.
-			var attributes = this.attributes,  // this.attributes is a hash of the Attribute objects, keyed by their name
+			var attributes = this.attributes,  // this.attributes is a map of the Attribute objects, keyed by their name
 			    attributeDefaultValue;
 			for( var name in attributes ) {
 				if( data[ name ] === undefined && ( attributeDefaultValue = attributes[ name ].getDefaultValue() ) !== undefined ) {
@@ -637,7 +637,7 @@ define( [
 			// Initialize the underlying data object, which stores all attribute values
 			this.data = {};
 			
-			// Initialize the data hash for storing attribute names of modified data, and their original values (see property description)
+			// Initialize the data map for storing attribute names of modified data, and their original values (see property description)
 			this.modifiedData = {};
 			
 			// Set the initial data / defaults, if we have any
@@ -758,12 +758,12 @@ define( [
 		 * 
 		 *     model.set( { key1: 'value1', key2: 'value2' } );
 		 * 
-		 * Note that in this form, the method will ignore any property in the object (hash) that don't have associated Attributes.
+		 * Note that in this form, the method will ignore any property in the Object (map) that don't have associated Attributes.
 		 * 
 		 * When attributes are set, their {@link data.attribute.Attribute#cfg-set} method is run, if they have one defined.
 		 * 
-		 * @param {String/Object} attributeName The attribute name for the Attribute to set, or an object (hash) of name/value pairs.
-		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a hash).
+		 * @param {String/Object} attributeName The attribute name for the Attribute to set, or an Object (map) of name/value pairs.
+		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a map).
 		 * @param {Object} [options] Any options to pass to the method. This should be the second argument if providing an Object to the 
 		 *   first parameter. This should be an object which may contain the following properties:
 		 * @param {Boolean} [options.ignoreUnknownAttrs=false] Set to `true` if unknown attributes should be ignored in the data object provided
@@ -872,7 +872,7 @@ define( [
 			if( attribute.hasUserDefinedSetter() && newValue === undefined ) {  // the attribute will only have a 'set' property of its own if the 'set' config was provided
 				// This is to make the following block below think that there is already data in for the attribute, and
 				// that it has the same value. If we don't have this, the change event will fire twice, the
-				// the model will be considered modified, and the old value will be put into the `modifiedData` hash.
+				// the model will be considered modified, and the old value will be put into the `modifiedData` map.
 				if( !modelData.hasOwnProperty( attributeName ) ) {
 					modelData[ attributeName ] = undefined;
 				}
@@ -897,7 +897,7 @@ define( [
 			
 			// Only change the underlying data if there is no current value for the attribute, or if newValue is different from the current
 			if( !modelData.hasOwnProperty( attributeName ) || !attribute.valuesAreEqual( oldValue, newValue ) ) {   // let the Attribute itself determine if two values of its datatype are equal
-				// Store the attribute's *current* value (not the newValue) into the "modifiedData" attributes hash.
+				// Store the attribute's *current* value (not the newValue) into the "modifiedData" attributes map.
 				// This should only happen the first time the attribute is set, so that the attribute can be rolled back even if there are multiple
 				// set() calls to change it.
 				if( !modelModifiedData.hasOwnProperty( attributeName ) ) {
@@ -906,7 +906,7 @@ define( [
 				modelData[ attributeName ] = newValue;
 				
 				
-				// Now that we have set the new raw value to the internal `data` hash, we want to fire the events with the value
+				// Now that we have set the new raw value to the internal `data` map, we want to fire the events with the value
 				// of the Attribute after it has been processed by any Attribute-specific `get()` function.
 				newValue = this.get( attributeName );
 				
@@ -1030,7 +1030,7 @@ define( [
 		 * @param {String} [attributeName] Provide this argument to test if a particular attribute has been modified. If this is not 
 		 *   provided, the model itself will be checked to see if there are any modified attributes. 
 		 * 
-		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This may be provided as the first argument to the
+		 * @param {Object} [options] An Object (map) of options to change the behavior of this method. This may be provided as the first argument to the
 		 *   method if no `attributeName` is to be provided. Options may include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true if a {@link data.attribute.Attribute#persist persisted} 
 		 *   attribute is modified. 
@@ -1088,15 +1088,15 @@ define( [
 		
 		/**
 		 * Retrieves the values for all of the attributes in the Model. The Model attributes are retrieved via the {@link #get} method,
-		 * to pre-process the data before it is returned in the final hash, unless the `raw` option is set to true,
+		 * to pre-process the data before it is returned in the final Object (map), unless the `raw` option is set to true,
 		 * in which case the Model attributes are retrieved via {@link #raw}. 
 		 * 
 		 * @override
 		 * 
-		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
+		 * @param {Object} [options] An Object (map) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
-		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
+		 * @return {Object} An Object (map) of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
 		getData : function( options ) {
 			return require( 'data/NativeObjectConverter' ).convert( this, options );
@@ -1107,19 +1107,19 @@ define( [
 		 * Retrieves the values for all of the {@link data.attribute.Attribute attributes} in the Model whose values have been changed since
 		 * the last {@link #method-commit} or {@link #method-rollback}. 
 		 * 
-		 * The Model attributes are retrieved via the {@link #get} method, to pre-process the data before it is returned in the final hash, 
+		 * The Model attributes are retrieved via the {@link #get} method, to pre-process the data before it is returned in the final Object (map), 
 		 * unless the `raw` option is set to true, in which case the Model attributes are retrieved via {@link #raw}.
 		 * 
 		 * 
-		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
+		 * @param {Object} [options] An Object (map) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details. Options specific to this method include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return only changed attributes that are 
 		 *   {@link data.attribute.Attribute#persist persisted}. In the case of nested models, a nested model will only be returned in the resulting
 		 *   map if one if its {@link data.attribute.Attribute#persist persisted} attributes are modified. 
 		 * 
-		 * @return {Object} A hash of the attributes that have been changed since the last {@link #method-commit} or {@link #method-rollback}.
-		 *   The hash's property names are the attribute names, and the hash's values are the new values.
+		 * @return {Object} A map of the attributes that have been changed since the last {@link #method-commit} or {@link #method-rollback}.
+		 *   The map's property names are the attribute names, and the map's values are the new values.
 		 */
 		getChanges : function( options ) {
 			options = options || {};
@@ -1166,7 +1166,7 @@ define( [
 		 * @override
 		 */
 		commit : function() {
-			this.modifiedData = {};  // reset the modifiedData hash. There is no modified data.
+			this.modifiedData = {};  // reset the modifiedData map. There is no modified data.
 			
 			// Go through all embedded models/collections, and "commit" those as well
 			var embeddedDataComponentAttrs = this.getEmbeddedDataComponentAttributes(),
@@ -1203,7 +1203,7 @@ define( [
 		 * @override
 		 */
 		rollback : function() {
-			// Loop through the modifiedData hash, which holds the *original* values, and set them back to the data hash.
+			// Loop through the modifiedData map, which holds the *original* values, and set them back to the data map.
 			var modifiedData = this.modifiedData;
 			for( var attributeName in modifiedData ) {
 				if( modifiedData.hasOwnProperty( attributeName ) ) {

@@ -246,14 +246,14 @@ define( [
 		 * @protected
 		 * @property {Object} modelsByClientId
 		 * 
-		 * An object (hashmap) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#clientId clientId}.
+		 * An Object (map) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#clientId clientId}.
 		 */
 		
 		/**
 		 * @protected
 		 * @property {Object} modelsById
 		 * 
-		 * An object (hashmap) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#id id}, if the model has one.
+		 * An Object (map) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#id id}, if the model has one.
 		 */
 		
 		/**
@@ -726,7 +726,7 @@ define( [
 		
 		/**
 		 * Handles a change to a model's {@link data.Model#idAttribute}, so that the Collection's 
-		 * {@link #modelsById} hashmap can be updated.
+		 * {@link #modelsById} map can be updated.
 		 * 
 		 * Note that {@link #onModelEvent} is still called even when this method executes.
 		 * 
@@ -1038,7 +1038,7 @@ define( [
 		 * 
 		 * @param {String} attributeName The name of the attribute to test the value against.
 		 * @param {Mixed} value The value to look for.
-		 * @param {Object} [options] Optional arguments for this method, provided in an object (hashmap). Accepts the following:
+		 * @param {Object} [options] Optional arguments for this method, provided in an Object (map). Accepts the following:
 		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
 		 * @return {data.Model} The model where the attribute name === the value, or `null` if no matching model was not found.
 		 */
@@ -1113,7 +1113,7 @@ define( [
 		 * These are models within the Collection that have been previously persisted (they have an ID associated 
 		 * with them), and will be 'updated' if the Collection's {@link #sync} method is called.
 		 * 
-		 * @param {Object} [options] An object (map) of options to change the behavior of this method, which may include:
+		 * @param {Object} [options] An Object (map) of options to change the behavior of this method, which may include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return the models that have
 		 *   {@link data.attribute.Attribute#persist persisted} attributes modified. The method will not return a model
 		 *   if only an unpersisted attribute has been modified. 
