@@ -97,15 +97,11 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		create : function( request ) {
 			var models = request.getModels(),
 			    returnRecords = [],
-			    recordIds = this.getRecordIds(),
-			    deferred = new jQuery.Deferred();
+			    recordIds = this.getRecordIds();
 			
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				var model = models[ i ],
@@ -122,7 +118,7 @@ define( [
 			this.setRecordIds( recordIds );
 			
 			var resultSet = new ResultSet( { records: returnRecords } );
-			return deferred.resolve( resultSet ).promise();
+			request.resolve( resultSet );
 		},
 		
 		
@@ -131,16 +127,12 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that describes the 
 		 *   model(s) to be read.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		read : function( request ) {
 			var records = [],
 			    recordIds = this.getRecordIds(),
 			    totalNumRecords = recordIds.length,
-			    modelId = request.getModelId(),
-			    deferred = new jQuery.Deferred();
+			    modelId = request.getModelId();
 			
 			if( modelId !== undefined ) {
 				modelId = String( modelId );  // modelIds are stored in the proxy as strings (for consistency with any string IDs), so convert any number to a string
@@ -160,7 +152,7 @@ define( [
 				records : records,
 				totalCount : totalNumRecords
 			} );
-			return deferred.resolve( resultSet ).promise();
+			request.resolve( resultSet );
 		},
 		
 		
@@ -172,9 +164,6 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		update : function( request ) {
 			var models = request.getModels(),
@@ -192,7 +181,7 @@ define( [
 			}
 			this.setRecordIds( recordIds );
 			
-			return deferred.resolve().promise();
+			request.resolve();
 		},
 		
 		
@@ -203,14 +192,10 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
 			var models = request.getModels(),
-			    recordIds = this.getRecordIds(),
-			    deferred = new jQuery.Deferred();
+			    recordIds = this.getRecordIds();
 			
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				var model = models[ i ],
@@ -224,7 +209,7 @@ define( [
 			}
 			this.setRecordIds( recordIds );
 			
-			return deferred.resolve().promise();
+			request.resolve();
 		},
 		
 		

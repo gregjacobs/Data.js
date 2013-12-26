@@ -134,10 +134,10 @@ define( [
 				manualProxy.resolveDestroy( 0 );
 				
 				expect( requestsPromise.state() ).toBe( 'resolved' );
-				expect( requests[ 0 ].getResultSet() ).toBe( null );
-				expect( requests[ 1 ].getResultSet() ).toBe( null );
-				expect( requests[ 2 ].getResultSet() ).toBe( null );
-				expect( requests[ 3 ].getResultSet() ).toBe( null );
+				expect( requests[ 0 ].getResultSet() ).toBeUndefined();
+				expect( requests[ 1 ].getResultSet() ).toBeUndefined();
+				expect( requests[ 2 ].getResultSet() ).toBeUndefined();
+				expect( requests[ 3 ].getResultSet() ).toBeUndefined();
 			} );
 			
 			
@@ -181,8 +181,8 @@ define( [
 				operation.setRequests( requests );
 				
 				// Set both requests to "complete"
-				requests[ 0 ].setSuccess();
-				requests[ 1 ].setError();
+				requests[ 0 ].resolve();
+				requests[ 1 ].reject();
 				
 				var resultRequests = operation.getIncompleteRequests();
 				expect( resultRequests ).toEqual( [] );
@@ -213,8 +213,8 @@ define( [
 				operation.setRequests( requests );
 				
 				// Set 2 middle requests to "complete"
-				requests[ 1 ].setSuccess();
-				requests[ 3 ].setError();
+				requests[ 1 ].resolve();
+				requests[ 3 ].reject();
 				
 				var resultRequests = operation.getIncompleteRequests();
 				expect( resultRequests.length ).toBe( 3 );  // 3 incomplete requests
@@ -251,19 +251,19 @@ define( [
 				var resultRequests;
 				
 				// A successful request
-				requests[ 0 ].setSuccess();
+				requests[ 0 ].resolve();
 				resultRequests = operation.getSuccessfulRequests();
 				expect( resultRequests.length ).toBe( 1 );  // 1 successful request at this point
 				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
 				
 				// An errored request
-				requests[ 1 ].setError();
+				requests[ 1 ].reject();
 				resultRequests = operation.getSuccessfulRequests();
 				expect( resultRequests.length ).toBe( 1 );  // still only 1 successful request at this point
 				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
 				
 				// Another successful request
-				requests[ 2 ].setSuccess();
+				requests[ 2 ].resolve();
 				resultRequests = operation.getSuccessfulRequests();
 				expect( resultRequests.length ).toBe( 2 );  // 2 successful request at this point
 				expect( resultRequests[ 0 ] ).toBe( requests[ 0 ] );
@@ -298,18 +298,18 @@ define( [
 				var resultRequests;
 				
 				// A successful request
-				requests[ 0 ].setSuccess();
+				requests[ 0 ].resolve();
 				resultRequests = operation.getErroredRequests();
 				expect( resultRequests.length ).toBe( 0 );  // no errored requests at this point
 				
 				// An errored request
-				requests[ 1 ].setError();
+				requests[ 1 ].reject();
 				resultRequests = operation.getErroredRequests();
 				expect( resultRequests.length ).toBe( 1 );  // 1 errored request at this point
 				expect( resultRequests[ 0 ] ).toBe( requests[ 1 ] );
 				
 				// Another errored request
-				requests[ 2 ].setError();
+				requests[ 2 ].reject();
 				resultRequests = operation.getErroredRequests();
 				expect( resultRequests.length ).toBe( 2 );  // 2 errored requests at this point
 				expect( resultRequests[ 0 ] ).toBe( requests[ 1 ] );
@@ -341,11 +341,11 @@ define( [
 				expect( operation.requestsAreComplete() ).toBe( false );  // initial condition
 				
 				// Set one request to be successful
-				requests[ 0 ].setSuccess();
+				requests[ 0 ].resolve();
 				expect( operation.requestsAreComplete() ).toBe( false );
 				
 				// Set the other request to be successful
-				requests[ 1 ].setSuccess();
+				requests[ 1 ].resolve();
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
 			
@@ -359,11 +359,11 @@ define( [
 				expect( operation.requestsAreComplete() ).toBe( false );  // initial condition
 				
 				// Set one request to have errored
-				requests[ 0 ].setError();
+				requests[ 0 ].reject();
 				expect( operation.requestsAreComplete() ).toBe( false );
 				
 				// Set the other request to have errored
-				requests[ 1 ].setError();
+				requests[ 1 ].reject();
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
 			
@@ -377,11 +377,11 @@ define( [
 				expect( operation.requestsAreComplete() ).toBe( false );  // initial condition
 				
 				// Set one request to be complete
-				requests[ 0 ].setSuccess();
+				requests[ 0 ].resolve();
 				expect( operation.requestsAreComplete() ).toBe( false );
 				
 				// Set the other request to be complete
-				requests[ 1 ].setError();
+				requests[ 1 ].reject();
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
 			
@@ -410,11 +410,11 @@ define( [
 				expect( operation.requestsWereSuccessful() ).toBe( false );  // initial condition
 				
 				// Set one request to be successful
-				requests[ 0 ].setSuccess();
+				requests[ 0 ].resolve();
 				expect( operation.requestsWereSuccessful() ).toBe( false );
 				
 				// Set the other request to be successful
-				requests[ 1 ].setSuccess();
+				requests[ 1 ].resolve();
 				expect( operation.requestsWereSuccessful() ).toBe( true );
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
@@ -429,11 +429,11 @@ define( [
 				expect( operation.requestsWereSuccessful() ).toBe( false );  // initial condition
 				
 				// Set one request to be successful
-				requests[ 0 ].setSuccess();
+				requests[ 0 ].resolve();
 				expect( operation.requestsWereSuccessful() ).toBe( false );
 				
 				// Set the other request to be an errored request
-				requests[ 1 ].setError();
+				requests[ 1 ].reject();
 				expect( operation.requestsWereSuccessful() ).toBe( false );
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
@@ -464,15 +464,15 @@ define( [
 				expect( operation.requestsHaveErrored() ).toBe( false );  // initial condition
 				
 				// Set one request to be successful
-				requests[ 0 ].setSuccess();
+				requests[ 0 ].resolve();
 				expect( operation.requestsHaveErrored() ).toBe( false );
 				
 				// Set the second request to have errored
-				requests[ 1 ].setError();
+				requests[ 1 ].reject();
 				expect( operation.requestsHaveErrored() ).toBe( true );
 				
 				// Set the thrd request to be successful
-				requests[ 2 ].setSuccess();
+				requests[ 2 ].resolve();
 				expect( operation.requestsHaveErrored() ).toBe( true );  // from the 2nd one "erroring"
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
@@ -487,11 +487,11 @@ define( [
 				expect( operation.requestsHaveErrored() ).toBe( false );  // initial condition
 				
 				// Set one request to be successful
-				requests[ 0 ].setSuccess();
+				requests[ 0 ].resolve();
 				expect( operation.requestsHaveErrored() ).toBe( false );
 				
 				// Set the other request to be an errored request
-				requests[ 1 ].setSuccess();
+				requests[ 1 ].resolve();
 				expect( operation.requestsHaveErrored() ).toBe( false );
 				expect( operation.requestsAreComplete() ).toBe( true );
 			} );
@@ -636,9 +636,9 @@ define( [
 				spyOn( proxy, 'abort' );
 				
 				var requests = [ new ConcreteRequest(), new ConcreteRequest(), new ConcreteRequest() ];
-				requests[ 0 ].setSuccess();
-				//requests[ 1 ].setSuccess(); -- not successful yet
-				//requests[ 2 ].setSuccess(); -- not successful yet
+				requests[ 0 ].resolve();
+				//requests[ 1 ].resolve(); -- not successful yet
+				//requests[ 2 ].resolve(); -- not successful yet
 				
 				operation.setRequests( requests );
 				
@@ -654,8 +654,8 @@ define( [
 				spyOn( proxy, 'abort' );
 				
 				var requests = [ new ConcreteRequest(), new ConcreteRequest() ];
-				requests[ 0 ].setSuccess();
-				requests[ 1 ].setSuccess();
+				requests[ 0 ].resolve();
+				requests[ 1 ].resolve();
 				
 				operation.setRequests( requests );
 				

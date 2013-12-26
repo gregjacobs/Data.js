@@ -114,8 +114,8 @@ define( [
 		describe( 'wasSuccessful()', function() {
 			
 			it( "should return `true` if all Requests completed successfully", function() {
-				req1.setSuccess();
-				req2.setSuccess();
+				req1.resolve();
+				req2.resolve();
 				
 				var batch = new Batch( {
 					requests : [ req1, req2 ]
@@ -125,8 +125,8 @@ define( [
 			
 			
 			it( "should return `false` if just one Request failed", function() {
-				req1.setSuccess();
-				req2.setError( "An error occurred" );
+				req1.resolve();
+				req2.reject( "An error occurred" );
 				
 				var batch = new Batch( {
 					requests : [ req1, req2 ]
@@ -140,8 +140,8 @@ define( [
 		describe( 'hasErrored()', function() {
 			
 			it( "should return `true` if just one Request failed", function() {
-				req1.setSuccess();
-				req2.setError( "An error occurred" );
+				req1.resolve();
+				req2.reject( "An error occurred" );
 				
 				var batch = new Batch( {
 					requests : [ req1, req2 ]
@@ -151,8 +151,8 @@ define( [
 			
 			
 			it( "should return `false` if all Requests completed successfully", function() {
-				req1.setSuccess();
-				req2.setSuccess();
+				req1.resolve();
+				req2.resolve();
 				
 				var batch = new Batch( {
 					requests : [ req1, req2 ]
@@ -166,9 +166,9 @@ define( [
 		describe( 'getSuccessfulRequests()', function() {
 			
 			it( "should return an array of the Request objects that have failed (errored)", function() {
-				req1.setSuccess();
-				req2.setError( "An error occurred" );
-				req3.setError( "An error occurred 2" );
+				req1.resolve();
+				req2.reject( "An error occurred" );
+				req3.reject( "An error occurred 2" );
 				
 				var batch = new Batch( {
 					requests : [ req1, req2, req3 ]
@@ -178,9 +178,9 @@ define( [
 			
 			
 			it( "should return an array of all of the Request objects if they were all successful", function() {
-				req1.setSuccess();
-				req2.setSuccess();
-				req3.setSuccess();
+				req1.resolve();
+				req2.resolve();
+				req3.resolve();
 				
 				var batch = new Batch( {
 					requests : [ req1, req2, req3 ]
@@ -190,8 +190,8 @@ define( [
 			
 			
 			it( "should return an empty array if all Request objects failed", function() {
-				req1.setError( "An error occurred" );
-				req2.setError( "An error occurred 2" );
+				req1.reject( "An error occurred" );
+				req2.reject( "An error occurred 2" );
 				
 				var batch = new Batch( {
 					requests : [ req1, req2 ]
@@ -205,9 +205,9 @@ define( [
 		describe( 'getErroredRequests()', function() {
 			
 			it( "should return an array of the Request objects that have failed (errored)", function() {
-				req1.setSuccess();
-				req2.setError( "An error occurred" );
-				req3.setError( "An error occurred" );
+				req1.resolve();
+				req2.reject( "An error occurred" );
+				req3.reject( "An error occurred" );
 				
 				var batch = new Batch( {
 					requests : [ req1, req2, req3 ]
@@ -217,9 +217,9 @@ define( [
 			
 			
 			it( "should return an array of all of the Request objects if they all failed (errored)", function() {
-				req1.setError( "An error occurred" );
-				req2.setError( "An error occurred" );
-				req3.setError( "An error occurred" );
+				req1.reject( "An error occurred" );
+				req2.reject( "An error occurred" );
+				req3.reject( "An error occurred" );
 				
 				var batch = new Batch( {
 					requests : [ req1, req2, req3 ]
@@ -229,8 +229,8 @@ define( [
 			
 			
 			it( "should return an empty array if all Request objects completed successfully", function() {
-				req1.setSuccess();
-				req2.setSuccess();
+				req1.resolve();
+				req2.resolve();
 				
 				var batch = new Batch( {
 					requests : [ req1, req2 ]
@@ -244,9 +244,9 @@ define( [
 		describe( 'isComplete()', function() {
 			
 			it( "should return true if all requests are complete (success or errored)", function() {
-				req1.setSuccess();
-				req2.setError( "An error occurred" );
-				req3.setError( "An error occurred" );
+				req1.resolve();
+				req2.reject( "An error occurred" );
+				req3.reject( "An error occurred" );
 				
 				var batch = new Batch( {
 					requests : [ req1, req2, req3 ]
@@ -256,9 +256,9 @@ define( [
 			
 			
 			it( "should return false if just one request is not yet complete", function() {
-				req1.setSuccess();
-				req2.setSuccess();
-				//req3.setSuccess();  -- this one is not yet complete
+				req1.resolve();
+				req2.resolve();
+				//req3.resolve();  -- this one is not yet complete
 				
 				var batch = new Batch( {
 					requests : [ req1, req2, req3 ]
@@ -268,9 +268,9 @@ define( [
 			
 			
 			it( "should return false if all requests are not yet complete", function() {
-				//req3.setSuccess();  -- not yet complete
-				//req3.setSuccess();  -- not yet complete
-				//req3.setSuccess();  -- not yet complete
+				//req3.resolve();  -- not yet complete
+				//req3.resolve();  -- not yet complete
+				//req3.resolve();  -- not yet complete
 				
 				var batch = new Batch( {
 					requests : [ req1, req2, req3 ]
