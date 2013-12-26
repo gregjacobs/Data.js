@@ -314,26 +314,19 @@ define( [
 			
 			var me = this,  // for closures
 			    proxy = this.proxy,
+			    requests = this.requests,
 			    requestsDeferred = this.requestsDeferred,  // The Operation's requestDeferred
 			    notify = _.bind( this.notify, this );
 			
-			// Execute all individual requests, and when they are complete, resolve or reject the 
-			// Operation's "requestsDeferred"
-			var requestsPromises = _.map( this.requests, function( request ) {  // Execute all requests and return an array of Promise objects, one for each Request 
-				var promise = proxy[ request.getAction() ]( request )
-					.progress( notify )  // notify of "progress" (calls `progress` handlers)
-					.done( function( resultSet ) {  // request successful
-						if( resultSet ) request.setResultSet( resultSet );
-						request.setSuccess();
-						
-						notify();  // notify of "progress" (calls `progress` handlers)
-					} )
-					.fail( function( error ) { request.setError( error ); } );
+			// Execute all requests
+			_.forEach( requests, function( request ) { 
+				request.progress( notify ).done( notify );  // notify of "progress" and completion (calls `progress` handlers)
 				
-				return promise;
+				proxy[ request.getAction() ]( request );    // execute the request
 			} );
 			
-			jQuery.when.apply( jQuery, requestsPromises )
+			// When all requests are complete, resolve or reject the Operation's `requestsDeferred`
+			jQuery.when.apply( jQuery, requests )
 				.done( function() { requestsDeferred.resolve( me ); } )
 				.fail( function() { requestsDeferred.reject( me ); } );
 			

@@ -80,8 +80,8 @@ define( [
 				    createRequest = new CreateRequest( { models: [ model ] } ),
 				    resultRecords;
 				
-				proxy.create( createRequest )  // synchronous
-					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				createRequest.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				proxy.create( createRequest );  // synchronous
 				
 				// Check that the record for the model was created, and that bookkeeping was done
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );
@@ -99,8 +99,8 @@ define( [
 				    createRequest = new CreateRequest( { models: [ model1, model2 ] } ),
 				    resultRecords;
 				
-				proxy.create( createRequest )  // synchronous
-					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				createRequest.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				proxy.create( createRequest );  // synchronous
 				
 				// Check that the records for the models were created, and that bookkeeping was done
 				expect( proxy.getRecord( 1 ) ).toEqual( { id: 1, a: 1, b: 2 } );
@@ -129,8 +129,8 @@ define( [
 				    createRequest1 = new CreateRequest( { models: [ model3, model4 ] } ),
 				    resultRecords;
 				
-				proxy.create( createRequest1 )  // synchronous
-					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				createRequest1.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				proxy.create( createRequest1 );  // synchronous
 				
 				expect( resultRecords.length ).toBe( 2 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 3 } );
@@ -180,8 +180,8 @@ define( [
 				var readRequest = new ReadRequest(),
 				    resultRecords;
 				
-				proxy.read( readRequest )  // synchronous
-					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				readRequest.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				proxy.read( readRequest );  // synchronous
 				
 				expect( resultRecords.length ).toBe( 3 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1, a: 1, b: 2 } );
@@ -194,8 +194,8 @@ define( [
 				var readRequest = new ReadRequest( { modelId: 1 } ),
 				    resultRecords;
 				
-				proxy.read( readRequest )  // synchronous
-					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				readRequest.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				proxy.read( readRequest );  // synchronous
 				
 				expect( resultRecords.length ).toBe( 1 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1, a: 1, b: 2 } );
@@ -206,8 +206,8 @@ define( [
 				var readRequest = new ReadRequest( { modelId: 99 } ),  // non-existent model
 				    resultRecords;
 				
-				proxy.read( readRequest )  // synchronous
-					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				readRequest.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				proxy.read( readRequest );  // synchronous
 				
 				expect( resultRecords.length ).toBe( 0 );
 			} );
@@ -220,8 +220,9 @@ define( [
 				proxy.update( new UpdateRequest( { models: [ model4 ] } ) );  // this will actually have the effect of a create(), since the ID is already assigned to the model
 				
 				var readRequest = new ReadRequest( { modelId: "fourthId" } );
-				proxy.read( readRequest )  // synchronous
-					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				readRequest.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				
+				proxy.read( readRequest );  // synchronous
 				
 				expect( resultRecords.length ).toBe( 1 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: "fourthId", a: 7, b: 8 } );
@@ -673,8 +674,8 @@ define( [
 				var readRequest = new ReadRequest(),  // should get the model we just stored
 				    resultRecords;
 				
-				proxy.read( readRequest )  // synchronous
-					.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				readRequest.done( function( resultSet ) { resultRecords = resultSet.getRecords(); } );
+				proxy.read( readRequest );  // synchronous
 				
 				expect( resultRecords.length ).toBe( 1 );
 				expect( resultRecords[ 0 ] ).toEqual( { id: 1, e: 1, f: 2 } );

@@ -67,32 +67,26 @@ define( [
 		 * An Object (map) of stored requests. 
 		 * 
 		 * There are four keys under this map: 'create', 'read', 'update', and 'destroy'. Under each of these four
-		 * top-level keys are an Object like:
+		 * top-level keys are an Array of {@link data.persistence.request.Request Request} objects.
 		 * 
-		 *     {
-		 *         deferred: jQuery.Deferred,
-		 *         request:  data.persistence.request.Request
-		 *     }
-		 * 
-		 * Where `deferred` is a jQuery.Deferred instance which is resolved or rejected when requested (via 
-		 * methods like {@link #resolveCreate}, {@link #rejectCreate}, {@link #resolveRead}, {@link #rejectRead}, etc.),
-		 * and `request` is a {@link data.persistence.request.Request} object.
+		 * Each Request is either resolved or rejected via methods such as {@link #resolveCreate}, {@link #rejectCreate}, 
+		 * {@link #resolveRead}, {@link #rejectRead}, etc.
 		 * 
 		 * An example of the full data structure may look like something like this:
 		 * 
 		 *     {
 		 *         create : [
-		 *             { deferred: [jQuery.Deferred], request: [data.persistence.request.Request],
-		 *             { deferred: [jQuery.Deferred], request: [data.persistence.request.Request]
+		 *             data.persistence.request.Request,
+		 *             data.persistence.request.Request
 		 *         ],
 		 *         read : [
-		 *             { deferred: [jQuery.Deferred], request: [data.persistence.request.Request]
+		 *             data.persistence.request.Request
 		 *         ],
 		 *         update : [
 		 *         
 		 *         ],
 		 *         destroy : [
-		 *             { deferred: [jQuery.Deferred], request: [data.persistence.request.Request]
+		 *             data.persistence.request.Request
 		 *         ]
 		 *     }
 		 */
@@ -119,14 +113,9 @@ define( [
 		 * @protected
 		 * @param {String} actionName One of: 'create', 'read', 'update', 'destroy'
 		 * @param {data.persistence.request.Request} request The Request instance that should be queued for the given action.
-		 * @return {jQuery.Promise} The Promise object which is resolved or rejected when the appropriate resolve/reject method
-		 *   is called with the index for the given `request`.
 		 */
 		appendRequest : function( actionName, request ) {
-			var deferred = new jQuery.Deferred();
-			
-			this.requests[ actionName ].push( { deferred: deferred, request: request } );
-			return deferred.promise();
+			this.requests[ actionName ].push( request );
 		},
 		
 		
@@ -143,8 +132,7 @@ define( [
 		 *   `actionName` and `requestIdx`. 
 		 */
 		getRequest : function( actionName, requestIdx ) {
-			var storedReqObj = this.requests[ actionName ][ requestIdx ],
-			    request = storedReqObj.request;
+			var request = this.requests[ actionName ][ requestIdx ];
 			
 			return request || null;
 		},
@@ -179,9 +167,7 @@ define( [
 		 *   Defaults to an empty {@link data.persistence.ResultSet ResultSet}.
 		 */
 		resolve : function( actionName, requestIdx, data ) {
-			var storedReqObj = this.requests[ actionName ][ requestIdx ],
-			    deferred = storedReqObj.deferred,
-			    request  = storedReqObj.request,
+			var request = this.requests[ actionName ][ requestIdx ],
 			    resultSet;
 			
 			// Process the ResultSet if one was provided, or if raw data was provided
@@ -191,7 +177,7 @@ define( [
 				resultSet = this.reader.read( data );
 			}
 			
-			deferred.resolve( resultSet );
+			request.resolve( resultSet );
 		},
 		
 		
@@ -205,10 +191,9 @@ define( [
 		 * @param {Mixed} [error] The error object to set as the Request's exception, if any.
 		 */
 		reject : function( actionName, requestIdx, error ) {
-			var storedReqObj = this.requests[ actionName ][ requestIdx ],
-			    deferred = storedReqObj.deferred;
+			var request = this.requests[ actionName ][ requestIdx ];
 			
-			deferred.reject( error );
+			request.reject( error );
 		},
 		
 		
@@ -222,10 +207,9 @@ define( [
 		 * @param {Number} requestIdx The request number to notify.
 		 */
 		notify : function( actionName, requestIdx ) {
-			var storedReqObj = this.requests[ actionName ][ requestIdx ],
-			    deferred = storedReqObj.deferred;
+			var request = this.requests[ actionName ][ requestIdx ];
 			
-			deferred.notify();
+			request.notify();
 		},
 		
 		
@@ -242,7 +226,7 @@ define( [
 		 *   this method as the first argument.
 		 */
 		create : function( request ) {
-			return this.appendRequest( 'create', request );
+			this.appendRequest( 'create', request );
 		},
 		
 		/**
@@ -307,7 +291,7 @@ define( [
 		 *   this method as the first argument.
 		 */
 		read : function( request ) {
-			return this.appendRequest( 'read', request );
+			this.appendRequest( 'read', request );
 		},
 		
 		/**
@@ -373,7 +357,7 @@ define( [
 		 *   this method as the first argument.
 		 */
 		update : function( request ) {
-			return this.appendRequest( 'update', request );
+			this.appendRequest( 'update', request );
 		},
 		
 		/**
@@ -440,7 +424,7 @@ define( [
 		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
-			return this.appendRequest( 'destroy', request );
+			this.appendRequest( 'destroy', request );
 		},
 		
 		/**

@@ -84,7 +84,7 @@ define( [
 			} );
 			
 			
-			it( "when a successful ajax request occurs, should resolve its deferred with a ResultSet", function() {
+			it( "when a successful ajax request occurs, should resolve its Request with a ResultSet", function() {
 				var request = new ReadRequest( { modelId: 1 } ),
 				    resolvedResultSet;
 				
@@ -95,17 +95,18 @@ define( [
 					ajax : mockAjax.getAjaxMethod()
 				} );
 				
-				var proxyPromise = proxy.read( request )
-					.done( function( resultSet ) { resolvedResultSet = resultSet; } );
+				
+				request.done( function( resultSet ) { resolvedResultSet = resultSet; } );
+				proxy.read( request );
 				
 				mockAjax.resolveRequest( 0, { attr1: 'value1', attr2: 'value2' } );  // resolve the ajax deferred
 				
-				expect( proxyPromise.state() ).toBe( "resolved" );
+				expect( request.state() ).toBe( "resolved" );
 				expect( resolvedResultSet.getRecords()[ 0 ] ).toEqual( { attr1: 'value1', attr2: 'value2' } );
 			} );
 			
 			
-			it( "when a failed ajax request occurs, should reject its deferred with an error object", function() {
+			it( "when a failed ajax request occurs, should reject its Request with an error object", function() {
 				var request = new ReadRequest( { modelId: 1 } ),
 				    rejectedError;
 				
@@ -114,12 +115,12 @@ define( [
 					ajax : mockAjax.getAjaxMethod()
 				} );
 				
-				var proxyPromise = proxy.read( request )
-					.fail( function( error ) { rejectedError = error; } );
+				request.fail( function( error ) { rejectedError = error; } );
+				proxy.read( request );
 				
 				mockAjax.rejectRequest( 0 );  // reject the ajax deferred
 				
-				expect( proxyPromise.state() ).toBe( "rejected" );
+				expect( request.state() ).toBe( "rejected" );
 				expect( rejectedError ).toEqual( { textStatus: "error", errorThrown: "error" } );
 			} );
 			
@@ -142,14 +143,16 @@ define( [
 			
 			it( "should abort an in-progress request", function() {
 				var request = new ReadRequest( { modelId: 1 } ),
-				    rejectedError,
-				    proxyPromise = proxy.read( request ).fail( function( error ) { rejectedError = error; } );
+				    rejectedError;
+				
+				request.fail( function( error ) { rejectedError = error; } );
+				proxy.read( request );
 				
 				// Abort the request immediately after the read starts
 				proxy.abort( request );
 				
 				expect( mockAjax.wasAborted( 0 ) ).toBe( true );
-				expect( proxyPromise.state() ).toBe( "rejected" );
+				expect( request.state() ).toBe( "rejected" );
 				expect( rejectedError ).toEqual( { textStatus: "abort", errorThrown: "abort" } );
 			} );
 			
@@ -158,14 +161,14 @@ define( [
 				var request = new ReadRequest( { modelId: 1 } );
 				
 				// Complete the request successfully first
-				var proxyPromise = proxy.read( request );
+				proxy.read( request );
 				mockAjax.resolveRequest( 0, {} );
 				
 				// Now abort the request (after it's been completed)
 				proxy.abort( request );
 				
 				expect( mockAjax.wasAborted( 0 ) ).toBe( false );
-				expect( proxyPromise.state() ).toBe( "resolved" );
+				expect( request.state() ).toBe( "resolved" );
 			} );
 			
 			
@@ -173,14 +176,14 @@ define( [
 				var request = new ReadRequest( { modelId: 1 } );
 				
 				// Complete the request with error first
-				var proxyPromise = proxy.read( request );
+				proxy.read( request );
 				mockAjax.rejectRequest( 0, "error" );
 				
 				// Now abort the request (after it's been completed)
 				proxy.abort( request );
 				
 				expect( mockAjax.wasAborted( 0 ) ).toBe( false );
-				expect( proxyPromise.state() ).toBe( "rejected" );
+				expect( request.state() ).toBe( "rejected" );
 			} );
 			
 			
@@ -188,7 +191,7 @@ define( [
 				var request = new ReadRequest( { modelId: 1 } );
 				expect( proxy.getXhr( request ) ).toBe( null );  // initial condition
 				
-				var proxyPromise = proxy.read( request );
+				proxy.read( request );
 				expect( proxy.getXhr( request ) ).not.toBe( null );
 				
 				mockAjax.resolveRequest( 0, {} );

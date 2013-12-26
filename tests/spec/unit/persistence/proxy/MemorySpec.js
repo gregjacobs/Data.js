@@ -22,7 +22,7 @@ define( [
 			} );
 			
 			
-			it( "should return a promise that is immediately resolved with the transformed raw data", function() {
+			it( "should immediately resolve the Request with the transformed raw data", function() {
 				var proxy = new MemoryProxy( {
 					data : '{ "a": 1, "b": 2, "c": 3 }',  // raw json
 					
@@ -32,8 +32,8 @@ define( [
 				var request = new ReadRequest( { proxy: proxy } ),
 				    resolvedResultSet;
 				
-				proxy.read( request )
-					.then( function( resultSet ) { resolvedResultSet = resultSet; } );  // get the records from the ResultSet which the promise was resolved with
+				request.done( function( resultSet ) { resolvedResultSet = resultSet; } );  // get the records from the ResultSet which the Request was resolved with
+				proxy.read( request );
 				
 				var expectedData = [ { a: 1, b: 2, c: 3 } ];
 				expect( resolvedResultSet.getRecords() ).toEqual( expectedData );

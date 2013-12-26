@@ -175,9 +175,6 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		create : function( request ) {
 			throw new Error( "create() not yet implemented" );
@@ -189,14 +186,10 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that describes the 
 		 *   model(s) to be read from the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		read : function( request ) {
 			var me = this,  // for closures
 			    paramsObj = this.buildParams( request ),
-			    deferred = new jQuery.Deferred(),
 			    xhrObjs = this.xhrObjs,
 			    requestUuid = request.getUuid();
 			
@@ -216,16 +209,14 @@ define( [
 			jqXhr
 				.done( function( data, textStatus, jqXHR ) {
 					var resultSet = me.reader.read( data );
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				} )
 				.fail( function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				} )
 				.always( function() {
 					delete xhrObjs[ requestUuid ];  // remove the reference to the jqXHR object
 				} );
-		
-			return deferred.promise();
 		},
 		
 		
@@ -235,9 +226,6 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		update : function( request ) {
 			throw new Error( "update() not yet implemented" );
@@ -251,9 +239,6 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
 			throw new Error( "destroy() not yet implemented" );
