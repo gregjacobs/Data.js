@@ -4,8 +4,9 @@ define( [
 	'lodash',
 	'Class',
 	
-	'data/persistence/operation/Deferred'
-], function( jQuery, _, Class, OperationDeferred ) {
+	'data/persistence/operation/Deferred',
+	'data/persistence/request/Batch'
+], function( jQuery, _, Class, OperationDeferred, RequestBatch ) {
 	
 	/**
 	 * @abstract
@@ -146,7 +147,7 @@ define( [
 		/**
 		 * @cfg {data.DataComponent} dataComponent (required)
 		 * 
-		 * The DataComponent ({@link data.Model Model) or {@link data.Collection Collection} that the Operation is
+		 * The DataComponent ({@link data.Model Model} or {@link data.Collection Collection}) that the Operation is
 		 * operating on.
 		 */
 		
@@ -315,15 +316,15 @@ define( [
 			var me = this,  // for closures
 			    proxy = this.proxy,
 			    requests = this.requests,
+			    batch = new RequestBatch( { requests: requests } ),
 			    requestsDeferred = this.requestsDeferred,  // The Operation's requestDeferred
 			    notify = _.bind( this.notify, this );
 			
-			// Execute all requests
+			// Add handlers to each Request for the Operation, and then execute all requests
 			_.forEach( requests, function( request ) { 
 				request.progress( notify ).done( notify );  // notify of "progress" and completion (calls `progress` handlers)
-				
-				proxy[ request.getAction() ]( request );    // execute the request
 			} );
+			proxy.batch( batch );  // execute the requests, via the Batch object
 			
 			// When all requests are complete, resolve or reject the Operation's `requestsDeferred`
 			jQuery.when.apply( jQuery, requests )

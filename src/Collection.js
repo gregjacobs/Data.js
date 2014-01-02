@@ -12,6 +12,8 @@ define( [
 	'data/persistence/Util',
 	'data/persistence/operation/Batch',
 	'data/persistence/operation/Load',
+	'data/persistence/operation/Save',
+	'data/persistence/operation/Destroy',
 	
 	'data/persistence/request/Batch',
 	'data/persistence/request/Create',
@@ -35,6 +37,8 @@ define( [
 	PersistenceUtil,
 	OperationBatch,
 	LoadOperation,
+	SaveOperation,
+	DestroyOperation,
 	
 	RequestBatch,
 	CreateRequest,
@@ -1770,7 +1774,7 @@ define( [
 		 *   object acts as a Promise object as well, which may have handlers attached for when the sync completes. The 
 		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
 		 *   
-		 *   The 'sync' operation may be aborted (canceled) by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   The 'sync' operation may be aborted (canceled) by calling the {@link data.persistence.operation.Batch#abort abort}
 		 *   method on this object. However, note that when aborting a 'sync' operation, it is possible that one or more requests still 
 		 *   completed, and Models were persisted to their external data store (such as a web server). This may cause an inconsistency 
 		 *   between the state of the model on the client-side, and the state of the model on the server-side. Therefore, it is not 
@@ -1779,21 +1783,27 @@ define( [
 		 */
 		sync : function( options ) {
 			options = PersistenceUtil.normalizePersistenceOptions( options );
-			var newModels = this.getNewModels(),
+			var proxy = this.getEffectiveProxy(),
+			    newModels = this.getNewModels(),
 			    updatedModels = this.getUpdatedModels( { persistedOnly: true } ),  // only models which have 'persisted' attributes modified
 			    removedModels = this.getRemovedModels(),
-			    requests = [],
-			    createRequest, updateRequest, destroyRequest;
+			    createRequest = ( newModels.length > 0 ) ? new CreateRequest( { models: newModels } ) : null,
+			    updateRequest = ( updatedModels.length > 0 ) ? new UpdateRequest( { models: updatedModels } ) : null,
+			    destroyRequest = ( removedModels.length > 0 ) ? new DestroyRequest( { models: removedModels } ) : null,
+			    operations = [],
+			    requests,
+			    op;
 			
-			if( newModels.length > 0 ) 
-				requests.push( createRequest = new CreateRequest( { models: newModels } ) );
-			if( updatedModels.length > 0 ) 
-				requests.push( updateRequest = new UpdateRequest( { models: updatedModels } ) );
-			if( removedModels.length > 0 ) 
-				requests.push( destroyRequest = new DestroyRequest( { models: removedModels } ) );
+			if( createRequest || updateRequest ) {
+				requests = ( createRequest || [] ).concat( updateRequest || [] );
+				operations.push( new SaveOperation( { dataComponent: this, requests: requests } ) );
+			}
 			
-			var requestBatch = new RequestBatch( { requests: requests } );
-			var promise = this.getEffectiveProxy().batch( requestBatch );
+			if( destroyRequest ) {
+				operations.push( new DestroyOperation( { dataComponent: this, requests: destroyRequest } ) );
+			}
+			
+			//var operationBatch = new OperationBatch( { dataComponent: this, operations: [ operation ] } );
 			
 			/*
 			var models = this.getModels(),
