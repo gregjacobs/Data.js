@@ -26,6 +26,7 @@ define( [
 		describe( 'batch()', function() {
 			var proxy,
 			    createRequest,
+			    readRequest,
 			    updateRequest,
 			    destroyRequest;
 			
@@ -33,19 +34,20 @@ define( [
 				proxy = new ConcreteProxy();
 				
 				createRequest = new CreateRequest();
+				readRequest = new ReadRequest();
 				updateRequest = new UpdateRequest();
 				destroyRequest = new DestroyRequest();
 				
 				// Spy on the `create()`, `update()`, and `destroy()` methods on the proxy
-				_.forEach( [ 'create', 'update', 'destroy' ], function( crudMethod ) {
+				_.forEach( [ 'create', 'read', 'update', 'destroy' ], function( crudMethod ) {
 					spyOn( proxy, crudMethod );
 				} );
 			} );
 			
 			
-			it( "should call the create(), update(), and destroy() methods with the create/update/destroy requests, respectively", function() {
+			it( "should call the create(), read(), update(), and destroy() methods with the create/update/destroy requests, respectively", function() {
 				var batch = new RequestBatch( {
-					requests : [ createRequest, updateRequest, destroyRequest ]
+					requests : [ createRequest, readRequest, updateRequest, destroyRequest ]
 				} );
 				
 				// Call the `batch()` method
@@ -53,6 +55,8 @@ define( [
 				
 				expect( proxy.create.calls.length ).toBe( 1 );
 				expect( proxy.create ).toHaveBeenCalledWith( createRequest );
+				expect( proxy.read.calls.length ).toBe( 1 );
+				expect( proxy.read ).toHaveBeenCalledWith( readRequest );
 				expect( proxy.update.calls.length ).toBe( 1 );
 				expect( proxy.update ).toHaveBeenCalledWith( updateRequest );
 				expect( proxy.destroy.calls.length ).toBe( 1 );
