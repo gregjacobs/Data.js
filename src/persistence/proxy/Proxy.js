@@ -281,23 +281,27 @@ define( [
 		
 		
 		/**
-		 * Performs a batch of create/update/destroy requests, specified by the given 
+		 * Performs a batch of create/read/update/destroy requests, specified by the given 
 		 * {@link data.persistence.request.Batch Batch} object.
 		 * 
-		 * By default, this method sends the 'create' requests to the {@link #create} method, the 'update' 
-		 * requests to the {@link #update} method, and the 'destroy' requests to the {@link #destroy} method.
-		 * However, this method may be overridden to support different batch functionality. For example, one might 
-		 * want to combine multiple create/update/destroy requests into a single network request, and send 
-		 * them to a server for processing all at once.
+		 * By default, this method sends the 'create' requests to the {@link #create} method, the 'read' requests
+		 * to the {@link #read} method, the 'update' requests to the {@link #update} method, and the 'destroy' requests 
+		 * to the {@link #destroy} method. 
+		 * 
+		 * However, this method may be overridden to support different batching functionality. For example, one might want 
+		 * to combine multiple create/update/destroy requests made by a {@link data.Collection} (via the 
+		 * {@link data.Collection#sync sync} method) into a single network request, and send them to a server for processing 
+		 * all at once.
 		 * 
 		 * @param {data.persistence.request.Batch} batch The Batch object which holds the Request(s) to perform.
 		 */
 		batch : function( batch ) {
-			_.forEach( batch.getRequests(), function( req ) {
-				switch( req.getAction() ) {
-					case 'create' : return this.create( req );
-					case 'update' : return this.update( req );
-					case 'destroy' : return this.destroy( req );
+			_.forEach( batch.getRequests(), function( request ) {
+				switch( request.getAction() ) {
+					case 'create'  : return this.create( request );
+					case 'read'    : return this.read( request );
+					case 'update'  : return this.update( request );
+					case 'destroy' : return this.destroy( request );
 				}
 			}, this );
 		},
