@@ -84,8 +84,8 @@ define( [
 	 * 
 	 * ## Adding Models
 	 * 
-	 * Models may be added to a Collection at instantiation time, or later using the {@link #add} method. Following on our example
-	 * Collection above:
+	 * Models may be added to a Collection at instantiation time, or later using the {@link #method-add} method. Following on our 
+	 * example Collection above:
 	 * 
 	 *     require( [
 	 *         'Tasks',  // Collection
@@ -1895,7 +1895,7 @@ define( [
 		
 		
 		/**
-		 * Handles when a Model that existed within the Collection has been {@link data.Model#destroy destroyed}.
+		 * Handles when a Model that existed within the Collection has been {@link data.Model#method-destroy destroyed}.
 		 * 
 		 * @protected
 		 * @param {data.Model} model The Model that has been destroyed.

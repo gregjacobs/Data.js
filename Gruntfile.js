@@ -142,7 +142,7 @@ module.exports = function( grunt ) {
 		var executable = 'vendor/jsduck/jsduck-4.7.1.exe';
 		var args = [
 			'--output=docs',
-			'--external=jQuery,jQuery.Deferred,jQuery.Promise',
+			'--external=jQuery,jQuery.Deferred,jQuery.Promise,jQuery.jqXHR',
 			'--title=Data.js API Docs',
 			
 			'src/',

@@ -195,7 +195,7 @@ define( [
 		
 		
 		/**
-		 * Determines if the OperationBatch was {@link #aborted} (via the {@link #abort} method).
+		 * Determines if the OperationBatch was aborted (via the {@link #abort} method).
 		 * 
 		 * @return {Boolean}
 		 */
@@ -205,10 +205,10 @@ define( [
 		
 		
 		/**
-		 * Determines if the OperationBatch has been completed. This means that all {@link #requests} have been completed,
+		 * Determines if the OperationBatch has been completed. This means that all {@link #operations} have been completed,
 		 * and the {@link #dataComponent} has processed their results.
 		 * 
-		 * @return {Boolean} `true` if all {@link #requests} are complete, `false` if any are not yet complete.
+		 * @return {Boolean} `true` if all {@link #operations} are complete, `false` if any are not yet complete.
 		 */
 		isComplete : function() {
 			return ( this.state() !== 'pending' );
@@ -227,7 +227,7 @@ define( [
 		 * `jQuery.when()`, which uses the existence of this method as a duck-type check in order to 
 		 * determine if a Deferred or Promise object has been passed to it.  
 		 * 
-		 * @return {data.persistence.operation.OperationBatch} This OperationBatch object.
+		 * @return {data.persistence.operation.Batch} This OperationBatch object.
 		 */
 		promise : function() {
 			return this;
@@ -257,13 +257,13 @@ define( [
 		
 		/**
 		 * Adds a handler for when the OperationBatch has made progress. Progress is defined as one of the OperationBatch's
-		 * {@link #requests} having been completed successfully. 
+		 * {@link #operations} having been completed successfully. 
 		 * 
-		 * Note that the OperationBatch shouldn't necessarily be considered "complete" if all of its {@link #requests} have completed 
+		 * Note that the OperationBatch shouldn't necessarily be considered "complete" if all of its {@link #operations} have completed 
 		 * successfully. The OperationBatch may still be in an "in progress" state if its {@link #dataComponent} ({@link data.Model Model} 
 		 * or {@link data.Collection Collection}) has not yet processed the OperationBatch's results. (For instance, the 
 		 * {@link #dataComponent} may be waiting for other Operations to complete alongside this one, before it will process the 
-		 * result.) Therefore, do not rely on the completion of all {@link #requests} in order to consider the OperationBatch "complete."
+		 * result.) Therefore, do not rely on the completion of all {@link #operations} in order to consider the OperationBatch "complete."
 		 * 
 		 * 
 		 * Handlers are called with the following arguments when the OperationBatch has been notified of progress (i.e. one
@@ -316,7 +316,7 @@ define( [
 		
 		
 		/**
-		 * Adds a handler for if the OperationBatch has been {@link #aborted}.
+		 * Adds a handler for if the OperationBatch has been {@link #abort aborted}.
 		 * 
 		 * Handlers are called with the following two arguments when the OperationBatch has been aborted (canceled):
 		 * 

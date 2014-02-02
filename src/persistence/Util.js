@@ -18,9 +18,9 @@ define( [
 		 * methods of {@link data.DataComponent} subclasses ({@link data.Model Model} and {@link data.Collection Collection}. 
 		 * This includes:
 		 * 
-		 * - {@link data.Model#load}
-		 * - {@link data.Model#save}
-		 * - {@link data.Model#destroy}
+		 * - {@link data.Model#method-load}
+		 * - {@link data.Model#method-save}
+		 * - {@link data.Model#method-destroy}
 		 * - {@link data.Collection#method-load}
 		 * - {@link data.Collection#loadRange}
 		 * - {@link data.Collection#loadPage}
@@ -40,7 +40,8 @@ define( [
 		 * @param {Function} [options.cancel] Function to call if the persistence method has been canceled, by the returned
 		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
 		 * @param {Function} [options.progress] Function to call when progress has been made on the persistence Operation. This 
-		 *   is called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+		 *   is called when an individual request has completed, or when the {@link data.persistence.proxy.Proxy Proxy} reports 
+		 *   progress otherwise.
 		 * @param {Function} [options.complete] Function to call when the persistence operation is complete, regardless
 		 *   of success or failure. Will be defaulted to an empty function as part of this method's normalization process.
 		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, `progress` and `complete` callbacks 

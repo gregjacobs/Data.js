@@ -33,10 +33,10 @@ define( [
 	 * of the persistence-related methods of {@link data.Model Model} and {@link data.Collection Collection}, in order for client
 	 * code to observe them. Methods where an Operation object is returned from include:
 	 * 
-	 * - {@link data.Model#load}
-	 * - {@link data.Model#save}
-	 * - {@link data.Model#destroy}
-	 * - {@link data.Collection#load}
+	 * - {@link data.Model#method-load}
+	 * - {@link data.Model#method-save}
+	 * - {@link data.Model#method-destroy}
+	 * - {@link data.Collection#method-load}
 	 * - {@link data.Collection#loadRange}
 	 * - {@link data.Collection#loadPage}
 	 * - {@link data.Collection#loadPageRange}
@@ -181,7 +181,7 @@ define( [
 		 * @property {data.persistence.operation.Deferred} deferred
 		 * 
 		 * The Operation's internal OperationDeferred object, which is resolved, rejected based on the successful completion or
-		 * failure of the Operation. The Operation may also be {@link #aborted}.
+		 * failure of the Operation. The Operation may also be {@link #abort aborted}.
 		 * 
 		 * Handlers for the Deferred are attached via the {@link #done}, {@link #fail}, {@link #cancel}, {@link #then}, or 
 		 * {@link #always} methods of the Operation itself.
@@ -195,7 +195,7 @@ define( [
 		 * Flag that is set to `true` when the Operation's {@link #requests} have been started from 
 		 * {@link #executeRequests}.
 		 * 
-		 * Note that it is possible for the Operation to have been started, *and* be {@link #completed}.
+		 * Note that it is possible for the Operation to have been started, *and* be {@link #isComplete completed}.
 		 */
 		started : false,
 		
@@ -511,7 +511,7 @@ define( [
 		
 		
 		/**
-		 * Determines if the Operation was {@link #aborted} (via the {@link #abort} method).
+		 * Determines if the Operation was aborted (via the {@link #abort} method).
 		 * 
 		 * @return {Boolean}
 		 */
@@ -631,7 +631,7 @@ define( [
 		
 		
 		/**
-		 * Adds a handler for if the Operation has been {@link #aborted}.
+		 * Adds a handler for if the Operation has been {@link #abort aborted}.
 		 * 
 		 * Handlers are called with the following two arguments when the Operation has been aborted (canceled):
 		 * 
