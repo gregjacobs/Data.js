@@ -86,7 +86,7 @@ define( [
 	 *                 { name: 'id',        type: 'int' },
 	 *                 { name: 'firstName', type: 'string' },
 	 *                 { name: 'lastName',  type: 'string' },
-	 *                 { name: 'isAdmin',   type: 'boolean' }
+	 *                 { name: 'isAdmin',   type: 'boolean', defaultValue: false }
 	 *             ]
 	 *         } );
 	 *     
@@ -105,8 +105,10 @@ define( [
 	 *   is most often preferable that nested objects be either of the `model` or `collection` types.
 	 * - {@link data.attribute.Date date}: A JavaScript Date object. String dates provided to this type will be parsed into a JS 
 	 *   Date object.
-	 * - {@link data.attribute.Model model}: A nested child Model, or related Model in a relational setup.
+	 * - {@link data.attribute.Model model}: A nested child Model, or related Model in a relational setup. Defaults to `null`.
+	 *   An empty model may be initialized by setting the `defaultValue` to an empty object (`{}`).
 	 * - {@link data.attribute.Collection collection}: A nested child Collection, or related Collected in a relational setup.
+	 *   Defaults to `null`. An empty collection may be initialized by setting the `defaultValue` to an empty array (`[]`).
 	 * 
 	 * Each Attribute type is implemented as a class in the `data.attribute` package. See each particular Attribute subclass for
 	 * additional configuration options that are available to that particular type. 
@@ -116,9 +118,16 @@ define( [
 	 * 
 	 * ### Default Values
 	 * 
-	 * All primitive types (int, float, string, boolean) default to a valid value of the type. This is `0` for `int`/`float` types,
-	 * an empty string for the `string` type, and `false` for the `boolean` type. This is the case unless the
-	 * {@link data.attribute.Primitive#useNull useNull} config is set to true, in which case the attribute will default to `null`.
+	 * A {@link data.attribute.Attribute#defaultValue defaultValue} may be provided to initialize the attribute upon Model 
+	 * construction.
+	 * 
+	 * If no {@link data.attribute.Attribute#defaultValue defaultValue} is provided, then attributes are defaulted as follows:
+	 * 
+	 * - All primitive types (int, float, string, boolean) default to a valid value of the type. This is the value `0` for 
+	 *   `int`/`float` types, an empty string ("") for the `string` type, and `false` for the `boolean` type. This is the case 
+	 *   unless the {@link data.attribute.Primitive#useNull useNull} config is set to `true`, in which case the attribute will 
+	 *   default to `null`.
+	 * - All object types (object, date, model, collection, etc.) default to `null`.
 	 * 
 	 * ### Creating new Attribute types
 	 * 
