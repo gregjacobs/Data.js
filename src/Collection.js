@@ -102,7 +102,7 @@ define( [
 	 *         
 	 *         
 	 *         // Add another Task
-	 *         var task3 = new Task( { id: 3, name: "To-Do #3, description: "This is the third task that I need to do." } );
+	 *         var task3 = new Task( { id: 3, name: "To-Do #3", description: "This is the third task that I need to do." } );
 	 *         tasks.add( task3 );
 	 *         
 	 *         tasks.getCount();  // 3
@@ -128,7 +128,7 @@ define( [
 	 *         
 	 *         
 	 *         // Add another Task
-	 *         tasks.add( { id: 3, name: "To-Do #3, description: "This is the third task that I need to do." } );
+	 *         tasks.add( { id: 3, name: "To-Do #3", description: "This is the third task that I need to do." } );
 	 *         
 	 *         tasks.getCount();  // 3
 	 *         tasks.getAt( 2 ).get( 'name' );  // "To-Do #3"
