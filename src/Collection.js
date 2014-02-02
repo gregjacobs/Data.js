@@ -37,40 +37,179 @@ define( [
 	 * @extends data.DataComponent
 	 * 
 	 * Manages an ordered set of {@link data.Model Models}. This class itself is not meant to be used directly, 
-	 * but rather extended and configured for the different collections in your application.
+	 * but rather extended and configured for the different collections in your application. 
 	 * 
-	 * Ex:
+	 * Note that the configuration options for this class are most often best set on a Collection subclass on its 
+	 * prototype. See examples below.
+	 * 
+	 * 
+	 * ## Creating a Collection
+	 * 
+	 * Since a Collection is a collection of {@link data.Model Models}, one must first define a Model:
 	 *     
-	 *     myApp.Todos = Collection.extend( {
-	 *         model: myApp.Todo
+	 *     // Task.js
+	 *     define( [
+	 *         'data/Model'         
+	 *     ], function( Model ) {
+	 *         
+	 *         var Task = Model.extend( {
+	 *             attributes : [
+	 *                 { name: 'id',          type: 'int' },
+	 *                 { name: 'name',        type: 'string' },
+	 *                 { name: 'description', type: 'string' }
+	 *             ]
+	 *         } );
+	 *         
+	 *         return Task;
+	 *         
 	 *     } );
 	 * 
 	 * 
-	 * Note: Configuration options should be placed on the prototype of a Collection subclass.
-	 * 
-	 * 
-	 * ### Model Events
-	 * 
-	 * Collections automatically relay all of their {@link data.Model Models'} events as if the Collection
-	 * fired it. The collection instance provides itself in the handler though. For example, Models' 
-	 * {@link data.Model#event-change change} events:
+	 * Now the Collection may be defined, and set up to use the Model type just created:
 	 *     
-	 *     var Model = Model.extend( {
-	 *         attributes: [ 'name' ]
-	 *     } );
-	 *     var Collection = Collection.extend( {
-	 *         model : Model
+	 *     // Tasks.js
+	 *     define( [
+	 *         'data/Collection',
+	 *         'Task'
+	 *     ], function( Collection, Task ) {
+	 *         
+	 *         var Tasks = Collection.extend( {
+	 *             model: Task  // tell the Collection which Model type it uses
+	 *         } );
+	 *         
+	 *         return Tasks;
+	 *         
 	 *     } );
 	 * 
-	 *     var model1 = new Model( { name: "Greg" } ),
-	 *         model2 = new Model( { name: "Josh" } );
-	 *     var collection = new Collection( [ model1, model2 ] );
-	 *     collection.on( 'change', function( collection, model, attributeName, newValue, oldValue ) {
-	 *         console.log( "A model changed its '" + attributeName + "' attribute from '" + oldValue + "' to '" + newValue + "'" );
+	 * 
+	 * ## Adding Models
+	 * 
+	 * Models may be added to a Collection at instantiation time, or later using the {@link #add} method. Following on our example
+	 * Collection above:
+	 * 
+	 *     require( [
+	 *         'Tasks',  // Collection
+	 *         'Task'    // Model
+	 *     ], function( Tasks, Task ) {
+	 *         
+	 *         var task1 = new Task( { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." } );
+	 *         var task2 = new Task( { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." } );
+	 *         
+	 *         var tasks = new Tasks( [ task1, task2 ] );
+	 *         tasks.getCount();  // 2
+	 *         tasks.getAt( 0 ).get( 'name' );  // "To-Do #1"
+	 *         tasks.getAt( 1 ).get( 'name' );  // "To-Do #2"
+	 *         
+	 *         
+	 *         // Add another Task
+	 *         var task3 = new Task( { id: 3, name: "To-Do #3, description: "This is the third task that I need to do." } );
+	 *         tasks.add( task3 );
+	 *         
+	 *         tasks.getCount();  // 3
+	 *         tasks.getAt( 2 ).get( 'name' );  // "To-Do #3"
 	 *     } );
 	 * 
-	 *     model1.set( 'name', "Gregory" );
-	 *       // "A model changed its 'name' attribute from 'Greg' to 'Gregory'"
+	 * 
+	 * Anonymous objects provided to the Collection will be instantiated into the Model type provided by the {@link #model} config.
+	 * This can provide a short hand to instantiating the Models of the Collection:
+	 * 
+	 *     require( [
+	 *         'Tasks'
+	 *     ], function( Tasks ) {
+	 *         
+	 *         var tasks = new Tasks( [
+	 *             { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." },
+	 *             { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." },
+	 *         ] );
+	 *         
+	 *         tasks.getCount();  // 2
+	 *         tasks.getAt( 0 ).get( 'name' );  // "To-Do #1"
+	 *         tasks.getAt( 1 ).get( 'name' );  // "To-Do #2"
+	 *         
+	 *         
+	 *         // Add another Task
+	 *         tasks.add( { id: 3, name: "To-Do #3, description: "This is the third task that I need to do." } );
+	 *         
+	 *         tasks.getCount();  // 3
+	 *         tasks.getAt( 2 ).get( 'name' );  // "To-Do #3"
+	 *     } );
+	 * 
+	 * 
+	 * ## Retrieving all Models
+	 * 
+	 * It is often useful to retrieve an array of all Models in a Collection, in order to loop over them:
+	 * 
+	 *     require( [
+	 *         'Tasks'
+	 *     ], function( Tasks ) {
+	 *     
+	 *         var tasks = new Tasks( [
+	 *             { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." },
+	 *             { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." },
+	 *         ] );
+	 *         
+	 *         var models = tasks.getModels();
+	 *         for( var i = 0, len = models.length; i < len; i++ ) {
+	 *             var taskName = tasks[ i ].get( 'name' ); 
+	 *             console.log( taskName );
+	 *         }
+	 *         
+	 *     } );
+	 * 
+	 * 
+	 * ## Listening to Collection Events
+	 * 
+	 * Events are fired when changes occur to the Collection. See the 'Events' section of this documentation for a list of all
+	 * available events, but as a simple example:
+	 * 
+	 *     require( [
+	 *         'Tasks'
+	 *     ], function( Tasks ) {
+	 *     
+	 *         var tasks = new Tasks();
+	 *         
+	 *         // Subscribe a listener
+	 *         tasks.on( 'add', function( collection, model ) {
+	 *             console.log( "A model with the ID '" + model.get( 'id' ) + "' was added." );
+	 *         } );
+	 *         
+	 *         
+	 *         // Add some models
+	 *         tasks.add( { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." } );
+	 *             // console logs: "A model with the ID '1' was added."
+	 *             
+	 *         tasks.add( { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." } );
+	 *             // console.logs: "A model with the ID '2' was added."
+	 *         
+	 *     } );
+	 * 
+	 * See {@link #on} for details.
+	 * 
+	 * 
+	 * ## Child Model Events
+	 * 
+	 * Collections automatically relay all of their {@link data.Model Models'} events as if the Collection fired it, with the only
+	 * difference being that Collection instance provides itself as the first argument, followed by all of the Model's arguments for
+	 * the event. For example, Models' {@link data.Model#event-change change} events:
+	 *     
+	 *     require( [
+	 *         'Tasks',  // Collection from above examples
+	 *         'Task'    // Model from above examples
+	 *     ], function( Tasks, Task ) {
+	 *         
+	 *         var task1 = new Task( { id: 1, name: "To-Do #1" } ),
+	 *             task2 = new Task( { id: 2, name: "To-Do #2" } );
+	 *             
+	 *         var collection = new Tasks[ task1, task2 ] );
+	 *         collection.on( 'change', function( collection, model, attributeName, newValue, oldValue ) {
+	 *             console.log( "A task changed its '" + attributeName + "' from '" + oldValue + "' to '" + newValue + "'" );
+	 *         } );
+	 *     
+	 *         // Set a new value
+	 *         task1.set( 'name', "Go to the store" );
+	 *             // console logs: "A task changed its 'name' attribute from 'To-Do #1' to 'Go to the store'"
+	 *           
+	 *     } ); 
 	 */
 	var Collection = Class.extend( DataComponent, {
 		

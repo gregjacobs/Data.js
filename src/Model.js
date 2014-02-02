@@ -65,11 +65,236 @@ define( [
 	 * @class data.Model
 	 * @extends data.DataComponent
 	 * 
-	 * Generalized key/value data storage class, which has a number of data-related features, including the ability to persist its data to a backend server.
-	 * Basically, a Model represents some object of data that your application uses. For example, in an online store, one might define two Models: 
-	 * one for Users, and the other for Products. These would be `User` and `Product` models, respectively. Each of these Models would in turn,
-	 * have the {@link data.attribute.Attribute Attributes} (data values) that each Model is made up of. Ex: A User model may have: `userId`, `firstName`, and 
-	 * `lastName` Attributes.
+	 * Generalized key/value data storage class, which has a number of data-related features, including the ability to persist 
+	 * its data to a backend server.
+	 * 
+	 * Basically, a Model represents some object of data that your application uses. For example, in an online store, one might 
+	 * define two Models: one for Users, and the other for Products. These would be `User` and `Product` models, respectively. Each 
+	 * of these Models would in turn, have {@link data.attribute.Attribute Attributes} (data fields) that each Model is made up of. 
+	 * Ex: A User model may have: `userId`, `firstName`, and `lastName` Attributes.
+	 * 
+	 * ## Defining a Model
+	 * 
+	 * An example `User` model, in User.js:
+	 * 
+	 *     define( [
+	 *         'data/Model'
+	 *     ], function( Model ) {
+	 *     
+	 *         var User = Model.extend( {
+	 *             attributes : [
+	 *                 { name: 'id',        type: 'int' },
+	 *                 { name: 'firstName', type: 'string' },
+	 *                 { name: 'lastName',  type: 'string' },
+	 *                 { name: 'isAdmin',   type: 'boolean' }
+	 *             ]
+	 *         } );
+	 *     
+	 *         return User;
+	 *     
+	 *     } );
+	 * 
+	 * As you can see, a Model is made up of attributes (data fields). Each may have a `type`, which is enforced to ensure data
+	 * consistency. The basic types are:
+	 * 
+	 * - {@link data.attribute.Integer int/integer}: An integer value. Ex: 0, 1, 2, etc.
+	 * - {@link data.attribute.Float float}: A floating point value. Ex: 1.1, 2.42, etc.
+	 * - {@link data.attribute.String string}: A string value. Ex: "", "abc", etc.
+	 * - {@link data.attribute.Boolean bool/boolean}: A Boolean true/false value.
+	 * - {@link data.attribute.Object object}: An object value. Any object may be placed in this type (including arrays), but it 
+	 *   is most often preferable that nested objects be either of the `model` or `collection` types.
+	 * - {@link data.attribute.Date date}: A JavaScript Date object. String dates provided to this type will be parsed into a JS 
+	 *   Date object.
+	 * - {@link data.attribute.Model model}: A nested child Model, or related Model in a relational setup.
+	 * - {@link data.attribute.Collection collection}: A nested child Collection, or related Collected in a relational setup.
+	 * 
+	 * Each Attribute type is implemented as a class in the `data.attribute` package. See each particular Attribute subclass for
+	 * additional configuration options that are available to that particular type. 
+	 * 
+	 * Note: if no `type` is specified, the default is the {@link data.attribute.Mixed mixed} type. This type is not recommended 
+	 * however, since it provides no type checking, and conveys little meaning as to how to use the value for the attribute.
+	 * 
+	 * ### Default Values
+	 * 
+	 * All primitive types (int, float, string, boolean) default to a valid value of the type. This is `0` for `int`/`float` types,
+	 * an empty string for the `string` type, and `false` for the `boolean` type. This is the case unless the
+	 * {@link data.attribute.Primitive#useNull useNull} config is set to true, in which case the attribute will default to `null`.
+	 * 
+	 * ### Creating new Attribute types
+	 * 
+	 * Since each Attribute type is implemented as a class in the `data.attribute` package, new Attribute types may be added
+	 * within your application by extending the appropriate base class and implementing/overriding the appropriate methods. See
+	 * the source code of the {@link data.attribute.Attribute} types for examples on how to do this.
+	 * 
+	 * 
+	 * ## Getting/Setting Attribute Values
+	 * 
+	 * Using our `User` model from above:
+	 * 
+	 *     require( [
+	 *         'User'
+	 *     ], function( User ) {
+	 *     
+	 *         // Create a new User
+	 *         var user = new User( {
+	 *             id        : 1,
+	 *             firstName : "John",
+	 *             lastName  : "Doe",
+	 *             isAdmin   : true
+	 *         } );
+	 *         
+	 *         // Retrieve some values about the user:
+	 *         user.get( 'id' );         // 1
+	 *         user.get( 'firstName' );  // "John"
+	 *         user.get( 'lastName' );   // "Doe"
+	 *         user.get( 'isAdmin' );    // true
+	 *         
+	 *         
+	 *         // Set some values about the user:
+	 *         user.set( 'firstName', "Johnny" );
+	 *         user.set( 'lastName', "Depp" );
+	 *         user.set( 'isAdmin', false );
+	 *         
+	 *         // Setting multiple values at once:
+	 *         user.set( { firstName: "Johnny", lastName: "Depp", isAdmin: false } );
+	 *         
+	 *     } );
+	 *     
+	 * See methods {@link #set} and {@link #get} for more details.
+	 * 
+	 * 
+	 * ## Using Models/Collections as Nested or Related Attributes
+	 * 
+	 * Models may hold nested models and collections, allowing for a hierarchical data structure. For example:
+	 * 
+	 *     // Address.js
+	 *     define( [
+	 *         'data/Model'
+	 *     ], function( Model ) {
+	 *         
+	 *         var Address = Model.extend( {
+	 *             attributes : [
+	 *                 { name: 'street', type: 'string' },
+	 *                 { name: 'city',   type: 'string' },
+	 *                 { name: 'state',  type: 'string' },
+	 *                 { name: 'zip',    type: 'int' }
+	 *             ]
+	 *         } );
+	 *         
+	 *         return Address;
+	 *         
+	 *     } );
+	 *     
+	 *     
+	 *     // User.js
+	 *     define( [
+	 *         'data/Model',
+	 *         
+	 *         'Address'
+	 *     ], function( Model, Address ) {
+	 *     
+	 *         var User = Model.extend( {
+	 *             attributes : [
+	 *                 { name: 'id',        type: 'int' },
+	 *                 { name: 'firstName', type: 'string' },
+	 *                 { name: 'lastName',  type: 'string' },
+	 *                 
+	 *                 { name: 'address',   type: 'model', model: Address }  // specify the Model type: Address
+	 *             ]
+	 *         } );
+	 *     
+	 *     } );
+	 *     
+	 *     
+	 *     // Implementation
+	 *     require( [
+	 *         'User'
+	 *     ], function( User ) {
+	 *         
+	 *         var user = new User( {
+	 *             id: 1, 
+	 *             firstName : "John",
+	 *             lastName  : "Doe",
+	 *             
+	 *             address : {
+	 *                 street : "123 Main Street",
+	 *                 city   : "Anchorage",
+	 *                 state  : "AK",
+	 *                 zip    : 99501
+	 *             }
+	 *         } );
+	 *         
+	 *         
+	 *         var address = user.get( 'address' );
+	 *         address.get( 'street' );  // "123 Main Street"
+	 *         address.get( 'city' );    // "Anchorage"
+	 *         address.get( 'state' );   // "AK"
+	 *         address.get( 'zip' );     // 99501
+	 *     } );
+	 * 
+	 * 
+	 * ### Nesting the Same Type of Model as an Attribute
+	 * 
+	 * The same type of model can be used for a parent/child relationship, but due to the nature of RequireJS and circular 
+	 * dependencies, we need to use late binding for the nested model type. For example:
+	 * 
+	 *     define( [
+	 *         'data/Model'
+	 *     ], function( Model ) {
+	 *     
+	 *         var User = Model.extend( {
+	 *             attributes : [
+	 *                 { name: 'id',        type: 'int' },
+	 *                 { name: 'firstName', type: 'string' },
+	 *                 { name: 'lastName',  type: 'string' },
+	 *                 
+	 *                 {
+	 *                     name: 'trainee',
+	 *                     type: 'model',
+	 *                     model: function() { return User; }  // when needed, the function will be executed to provide the Model type
+	 *                 }
+	 *             ]
+	 *         } );
+	 *     
+	 *         return User;
+	 *         
+	 *     } );
+	 *     
+	 *     
+	 * ### Nesting Other Types of Models/Collections that may have Circular Dependencies
+	 * 
+	 * See example in {@link data.attribute.Model} for the {@link data.attribute.Model#model model} config.
+	 * 
+	 * 
+	 * ## Listening to Model Events
+	 * 
+	 * Events are fired when changes occur to the Model. See the 'Events' section of this documentation for a list of all
+	 * available events, but as a simple example:
+	 * 
+	 *     require( [
+	 *         'User'  // from above examples
+	 *     ], function( Tasks ) {
+	 *     
+	 *         var user = new User( { id: 1, firstName: "John", lastName: "Doe" } );
+	 *         
+	 *         // Event listener #1:
+	 *         user.on( 'change', function( model, attrName, newValue, oldValue ) {
+	 *             console.log( "Model change: '" + attrName + "' from '" + oldValue + "' to '" + newValue + "'" ); 
+	 *         } );
+	 *         
+	 *         // Event listener #2:
+	 *         user.on( 'change:firstName', function( model, newValue, oldValue ) {
+	 *             console.log( "Model firstName change from '" + oldValue + "' to '" + newValue + "'" );
+	 *         } );
+	 *         
+	 *         
+	 *         user.set( 'firstName', "Johnny" );
+	 *             // console log from listener #1: "Model change: 'firstName' from 'John' to 'Johnny'
+	 *             // console log from listener #2: "Model firstName change from 'John' to 'Johnny'
+	 *         
+	 *     } );
+	 * 
+	 * See {@link #on} for details.
 	 */
 	var Model = Class.extend( DataComponent, {
 		
