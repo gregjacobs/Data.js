@@ -218,7 +218,7 @@ define( [
 				ajaxOpts.data = JSON.stringify( paramsObj );
 				ajaxOpts.contentType = 'application/json';    // so that "&'s" aren't treated as form parameter delimiters
 			} else {
-				ajaxOpts.data = this.serializeParams( paramsObj, 'read', request );  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
+				ajaxOpts.data = this.serializeParams( paramsObj, request );  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
 			}
 			
 			
@@ -324,7 +324,7 @@ define( [
 			if( action !== 'read' ) {
 				var params = this.buildParams( request );
 				
-				url = this.urlAppend( url, this.serializeParams( params, action, request ) );
+				url = this.urlAppend( url, this.serializeParams( params, request ) );
 			}
 			return url;
 		},
@@ -377,11 +377,10 @@ define( [
 		 * @protected
 		 * @param {Object} params The Object (map) of parameters to serialize. The keys of this map are the parameter names,
 		 *   and the values are the parameter values.
-		 * @param {String} action The action that is being taken. One of: 'create', 'read', 'update', or 'destroy'.
 		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {String} The serialized string of parameters.
 		 */
-		serializeParams : function( params, action, request ) {
+		serializeParams : function( params, request ) {
 			return this.objToQueryString( params );
 		},
 		
