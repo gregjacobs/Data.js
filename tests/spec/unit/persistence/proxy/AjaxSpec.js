@@ -84,6 +84,55 @@ define( [
 			} );
 			
 			
+			describe( "`paramsAsJson` cfg", function() {
+				
+				it( "should provide any parameters for the request as JSON directly on the request body if the method is *not* GET (i.e. it's POST, PUT, etc.), setting the content-type header to 'application/json'", function() {
+					var params = { a: 1, b: 2, c: "test" },
+					    request = new ReadRequest( { params: params } );
+					
+					var proxy = new AjaxProxy( {
+						url : '/testUrl',
+						
+						readMethod: "POST",  // cannot be the default of "GET" for `paramsAsJson` to work
+						paramsAsJson : true,
+						
+						ajax : mockAjax.getAjaxMethod()
+					} );
+					
+					proxy.read( request );
+					expect( mockAjax.getRequestCount() ).toBe( 1 );
+					expect( mockAjax.getOptions( 0 ).url ).toBe( '/testUrl' );
+					expect( mockAjax.getOptions( 0 ).type ).toBe( 'POST' );
+					expect( mockAjax.getOptions( 0 ).contentType ).toBe( 'application/json' );
+					expect( mockAjax.getOptions( 0 ).data ).toBe( JSON.stringify( params ) );
+				} );
+				
+				
+				it( "should include the parameters as query string parameters for GET requests (acting as if `paramsAsJson` was never set in this case, since GET requests cannot have a request body)", function() {
+					var params = { a: 1, b: 2, c: "test" },
+					    request = new ReadRequest( { params: params } );
+					
+					var proxy = new AjaxProxy( {
+						url : '/testUrl',
+						
+						readMethod: "GET",  // in the case that this is "GET", `paramsAsJson` will have no effect
+						paramsAsJson : true,
+						
+						ajax : mockAjax.getAjaxMethod()
+					} );
+					
+					proxy.read( request );
+					expect( mockAjax.getRequestCount() ).toBe( 1 );
+					expect( mockAjax.getOptions( 0 ).url ).toBe( '/testUrl' );
+					expect( mockAjax.getOptions( 0 ).type ).toBe( 'GET' );
+					expect( mockAjax.getOptions( 0 ).contentType ).toBeUndefined();  // i.e. not set to 'application/json'
+					expect( mockAjax.getOptions( 0 ).data ).toBe( 'a=1&b=2&c=test' );
+				} );
+				
+			} );
+			 
+			
+			
 			it( "when a successful ajax request occurs, should resolve its Request with a ResultSet", function() {
 				var request = new ReadRequest( { modelId: 1 } ),
 				    resolvedResultSet;

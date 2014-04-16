@@ -68,7 +68,8 @@ define( [
 		 *     }
 		 *     
 		 * Note that the values of these parameters will be URL encoded, if the default behavior of serializing the
-		 * parameters as a query string is not overridden by a new {@link #serializeParams} implementation.
+		 * parameters as a query string is not overridden by use of the {@link #paramsAsJson} config or a new 
+		 * {@link #serializeParams} implementation.
 		 */
 		
 		/**
@@ -133,6 +134,18 @@ define( [
 		 * a request may be generated as: `/posts/load?pageSize=50`
 		 */
 		
+		/**
+		 * @cfg {Boolean} paramsAsJson
+		 * 
+		 * `true` to have any parameters sent as JSON data in the request body, rather than the default of URL query string 
+		 * or form data parameters. When `true`, the request's content type will be set to "application/json" instead of the 
+		 * default of "application/x-www-form-urlencoded".
+		 * 
+		 * Note: This only applies to non-GET requests (i.e. POST, PUT, etc.). You must set the {@link #createMethod}, 
+		 * {@link #readMethod}, {@link #updateMethod}, and {@link #deleteMethod} appropriately for this config to apply.
+		 */
+		paramsAsJson : false,
+		
 		
 		/**
 		 * @protected
@@ -191,15 +204,26 @@ define( [
 			var me = this,  // for closures
 			    paramsObj = this.buildParams( request ),
 			    xhrObjs = this.xhrObjs,
-			    requestUuid = request.getUuid();
+			    requestUuid = request.getUuid(),
+			    requestType = this.getHttpMethod( 'read' );  // "GET", "POST", etc.
+			
+			var ajaxOpts = {
+				url      : this.buildUrl( request ),
+				type     : requestType,
+				dataType : 'text'
+			};
+			
+			// Assign parameters
+			if( this.paramsAsJson && requestType !== "GET" ) {  // can't post JSON into the request body for GET requests
+				ajaxOpts.data = JSON.stringify( paramsObj );
+				ajaxOpts.contentType = 'application/json';    // so that "&'s" aren't treated as form parameter delimiters
+			} else {
+				ajaxOpts.data = this.serializeParams( paramsObj, 'read', request );  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
+			}
+			
 			
 			// Make the AJAX request
-			var jqXhr = this.ajax( {
-				url      : this.buildUrl( request ),
-				type     : this.getHttpMethod( 'read' ),
-				data     : this.serializeParams( paramsObj, 'read', request ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
-				dataType : 'text'
-			} );
+			var jqXhr = this.ajax( ajaxOpts );
 			
 			// Store the jqXHR object in the map before attaching any promise handlers. If the jqXHR completes 
 			// synchronously for some reason, we want to make sure we clean up the reference in this map.
