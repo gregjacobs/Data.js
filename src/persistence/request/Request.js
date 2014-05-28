@@ -269,8 +269,7 @@ define( [
 		 *   {@link #wasSuccessful successfully}.
 		 * - **"rejected"**: The OperationDeferred object is in its 'rejected' state, when the Operation has 
 		 *   {@link #hasErrored errored}.
-		 * - **"aborted"**: The OperationDeferred object is in its 'aborted' state, when the Operation has been
-		 *   {@link #wasAborted aborted}.
+		 * - **"aborted"**: The OperationDeferred object is in its 'aborted' state, when the Operation has been aborted.
 		 * 
 		 * @return {String} See return values, above.
 		 */
@@ -281,13 +280,13 @@ define( [
 		
 		/**
 		 * Adds a handler for when the Operation has made progress. Progress is defined as one of the Operation's
-		 * {@link #requests} having been completed successfully. 
+		 * {@link data.persistence.operation.Operation#requests} having been completed successfully. 
 		 * 
-		 * Note that the Operation shouldn't necessarily be considered "complete" if all of its {@link #requests} have completed 
-		 * successfully. The Operation may still be in an "in progress" state if its {@link #dataComponent} ({@link data.Model Model} 
-		 * or {@link data.Collection Collection}) has not yet processed the Operation's results. (For instance, the 
-		 * {@link #dataComponent} may be waiting for other Operations to complete alongside this one, before it will process the 
-		 * result.) Therefore, do not rely on the completion of all {@link #requests} in order to consider the Operation "complete."
+		 * Note that the Operation shouldn't necessarily be considered "complete" if all of its requests have completed 
+		 * successfully. The Operation may still be in an "in progress" state if its {@link data.persistence.operation.Operation#dataComponent} 
+		 * (i.e. a {@link data.Model Model} or {@link data.Collection Collection}) has not yet processed the Operation's results. 
+		 * (For instance, the dataComponent may be waiting for other Operations to complete alongside this one, before it will process the 
+		 * result.) Therefore, do not rely on the completion of all requests in order to consider the Operation "complete."
 		 * 
 		 * 
 		 * Handlers are called with the following arguments when the Operation has been notified of progress (i.e. one
@@ -340,7 +339,7 @@ define( [
 		
 		
 		/**
-		 * Adds a handler for if the Operation has been {@link #aborted}.
+		 * Adds a handler for if the Operation has been {@link data.persistence.operation.Operation#abort aborted}.
 		 * 
 		 * Handlers are called with the following two arguments when the Operation has been aborted (canceled):
 		 * 

@@ -143,7 +143,7 @@ define( [
 		 * default of "application/x-www-form-urlencoded".
 		 * 
 		 * Note: This only applies to non-GET requests (i.e. POST, PUT, etc.). You must set the {@link #createMethod}, 
-		 * {@link #readMethod}, {@link #updateMethod}, and {@link #deleteMethod} appropriately for this config to apply.
+		 * {@link #readMethod}, {@link #updateMethod}, and {@link #destroyMethod} appropriately for this config to apply.
 		 */
 		paramsAsJson : false,
 		
