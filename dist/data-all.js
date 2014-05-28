@@ -1,6 +1,6 @@
 /*!
  * Data.js
- * Version 0.6.1
+ * Version 0.7.0
  *
  * Copyright(c) 2013 Gregory Jacobs.
  * MIT Licensed. http://www.opensource.org/licenses/mit-license.php
@@ -4792,6 +4792,72 @@ define('data/Model', [
 			getAttributes : function() {
 				// Note: `this` refers to the class (constructor function) that the static method was called on
 				return this.prototype.attributes;
+			},
+			
+			
+			/**
+			 * Loads a new instance of the Model by `id`.
+			 * 
+			 * All of the callbacks, and the promise handlers are called with the following arguments:
+			 * 
+			 * - `model` : {@link data.Model} The new Model instance.
+			 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
+			 *   information about the operation and the request(s) that took place.
+			 * 
+			 * 
+			 * ## Example
+			 * 
+			 *     require( [
+			 *         'data/Model',
+			 *         'data/persistence/proxy/Ajax'
+			 *     ], function( Model, AjaxProxy ) {
+			 *     
+			 *         var User = Model.extend( {
+			 *             attributes : [ 'id', 'username' ],
+			 *             proxy : new AjaxProxy( { url: '/path/to/users' } )
+			 *         } );
+			 *     
+			 *         
+			 *         // Load user by ID - requests '/path/to/users?id=100'
+			 *         User.load( 100 )
+			 *             .done( function( model ) { alert( "Retrieved user: ", model.get( 'username' ) ); } )
+			 *             .fail( function() { alert( "Failed to load user" ); } );
+			 *     } );
+			 * 
+			 * 
+			 * For more information and examples, see the non-static {@link #method-load} method, which is called internally by
+			 * this method.
+			 * 
+			 * @inheritable
+			 * @static
+			 * @param {Number/String} id The ID of the model to load. This may be `null` if other parameters dictate which model 
+			 *   is loaded (specified under `options`).
+			 * @param {Object} [options] An object which may contain the following properties:
+			 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+			 *   for the request. See {@link data.persistence.request.Request#params} for details.
+			 * @param {Function} [options.success] Function to call if the save is successful.
+			 * @param {Function} [options.failure] Function to call if the save fails.
+			 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+			 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+			 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+			 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+			 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
+			 * @param {Object} [options.scope] The object to call the `success`, `failure`, and `complete` callbacks in. This may also
+			 *   be provided as `context` if you prefer.
+			 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
+			 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
+			 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+			 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+			 *   method on this object.
+			 */
+			load : function( id, options ) {
+				var model = new this();
+				
+				if( model.hasIdAttribute() ) {
+					model.set( model.getIdAttributeName(), id );
+				}
+				
+				return model.load( options );
 			}
 			
 		},

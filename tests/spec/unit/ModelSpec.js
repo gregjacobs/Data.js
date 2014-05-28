@@ -1802,6 +1802,271 @@ define( [
 		} );
 		
 		
+		describe( 'static load()', function() {
+			var manualProxy,
+			    ManualProxyModel;
+			
+			beforeEach( function() {
+				manualProxy = new ManualProxy();
+				
+				ManualProxyModel = Model.extend( {
+					attributes : [ 'id', 'a', 'b' ],
+					proxy : manualProxy
+				} );
+			} );
+			
+			
+			it( "should throw an error if there is no configured proxy", function() {
+				var NoProxyModel = Model.extend( {
+					attributes : [ 'id', 'name' ]
+					// note: no configured proxy
+				} );
+				
+				expect( function() {
+					NoProxyModel.load( 100 );
+				} ).toThrow( "data.Model::load() error: Cannot load. No proxy configured." );
+			} );
+			
+			
+			it( "should call `getProxy()` internally, to make sure that it receives an instantiated Proxy instance if an anonymous config object was set to the Model instance via setProxy()", function() {
+				var AnonymousProxyModel = Model.extend( {
+					attributes : [ 'id', 'name' ],
+					proxy : { type: 'manual' }  // provide anonymous config object
+				} );
+				
+				// Make sure that the load() method can use the instantiated proxy (i.e. it can call the Proxy's `read()` method)
+				expect( function() { AnonymousProxyModel.load(); } ).not.toThrow();
+				expect( AnonymousProxyModel.getProxy().getReadRequestCount() ).toBe( 1 );  // Double check that the Proxy's read() method was actually invoked
+			} );
+			
+			
+			it( "should delegate to its proxy's read() method, with the model's ID, to retrieve the data", function() {
+				ManualProxyModel.load( 1 );
+				
+				expect( manualProxy.getReadRequestCount() ).toBe( 1 );
+				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBe( 1 );
+			} );
+			
+			
+			it( "should delegate to its proxy's read() method, even without the model's ID if one hasn't been requested, to retrieve the data", function() {
+				ManualProxyModel.load( null );  // `null` id
+				
+				expect( manualProxy.getReadRequestCount() ).toBe( 1 );
+				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBe( null );
+			} );
+			
+			
+			it( "should delegate to its proxy's read() method, even if it *doesn't have an idAttribute*, to retrieve the data", function() {
+				var NoIdModel = ManualProxyModel.extend( {
+					attributes  : [ 'name' ],    // note: no 'id' attribute
+					idAttribute : 'non-existent'
+				} );
+				
+				NoIdModel.load( 100 );
+				
+				expect( manualProxy.getReadRequestCount() ).toBe( 1 );
+				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBe( undefined );
+			} );
+			
+			
+			it( "should pass any `params` option provided to the method to proxy's read() method, in the Request object", function() {
+				var inputParams = { a: 1 };
+				
+				ManualProxyModel.load( null, {
+					params : inputParams
+				} );
+				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBe( null );
+				expect( manualProxy.getReadRequest( 0 ).params ).toBe( inputParams );
+			} );
+
+			
+			it( "should throw an error when the load completes if there are properties in the response object that don't match model attributes, when the `ignoreUnknownAttrsOnLoad` config is false", function() {
+				var MyModel = Model.extend( {
+					attributes : [ 'a', 'b' ],
+					
+					proxy : new MemoryProxy( {
+						data: { a: 1, b: 2, c: 3 }
+					} ),
+					ignoreUnknownAttrsOnLoad: false
+				} );
+				
+				expect( function() {
+					MyModel.load( 100 );
+				} ).toThrow( "data.Model.set(): An attribute with the attributeName 'c' was not found." );
+			} );
+			
+			
+			it( "should *not* throw an error when the load completes if there are properties in the response object that don't match model attributes, when the `ignoreUnknownAttrsOnLoad` config is true", function() {
+				var MyModel = Model.extend( {
+					attributes : [ 'a', 'b' ],
+					
+					proxy : new MemoryProxy( {
+						data: { a: 1, b: 2, c: 3 }
+					} ),
+					ignoreUnknownAttrsOnLoad: true
+				} );
+				
+				var promise = MyModel.load( 100 );  // this line should not error
+				
+				expect( promise.state() ).toBe( 'resolved' );
+				promise.done( function( model ) {
+					expect( model.get( 'a' ) ).toBe( 1 );
+					expect( model.get( 'b' ) ).toBe( 2 );
+				} );
+			} );
+			
+			
+			it( "when successful, should call its success/complete callbacks, and resolve its deferred with the arguments: [model, operation]", function() {
+				var successCallCount = 0, errorCallCount = 0, cancelCallCount = 0, completeCallCount = 0;
+				
+				var operation = ManualProxyModel.load( 1, {
+					success  : function( model, op ) { successCallCount++;  expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					error    : function( model, op ) { errorCallCount++;    expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					cancel   : function( model, op ) { cancelCallCount++;   expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					complete : function( model, op ) { completeCallCount++; expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); }
+				} );
+
+				expect( operation.state() ).toBe( 'pending' );
+				manualProxy.resolveRead( 0, {} );  // Resolve the "read" request that the load operation performed (the first 'read' request), and 
+				
+				expect( operation.state() ).toBe( 'resolved' );
+				expect( successCallCount ).toBe( 1 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 0 );
+				expect( completeCallCount ).toBe( 1 );
+				
+				operation.done( function( model, operation ) {
+					expect( model instanceof ManualProxyModel ).toBe( true );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					
+					expect( model.get( 'id' ) ).toBe( 1 );
+				} );
+			} );
+			
+			
+			it( "when an error occurs, should call its error/complete callbacks, and reject its deferred with the arguments: [model, operation]", function() {
+				var successCallCount = 0, errorCallCount = 0, cancelCallCount = 0, completeCallCount = 0;
+				
+				var operation = ManualProxyModel.load( 1, {
+					success  : function( model, op ) { successCallCount++;  expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					error    : function( model, op ) { errorCallCount++;    expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					cancel   : function( model, op ) { cancelCallCount++;   expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					complete : function( model, op ) { completeCallCount++; expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); }
+				} );
+
+				expect( operation.state() ).toBe( 'pending' );
+				manualProxy.rejectRead( 0 );  // Reject the "read" request that the load operation performed (the first 'read' request), and 
+				
+				expect( operation.state() ).toBe( 'rejected' );
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 1 );
+				expect( cancelCallCount ).toBe( 0 );
+				expect( completeCallCount ).toBe( 1 );
+				
+				operation.fail( function( model, operation ) {
+					expect( model instanceof ManualProxyModel ).toBe( true );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					
+					expect( model.get( 'id' ) ).toBe( 1 );  // still should be populated
+				} );
+			} );
+			
+			
+			it( "when the operation is aborted (canceled), should call its cancel/complete callbacks, and cancel its deferred with the arguments: [model, operation]. " +
+			    "It should also not allow the model to be populated even if the request completes afterwards", function() {
+				
+				var successCallCount = 0, errorCallCount = 0, cancelCallCount = 0, completeCallCount = 0;
+				
+				var operation = ManualProxyModel.load( 1, {
+					success  : function( model, op ) { successCallCount++;  expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					error    : function( model, op ) { errorCallCount++;    expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					cancel   : function( model, op ) { cancelCallCount++;   expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					complete : function( model, op ) { completeCallCount++; expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); }
+				} );
+
+				expect( operation.state() ).toBe( 'pending' );
+				operation.abort();
+				
+				expect( operation.state() ).toBe( 'aborted' );
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				
+				operation.cancel( function( model, operation ) {
+					expect( model instanceof ManualProxyModel ).toBe( true );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					
+					expect( model.get( 'id' ) ).toBe( 1 );  // still should be populated
+				} );
+
+				
+				// Test that if the request completes after the LoadOperation has been aborted, that it has no effect
+				manualProxy.resolveRead( 0, { id: 999, a: 98, b: 99 } );  // Resolve the "read" request that the load operation performed (the first 'read' request)
+				
+				expect( operation.state() ).toBe( 'aborted' );  // verify that the appropriate events/callbacks/handlers were called
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				
+				operation.cancel( function( model, operation ) {
+					expect( model instanceof ManualProxyModel ).toBe( true );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					
+					expect( model.get( 'id' ) ).toBe( 1 );  // still should be 1
+				} );
+			} );
+			
+			it( "when the operation is aborted (canceled), should call its cancel/complete callbacks, and cancel its deferred with the arguments: [model, operation]. " +
+			    "It should also not call 'error' callbacks/events if the request fails afterwards", function() {
+				
+				var successCallCount = 0, errorCallCount = 0, cancelCallCount = 0, completeCallCount = 0;
+				
+				var operation = ManualProxyModel.load( 1, {
+					success  : function( model, op ) { successCallCount++;  expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					error    : function( model, op ) { errorCallCount++;    expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					cancel   : function( model, op ) { cancelCallCount++;   expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); },
+					complete : function( model, op ) { completeCallCount++; expect( model instanceof ManualProxyModel ).toBe( true ); expect( op instanceof LoadOperation ).toBe( true ); }
+				} );
+
+				expect( operation.state() ).toBe( 'pending' );
+				operation.abort();
+				
+				expect( operation.state() ).toBe( 'aborted' );
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				
+				operation.cancel( function( model, operation ) {
+					expect( model instanceof ManualProxyModel ).toBe( true );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					
+					expect( model.get( 'id' ) ).toBe( 1 );  // still should be populated
+				} );
+
+				
+				// Test that if the request is rejected after the LoadOperation has been aborted, that it has no effect
+				manualProxy.rejectRead( 0 );  // Reject the "read" request that the load operation performed (the first 'read' request), and 
+				
+				expect( operation.state() ).toBe( 'aborted' );  // verify that the appropriate events/callbacks/handlers were called
+				expect( successCallCount ).toBe( 0 );
+				expect( errorCallCount ).toBe( 0 );
+				expect( cancelCallCount ).toBe( 1 );
+				expect( completeCallCount ).toBe( 1 );
+				
+				operation.cancel( function( model, operation ) {
+					expect( model instanceof ManualProxyModel ).toBe( true );
+					expect( operation instanceof LoadOperation ).toBe( true );
+					
+					expect( model.get( 'id' ) ).toBe( 1 );  // still should be 1
+				} );
+			} );
+			
+		} );
+		
+		
 		describe( 'load()', function() {
 			var manualProxy,
 			    ManualProxyModel;
@@ -1864,14 +2129,14 @@ define( [
 			it( "should delegate to its proxy's read() method, even if it *doesn't have an idAttribute*, to retrieve the data", function() {
 				var NoIdModel = ManualProxyModel.extend( {
 					attributes  : [ 'name' ],  // note: no 'id' attribute
-					idAttribute : 'id'         // the default value, but just to be explicit
+					idAttribute : 'non-existent'
 				} );
 				
 				var model = new NoIdModel();
 				model.load();
 				
 				expect( manualProxy.getReadRequestCount() ).toBe( 1 );
-				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBe( undefined );
+				expect( manualProxy.getReadRequest( 0 ).getModelId() ).toBeUndefined();
 			} );
 			
 			
