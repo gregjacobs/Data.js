@@ -115,10 +115,8 @@ define( [
 		read : function( request ) {
 			if( this.data === undefined ) throw new Error( "No `data` set on MemoryProxy" );
 			
-			var deferred = new jQuery.Deferred(),
-			    resultSet = this.reader.read( this.data );
-			
-			return deferred.resolve( resultSet ).promise();
+			var resultSet = this.reader.read( this.data );
+			request.resolve( resultSet );
 		},
 		
 		

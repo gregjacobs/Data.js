@@ -68,7 +68,8 @@ define( [
 		 *     }
 		 *     
 		 * Note that the values of these parameters will be URL encoded, if the default behavior of serializing the
-		 * parameters as a query string is not overridden by a new {@link #serializeParams} implementation.
+		 * parameters as a query string is not overridden by use of the {@link #paramsAsJson} config or a new 
+		 * {@link #serializeParams} implementation.
 		 */
 		
 		/**
@@ -133,6 +134,18 @@ define( [
 		 * a request may be generated as: `/posts/load?pageSize=50`
 		 */
 		
+		/**
+		 * @cfg {Boolean} paramsAsJson
+		 * 
+		 * `true` to have any parameters sent as JSON data in the request body, rather than the default of URL query string 
+		 * or form data parameters. When `true`, the request's content type will be set to "application/json" instead of the 
+		 * default of "application/x-www-form-urlencoded".
+		 * 
+		 * Note: This only applies to non-GET requests (i.e. POST, PUT, etc.). You must set the {@link #createMethod}, 
+		 * {@link #readMethod}, {@link #updateMethod}, and {@link #deleteMethod} appropriately for this config to apply.
+		 */
+		paramsAsJson : false,
+		
 		
 		/**
 		 * @protected
@@ -175,9 +188,6 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		create : function( request ) {
 			throw new Error( "create() not yet implemented" );
@@ -189,24 +199,31 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that describes the 
 		 *   model(s) to be read from the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		read : function( request ) {
 			var me = this,  // for closures
 			    paramsObj = this.buildParams( request ),
-			    deferred = new jQuery.Deferred(),
 			    xhrObjs = this.xhrObjs,
-			    requestUuid = request.getUuid();
+			    requestUuid = request.getUuid(),
+			    requestType = this.getHttpMethod( 'read' );  // "GET", "POST", etc.
+			
+			var ajaxOpts = {
+				url      : this.buildUrl( request ),
+				type     : requestType,
+				dataType : 'text'
+			};
+			
+			// Assign parameters
+			if( this.paramsAsJson && requestType !== "GET" ) {  // can't post JSON into the request body for GET requests
+				ajaxOpts.data = JSON.stringify( paramsObj );
+				ajaxOpts.contentType = 'application/json';    // so that "&'s" aren't treated as form parameter delimiters
+			} else {
+				ajaxOpts.data = this.serializeParams( paramsObj, request );  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
+			}
+			
 			
 			// Make the AJAX request
-			var jqXhr = this.ajax( {
-				url      : this.buildUrl( request ),
-				type     : this.getHttpMethod( 'read' ),
-				data     : this.serializeParams( paramsObj, 'read', request ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
-				dataType : 'text'
-			} );
+			var jqXhr = this.ajax( ajaxOpts );
 			
 			// Store the jqXHR object in the map before attaching any promise handlers. If the jqXHR completes 
 			// synchronously for some reason, we want to make sure we clean up the reference in this map.
@@ -216,16 +233,14 @@ define( [
 			jqXhr
 				.done( function( data, textStatus, jqXHR ) {
 					var resultSet = me.reader.read( data );
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				} )
 				.fail( function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				} )
 				.always( function() {
 					delete xhrObjs[ requestUuid ];  // remove the reference to the jqXHR object
 				} );
-		
-			return deferred.promise();
 		},
 		
 		
@@ -235,9 +250,6 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		update : function( request ) {
 			throw new Error( "update() not yet implemented" );
@@ -251,9 +263,6 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
 			throw new Error( "destroy() not yet implemented" );
@@ -315,7 +324,7 @@ define( [
 			if( action !== 'read' ) {
 				var params = this.buildParams( request );
 				
-				url = this.urlAppend( url, this.serializeParams( params, action, request ) );
+				url = this.urlAppend( url, this.serializeParams( params, request ) );
 			}
 			return url;
 		},
@@ -368,11 +377,10 @@ define( [
 		 * @protected
 		 * @param {Object} params The Object (map) of parameters to serialize. The keys of this map are the parameter names,
 		 *   and the values are the parameter values.
-		 * @param {String} action The action that is being taken. One of: 'create', 'read', 'update', or 'destroy'.
 		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {String} The serialized string of parameters.
 		 */
-		serializeParams : function( params, action, request ) {
+		serializeParams : function( params, request ) {
 			return this.objToQueryString( params );
 		},
 		

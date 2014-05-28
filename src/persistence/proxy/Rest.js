@@ -93,13 +93,9 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		create : function( request ) {
 			var me = this,  // for closures
-			    deferred = new jQuery.Deferred(),
 			    model = request.getModels()[ 0 ],
 			    dataToPersist = model.getData( { persistedOnly: true, raw: true } );
 			
@@ -123,14 +119,12 @@ define( [
 						resultSet = me.reader.read( data );
 					}
 					
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
-			
-			return deferred.promise();
 		},
 		
 		
@@ -139,13 +133,9 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that holds the model(s) 
 		 *   to be read from the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		read : function( request ) {
-			var me = this,  // for closures
-			    deferred = new jQuery.Deferred();
+			var me = this;  // for closures
 			
 			this.ajax( {
 				url      : this.buildUrl( 'read', request.getModelId() ),
@@ -154,14 +144,12 @@ define( [
 			} ).then(
 				function( data, textStatus, jqXHR ) {
 					var resultSet = me.reader.read( data );
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
-			
-			return deferred.promise();
 		},
 		
 		
@@ -171,21 +159,16 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		update : function( request ) {
 			var me = this,  // for closures
 			    model = request.getModels()[ 0 ],
-			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
-			    deferred = new jQuery.Deferred();
+			    changedData = model.getChanges( { persistedOnly: true, raw: true } );
 			
 			// Short Circuit: If there is no changed data in any of the attributes that are to be persisted, there is no need to make a 
 			// request. Resolves the deferred and return out.
 			if( _.isEmpty( changedData ) ) {
-				deferred.resolve( request );
-				return deferred.promise();
+				request.resolve();
 			}
 			
 			
@@ -219,14 +202,12 @@ define( [
 					if( data ) {  // data may or may not be returned by a server on an 'update' request
 						resultSet = me.reader.read( data );
 					}
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
-			
-			return deferred.promise();
 		},
 		
 		
@@ -237,13 +218,9 @@ define( [
 		 * 
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
-			var deferred = new jQuery.Deferred(),
-			    model = request.getModels()[ 0 ];
+			var model = request.getModels()[ 0 ];
 			
 			this.ajax( {
 				url      : this.buildUrl( 'destroy', model.getId() ),
@@ -251,14 +228,12 @@ define( [
 				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					deferred.resolve();
+					request.resolve();
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
-			
-			return deferred.promise();
 		},
 		
 		

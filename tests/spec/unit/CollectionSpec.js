@@ -1425,9 +1425,9 @@ define( [
 		} );
 		
 		
-		describe( "Test has()", function() {
+		describe( 'has()', function() {
 			
-			it( "has() should return true if a model has been added to the collection, and false if a model has not been added to the collection", function() {
+			it( "should return true if a model has been added to the collection, and false if a model has not been added to the collection", function() {
 				var MyModel = Model.extend( { attributes: [ 'attr' ] } );
 				
 				var model1 = new MyModel(),
@@ -1451,32 +1451,32 @@ define( [
 		} );
 		
 		
-		describe( "Test indexOf()", function() {
+		describe( 'indexOf()', function() {
 			
-			it( "indexOf() should return the index of a model in the collection", function() {
+			it( "should return the index of a model in the collection", function() {
 				var MyModel = Model.extend( { attributes: [ 'attr' ] } ),
 				    model1 = new MyModel(),
 				    model2 = new MyModel(),
 				    collection = new Collection( [ model1, model2 ] );
 				
-				expect( collection.indexOf( model1 ) ).toBe( 0 );  // orig YUI Test err msg: "model1 should be at index 0"
-				expect( collection.indexOf( model2 ) ).toBe( 1 );  // orig YUI Test err msg: "model2 should be at index 1"
+				expect( collection.indexOf( model1 ) ).toBe( 0 );
+				expect( collection.indexOf( model2 ) ).toBe( 1 );
 			} );
 			
 			
-			it( "indexOf() should return -1 for a model that does not exist within the collection", function() {
+			it( "should return -1 for a model that does not exist within the collection", function() {
 				var MyModel = Model.extend( { attributes: [ 'attr' ] } ),
 				    model1 = new MyModel(),
 				    model2 = new MyModel(),
-				    collection = new Collection( [ model1 ] );  // not adding model2
+				    collection = new Collection( [ model1 ] );  // note: not adding model2
 				
-				expect( collection.indexOf( model2 ) ).toBe( -1 );  // orig YUI Test err msg: "model2 is not in the collection, so indexOf() should return -1"
+				expect( collection.indexOf( model2 ) ).toBe( -1 );  // not in the collection, -1
 			} );
 			
 		} );
 		
 		
-		describe( "Test indexOfId()", function() {
+		describe( 'indexOfId()', function() {
 			
 			it( "indexOfId() should return the index of a model by its id in the collection", function() {
 				var MyModel = Model.extend( { attributes: [ 'id' ], idAttribute: 'id' } ),
@@ -1501,89 +1501,83 @@ define( [
 		} );
 		
 		
-		describe( "Test isModified()", function() {
-			var thisSuite,
-			    MyCollection;
+		describe( 'isModified()', function() {
+			var unmodifiedModel1,
+			    unmodifiedModel2,
+			    modifiedModel1,
+			    modifiedModel2;
 			
 			beforeEach( function() {
-				thisSuite = {};
+				unmodifiedModel1 = new Model();
+				spyOn( unmodifiedModel1, 'isModified' ).andReturn( false );
 				
-				thisSuite.unmodifiedModel1 = JsMockito.mock( Model );
-				JsMockito.when( thisSuite.unmodifiedModel1 ).getClientId().thenReturn( 1 );
-				JsMockito.when( thisSuite.unmodifiedModel1 ).isModified().thenReturn( false );
+				unmodifiedModel2 = new Model();
+				spyOn( unmodifiedModel2, 'isModified' ).andReturn( false );
 				
-				thisSuite.unmodifiedModel2 = JsMockito.mock( Model );
-				JsMockito.when( thisSuite.unmodifiedModel2 ).getClientId().thenReturn( 2 );
-				JsMockito.when( thisSuite.unmodifiedModel2 ).isModified().thenReturn( false );
+				modifiedModel1 = new Model();
+				spyOn( modifiedModel1, 'isModified' ).andReturn( true );
 				
-				thisSuite.modifiedModel1 = JsMockito.mock( Model );
-				JsMockito.when( thisSuite.modifiedModel1 ).getClientId().thenReturn( 3 );
-				JsMockito.when( thisSuite.modifiedModel1 ).isModified().thenReturn( true );
-				
-				thisSuite.modifiedModel2 = JsMockito.mock( Model );
-				JsMockito.when( thisSuite.modifiedModel2 ).getClientId().thenReturn( 4 );
-				JsMockito.when( thisSuite.modifiedModel2 ).isModified().thenReturn( true );
-								
-				MyCollection = Collection.extend( {} );
+				modifiedModel2 = new Model();
+				spyOn( modifiedModel2, 'isModified' ).andReturn( true );
 			} );
 			
 			
-			it( "isModified() should return false if no Models within the collection have been modified", function() {
-				var collection = new MyCollection( [ thisSuite.unmodifiedModel1 ] );
+			it( "should return false if no Models within the collection have been modified", function() {
+				var collection = new Collection( [ unmodifiedModel1 ] );
 				
 				expect( collection.isModified() ).toBe( false );
 			} );
 			
 			
-			it( "isModified() should return true if a Model within the collection has been modified", function() {
-				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.modifiedModel1 ] );
+			it( "should return true if a Model within the collection has been modified", function() {
+				var collection = new Collection( [ unmodifiedModel1, modifiedModel1 ] );
 				
 				expect( collection.isModified() ).toBe( true );
 			} );
 			
 			
-			it( "isModified() should return true if a model has been added to the Collection since the last commit/rollback", function() {
-				var collection = new MyCollection();
+			it( "should return true if a model has been added to the Collection since the last commit/rollback", function() {
+				var collection = new Collection();
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
-				collection.add( thisSuite.unmodifiedModel1 );
+				collection.add( unmodifiedModel1 );
 				expect( collection.isModified() ).toBe( true );  // orig YUI Test err msg: "The collection should now be modified, since a Model was added."
 			} );
 			
 			
-			it( "isModified() should return true if a model has been removed from the Collection since the last commit/rollback", function() {
-				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.unmodifiedModel2 ] );
+			it( "should return true if a model has been removed from the Collection since the last commit/rollback", function() {
+				var collection = new Collection( [ unmodifiedModel1, unmodifiedModel2 ] );
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
-				collection.remove( thisSuite.unmodifiedModel1 );
+				collection.remove( unmodifiedModel1 );
 				expect( collection.isModified() ).toBe( true );  // orig YUI Test err msg: "The collection should now be modified, since a Model was removed."
 			} );
 			
 			
-			it( "isModified() should return true if a model has been reordered in the Collection since the last commit/rollback", function() {
-				var collection = new MyCollection( [ thisSuite.unmodifiedModel1, thisSuite.unmodifiedModel2 ] );
+			it( "should return true if a model has been reordered in the Collection since the last commit/rollback", function() {
+				var collection = new Collection( [ unmodifiedModel1, unmodifiedModel2 ] );
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
-				collection.add( thisSuite.unmodifiedModel1, { at: 1 } );  // move unmodifiedmodel1 to the 2nd position
+				collection.add( unmodifiedModel1, { at: 1 } );  // move unmodifiedmodel1 to the 2nd position
 				expect( collection.isModified() ).toBe( true );  // orig YUI Test err msg: "The collection should now be modified, since a Model was reordered."
 			} );
 			
 			
-			it( "isModified() should return false when there is a change, but commit()/rollback() has been called", function() {
-				var collection = new MyCollection();
+			it( "should return false when there is a change, but commit()/rollback() has been called", function() {
+				var collection = new Collection();
 				
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "Initial condition: the collection should not be considered modified"
 				
 				// Add but then commit()
-				collection.add( thisSuite.unmodifiedModel1 );
+				collection.add( unmodifiedModel1 );
 				collection.commit();
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered modified, since a Model was added, and then committed."
 				
 				// Add but then rollback()
-				collection.add( thisSuite.unmodifiedModel2 );
+				collection.add( unmodifiedModel2 );
 				collection.rollback();
 				expect( collection.isModified() ).toBe( false );  // orig YUI Test err msg: "The collection should no longer be considered modified, since a Model was added, and then rolled back."
 			} );
@@ -1591,7 +1585,7 @@ define( [
 		} );
 		
 		
-		describe( "Test find()", function() {
+		describe( 'find()', function() {
 			var MyModel = Model.extend( {
 				attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
 			} );
@@ -1601,7 +1595,7 @@ define( [
 			} );
 			
 			
-			it( "find() should find a Model by attribute and value", function() {
+			it( "should find a Model by attribute and value", function() {
 				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
 				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } );
 				    
@@ -1632,7 +1626,7 @@ define( [
 			} );
 			
 			
-			it( "find() should start at a given startIndex when provided", function() {
+			it( "should start at a given startIndex when provided", function() {
 				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
 				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
 				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
@@ -1648,7 +1642,7 @@ define( [
 		} );
 		
 		
-		describe( "Test findBy()", function() {
+		describe( 'findBy()', function() {
 			var MyModel = Model.extend( {
 				attributes : [ 'boolAttr', 'numberAttr', 'stringAttr' ]
 			} );
@@ -1658,7 +1652,7 @@ define( [
 			} );
 			
 			
-			it( "findBy should accept a function that when it returns true, it considers the Model the match", function() {
+			it( "should accept a function that when it returns true, it considers the Model the match", function() {
 				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
 				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
 				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
@@ -1675,7 +1669,7 @@ define( [
 			} );
 			
 			
-			it( "findBy should return null when there is no match", function() {
+			it( "should return null when there is no match", function() {
 				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
 				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
 				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
@@ -1690,7 +1684,7 @@ define( [
 			} );
 			
 			
-			it( "findBy should start at the given startIndex", function() {
+			it( "should start at the given startIndex", function() {
 				var model1 = new MyModel( { boolAttr: false, numberAttr: 0, stringAttr: "" } ),
 				    model2 = new MyModel( { boolAttr: true, numberAttr: 1, stringAttr: "value" } ),
 				    model3 = new MyModel( { boolAttr: false, numberAttr: 2, stringAttr: "value2" } );
@@ -1710,6 +1704,118 @@ define( [
 		
 		
 		// -----------------------------------
+		
+		// Persistence-related methods
+		
+		describe( "persistence-related model retrieval", function() {
+			var MyModel = Model.extend( {
+				attributes : [ 
+					{ name: 'id',   type: 'string' },
+					{ name: 'name', type: 'string' },
+					{ name: 'currentLocation', type: 'string', persist: false }
+				],
+				
+				idAttribute : 'id'
+			} );
+			
+			var collection,
+			    newModel1,
+			    newModel2,
+			    existingModel1,
+			    existingModel2;
+			
+			beforeEach( function() {
+				newModel1 = new MyModel();
+				newModel2 = new MyModel();
+				existingModel1 = new MyModel( { id: 1 } );
+				existingModel2 = new MyModel( { id: 2 } );
+				
+				collection = new Collection();
+			} );
+		
+		
+			describe( 'getNewModels()', function() {
+			
+				it( "should return an empty array if there are no 'new' models (i.e. models with no ID attribute) in the Collection", function() {
+					collection.add( [ existingModel1, existingModel2 ] );
+					
+					expect( collection.getNewModels() ).toEqual( [] );
+				} );
+				
+				
+				it( "should return an array of any 'new' models (i.e. models with no ID attribute) in the Collection", function() {
+					collection.add( [ newModel1, existingModel1, newModel2, existingModel2 ] );
+					
+					var newModels = collection.getNewModels();
+					expect( newModels.length ).toBe( 2 );
+					expect( newModels[ 0 ] ).toBe( newModel1 );
+					expect( newModels[ 1 ] ).toBe( newModel2 );
+				} );
+				
+			} );
+			
+			
+			describe( 'getUpdatedModels()', function() {
+				
+				it( "should return an empty array if there are no 'updated' models (i.e. models with changes, but are not 'new') in the Collection", function() {
+					collection.add( [ newModel1, newModel2 ] );
+					
+					expect( collection.getUpdatedModels() ).toEqual( [] );
+				} );
+				
+				
+				it( "should return an array of any 'updated' models (i.e. models with changes, but are not 'new') in the Collection", function() {
+					// Make some changes on one of the "existing" models
+					existingModel1.set( 'name', "New Name" );
+					
+					collection.add( [ newModel1, existingModel1, newModel2, existingModel2 ] );
+					
+					var updatedModels = collection.getUpdatedModels();
+					expect( updatedModels.length ).toBe( 1 );
+					expect( updatedModels[ 0 ] ).toBe( existingModel1 );  // only existingModel1 was "updated" - not existingModel2
+				} );
+				
+				
+				it( "should return an array of any 'updated' models that only have 'persisted' attributes modified, if the 'persistedOnly' option is `true`", function() {
+					// Make some changes to the "existing" models
+					existingModel1.set( 'currentLocation', "Home" );  // a "non-persisted" attribute
+					existingModel2.set( 'name', "New Name 2" );       // a "persisted" attribute
+					
+					collection.add( [ newModel1, existingModel1, newModel2, existingModel2 ] );
+					
+					var updatedModels = collection.getUpdatedModels( { persistedOnly: true } );
+					expect( updatedModels.length ).toBe( 1 );
+					expect( updatedModels[ 0 ] ).toBe( existingModel2 );  // only existingModel2 has persisted attributes which were modified - not existingModel1
+				} );
+				
+			} );
+			
+			
+			describe( 'getRemovedModels()', function() {
+				
+				it( "should return an empty array if no models have been removed", function() {
+					collection.add( [ newModel1, existingModel1, newModel2, existingModel2 ] );
+					
+					expect( collection.getRemovedModels() ).toEqual( [] );
+				} );
+				
+				
+				it( "should return an array of the models that have been removed", function() {
+					collection.add( [ newModel1, existingModel1, newModel2, existingModel2 ] );
+					
+					collection.remove( existingModel1 );
+					expect( collection.getRemovedModels().length ).toBe( 1 );
+					expect( collection.getRemovedModels()[ 0 ] ).toBe( existingModel1 );
+					
+					collection.remove( newModel2 );
+					expect( collection.getRemovedModels().length ).toBe( 2 );
+					expect( collection.getRemovedModels()[ 1 ] ).toBe( newModel2 );
+				} );
+				
+			} );
+			
+		} );
+		
 		
 		
 		describe( 'getProxy()', function() {
@@ -1762,7 +1868,7 @@ define( [
 		
 		
 		
-		describe( "Test sync()", function() {
+		/*describe( "Test sync()", function() {
 			
 			var TestModel = Model.extend( {
 				attributes : [ 'id', 'name' ]
@@ -2218,7 +2324,7 @@ define( [
 				expect( alwaysCount ).toBe( 1 );  // orig YUI Test err msg: "The `always` callback should have been called exactly once"
 			} );
 			
-		} );
+		} );*/
 		
 	} );
 } );

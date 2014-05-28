@@ -1,19 +1,20 @@
 /*global define */
 define( [
+	'jquery',
 	'lodash',
 	'Class',
 	'Observable',
 	'data/persistence/reader/Json'  // default `reader` type
-], function( _, Class, Observable, JsonReader ) {
+], function( jQuery, _, Class, Observable, JsonReader ) {
 	
 	/**
 	 * @abstract
 	 * @class data.persistence.proxy.Proxy
 	 * @extends Observable
 	 * 
-	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) requests on
-	 * some sort of persistence medium. This can be a backend server, a webservice, or a local storage data store,
-	 * to name a few examples.
+	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) requests on a persistence 
+	 * medium. The persistence medium can be a backend server, a webservice, or a local storage data store, to name a few 
+	 * examples.
 	 * 
 	 * 
 	 * ## Creating a Proxy
@@ -28,21 +29,21 @@ define( [
 	 * Each method is passed a {@link data.persistence.request.Request Request} object, which provides the information
 	 * needed to perform each operation. 
 	 * 
-	 * Each method must return a jQuery Promise object, which should be resolved if the request completes successfully, or 
-	 * should be rejected if the request errors.
+	 * Each method must {@link data.persistence.request.Request#resolve resolve} the Request when the underlying operation
+	 * has been completed successfully, or should {@link data.persistence.request.Request#reject reject} the Request if the 
+	 * underlying operation errors.
 	 * 
 	 * - A {@link data.persistence.ResultSet} object is used to return data from the Proxy. Providing any raw data to the
 	 *   proxy's {@link #reader} (i.e. to the {@link data.persistence.reader.Reader#read read} method) will return a ResultSet
-	 *   object. The Promise should then be resolved with this object, or otherwise no arguments if there is no data to return.
-	 * - If an error occurs, the Promise should be rejected. Optionally, an error message or object may be provided as the first
+	 *   object. The Request should then be resolved with this object, or otherwise no argument if there is no data to return.
+	 * - If an error occurs, the Request should be rejected. Optionally, an error message or object may be provided as the first
 	 *   argument to the reject method.
 	 * 
 	 * 
 	 * ## Example Implementation Method
 	 * 
 	 *     read : function( request ) {
-	 *         var me = this,  // for closures
-	 *             deferred = new jQuery.Deferred();
+	 *         var me = this;  // for closures
 	 *         
 	 *         jQuery.ajax( {
 	 *             url : '...',
@@ -50,14 +51,12 @@ define( [
 	 *             
 	 *             success : function( data ) {
 	 *                 var resultSet = me.reader.read( data );  // default reader is a {@link data.persistence.reader.Json JsonReader}
-	 *                 deferred.resolve( resultSet );
+	 *                 request.resolve( resultSet );
 	 *             },
 	 *             error : function( jqXHR, textStatus, errorThrown ) {
-	 *                 deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+	 *                 request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 	 *             }
 	 *         } );
-	 *         
-	 *         return deferred.promise();
 	 *     }
 	 * 
 	 * For a full example implementation, see the {@link data.persistence.proxy.Ajax Ajax} proxy.
@@ -66,40 +65,36 @@ define( [
 	 * ## Notifying of progress
 	 * 
 	 * Normally, if a Proxy does not notify of any progress explicitly, then a Requests's parent
-	 * {@link data.persistence.operation.Operation Operation} is notified of progress as each 
+	 * {@link data.persistence.operation.Operation Operation} is notified of progress as each individual
 	 * {@link data.persistence.request.Request Request} completes. 
 	 * 
 	 * Proxies can notify observers of progress being made within the proxy at a Request level though, for finer grained
-	 * progress notification. The Deferred object which a Proxy creates may have the `notify()` method called on it, which
-	 * will in turn notify its parent Operation. For example:
+	 * progress notification. The Request object which a Proxy is passed may have the {@link data.persistence.request.Request#notify notify}
+	 * method called on it, which will in turn notify its parent Operation. For example:
 	 * 
 	 *      destroy : function( request ) {
-	 *         var me = this,  // for closures
-	 *             deferred = new jQuery.Deferred(),
-	 *             promises = [];
+	 *         var me = this;  // for closures
 	 *         
 	 *         // Assume the `request` object (a {@link data.persistence.request.Destroy DestroyRequest} object) has 2 models 
 	 *         // to destroy on a server via 2 individual ajax requests
-	 *         _.forEach( request.getModels(), function( model ) {
+	 *         var promises = _.map( request.getModels(), function( model ) {
 	 *             var promise = jQuery.ajax( {
 	 *                 url : '...',
 	 *                 dataType: 'json',
 	 *                 
 	 *                 success : function( data ) {
-	 *                     deferred.notify();  // notify of progress when each individual ajax request is complete
+	 *                     request.notify();  // notify of progress when each individual ajax request is complete
 	 *                 },
 	 *                 error : function( jqXHR, textStatus, errorThrown ) {
-	 *                     deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );  // as soon as one ajax request errors, reject the Deferred
+	 *                     request.reject( { textStatus: textStatus, errorThrown: errorThrown } );  // as soon as one ajax request errors, reject the Request
 	 *                 }
 	 *             } );
 	 *             
-	 *             promises.push( promise );
+	 *             return promise;
 	 *         } );
 	 *         
-	 *         // Only resolve the main Deferred when all individual ajax promises are resolved
-	 *         jQuery.when.apply( jQuery, promises ).then( function() { deferred.resolve(); } );
-	 *         
-	 *         return deferred.promise();
+	 *         // Only resolve the main Request when all individual AJAX promises are resolved
+	 *         jQuery.when.apply( jQuery, promises ).then( function() { request.resolve(); } );
 	 *     }
 	 * 
 	 * 
@@ -108,17 +103,17 @@ define( [
 	 * Proxy gives a hook method for when a persistence operation is {@link data.persistence.operation.Operation#abort aborted}. 
 	 * This is to allow any proxy-specific cleanup of {@link data.persistence.request.Request Requests} made by the proxy. 
 	 * For example, the {@link data.persistence.proxy.Ajax Ajax} proxy calls the `abort()` method on the underlying 
-	 * `XMLHttpRequest` object for a request, to terminate the connection to the remote server.
+	 * `XMLHttpRequest` object for a request, to terminate the connection to a remote server.
 	 * 
 	 * The {@link #abort} method is passed the original {@link data.persistence.request.Request Request} object that 
 	 * began the request. If multiple Requests were made to perform a persistence {@link data.persistence.operation.Operation},
-	 * then the {@link #abort} method is called once for each Request. Note that only Request objects which are not yet 
-	 * {@link data.persistence.request.Request#isComplete complete} are passed to the {@link #abort} method.
+	 * then the {@link #abort} method is called multiple times - once for each Request. Note that only Request objects which 
+	 * are not yet {@link data.persistence.request.Request#isComplete complete} are passed to the {@link #abort} method.
 	 * 
-	 * It is not required that this method be implemented by the Proxy. The data container classes ({@link data.Model Model} 
-	 * and {@link data.Collection Collection} will properly handle an aborted request by ignoring its result (or error) if 
-	 * the Request eventually completes at a later time. However, it is useful to implement if resources can be saved or
-	 * if any cleanup needs to be made.
+	 * It is not required that the {@link #abort} method be implemented by the Proxy. The data container classes 
+	 * ({@link data.Model Model} and {@link data.Collection Collection} will properly handle an aborted request by ignoring 
+	 * its result (or error) if the Request eventually completes at a later time. However, it is useful to implement if resources 
+	 * can be saved or if any cleanup needs to be made.
 	 */
 	var Proxy = Observable.extend( {
 		abstractClass : true,
@@ -140,8 +135,7 @@ define( [
 			 * Registers a Proxy subclass by name, so that it may be created by an anonymous object
 			 * with a `type` attribute when set to the prototype of a {@link data.Model}.
 			 *
-			 * @static  
-			 * @method register
+			 * @static
 			 * @param {String} type The type name of the persistence proxy.
 			 * @param {Function} proxyClass The class (constructor function) to register.
 			 */
@@ -165,7 +159,6 @@ define( [
 			 * {@link data.persistence.proxy.Proxy Proxy} is provided, it will simply be returned unchanged.
 			 * 
 			 * @static
-			 * @method create
 			 * @param {Object} config The configuration object for the Proxy. Config objects should have the property `type`, 
 			 *   which determines which type of {@link data.persistence.proxy.Proxy} will be instantiated. If the object does not
 			 *   have a `type` property, an error will be thrown. Note that already-instantiated {@link data.persistence.proxy.Proxy Proxies} 
@@ -224,16 +217,13 @@ define( [
 		/**
 		 * Creates one or more Models on the persistent storage medium.
 		 * 
+		 * For how an implementation of this method should interact with the `request` object, see the description
+		 * for this class.
+		 * 
 		 * @abstract
 		 * @method create
 		 * @param {data.persistence.request.Create} request The CreateRequest instance to represent
 		 *   the creation on the persistent storage medium.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   The Promise's Deferred may be resolved with a {@link data.persistence.ResultSet} object as its
-		 *   argument, if there is return data from the 'create' request. If there is an error, the underlying
-		 *   Deferred may be rejected with an error string/object as its first argument. The `notify()` method on the
-		 *   Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} of
-		 *   progress.
 		 */
 		create : Class.abstractMethod,
 		
@@ -249,16 +239,13 @@ define( [
 		 * - {@link data.persistence.request.Read#start start}/{@link data.persistence.request.Read#limit limit}
 		 * - {@link data.persistence.request.Read#params params} (if applicable)
 		 * 
+		 * For how an implementation of this method should interact with the `request` object, see the description
+		 * for this class.
+		 * 
 		 * @abstract
 		 * @method read
 		 * @param {data.persistence.request.Read} request The ReadRequest instance to represent
 		 *   the reading of data from the persistent storage medium.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   The Promise's Deferred should be resolved with a {@link data.persistence.ResultSet} object as its
-		 *   argument, which contains the return data from the 'read' request. This usually comes from the {@link #reader}.
-		 *   If there is an error, the underlying Deferred may be rejected with an error string/object as its first argument.
-		 *   The `notify()` method on the Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} 
-		 *   of progress.
 		 */
 		read : Class.abstractMethod,
 		
@@ -266,16 +253,13 @@ define( [
 		/**
 		 * Updates one or more Models on the persistent storage medium.  
 		 * 
+		 * For how an implementation of this method should interact with the `request` object, see the description
+		 * for this class.
+		 * 
 		 * @abstract
 		 * @method update
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance to represent
 		 *   the update on the persistent storage medium.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   The Promise's Deferred may be resolved with a {@link data.persistence.ResultSet} object as its
-		 *   argument, if there is return data from the 'update' request. If there is an error, the underlying
-		 *   Deferred may be rejected with an error string/object as its first argument. The `notify()` method 
-		 *   on the Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} 
-		 *   of progress.
 		 */
 		update : Class.abstractMethod,
 		
@@ -283,18 +267,44 @@ define( [
 		/**
 		 * Destroys (deletes) one or more Models on the persistent storage medium.
 		 * 
+		 * For how an implementation of this method should interact with the `request` object, see the description
+		 * for this class.
+		 * 
 		 * Note: This method is not named "delete", as `delete` is a JavaScript keyword.
 		 * 
 		 * @abstract
 		 * @method destroy
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance to represent
 		 *   the destruction (deletion) on the persistent storage medium.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   If there is an error, the underlying Deferred may be rejected with an error string/object as 
-		 *   its first argument. The `notify()` method  on the Deferred may also be called to notify a parent 
-		 *   {@link data.persistence.operation.Operation Operation} of progress.
 		 */
 		destroy : Class.abstractMethod,
+		
+		
+		/**
+		 * Performs a batch of create/read/update/destroy requests, specified by the given 
+		 * {@link data.persistence.request.Batch Batch} object.
+		 * 
+		 * By default, this method sends the 'create' requests to the {@link #create} method, the 'read' requests
+		 * to the {@link #read} method, the 'update' requests to the {@link #update} method, and the 'destroy' requests 
+		 * to the {@link #destroy} method. 
+		 * 
+		 * However, this method may be overridden to support different batching functionality. For example, one might want 
+		 * to combine multiple create/update/destroy requests made by a {@link data.Collection} (via the 
+		 * {@link data.Collection#sync sync} method) into a single network request, and send them to a server for processing 
+		 * all at once.
+		 * 
+		 * @param {data.persistence.request.Batch} batch The Batch object which holds the Request(s) to perform.
+		 */
+		batch : function( batch ) {
+			_.forEach( batch.getRequests(), function( request ) {
+				switch( request.getAction() ) {
+					case 'create'  : return this.create( request );
+					case 'read'    : return this.read( request );
+					case 'update'  : return this.update( request );
+					case 'destroy' : return this.destroy( request );
+				}
+			}, this );
+		},
 		
 		
 		/**
