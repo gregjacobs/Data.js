@@ -331,6 +331,14 @@ define( [
 			} );
 			
 			
+			it( "should *not* return the id param if a `modelId` is `null` on the ReadRequest", function() {
+				var proxy = new AjaxProxy(),
+				    request = new ReadRequest( { modelId: null } );
+				
+				expect( proxy.buildParams( request ) ).toEqual( {} );
+			} );
+			
+			
 			it( "should return any params passed on the Request, as well as the `modelId` set on a ReadRequest", function() {
 				var proxy = new AjaxProxy();
 				

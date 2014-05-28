@@ -1,4 +1,5 @@
 /*global define */
+/*jshint eqnull:true */
 define( [
 	'jquery',
 	'lodash',
@@ -355,7 +356,7 @@ define( [
 				    pageParam = this.pageParam,
 				    pageSizeParam = this.pageSizeParam;
 				
-				if( modelId !== undefined && idParam ) 
+				if( modelId != null && idParam )
 					params[ idParam ] = modelId;
 				
 				if( page > 0 && pageParam ) {   // an actual page was requested, and there is a pageParam config defined
