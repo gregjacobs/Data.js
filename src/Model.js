@@ -1,10 +1,8 @@
 /*global define */
 /*jshint forin:true, eqnull:true */
 define( [
-	'require',
 	'jquery',
 	'lodash',
-	'Class',
 	'data/Data',
 	'data/DataComponent',
 	
@@ -22,6 +20,8 @@ define( [
 	'data/attribute/DataComponent',
 	'data/attribute/Collection',
 	'data/attribute/Model',
+
+	'data/NativeObjectConverter',
 	
 	// All attribute types included so developers don't have to specify these when they declare attributes in their models.
 	// These are not included in the arguments list though, as they are not needed specifically by the Model implementation.
@@ -34,14 +34,10 @@ define( [
 	'data/attribute/Number',
 	'data/attribute/Object',
 	'data/attribute/Primitive',
-	'data/attribute/String',
-
-	'data/NativeObjectConverter' // circular dependency, not included in args list
-], function( 
-	require,
+	'data/attribute/String'
+], function(
 	jQuery,
 	_,
-	Class,
 	Data,
 	DataComponent,
 	
@@ -58,7 +54,9 @@ define( [
 	Attribute,
 	DataComponentAttribute,
 	CollectionAttribute,
-	ModelAttribute
+	ModelAttribute,
+	
+	NativeObjectConverter
 ) {
 	
 	/**
@@ -305,7 +303,7 @@ define( [
 	 * 
 	 * See {@link #on} for details.
 	 */
-	var Model = Class.extend( DataComponent, {
+	var Model = DataComponent.extend( {
 		
 		inheritedStatics : {
 			
@@ -1425,7 +1423,7 @@ define( [
 		 * @return {Object} An Object (map) of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
 		getData : function( options ) {
-			return require( 'data/NativeObjectConverter' ).convert( this, options );
+			return NativeObjectConverter.convert( this, options );
 		},
 		
 		
@@ -1480,7 +1478,7 @@ define( [
 				}
 			}
 			
-			return require( 'data/NativeObjectConverter' ).convert( this, options );
+			return NativeObjectConverter.convert( this, options );
 		},
 		
 		
