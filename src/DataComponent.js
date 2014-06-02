@@ -28,6 +28,20 @@ define( [
 		inheritedStatics : {
 			
 			/**
+			 * @static
+			 * @inheritable
+			 * @property {Boolean} isDataComponentClass (readonly)
+			 * 
+			 * A property simply to identify DataComponent classes (constructor functions) as such. This is so that we don't need circular dependencies 
+			 * in some of the other Data.js files, which only bring in the DataComponent class in order to determine if a function is in fact a 
+			 * DataComponent constructor function.
+			 * 
+			 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+			 * no circular dependencies exist.
+			 */
+			isDataComponent : true,
+			
+			/**
 			 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for the DataComponent class. To retrieve
 			 * a proxy that may belong to a particular DataComponent instance, use the instance level {@link #method-getProxy}.
 			 * 
@@ -67,6 +81,18 @@ define( [
 		 * implementation.)
 		 */
 		
+		
+		/**
+		 * @property {Boolean} isDataComponent (readonly)
+		 * 
+		 * A property simply to identify DataComponent instances as such. This is so that we don't need circular dependencies in some of the
+		 * other Data.js files, which only bring in the DataComponent class for an `instanceof` check to determine if a given value is a
+		 * DataComponent.
+		 * 
+		 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+		 * no circular dependencies exist.
+		 */
+		isDataComponent : true,
 		
 		/**
 		 * @protected
