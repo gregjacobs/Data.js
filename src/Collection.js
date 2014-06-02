@@ -224,7 +224,26 @@ define( [
 	 *           
 	 *     } ); 
 	 */
-	var Collection = Class.extend( DataComponent, {
+	var Collection = DataComponent.extend( {
+		
+		inheritedStatics : {
+			
+			/**
+			 * @static
+			 * @inheritable
+			 * @property {Boolean} isCollectionClass (readonly)
+			 * 
+			 * A property simply to identify Collection classes (constructor functions) as such. This is so that we don't need circular dependencies 
+			 * in some of the other Data.js files, which only bring in the Collection class in order to determine if a function is in fact a Collection
+			 * constructor function.
+			 * 
+			 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+			 * no circular dependencies exist.
+			 */
+			isCollectionClass : true
+			
+		},
+		
 		
 		/**
 		 * @cfg {Function} model
@@ -370,7 +389,17 @@ define( [
 		 *     } );
 		 */
 		
-		
+
+		/**
+		 * @property {Boolean} isCollection (readonly)
+		 * 
+		 * A property simply to identify Collection instances as such. This is so that we don't need circular dependencies in some of the
+		 * other Data.js files, which only bring in the Collection class for an `instanceof` check to determine if a given value is a Collection.
+		 * 
+		 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+		 * no circular dependencies exist.
+		 */
+		isCollection : true,
 		
 		/**
 		 * @protected

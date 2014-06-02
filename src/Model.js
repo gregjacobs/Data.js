@@ -310,6 +310,20 @@ define( [
 		inheritedStatics : {
 			
 			/**
+			 * @static
+			 * @inheritable
+			 * @property {Boolean} isModelClass (readonly)
+			 * 
+			 * A property simply to identify Model classes (constructor functions) as such. This is so that we don't need circular dependencies 
+			 * in some of the other Data.js files, which only bring in the Model class in order to determine if a function is in fact a Model
+			 * constructor function.
+			 * 
+			 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+			 * no circular dependencies exist.
+			 */
+			isModelClass : true,
+			
+			/**
 			 * @private
 			 * @inheritable
 			 * @static
@@ -530,6 +544,18 @@ define( [
 		 *     } );
 		 */
 		ignoreUnknownAttrsOnLoad : true,
+		
+		
+		/**
+		 * @property {Boolean} isModel (readonly)
+		 * 
+		 * A property simply to identify Model instances as such. This is so that we don't need circular dependencies in some of the
+		 * other Data.js files, which only bring in the Model class for an `instanceof` check to determine if a given value is a Model.
+		 * 
+		 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+		 * no circular dependencies exist.
+		 */
+		isModel : true,
 		
 		/**
 		 * @private
