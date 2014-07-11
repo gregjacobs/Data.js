@@ -581,7 +581,7 @@ define( [
 			options = options || {};
 			
 			// Default the data to an empty object
-			data = data || {};
+			data = ( !data ) ? {} : _.clone( data );  // shallow clone as to not modify the input object
 			
 			// Call superclass constructor
 			this._super( arguments );

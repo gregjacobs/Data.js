@@ -402,6 +402,20 @@ define( [
 					expect( model.get( 'b' ) ).toBe( 2 );
 				} );
 				
+				
+				it( "should not modify the input object with attribute defaults, making a copy instead for its internal data", function() {
+					var MyModel = Model.extend( {
+						attributes : [ { name: 'a' }, { name: 'b', defaultValue: 2 } ]
+					} );
+					
+					var dataObj = { a: 1 },
+						model = new MyModel( dataObj );
+					
+					expect( _.size( dataObj ) ).toBe( 1 );
+					expect( dataObj.a ).toBe( 1 );
+					expect( dataObj.b ).toBeUndefined();
+				} );
+				
 			} );
 			
 			
