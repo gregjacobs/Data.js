@@ -1,5 +1,5 @@
 /*global define, window, jasmine, describe, xdescribe, beforeEach, afterEach, it, xit, expect, spyOn, JsMockito */
-/*jshint browser:true, sub:true */
+/*jshint browser:true, sub:true, boss:true */
 define( [
 	'jquery',
 	'lodash',
@@ -66,6 +66,16 @@ define( [
 		
 		// A concrete DataComponentAttribute for Models to be configured with
 		var ConcreteDataComponentAttribute = DataComponentAttribute.extend( {} );
+		
+		
+		// A couple of model classes for testing
+		var UserModel = Model.extend( {
+			attributes : [
+				{ name: 'id',        type: 'int' },
+				{ name: 'firstName', type: 'string' },
+				{ name: 'lastName',  type: 'string' }
+			]
+		} );
 		
 		
 		describe( "Test the onClassExtended static method", function() {
@@ -447,61 +457,6 @@ define( [
 		} );
 		
 		
-		describe( 'getId()', function() {
-			
-			it( "should throw an error if the default idAttribute 'id' does not exist on the model", function() {
-				expect( function() {
-					var MyModel = Model.extend( {
-						attributes : [
-							// note: no attribute named 'id'
-							'field1',
-							'field2'
-						]
-					} );
-					
-					var model = new MyModel();
-					model.getId();
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have errored"
-				} ).toThrow( "Error: The `idAttribute` (currently set to an attribute named 'id') was not found on the Model. Set the `idAttribute` config to the name of the id attribute in the Model. The model can't be saved or destroyed without it." );
-			} );
-			
-			
-			it( "should throw an error with a custom `idAttribute` that does not relate to an attribute on the model", function() {
-				expect( function() {
-					var MyModel = Model.extend( {
-						attributes : [
-							'field1',
-							'field2'
-						],
-						
-						idAttribute: 'myIdAttribute'
-					} );
-					
-					var model = new MyModel();
-					model.getId();
-					
-					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have errored"
-				} ).toThrow( "Error: The `idAttribute` (currently set to an attribute named 'myIdAttribute') was not found on the Model. Set the `idAttribute` config to the name of the id attribute in the Model. The model can't be saved or destroyed without it." );
-			} );
-			
-			
-			it( "should return the value of the `idAttribute`", function() {
-				var MyModel = Model.extend( {
-					attributes : [ 'myIdAttribute' ],
-					idAttribute: 'myIdAttribute'
-				} );
-				
-				var model = new MyModel( {
-					myIdAttribute: 1
-				} );
-				
-				expect( model.getId() ).toBe( 1 );
-			} );
-			
-		} );
-		
-		
 		describe( 'getIdAttribute()', function() {
 			
 			it( "should return the Attribute referenced by the 'idAttribute' config", function() {
@@ -568,6 +523,127 @@ define( [
 			
 		} );
 		
+		
+		describe( 'getId()', function() {
+			
+			it( "should throw an error if the default idAttribute 'id' does not exist on the model", function() {
+				expect( function() {
+					var MyModel = Model.extend( {
+						attributes : [
+							// note: no attribute named 'id'
+							'field1',
+							'field2'
+						]
+					} );
+					
+					var model = new MyModel();
+					model.getId();
+					
+					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have errored"
+				} ).toThrow( "Error: The `idAttribute` (currently set to an attribute named 'id') was not found on the Model. Set the `idAttribute` config to the name of the id attribute in the Model. The model can't be saved or destroyed without it." );
+			} );
+			
+			
+			it( "should throw an error with a custom `idAttribute` that does not relate to an attribute on the model", function() {
+				expect( function() {
+					var MyModel = Model.extend( {
+						attributes : [
+							'field1',
+							'field2'
+						],
+						
+						idAttribute: 'myIdAttribute'
+					} );
+					
+					var model = new MyModel();
+					model.getId();
+					
+					expect( true ).toBe( false );  // orig YUI Test err msg: "The test should have errored"
+				} ).toThrow( "Error: The `idAttribute` (currently set to an attribute named 'myIdAttribute') was not found on the Model. Set the `idAttribute` config to the name of the id attribute in the Model. The model can't be saved or destroyed without it." );
+			} );
+			
+			
+			it( "should return the value of the `idAttribute`", function() {
+				var MyModel = Model.extend( {
+					attributes : [ 'myIdAttribute' ],
+					idAttribute: 'myIdAttribute'
+				} );
+				
+				var model = new MyModel( {
+					myIdAttribute: 1
+				} );
+				
+				expect( model.getId() ).toBe( 1 );
+			} );
+			
+		} );
+		
+		
+		describe( 'getDefault()', function() {
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1' },
+					{ name: 'attribute2', defaultValue: "attribute2's default" },
+					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
+					{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
+					{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute2' ); } }
+				]
+			} );
+			
+			
+			it( "A attribute with no defaultValue should return undefined when trying to retrieve its default value", function() {
+				var model = new TestModel();
+				expect( _.isUndefined( model.getDefault( 'attribute1' ) ) ).toBe( true );  // attribute1 has no default value
+			} );
+			
+			
+			it( "A defaultValue should be able to be retrieved directly when the attribute has one", function() {
+				var model = new TestModel();
+				expect( model.getDefault( 'attribute2' ) ).toBe( "attribute2's default" );  // attribute2 has a defaultValue of a string
+			} );
+			
+			
+			it( "A defaultValue should be able to be retrieved directly when the defaultValue is a function that returns its default", function() {
+				var model = new TestModel();
+				expect( model.getDefault( 'attribute3' ) ).toBe( "attribute3's default" );  // attribute2 has a defaultValue that is a function that returns a string
+			} );
+			
+		} );
+		
+		
+		describe( 'getDefaults()', function() {
+			var TestModel = Class.extend( Model, {
+				attributes: [
+					{ name: 'attribute1', type: 'string' },
+					{ name: 'attribute2', type: 'string', defaultValue: "attribute2's default" },
+					{ name: 'attribute3', type: 'string', defaultValue: function() { return "attribute3's default"; } },
+					{ name: 'attribute4', type: 'int',    defaultValue: 42 },
+					{ name: 'attribute5', type: 'int' },
+					{ name: 'attribute6', type: 'int', useNull: true },
+					{ name: 'attribute7' }  // no `type`
+				]
+			} );
+			
+			
+			it( "should return an Object (map) of all of the attributes' defaults", function() {
+				var model = new TestModel(),
+				    defaults = model.getDefaults();
+				
+				expect( defaults ).toEqual( {
+					'attribute1' : "",   // implicit default for string type
+					'attribute2' : "attribute2's default",
+					'attribute3' : "attribute3's default",
+					'attribute4' : 42,
+					'attribute5' : 0,    // implicit default for integer type
+					'attribute6' : null  // implicit default for integer type with `useNull` flag
+					// note: attribute7 not present because it doesn't have a default value due to not having a `type`
+				} );
+			} );
+			
+		} );
+		
+		
+		// -----------------------------------
 		
 		
 		describe( 'set()', function() {
@@ -1402,33 +1478,51 @@ define( [
 		} );
 		
 		
-		describe( 'getDefault()', function() {
-			var TestModel = Class.extend( Model, {
-				attributes: [
-					{ name: 'attribute1' },
-					{ name: 'attribute2', defaultValue: "attribute2's default" },
-					{ name: 'attribute3', defaultValue: function() { return "attribute3's default"; } },
-					{ name: 'attribute4', set : function( model, newValue ) { return model.get( 'attribute1' ) + " " + model.get( 'attribute2' ); } },
-					{ name: 'attribute5', set : function( model, newValue ) { return newValue + " " + model.get( 'attribute2' ); } }
-				]
+		describe( 'clear()', function() {
+			
+			it( "should clear all data from the Model, including the ID attribute", function() {
+				var userModel = new UserModel( { id: 1, firstName: "John", lastName: "Smith" } );
+				
+				userModel.clear();
+				
+				expect( userModel.get( 'id' ) ).toBe( 0 );
+				expect( userModel.get( 'firstName' ) ).toBe( "" );
+				expect( userModel.get( 'lastName' ) ).toBe( "" );
+				expect( userModel.isModified() ).toBe( false );
 			} );
 			
 			
-			it( "A attribute with no defaultValue should return undefined when trying to retrieve its default value", function() {
-				var model = new TestModel();
-				expect( _.isUndefined( model.getDefault( 'attribute1' ) ) ).toBe( true );  // attribute1 has no default value
+			it( "should clear all data from the Model, applying default values for attributes that have them", function() {
+				var TestModel = Model.extend( {
+					attributes : [
+						{ name: 'nonDefault', type: 'string', useNull: true },
+						{ name: 'default1',   type: 'int',    defaultValue: 1 },
+						{ name: 'default2',   type: 'string', defaultValue: "Test Default" }
+					]
+				} );
+				var model = new TestModel( { nonDefault: "no default", default1: 42, default2: "Original default2" } );
+				
+				model.clear();
+
+				expect( model.get( 'nonDefault' ) ).toBe( null );
+				expect( model.get( 'default1' ) ).toBe( 1 );
+				expect( model.get( 'default2' ) ).toBe( "Test Default" );
+				expect( model.isModified() ).toBe( false );
 			} );
 			
 			
-			it( "A defaultValue should be able to be retrieved directly when the attribute has one", function() {
-				var model = new TestModel();
-				expect( model.getDefault( 'attribute2' ) ).toBe( "attribute2's default" );  // attribute2 has a defaultValue of a string
-			} );
-			
-			
-			it( "A defaultValue should be able to be retrieved directly when the defaultValue is a function that returns its default", function() {
-				var model = new TestModel();
-				expect( model.getDefault( 'attribute3' ) ).toBe( "attribute3's default" );  // attribute2 has a defaultValue that is a function that returns a string
+			it( "should set the Model's state to 'unmodified', even if it was modified beforehand", function() {
+				var userModel = new UserModel( { id: 1 } );
+				userModel.set( 'firstName', "John" );
+				userModel.set( 'lastName', "Smith" );
+				expect( userModel.isModified() ).toBe( true );  // initial condition
+				
+				userModel.clear();
+				
+				expect( userModel.get( 'id' ) ).toBe( 0 );
+				expect( userModel.get( 'firstName' ) ).toBe( "" );
+				expect( userModel.get( 'lastName' ) ).toBe( "" );
+				expect( userModel.isModified() ).toBe( false );
 			} );
 			
 		} );

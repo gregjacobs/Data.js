@@ -456,6 +456,7 @@ define( [
 		 */
 		ignoreUnknownAttrsOnLoad : true,
 		
+		
 		/**
 		 * @private
 		 * @property {Object} attributes
@@ -475,6 +476,7 @@ define( [
 		/**
 		 * @private 
 		 * @property {Object} modifiedData
+		 * 
 		 * A map that serves two functions:
 		 * 
 		 * 1) Properties are set to it when an attribute is modified. The property name is the attribute {@link data.attribute.Attribute#name}. 
@@ -521,6 +523,7 @@ define( [
 		/**
 		 * @private
 		 * @property {String} id (readonly)
+		 * 
 		 * The id for the Model. This property is set when the attribute specified by the {@link #idAttribute} config
 		 * is {@link #set}. 
 		 * 
@@ -579,9 +582,6 @@ define( [
 		 */
 		constructor : function( data, options ) {
 			options = options || {};
-			
-			// Default the data to an empty object
-			data = ( !data ) ? {} : _.clone( data );  // shallow clone as to not modify the input object
 			
 			// Call superclass constructor
 			this._super( arguments );
@@ -849,21 +849,16 @@ define( [
 				'destroycancel'
 			);
 			
-			
-			// Set the default values for attributes that don't have an initial value.
-			var attributes = this.attributes,  // this.attributes is a map of the Attribute objects, keyed by their name
-			    attributeDefaultValue;
-			for( var name in attributes ) {
-				if( data[ name ] === undefined && ( attributeDefaultValue = attributes[ name ].getDefaultValue() ) !== undefined ) {
-					data[ name ] = attributeDefaultValue;
-				}
-			}
-			
 			// Initialize the underlying data object, which stores all attribute values
 			this.data = {};
 			
 			// Initialize the data map for storing attribute names of modified data, and their original values (see property description)
 			this.modifiedData = {};
+
+			// Set the default values for attributes that don't have an initial value provided to this constructor function. Also shallow cone 
+			// the object as to not modify the input. If nested objects are passed into Models, they will be shallow cloned as well when 
+			// this occurs.
+			data = this.assignDefaults( _.clone( data ) || {} );
 			
 			// Set the initial data / defaults, if we have any
 			this.set( data, { ignoreUnknownAttrs: options.ignoreUnknownAttrs } );
@@ -898,18 +893,6 @@ define( [
 		initialize : Data.emptyFn,
 		
 		
-		/**
-		 * Retrieves the Attribute objects that are present for the Model, in an Object (map) where the keys
-		 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
-		 * 
-		 * @return {Object} An Object (map) where the keys are the attribute {@link data.attribute.Attribute#name names},
-		 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
-		 */
-		getAttributes : function() {
-			return this.attributes;
-		},
-		
-		
 		// --------------------------------
 		
 		
@@ -924,17 +907,14 @@ define( [
 		
 		
 		/**
-		 * Retrieves the ID for the Model. This uses the configured {@link #idAttribute} to retrieve
-		 * the correct ID attribute for the Model.
+		 * Retrieves the Attribute objects that are present for the Model, in an Object (map) where the keys
+		 * are the Attribute names, and the values are the {@link data.attribute.Attribute} objects themselves.
 		 * 
-		 * @return {Mixed} The ID for the Model.
+		 * @return {Object} An Object (map) where the keys are the attribute {@link data.attribute.Attribute#name names},
+		 *   and the values are the {@link data.attribute.Attribute Attribute} instances themselves.
 		 */
-		getId : function() {
-			// Provide a friendlier error message than what get() provides if the idAttribute is not an Attribute of the Model
-			if( !( this.idAttribute in this.attributes ) ) {
-				throw new Error( "Error: The `idAttribute` (currently set to an attribute named '" + this.idAttribute + "') was not found on the Model. Set the `idAttribute` config to the name of the id attribute in the Model. The model can't be saved or destroyed without it." );
-			}
-			return this.get( this.idAttribute );
+		getAttributes : function() {
+			return this.attributes;
 		},
 		
 		
@@ -968,6 +948,78 @@ define( [
 		 */
 		hasIdAttribute : function() {
 			return !!this.attributes[ this.idAttribute ];
+		},
+		
+		
+		/**
+		 * Retrieves the ID for the Model. This uses the configured {@link #idAttribute} to retrieve
+		 * the correct ID attribute for the Model.
+		 * 
+		 * @return {Mixed} The ID for the Model.
+		 */
+		getId : function() {
+			// Provide a friendlier error message than what get() provides if the idAttribute is not an Attribute of the Model
+			if( !( this.idAttribute in this.attributes ) ) {
+				throw new Error( "Error: The `idAttribute` (currently set to an attribute named '" + this.idAttribute + "') was not found on the Model. Set the `idAttribute` config to the name of the id attribute in the Model. The model can't be saved or destroyed without it." );
+			}
+			return this.get( this.idAttribute );
+		},
+		
+		
+		/**
+		 * Returns the default value specified for an {@link #cfg-attributes attribute}.
+		 * 
+		 * @param {String} attributeName The attribute name to retrieve the default value for.
+		 * @return {Mixed} The default value for the attribute.
+		 */
+		getDefault : function( attributeName ) {
+			return this.attributes[ attributeName ].getDefaultValue();
+		},
+		
+		
+		/**
+		 * Retrieves the default values for the {@link #cfg-attributes} of the model.
+		 * 
+		 * @return {Object} An Object (map) keyed by the {@link #cfg-attributes attributes'} names, and whose values are the
+		 *   default values of those attributes.
+		 */
+		getDefaults : function() {
+			var defaults = {};
+			
+			_.forOwn( this.attributes, function( attribute, attrName ) {
+				var defaultValue = attribute.getDefaultValue();
+				
+				if( defaultValue !== undefined ) {
+					defaults[ attrName ] = defaultValue;
+				}
+			} );
+			return defaults;
+		},
+		
+		
+		/**
+		 * Assigns the {@link #cfg-attributes attributes'} default values to the given Object (map) of values.
+		 * Only values that are `undefined` will have their defaults applied.
+		 * 
+		 * This method is a more performant option to calling {@link #getAttributeDefaults}, which only requests
+		 * an attribute's default value if the value doesn't exist in the input.
+		 * 
+		 * @protected
+		 * @param {Object} values An Object (map) keyed by the {@link #cfg-attributes attributes'} names, of which
+		 *   to have the attributes' default values applied if they resolve to `undefined`.
+		 * @return {Object} The input object, with the default values applied.
+		 */
+		assignDefaults : function( values ) {
+			_.forOwn( this.attributes, function( attribute, attrName ) {
+				if( values[ attrName ] === undefined ) {
+					var defaultValue = attribute.getDefaultValue();
+					
+					if( defaultValue !== undefined ) {
+						values[ attrName ] = defaultValue;
+					}
+				}
+			} );
+			return values;
 		},
 	
 		
@@ -1208,13 +1260,17 @@ define( [
 		
 		
 		/**
-		 * Returns the default value specified for an Attribute.
+		 * Clears the data of the Model, including its {@link #idAttribute id}. Resets all attributes to their default
+		 * values.
 		 * 
-		 * @param {String} attributeName The attribute name to retrieve the default value for.
-		 * @return {Mixed} The default value for the attribute.
+		 * Note: This operation **cannot** be undone (i.e. by using {@link #rollback}).
 		 */
-		getDefault : function( attributeName ) {
-			return this.attributes[ attributeName ].getDefaultValue();
+		clear : function() {
+			this.data = {};
+			this.modifiedData = {};
+			
+			this.set( this.getDefaults() );
+			this.commit();  // Model should not be considered modified
 		},
 		
 		
