@@ -1,10 +1,8 @@
 /*global define */
 /*jshint forin:true, eqnull:true */
 define( [
-	'require',
 	'jquery',
 	'lodash',
-	'Class',
 	'data/Data',
 	'data/DataComponent',
 	
@@ -22,6 +20,8 @@ define( [
 	'data/attribute/DataComponent',
 	'data/attribute/Collection',
 	'data/attribute/Model',
+
+	'data/NativeObjectConverter',
 	
 	// All attribute types included so developers don't have to specify these when they declare attributes in their models.
 	// These are not included in the arguments list though, as they are not needed specifically by the Model implementation.
@@ -34,14 +34,10 @@ define( [
 	'data/attribute/Number',
 	'data/attribute/Object',
 	'data/attribute/Primitive',
-	'data/attribute/String',
-
-	'data/NativeObjectConverter' // circular dependency, not included in args list
-], function( 
-	require,
+	'data/attribute/String'
+], function(
 	jQuery,
 	_,
-	Class,
 	Data,
 	DataComponent,
 	
@@ -58,7 +54,9 @@ define( [
 	Attribute,
 	DataComponentAttribute,
 	CollectionAttribute,
-	ModelAttribute
+	ModelAttribute,
+	
+	NativeObjectConverter
 ) {
 	
 	/**
@@ -86,7 +84,7 @@ define( [
 	 *                 { name: 'id',        type: 'int' },
 	 *                 { name: 'firstName', type: 'string' },
 	 *                 { name: 'lastName',  type: 'string' },
-	 *                 { name: 'isAdmin',   type: 'boolean' }
+	 *                 { name: 'isAdmin',   type: 'boolean', defaultValue: false }
 	 *             ]
 	 *         } );
 	 *     
@@ -105,8 +103,10 @@ define( [
 	 *   is most often preferable that nested objects be either of the `model` or `collection` types.
 	 * - {@link data.attribute.Date date}: A JavaScript Date object. String dates provided to this type will be parsed into a JS 
 	 *   Date object.
-	 * - {@link data.attribute.Model model}: A nested child Model, or related Model in a relational setup.
+	 * - {@link data.attribute.Model model}: A nested child Model, or related Model in a relational setup. Defaults to `null`.
+	 *   An empty model may be initialized by setting the `defaultValue` to an empty object (`{}`).
 	 * - {@link data.attribute.Collection collection}: A nested child Collection, or related Collected in a relational setup.
+	 *   Defaults to `null`. An empty collection may be initialized by setting the `defaultValue` to an empty array (`[]`).
 	 * 
 	 * Each Attribute type is implemented as a class in the `data.attribute` package. See each particular Attribute subclass for
 	 * additional configuration options that are available to that particular type. 
@@ -116,9 +116,16 @@ define( [
 	 * 
 	 * ### Default Values
 	 * 
-	 * All primitive types (int, float, string, boolean) default to a valid value of the type. This is `0` for `int`/`float` types,
-	 * an empty string for the `string` type, and `false` for the `boolean` type. This is the case unless the
-	 * {@link data.attribute.Primitive#useNull useNull} config is set to true, in which case the attribute will default to `null`.
+	 * A {@link data.attribute.Attribute#defaultValue defaultValue} may be provided to initialize the attribute upon Model 
+	 * construction.
+	 * 
+	 * If no {@link data.attribute.Attribute#defaultValue defaultValue} is provided, then attributes are defaulted as follows:
+	 * 
+	 * - All primitive types (int, float, string, boolean) default to a valid value of the type. This is the value `0` for 
+	 *   `int`/`float` types, an empty string ("") for the `string` type, and `false` for the `boolean` type. This is the case 
+	 *   unless the {@link data.attribute.Primitive#useNull useNull} config is set to `true`, in which case the attribute will 
+	 *   default to `null`.
+	 * - All object types (object, date, model, collection, etc.) default to `null`.
 	 * 
 	 * ### Creating new Attribute types
 	 * 
@@ -296,9 +303,23 @@ define( [
 	 * 
 	 * See {@link #on} for details.
 	 */
-	var Model = Class.extend( DataComponent, {
+	var Model = DataComponent.extend( {
 		
 		inheritedStatics : {
+			
+			/**
+			 * @static
+			 * @inheritable
+			 * @property {Boolean} isModelClass (readonly)
+			 * 
+			 * A property simply to identify Model classes (constructor functions) as such. This is so that we don't need circular dependencies 
+			 * in some of the other Data.js files, which only bring in the Model class in order to determine if a function is in fact a Model
+			 * constructor function.
+			 * 
+			 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+			 * no circular dependencies exist.
+			 */
+			isModelClass : true,
 			
 			/**
 			 * @private
@@ -366,6 +387,72 @@ define( [
 			getAttributes : function() {
 				// Note: `this` refers to the class (constructor function) that the static method was called on
 				return this.prototype.attributes;
+			},
+			
+			
+			/**
+			 * Loads a new instance of the Model by `id`.
+			 * 
+			 * All of the callbacks, and the promise handlers are called with the following arguments:
+			 * 
+			 * - `model` : {@link data.Model} The new Model instance.
+			 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
+			 *   information about the operation and the request(s) that took place.
+			 * 
+			 * 
+			 * ## Example
+			 * 
+			 *     require( [
+			 *         'data/Model',
+			 *         'data/persistence/proxy/Ajax'
+			 *     ], function( Model, AjaxProxy ) {
+			 *     
+			 *         var User = Model.extend( {
+			 *             attributes : [ 'id', 'username' ],
+			 *             proxy : new AjaxProxy( { url: '/path/to/users' } )
+			 *         } );
+			 *     
+			 *         
+			 *         // Load user by ID - requests '/path/to/users?id=100'
+			 *         User.load( 100 )
+			 *             .done( function( model ) { alert( "Retrieved user: ", model.get( 'username' ) ); } )
+			 *             .fail( function() { alert( "Failed to load user" ); } );
+			 *     } );
+			 * 
+			 * 
+			 * For more information and examples, see the non-static {@link #method-load} method, which is called internally by
+			 * this method.
+			 * 
+			 * @inheritable
+			 * @static
+			 * @param {Number/String} id The ID of the model to load. This may be `null` if other parameters dictate which model 
+			 *   is loaded (specified under `options`).
+			 * @param {Object} [options] An object which may contain the following properties:
+			 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+			 *   for the request. See {@link data.persistence.request.Request#params} for details.
+			 * @param {Function} [options.success] Function to call if the save is successful.
+			 * @param {Function} [options.failure] Function to call if the save fails.
+			 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+			 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+			 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+			 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+			 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
+			 * @param {Object} [options.scope] The object to call the `success`, `failure`, and `complete` callbacks in. This may also
+			 *   be provided as `context` if you prefer.
+			 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
+			 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
+			 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+			 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+			 *   method on this object.
+			 */
+			load : function( id, options ) {
+				var model = new this();
+				
+				if( model.hasIdAttribute() ) {
+					model.set( model.getIdAttributeName(), id );
+				}
+				
+				return model.load( options );
 			}
 			
 		},
@@ -456,6 +543,17 @@ define( [
 		 */
 		ignoreUnknownAttrsOnLoad : true,
 		
+		
+		/**
+		 * @property {Boolean} isModel (readonly)
+		 * 
+		 * A property simply to identify Model instances as such. This is so that we don't need circular dependencies in some of the
+		 * other Data.js files, which only bring in the Model class for an `instanceof` check to determine if a given value is a Model.
+		 * 
+		 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+		 * no circular dependencies exist.
+		 */
+		isModel : true,
 		
 		/**
 		 * @private
@@ -1380,7 +1478,7 @@ define( [
 		 * @return {Object} An Object (map) of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
 		getData : function( options ) {
-			return require( 'data/NativeObjectConverter' ).convert( this, options );
+			return NativeObjectConverter.convert( this, options );
 		},
 		
 		
@@ -1435,7 +1533,7 @@ define( [
 				}
 			}
 			
-			return require( 'data/NativeObjectConverter' ).convert( this, options );
+			return NativeObjectConverter.convert( this, options );
 		},
 		
 		

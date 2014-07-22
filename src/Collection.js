@@ -1,9 +1,7 @@
 /*global define */
 define( [
-	'require',
 	'jquery',
 	'lodash',
-	'Class',
 	
 	'data/Data',
 	'data/DataComponent',
@@ -19,14 +17,10 @@ define( [
 	'data/persistence/request/Update',
 	'data/persistence/request/Destroy',
 	
-	'data/persistence/proxy/Proxy',
-	
-	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
+	'data/persistence/proxy/Proxy'
 ], function(
-	require,
 	jQuery,
 	_,
-	Class,
 	
 	Data,
 	DataComponent,
@@ -224,7 +218,26 @@ define( [
 	 *           
 	 *     } ); 
 	 */
-	var Collection = Class.extend( DataComponent, {
+	var Collection = DataComponent.extend( {
+		
+		inheritedStatics : {
+			
+			/**
+			 * @static
+			 * @inheritable
+			 * @property {Boolean} isCollectionClass (readonly)
+			 * 
+			 * A property simply to identify Collection classes (constructor functions) as such. This is so that we don't need circular dependencies 
+			 * in some of the other Data.js files, which only bring in the Collection class in order to determine if a function is in fact a Collection
+			 * constructor function.
+			 * 
+			 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+			 * no circular dependencies exist.
+			 */
+			isCollectionClass : true
+			
+		},
+		
 		
 		/**
 		 * @cfg {Function} model
@@ -370,7 +383,17 @@ define( [
 		 *     } );
 		 */
 		
-		
+
+		/**
+		 * @property {Boolean} isCollection (readonly)
+		 * 
+		 * A property simply to identify Collection instances as such. This is so that we don't need circular dependencies in some of the
+		 * other Data.js files, which only bring in the Collection class for an `instanceof` check to determine if a given value is a Collection.
+		 * 
+		 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+		 * no circular dependencies exist.
+		 */
+		isCollection : true,
 		
 		/**
 		 * @protected
@@ -713,8 +736,7 @@ define( [
 			    collectionModels = this.models,
 			    model,
 			    modelId,
-			    addedModels = [],
-			    Model = require( 'data/Model' );  // reference to constructor function for instanceof check
+			    addedModels = [];
 			
 			// First, normalize the `index` if it is out of the bounds of the models array
 			if( typeof index !== 'number' ) {
@@ -737,7 +759,7 @@ define( [
 			
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				model = models[ i ];
-				if( !( model instanceof Model ) ) {
+				if( !model.isModel ) {  // if the `model` is not yet a data.Model instance (i.e. it's an anonymous object), create the Model instance now.
 					model = this.createModel( model, {} );
 				}
 				

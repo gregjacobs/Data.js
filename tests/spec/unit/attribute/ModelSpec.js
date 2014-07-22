@@ -260,7 +260,7 @@ define( [
 		
 		describe( "Test afterSet()", function() {
 			
-			it( "afterSet() should return the model (i.e. it doesn't forget the return statement!)", function() {
+			it( "should return the model instance provided to it (i.e. it doesn't forget the return statement!)", function() {
 				var mockModel = JsMockito.mock( Model );
 				
 				var attribute = new ModelAttribute( { 
@@ -269,6 +269,32 @@ define( [
 				
 				var value = attribute.afterSet( mockModel, mockModel );  // just pass itself for the value, doesn't matter
 				expect( value ).toBe( mockModel );
+			} );
+			
+			
+			it( "should throw an error if the value provided was not a data.Model instance (and not null)", function() {
+				var model = new Model();
+				
+				var attribute = new ModelAttribute( { 
+					name: 'attr'
+				} );
+				
+				expect( function() {
+					attribute.afterSet( model, "asdf" );  // passing a string: invalid
+				} ).toThrow( "A value set to the attribute 'attr' was not a data.Model subclass" );
+			} );
+			
+			
+			it( "should *not* throw an error if the value provided was `null` (since the attribute accepts `null` or a `data.Model`)", function() {
+				var model = new Model();
+				
+				var attribute = new ModelAttribute( { 
+					name: 'attr'
+				} );
+				
+				expect( function() {
+					attribute.afterSet( model, null );
+				} ).not.toThrow();
 			} );
 			
 		} );

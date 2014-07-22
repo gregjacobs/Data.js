@@ -275,7 +275,7 @@ define( [
 		
 		describe( "Test afterSet()", function() {
 			
-			it( "afterSet() should return the collection (i.e. it doesn't forget the return statement!)", function() {
+			it( "afterSet() should return the collection instance provided to it (i.e. it doesn't forget the return statement!)", function() {
 				var mockModel = JsMockito.mock( Model ),
 				    mockCollection = JsMockito.mock( Collection );
 				
@@ -285,6 +285,32 @@ define( [
 				
 				var value = attribute.afterSet( mockModel, mockCollection );
 				expect( value ).toBe( mockCollection );
+			} );
+			
+			
+			it( "should throw an error if the value provided was not `null` or a data.Model instance", function() {
+				var model = new Model();
+				
+				var attribute = new CollectionAttribute( { 
+					name: 'attr'
+				} );
+				
+				expect( function() {
+					attribute.afterSet( model, "asdf" );  // passing a string: invalid
+				} ).toThrow( "A value set to the attribute 'attr' was not a data.Collection subclass" );
+			} );
+			
+			
+			it( "should *not* throw an error if the value provided was `null` (since the attribute accepts `null` or a `data.Collection`)", function() {
+				var model = new Model();
+				
+				var attribute = new CollectionAttribute( { 
+					name: 'attr'
+				} );
+				
+				expect( function() {
+					attribute.afterSet( model, null );
+				} ).not.toThrow();
 			} );
 			
 		} );

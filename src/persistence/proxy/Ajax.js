@@ -1,4 +1,5 @@
 /*global define */
+/*jshint eqnull:true */
 define( [
 	'jquery',
 	'lodash',
@@ -142,7 +143,7 @@ define( [
 		 * default of "application/x-www-form-urlencoded".
 		 * 
 		 * Note: This only applies to non-GET requests (i.e. POST, PUT, etc.). You must set the {@link #createMethod}, 
-		 * {@link #readMethod}, {@link #updateMethod}, and {@link #deleteMethod} appropriately for this config to apply.
+		 * {@link #readMethod}, {@link #updateMethod}, and {@link #destroyMethod} appropriately for this config to apply.
 		 */
 		paramsAsJson : false,
 		
@@ -355,7 +356,7 @@ define( [
 				    pageParam = this.pageParam,
 				    pageSizeParam = this.pageSizeParam;
 				
-				if( modelId !== undefined && idParam ) 
+				if( modelId != null && idParam )
 					params[ idParam ] = modelId;
 				
 				if( page > 0 && pageParam ) {   // an actual page was requested, and there is a pageParam config defined

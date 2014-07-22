@@ -1,13 +1,11 @@
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new modelClass( ... );
 define( [
-	'require',
 	'lodash',
-	'Class',
+	
 	'data/attribute/Attribute',
-	'data/attribute/DataComponent',
-	'data/Model'  // circular dependency, not included in args list
-], function( require, _, Class, Attribute, DataComponentAttribute ) {
+	'data/attribute/DataComponent'
+], function( _, Attribute, DataComponentAttribute ) {
 	
 	/**
 	 * @class data.attribute.Model
@@ -22,7 +20,7 @@ define( [
 	 * Otherwise, you must either provide a {@link data.Model} subclass as the value, or use a custom {@link #cfg-set} 
 	 * function to convert any anonymous object to a Model in the appropriate way. 
 	 */
-	var ModelAttribute = Class.extend( DataComponentAttribute, {
+	var ModelAttribute = DataComponentAttribute.extend( {
 		
 		/**
 		 * @cfg {data.Model/String/Function} model
@@ -131,15 +129,13 @@ define( [
 		
 		
 		/**
-		 * Overridden `afterSet` method used to subscribe to change events on a set child {@link data.Model Model}.
+		 * Overridden `afterSet` method used to make sure the value that was set was either `null`, or a {@link data.Model} instance.
 		 * 
 		 * @inheritdoc
 		 */
 		afterSet : function( model, value ) {
-			var Model = require( 'data/Model' );
-			
 			// Enforce that the value is either null, or a data.Model
-			if( value !== null && !( value instanceof Model ) ) {
+			if( value !== null && !value.isModel ) {
 				throw new Error( "A value set to the attribute '" + this.getName() + "' was not a data.Model subclass" );
 			}
 			
@@ -164,8 +160,7 @@ define( [
 		 *   config.
 		 */
 		resolveModelClass : function() {
-			var modelClass = this.model,
-			    Model = require( 'data/Model' );  // the Model constructor function
+			var modelClass = this.model;
 			
 			if( typeof modelClass === 'string' ) {
 				this.model = modelClass = this.resolveGlobalPath( modelClass );  // changes the string "a.b.c" into the value at `window.a.b.c`
@@ -175,7 +170,7 @@ define( [
 					throw new Error( "The string value `model` config did not resolve to a Model subclass for attribute '" + this.getName() + "'" );
 				}
 				// </debug>
-			} else if( typeof modelClass === 'function' && !Class.isSubclassOf( modelClass, Model ) ) {  // it's not a data.Model subclass, so it must be an anonymous function. Run it, so it returns the Model reference we need
+			} else if( typeof modelClass === 'function' && !modelClass.isModelClass ) {  // if it's not a data.Model constructor function (which would have an isModelClass property), then it must be an anonymous function. Execute it, so it returns the Model reference we need.
 				this.model = modelClass = modelClass();
 				
 				// <debug>

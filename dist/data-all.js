@@ -1,6 +1,6 @@
 /*!
  * Data.js
- * Version 0.5.2
+ * Version 0.7.1
  *
  * Copyright(c) 2013 Gregory Jacobs.
  * MIT Licensed. http://www.opensource.org/licenses/mit-license.php
@@ -626,20 +626,21 @@ define('data/persistence/reader/Json', [
 } );
 /*global define */
 define('data/persistence/proxy/Proxy', [
+	'jquery',
 	'lodash',
 	'Class',
 	'Observable',
 	'data/persistence/reader/Json'  // default `reader` type
-], function( _, Class, Observable, JsonReader ) {
+], function( jQuery, _, Class, Observable, JsonReader ) {
 	
 	/**
 	 * @abstract
 	 * @class data.persistence.proxy.Proxy
 	 * @extends Observable
 	 * 
-	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) requests on
-	 * some sort of persistence medium. This can be a backend server, a webservice, or a local storage data store,
-	 * to name a few examples.
+	 * Proxy is the base class for subclasses that perform CRUD (Create, Read, Update, and Delete) requests on a persistence 
+	 * medium. The persistence medium can be a backend server, a webservice, or a local storage data store, to name a few 
+	 * examples.
 	 * 
 	 * 
 	 * ## Creating a Proxy
@@ -654,21 +655,21 @@ define('data/persistence/proxy/Proxy', [
 	 * Each method is passed a {@link data.persistence.request.Request Request} object, which provides the information
 	 * needed to perform each operation. 
 	 * 
-	 * Each method must return a jQuery Promise object, which should be resolved if the request completes successfully, or 
-	 * should be rejected if the request errors.
+	 * Each method must {@link data.persistence.request.Request#resolve resolve} the Request when the underlying operation
+	 * has been completed successfully, or should {@link data.persistence.request.Request#reject reject} the Request if the 
+	 * underlying operation errors.
 	 * 
 	 * - A {@link data.persistence.ResultSet} object is used to return data from the Proxy. Providing any raw data to the
 	 *   proxy's {@link #reader} (i.e. to the {@link data.persistence.reader.Reader#read read} method) will return a ResultSet
-	 *   object. The Promise should then be resolved with this object, or otherwise no arguments if there is no data to return.
-	 * - If an error occurs, the Promise should be rejected. Optionally, an error message or object may be provided as the first
+	 *   object. The Request should then be resolved with this object, or otherwise no argument if there is no data to return.
+	 * - If an error occurs, the Request should be rejected. Optionally, an error message or object may be provided as the first
 	 *   argument to the reject method.
 	 * 
 	 * 
 	 * ## Example Implementation Method
 	 * 
 	 *     read : function( request ) {
-	 *         var me = this,  // for closures
-	 *             deferred = new jQuery.Deferred();
+	 *         var me = this;  // for closures
 	 *         
 	 *         jQuery.ajax( {
 	 *             url : '...',
@@ -676,14 +677,12 @@ define('data/persistence/proxy/Proxy', [
 	 *             
 	 *             success : function( data ) {
 	 *                 var resultSet = me.reader.read( data );  // default reader is a {@link data.persistence.reader.Json JsonReader}
-	 *                 deferred.resolve( resultSet );
+	 *                 request.resolve( resultSet );
 	 *             },
 	 *             error : function( jqXHR, textStatus, errorThrown ) {
-	 *                 deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+	 *                 request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 	 *             }
 	 *         } );
-	 *         
-	 *         return deferred.promise();
 	 *     }
 	 * 
 	 * For a full example implementation, see the {@link data.persistence.proxy.Ajax Ajax} proxy.
@@ -692,40 +691,36 @@ define('data/persistence/proxy/Proxy', [
 	 * ## Notifying of progress
 	 * 
 	 * Normally, if a Proxy does not notify of any progress explicitly, then a Requests's parent
-	 * {@link data.persistence.operation.Operation Operation} is notified of progress as each 
+	 * {@link data.persistence.operation.Operation Operation} is notified of progress as each individual
 	 * {@link data.persistence.request.Request Request} completes. 
 	 * 
 	 * Proxies can notify observers of progress being made within the proxy at a Request level though, for finer grained
-	 * progress notification. The Deferred object which a Proxy creates may have the `notify()` method called on it, which
-	 * will in turn notify its parent Operation. For example:
+	 * progress notification. The Request object which a Proxy is passed may have the {@link data.persistence.request.Request#notify notify}
+	 * method called on it, which will in turn notify its parent Operation. For example:
 	 * 
 	 *      destroy : function( request ) {
-	 *         var me = this,  // for closures
-	 *             deferred = new jQuery.Deferred(),
-	 *             promises = [];
+	 *         var me = this;  // for closures
 	 *         
 	 *         // Assume the `request` object (a {@link data.persistence.request.Destroy DestroyRequest} object) has 2 models 
 	 *         // to destroy on a server via 2 individual ajax requests
-	 *         _.forEach( request.getModels(), function( model ) {
+	 *         var promises = _.map( request.getModels(), function( model ) {
 	 *             var promise = jQuery.ajax( {
 	 *                 url : '...',
 	 *                 dataType: 'json',
 	 *                 
 	 *                 success : function( data ) {
-	 *                     deferred.notify();  // notify of progress when each individual ajax request is complete
+	 *                     request.notify();  // notify of progress when each individual ajax request is complete
 	 *                 },
 	 *                 error : function( jqXHR, textStatus, errorThrown ) {
-	 *                     deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );  // as soon as one ajax request errors, reject the Deferred
+	 *                     request.reject( { textStatus: textStatus, errorThrown: errorThrown } );  // as soon as one ajax request errors, reject the Request
 	 *                 }
 	 *             } );
 	 *             
-	 *             promises.push( promise );
+	 *             return promise;
 	 *         } );
 	 *         
-	 *         // Only resolve the main Deferred when all individual ajax promises are resolved
-	 *         jQuery.when.apply( jQuery, promises ).then( function() { deferred.resolve(); } );
-	 *         
-	 *         return deferred.promise();
+	 *         // Only resolve the main Request when all individual AJAX promises are resolved
+	 *         jQuery.when.apply( jQuery, promises ).then( function() { request.resolve(); } );
 	 *     }
 	 * 
 	 * 
@@ -734,17 +729,17 @@ define('data/persistence/proxy/Proxy', [
 	 * Proxy gives a hook method for when a persistence operation is {@link data.persistence.operation.Operation#abort aborted}. 
 	 * This is to allow any proxy-specific cleanup of {@link data.persistence.request.Request Requests} made by the proxy. 
 	 * For example, the {@link data.persistence.proxy.Ajax Ajax} proxy calls the `abort()` method on the underlying 
-	 * `XMLHttpRequest` object for a request, to terminate the connection to the remote server.
+	 * `XMLHttpRequest` object for a request, to terminate the connection to a remote server.
 	 * 
 	 * The {@link #abort} method is passed the original {@link data.persistence.request.Request Request} object that 
 	 * began the request. If multiple Requests were made to perform a persistence {@link data.persistence.operation.Operation},
-	 * then the {@link #abort} method is called once for each Request. Note that only Request objects which are not yet 
-	 * {@link data.persistence.request.Request#isComplete complete} are passed to the {@link #abort} method.
+	 * then the {@link #abort} method is called multiple times - once for each Request. Note that only Request objects which 
+	 * are not yet {@link data.persistence.request.Request#isComplete complete} are passed to the {@link #abort} method.
 	 * 
-	 * It is not required that this method be implemented by the Proxy. The data container classes ({@link data.Model Model} 
-	 * and {@link data.Collection Collection} will properly handle an aborted request by ignoring its result (or error) if 
-	 * the Request eventually completes at a later time. However, it is useful to implement if resources can be saved or
-	 * if any cleanup needs to be made.
+	 * It is not required that the {@link #abort} method be implemented by the Proxy. The data container classes 
+	 * ({@link data.Model Model} and {@link data.Collection Collection} will properly handle an aborted request by ignoring 
+	 * its result (or error) if the Request eventually completes at a later time. However, it is useful to implement if resources 
+	 * can be saved or if any cleanup needs to be made.
 	 */
 	var Proxy = Observable.extend( {
 		abstractClass : true,
@@ -766,8 +761,7 @@ define('data/persistence/proxy/Proxy', [
 			 * Registers a Proxy subclass by name, so that it may be created by an anonymous object
 			 * with a `type` attribute when set to the prototype of a {@link data.Model}.
 			 *
-			 * @static  
-			 * @method register
+			 * @static
 			 * @param {String} type The type name of the persistence proxy.
 			 * @param {Function} proxyClass The class (constructor function) to register.
 			 */
@@ -791,7 +785,6 @@ define('data/persistence/proxy/Proxy', [
 			 * {@link data.persistence.proxy.Proxy Proxy} is provided, it will simply be returned unchanged.
 			 * 
 			 * @static
-			 * @method create
 			 * @param {Object} config The configuration object for the Proxy. Config objects should have the property `type`, 
 			 *   which determines which type of {@link data.persistence.proxy.Proxy} will be instantiated. If the object does not
 			 *   have a `type` property, an error will be thrown. Note that already-instantiated {@link data.persistence.proxy.Proxy Proxies} 
@@ -850,16 +843,13 @@ define('data/persistence/proxy/Proxy', [
 		/**
 		 * Creates one or more Models on the persistent storage medium.
 		 * 
+		 * For how an implementation of this method should interact with the `request` object, see the description
+		 * for this class.
+		 * 
 		 * @abstract
 		 * @method create
 		 * @param {data.persistence.request.Create} request The CreateRequest instance to represent
 		 *   the creation on the persistent storage medium.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   The Promise's Deferred may be resolved with a {@link data.persistence.ResultSet} object as its
-		 *   argument, if there is return data from the 'create' request. If there is an error, the underlying
-		 *   Deferred may be rejected with an error string/object as its first argument. The `notify()` method on the
-		 *   Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} of
-		 *   progress.
 		 */
 		create : Class.abstractMethod,
 		
@@ -875,16 +865,13 @@ define('data/persistence/proxy/Proxy', [
 		 * - {@link data.persistence.request.Read#start start}/{@link data.persistence.request.Read#limit limit}
 		 * - {@link data.persistence.request.Read#params params} (if applicable)
 		 * 
+		 * For how an implementation of this method should interact with the `request` object, see the description
+		 * for this class.
+		 * 
 		 * @abstract
 		 * @method read
 		 * @param {data.persistence.request.Read} request The ReadRequest instance to represent
 		 *   the reading of data from the persistent storage medium.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   The Promise's Deferred should be resolved with a {@link data.persistence.ResultSet} object as its
-		 *   argument, which contains the return data from the 'read' request. This usually comes from the {@link #reader}.
-		 *   If there is an error, the underlying Deferred may be rejected with an error string/object as its first argument.
-		 *   The `notify()` method on the Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} 
-		 *   of progress.
 		 */
 		read : Class.abstractMethod,
 		
@@ -892,16 +879,13 @@ define('data/persistence/proxy/Proxy', [
 		/**
 		 * Updates one or more Models on the persistent storage medium.  
 		 * 
+		 * For how an implementation of this method should interact with the `request` object, see the description
+		 * for this class.
+		 * 
 		 * @abstract
 		 * @method update
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance to represent
 		 *   the update on the persistent storage medium.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   The Promise's Deferred may be resolved with a {@link data.persistence.ResultSet} object as its
-		 *   argument, if there is return data from the 'update' request. If there is an error, the underlying
-		 *   Deferred may be rejected with an error string/object as its first argument. The `notify()` method 
-		 *   on the Deferred may also be called to notify a parent {@link data.persistence.operation.Operation Operation} 
-		 *   of progress.
 		 */
 		update : Class.abstractMethod,
 		
@@ -909,18 +893,44 @@ define('data/persistence/proxy/Proxy', [
 		/**
 		 * Destroys (deletes) one or more Models on the persistent storage medium.
 		 * 
+		 * For how an implementation of this method should interact with the `request` object, see the description
+		 * for this class.
+		 * 
 		 * Note: This method is not named "delete", as `delete` is a JavaScript keyword.
 		 * 
 		 * @abstract
 		 * @method destroy
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance to represent
 		 *   the destruction (deletion) on the persistent storage medium.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   If there is an error, the underlying Deferred may be rejected with an error string/object as 
-		 *   its first argument. The `notify()` method  on the Deferred may also be called to notify a parent 
-		 *   {@link data.persistence.operation.Operation Operation} of progress.
 		 */
 		destroy : Class.abstractMethod,
+		
+		
+		/**
+		 * Performs a batch of create/read/update/destroy requests, specified by the given 
+		 * {@link data.persistence.request.Batch Batch} object.
+		 * 
+		 * By default, this method sends the 'create' requests to the {@link #create} method, the 'read' requests
+		 * to the {@link #read} method, the 'update' requests to the {@link #update} method, and the 'destroy' requests 
+		 * to the {@link #destroy} method. 
+		 * 
+		 * However, this method may be overridden to support different batching functionality. For example, one might want 
+		 * to combine multiple create/update/destroy requests made by a {@link data.Collection} (via the 
+		 * {@link data.Collection#sync sync} method) into a single network request, and send them to a server for processing 
+		 * all at once.
+		 * 
+		 * @param {data.persistence.request.Batch} batch The Batch object which holds the Request(s) to perform.
+		 */
+		batch : function( batch ) {
+			_.forEach( batch.getRequests(), function( request ) {
+				switch( request.getAction() ) {
+					case 'create'  : return this.create( request );
+					case 'read'    : return this.read( request );
+					case 'update'  : return this.update( request );
+					case 'destroy' : return this.destroy( request );
+				}
+			}, this );
+		},
 		
 		
 		/**
@@ -983,6 +993,20 @@ define('data/DataComponent', [
 		inheritedStatics : {
 			
 			/**
+			 * @static
+			 * @inheritable
+			 * @property {Boolean} isDataComponentClass (readonly)
+			 * 
+			 * A property simply to identify DataComponent classes (constructor functions) as such. This is so that we don't need circular dependencies 
+			 * in some of the other Data.js files, which only bring in the DataComponent class in order to determine if a function is in fact a 
+			 * DataComponent constructor function.
+			 * 
+			 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+			 * no circular dependencies exist.
+			 */
+			isDataComponent : true,
+			
+			/**
 			 * Retrieves the {@link data.persistence.proxy.Proxy} that is configured for the DataComponent class. To retrieve
 			 * a proxy that may belong to a particular DataComponent instance, use the instance level {@link #method-getProxy}.
 			 * 
@@ -1022,6 +1046,18 @@ define('data/DataComponent', [
 		 * implementation.)
 		 */
 		
+		
+		/**
+		 * @property {Boolean} isDataComponent (readonly)
+		 * 
+		 * A property simply to identify DataComponent instances as such. This is so that we don't need circular dependencies in some of the
+		 * other Data.js files, which only bring in the DataComponent class for an `instanceof` check to determine if a given value is a
+		 * DataComponent.
+		 * 
+		 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+		 * no circular dependencies exist.
+		 */
+		isDataComponent : true,
 		
 		/**
 		 * @protected
@@ -1165,6 +1201,146 @@ define('data/DataComponent', [
 	} );
 	
 	return DataComponent;
+	
+} );
+/*global define */
+define('data/NativeObjectConverter', [
+	'lodash'
+], function( _ ) {
+	
+	/**
+	 * @private
+	 * @class data.NativeObjectConverter
+	 * @singleton
+	 * 
+	 * NativeObjectConverter allows for the conversion of {@link data.Collection Collection} / {@link data.Model Models}
+	 * to their native Array / Object representations, while dealing with circular references.
+	 */
+	var NativeObjectConverter = {
+		
+		/**
+		 * Converts a {@link data.Collection Collection} or {@link data.Model} to its native Array/Object representation,
+		 * while dealing with circular references.
+		 *  
+		 * @param {data.Collection/data.Model} A Collection or Model to convert to its native Array/Object representation.
+		 * @param {Object} [options] An object (hashmap) of options to change the behavior of this method. This may include:
+		 * @param {String[]} [options.attributeNames] In the case that a {@link data.Model Model} is provided to this method, this
+		 *   may be an array of the attribute names that should be returned in the output object.  Other attributes will not be processed.
+		 *   (Note: only affects the Model passed to this method, and not nested models.)
+		 * @param {Boolean} [options.persistedOnly] True to have the method only return data for the persisted attributes on
+		 *   Models (i.e. attributes with the {@link data.attribute.Attribute#persist persist} config set to true, which is the default).
+		 * @param {Boolean} [options.raw] True to have the method only return the raw data for the attributes, by way of the {@link data.Model#raw} method. 
+		 *   This is used for persistence, where the raw data values go to the server rather than higher-level objects, or where some kind of serialization
+		 *   to a string must take place before persistence (such as for Date objects). 
+		 *   
+		 *   As a hack (unfortunately, due to limited time), if passing the 'raw' option as true, and a nested {@link data.Collection Collection} is in a 
+		 *   {@link data.attribute.Collection} that is *not* {@link data.attribute.Collection#embedded}, then only an array of the 
+		 *   {@link data.Model#idAttribute ID attribute} values is returned for that collection. The final data for a related (i.e. non-embedded) nested
+		 *   Collection may look something like this:
+		 *     
+		 *     myRelatedCollection : [
+		 *         { id: 1 },
+		 *         { id: 2 }
+		 *     ]
+		 * 
+		 * 
+		 * @return {Object[]/Object} An array of objects (for the case of a Collection}, or an Object (for the case of a Model)
+		 *   with the internal attributes converted to their native equivalent.
+		 */
+		convert : function( dataComponent, options ) {
+			options = options || {};
+			var cache = {},  // keyed by models' clientId, and used for handling circular references
+			    persistedOnly = !!options.persistedOnly,
+			    raw = !!options.raw,
+			    data = ( dataComponent.isCollection ) ? [] : {};  // Collection is an Array, Model is an Object
+			
+			// Prime the cache with the Model/Collection provided to this method, so that if a circular reference points back to this
+			// model, the data object is not duplicated as an internal object (i.e. it should refer right back to the converted
+			// Model's/Collection's data object)
+			cache[ dataComponent.getClientId() ] = data;
+			
+			// Recursively goes through the data structure, and convert models to objects, and collections to arrays
+			_.assign( data, (function convert( dataComponent, attribute ) {  // attribute is only used when processing models, and a nested collection is come across, where the data.attribute.Attribute is passed along for processing when 'raw' is provided as true. See doc for 'raw' option about this hack..
+				var clientId, 
+				    cachedDataComponent,
+				    data,
+				    i, len;
+				
+				if( dataComponent.isModel ) {
+					// Handle Models
+					var attributes = dataComponent.getAttributes(),
+					    attributeNames = options.attributeNames || _.keys( attributes ),
+					    attributeName, currentValue;
+					
+					data = {};  // data is an object for a Model
+					
+					// Slight hack, but delete options.attributeNames now, so that it is not used again for inner Models (should only affect the first 
+					// Model that gets converted, i.e. the Model provided to this method)
+					delete options.attributeNames;
+					
+					for( i = 0, len = attributeNames.length; i < len; i++ ) {
+						attributeName = attributeNames[ i ];
+						if( !persistedOnly || attributes[ attributeName ].isPersisted() === true ) {
+							currentValue = data[ attributeName ] = ( raw ) ? dataComponent.raw( attributeName ) : dataComponent.get( attributeName );
+							
+							// Process Nested DataComponents
+							if( currentValue && currentValue.isDataComponent ) {
+								clientId = currentValue.getClientId();
+								
+								if( ( cachedDataComponent = cache[ clientId ] ) ) {
+									data[ attributeName ] = cachedDataComponent;
+								} else {
+									// first, set up an array/object for the cache (so it exists when checking for it in the next call to convert()), 
+									// and set that array/object to the return data as well
+									cache[ clientId ] = data[ attributeName ] = ( currentValue.isCollection ) ? [] : {};  // Collection is an Array, Model is an Object
+									
+									// now, populate that object with the properties of the inner object
+									_.assign( cache[ clientId ], convert( currentValue, attributes[ attributeName ] ) );
+								}
+							}
+						}
+					}
+					
+				} else if( dataComponent.isCollection ) {
+					// Handle Collections
+					var models = dataComponent.getModels(),
+					    model, idAttributeName;
+					
+					data = [];  // data is an array for a Container
+					
+					// If the 'attribute' argument to the inner function was provided (coming from a Model that is being converted), and the 'raw' option is true,
+					// AND the collection is *not* an embedded collection (i.e. it is a "related" collection), then we only want the ID's of the models for the conversion.
+					// See note about this hack in the doc comment for the method for the 'raw' option.
+					if( options.raw && attribute && !attribute.isEmbedded() ) {
+						for( i = 0, len = models.length; i < len; i++ ) {
+							model = models[ i ];
+							idAttributeName = model.getIdAttributeName();
+							
+							data[ i ] = {};
+							data[ i ][ idAttributeName ] = model.get( idAttributeName );
+						}
+						
+					} else { 
+						// Otherwise, provide the models themselves
+						for( i = 0, len = models.length; i < len; i++ ) {
+							model = models[ i ];
+							clientId = model.getClientId();
+							
+							data[ i ] = cache[ clientId ] || convert( model );
+						}
+					}
+				}
+				
+				return data;
+			})( dataComponent ) );
+			
+			return data;
+		}
+		
+	};
+	
+	
+	return NativeObjectConverter;
 	
 } );
 /*global define */
@@ -1533,6 +1709,385 @@ define('data/persistence/operation/Deferred', [
 	
 } );
 /*global define */
+define('data/persistence/operation/Batch', [
+	'jquery',
+	'lodash',
+	'Class',
+	
+	'data/persistence/operation/Deferred'
+], function( jQuery, _, Class, OperationDeferred ) {
+	
+	/**
+	 * @class data.persistence.operation.Batch
+	 * 
+	 * Represents one or more persistence {@link data.persistence.operation.Operation Operations} as a whole.
+	 * 
+	 * The OperationBatch is a Deferred object. It {@link #resolve resolves} itself when all of the
+	 * {@link #operations} that it has been configured with resolve themselves. See {@link data.persistence.operation.Operation}
+	 * for more details on Deferred objects, the states that it may be in, and which handler functions are called
+	 * when the Deferred changes state.
+	 * 
+	 * Note that OperationBatch is also an immutable object, which must be configured with the Operations that it is
+	 * to keep track of. When all Operations are complete, the OperationBatch {@link #resolve resolves} itself.
+	 */
+	var OperationBatch = Class.create( {
+		
+		/**
+		 * @cfg {data.DataComponent} dataComponent (required)
+		 * 
+		 * The DataComponent ({@link data.Model Model) or {@link data.Collection Collection} that the OperationBatch is
+		 * operating on.
+		 */
+		
+		/**
+		 * @cfg {data.persistence.operation.Operation[]} operations (required)
+		 * 
+		 * The Operations to keep track of.
+		 */
+		
+		
+		/**
+		 * @protected
+		 * @property {data.persistence.operation.Deferred} deferred
+		 * 
+		 * The OperationDeferred instance for the OperationBatch. This Deferred is resolved when all
+		 * {@link #operations} have completed.
+		 */
+		
+		
+		/**
+		 * @constructor
+		 * @param {Object} cfg The configuration options for this class, provided in an Object (map).
+		 */
+		constructor : function( cfg ) {
+			_.assign( this, cfg );
+			
+			// <debug>
+			if( !this.dataComponent ) throw new Error( "`dataComponent` cfg required" );
+			if( !this.operations ) throw new Error( "`operations` cfg required" );
+			// </debug>
+			
+			this.deferred = new OperationDeferred();
+			
+			this.subscribeOperationHandlers( this.operations );
+		},
+		
+		
+		/**
+		 * Subscribes promise handlers to the individual {@link #operations}, which subsequently interact with
+		 * this OperationBatch's {@link #deferred}.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Operation[]} operations
+		 */
+		subscribeOperationHandlers : function( operations ) {
+			// Set up handlers to call `progress` handlers of the OperationBatch when each operation completes or 
+			// reports progress themselves
+			var notify = _.bind( this.notify, this );
+			_.forEach( operations, function( operation ) { operation.progress( notify ).done( notify ); } );
+			
+			// Resolve the internal Deferred when all operations have completed, or reject it if one has errored.
+			jQuery.when.apply( jQuery, operations )
+				.done( _.bind( this.resolve, this ) )
+				.fail( _.bind( this.reject, this ) );
+		},
+		
+		
+		/**
+		 * Retrieves the {@link #operations} in the OperationBatch.
+		 * 
+		 * @return {data.persistence.operation.Operation[]}
+		 */
+		getOperations : function() {
+			return this.operations;
+		},
+		
+		
+		// -----------------------------------
+		
+		// OperationBatch's Deferred/State interface
+		
+		
+		/**
+		 * Marks the OperationBatch as successful, and calls all {@link #done} handlers of the OperationBatch's deferred.
+		 * This includes `done` handlers set using the {@link #then} method.
+		 * 
+		 * {@link #done} handlers are called with two arguments:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this OperationBatch is operating on.
+		 * - **operationBatch** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @protected
+		 */
+		resolve : function() {
+			this.deferred.resolve( this.dataComponent, this );
+		},
+		
+		
+		/**
+		 * Marks the OperationBatch as having errored, and calls all {@link #fail} handlers of the OperationBatch's deferred.
+		 * This includes `fail` handlers set using the {@link #then} method.
+		 * 
+		 * {@link #fail} handlers are called with two arguments:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this OperationBatch is operating on.
+		 * - **operationBatch** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @protected
+		 */
+		reject : function() {
+			this.deferred.reject( this.dataComponent, this );
+		},
+		
+		
+		/**
+		 * Calls {@link #progress} handlers of the OperationBatch.
+		 * 
+		 * {@link #progress} handlers are called with two arguments:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this OperationBatch is operating on.
+		 * - **operationBatch** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @protected
+		 */
+		notify : function() {
+			this.deferred.notify( this.dataComponent, this );
+		},
+		
+		
+		/**
+		 * Aborts (cancels) the OperationBatch, if it is still in progress. The {@link data.DataComponent DataComponent}
+		 * ({@link data.Model} or {@link data.Collection}) will ignore the result of the Operations, even if they
+		 * ends up completing at a later time. 
+		 * 
+		 * This method calls each of the incomplete operations' {@link data.persistence.operation.Operation#abort abort}
+		 * method. See {@link data.persistence.operation.Operation#abort} for more details.
+		 *  
+		 * This method may only be useful for {@link data.persistence.operation.Load LoadOperations}, as it may cause 
+		 * {@link data.persistence.operation.Save Save} and {@link data.persistence.operation.Destroy Destroy}
+		 * operations to leave the backing persistence medium in an inconsistent state. However, it is provided
+		 * if say, a retry is going to be performed and the previous operation should be aborted on the client-side.
+		 * 
+		 * {@link #cancel} handlers are called with two arguments:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
+		 * - **operationBatch** (OperationBatch): This OperationBatch object.
+		 */
+		abort : function() {
+			if( !this.isComplete() ) {
+				this.deferred.abort( this.dataComponent, this );
+				
+				_.forEach( this.operations, function( operation ) { operation.abort(); } );
+			}
+		},
+		
+		
+		/**
+		 * Determines if the OperationBatch itself was successful. In order to be considered successful, all of the OperationBatch's 
+		 * {@link #operations} must have completed successfully.
+		 * 
+		 * @return {Boolean}
+		 */
+		wasSuccessful : function() {
+			return ( this.state() === 'resolved' );
+		},
+		
+		
+		/**
+		 * Determines if the OperationBatch failed to complete successfully. If any of the {@link #operations}
+		 * have errored, this method returns `true`.
+		 * 
+		 * @return {Boolean}
+		 */
+		hasErrored : function() {
+			return ( this.state() === 'rejected' );
+		},
+		
+		
+		/**
+		 * Determines if the OperationBatch was aborted (via the {@link #abort} method).
+		 * 
+		 * @return {Boolean}
+		 */
+		wasAborted : function() {
+			return ( this.state() === 'aborted' );
+		},
+		
+		
+		/**
+		 * Determines if the OperationBatch has been completed. This means that all {@link #operations} have been completed,
+		 * and the {@link #dataComponent} has processed their results.
+		 * 
+		 * @return {Boolean} `true` if all {@link #operations} are complete, `false` if any are not yet complete.
+		 */
+		isComplete : function() {
+			return ( this.state() !== 'pending' );
+		},
+		
+		
+		
+		// -----------------------------------
+		
+		// Promise interface
+
+		/**
+		 * Returns the OperationBatch itself (this object). 
+		 * 
+		 * This method is purely for compatibility with jQuery's Promise API, and is also for methods like 
+		 * `jQuery.when()`, which uses the existence of this method as a duck-type check in order to 
+		 * determine if a Deferred or Promise object has been passed to it.  
+		 * 
+		 * @return {data.persistence.operation.Batch} This OperationBatch object.
+		 */
+		promise : function() {
+			return this;
+		},
+		
+		
+		/**
+		 * Determines the state of the OperationBatch's {@link #deferred} object. This method is here for compatibility with 
+		 * jQuery's Deferred/Promise interface.
+		 * 
+		 * This method will return one of the following values:
+		 * - **"pending"**: The OperationDeferred object is not yet in a completed state (neither "rejected", "resolved", nor 
+		 *   "aborted").
+		 * - **"resolved"**: The OperationDeferred object is in its 'resolved' state, when the OperationBatch has completed
+		 *   {@link #wasSuccessful successfully}.
+		 * - **"rejected"**: The OperationDeferred object is in its 'rejected' state, when the OperationBatch has 
+		 *   {@link #hasErrored errored}.
+		 * - **"aborted"**: The OperationDeferred object is in its 'aborted' state, when the OperationBatch has been
+		 *   {@link #wasAborted aborted}.
+		 * 
+		 * @return {String} See return values, above.
+		 */
+		state : function() {
+			return this.deferred.state();
+		},
+		
+		
+		/**
+		 * Adds a handler for when the OperationBatch has made progress. Progress is defined as one of the OperationBatch's
+		 * {@link #operations} having been completed successfully. 
+		 * 
+		 * Note that the OperationBatch shouldn't necessarily be considered "complete" if all of its {@link #operations} have completed 
+		 * successfully. The OperationBatch may still be in an "in progress" state if its {@link #dataComponent} ({@link data.Model Model} 
+		 * or {@link data.Collection Collection}) has not yet processed the OperationBatch's results. (For instance, the 
+		 * {@link #dataComponent} may be waiting for other Operations to complete alongside this one, before it will process the 
+		 * result.) Therefore, do not rely on the completion of all {@link #operations} in order to consider the OperationBatch "complete."
+		 * 
+		 * 
+		 * Handlers are called with the following arguments when the OperationBatch has been notified of progress (i.e. one
+		 * of its requests has been completed):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this OperationBatch is operating on.
+		 * - **operation** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		progress : function( handlerFn ) {
+			this.deferred.progress( handlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds a handler for when the OperationBatch has completed successfully.
+		 * 
+		 * Handlers are called with the following two arguments when the OperationBatch completes successfully:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
+		 * - **operation** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		done : function( handlerFn ) {
+			this.deferred.done( handlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds a handler for if the OperationBatch fails to complete successfully.
+		 * 
+		 * Handlers are called with the following two arguments when the OperationBatch fails to complete successfully:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
+		 * - **operation** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		fail : function( handlerFn ) {
+			this.deferred.fail( handlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds a handler for if the OperationBatch has been {@link #abort aborted}.
+		 * 
+		 * Handlers are called with the following two arguments when the OperationBatch has been aborted (canceled):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
+		 * - **operation** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		cancel : function( handlerFn ) {
+			this.deferred.cancel( handlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds handler functions for if the OperationBatch completes successfully, fails to complete successfully, and when notified
+		 * that progress has been made.
+		 * 
+		 * Note: This method does *not* support jQuery's "filtering" functionality.
+		 * 
+		 * Handlers are called with the following two arguments when the OperationBatch has completed successfully or has failed:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
+		 * - **operation** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @param {Function} successHandlerFn
+		 * @param {Function} [failureHandlerFn]
+		 * @param {Function} [progressHandlerFn]
+		 * @chainable
+		 */
+		then : function( successHandlerFn, failureHandlerFn, progressHandlerFn ) {
+			this.deferred.then( successHandlerFn, failureHandlerFn, progressHandlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds a handler for when the OperationBatch completes, regardless of success or failure.
+		 * 
+		 * Handlers are called with the following two arguments when the OperationBatch has completed successfully, has failed,
+		 * or has been aborted (canceled):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
+		 * - **operation** (OperationBatch): This OperationBatch object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		always : function( handlerFn ) {
+			this.deferred.always( handlerFn );
+			return this;
+		}
+		
+	} );
+	
+	return OperationBatch;
+		
+} );
+	
+/*global define */
 define('data/persistence/operation/Operation', [
 	'jquery',
 	'lodash',
@@ -1848,26 +2403,19 @@ define('data/persistence/operation/Operation', [
 			
 			var me = this,  // for closures
 			    proxy = this.proxy,
+			    requests = this.requests,
 			    requestsDeferred = this.requestsDeferred,  // The Operation's requestDeferred
 			    notify = _.bind( this.notify, this );
 			
-			// Execute all individual requests, and when they are complete, resolve or reject the 
-			// Operation's "requestsDeferred"
-			var requestsPromises = _.map( this.requests, function( request ) {  // Execute all requests and return an array of Promise objects, one for each Request 
-				var promise = proxy[ request.getAction() ]( request )
-					.progress( notify )  // notify of "progress" (calls `progress` handlers)
-					.done( function( resultSet ) {  // request successful
-						if( resultSet ) request.setResultSet( resultSet );
-						request.setSuccess();
-						
-						notify();  // notify of "progress" (calls `progress` handlers)
-					} )
-					.fail( function( error ) { request.setError( error ); } );
+			// Execute all requests
+			_.forEach( requests, function( request ) { 
+				request.progress( notify ).done( notify );  // notify of "progress" and completion (calls `progress` handlers)
 				
-				return promise;
+				proxy[ request.getAction() ]( request );    // execute the request
 			} );
 			
-			jQuery.when.apply( jQuery, requestsPromises )
+			// When all requests are complete, resolve or reject the Operation's `requestsDeferred`
+			jQuery.when.apply( jQuery, requests )
 				.done( function() { requestsDeferred.resolve( me ); } )
 				.fail( function() { requestsDeferred.reject( me ); } );
 			
@@ -2264,48 +2812,174 @@ define('data/persistence/operation/Load', [
 	
 } );
 /*global define */
-define('data/persistence/operation/Save', [
-	'data/persistence/operation/Operation'
-], function( Operation ) {
+define('data/persistence/request/Batch', [
+	'lodash',
+	'Class'
+], function( _, Class ) {
 	
 	/**
-	 * @class data.persistence.operation.Save
-	 * @extends data.persistence.operation.Operation
-	 *
-	 * Represents a high level Save operation performed on a {@link data.Model Model}, or part of a
-	 * sync operation on a {@link data.Collection Collection}. See the superclass for details.
+	 * @class data.persistence.request.Batch
+	 * 
+	 * Represents one or more {@link data.persistence.request.Request Requests} which were executed in a logical
+	 * group.
+	 * 
+	 * The Batch object provides access to each internal {@link data.persistence.request.Request Request}, and provides
+	 * methods for determining the overall success or failure (error) state of the Requests within it. 
 	 */
-	var SaveOperation = Operation.extend( {
+	var RequestBatch = Class.extend( Object, {
+		
+		/**
+		 * @cfg {data.persistence.request.Request/data.persistence.request.Request[]} requests
+		 * 
+		 * One or more Request(s) that make up the Batch.
+		 */
+		
+		
+		/**
+		 * @private
+		 * @property {Number} id
+		 * 
+		 * The RequestBatch's ID. This is a unique number for each RequestBatch that is created, and its value
+		 * is ever-increasing. This means that an RequestBatch object created after another RequestBatch
+		 * will have a higher ID value than the first RequestBatch. 
+		 * 
+		 * This property of the ID value is used to determine when an older request has completed after a newer one.
+		 */
+		
+		
+		/**
+		 * @constructor
+		 * @param {Object} [cfg] Any of the configuration options for this class, in an Object (map).
+		 */
+		constructor : function( cfg ) {
+			_.assign( this, cfg );
+			
+			this.id = +_.uniqueId();
+			
+			// normalize the `requests` config to an array
+			this.requests = ( this.requests ) ? [].concat( this.requests ) : [];
+		},
+		
+		
+		/**
+		 * Retrieves the RequestBatch's {@link #id}.
+		 * 
+		 * @return {Number}
+		 */
+		getId : function() {
+			return this.id;
+		},
+		
+		
+		/**
+		 * Retrieves all of the {@link #requests} for this Batch. 
+		 * 
+		 * @return {data.persistence.request.Request[]}
+		 */
+		getRequests : function() {
+			return this.requests;
+		},
+		
+		
+		/**
+		 * Retrieves all of the {@link data.persistence.request.Create Create} requests in the Batch.
+		 * 
+		 * @return {data.persistence.request.Create[]}
+		 */
+		getCreateRequests : function() {
+			return _.filter( this.requests, function( req ) { return req.getAction() === 'create'; } );
+		},
+		
+		
+		/**
+		 * Retrieves all of the {@link data.persistence.request.Update Update} requests in the Batch.
+		 * 
+		 * @return {data.persistence.request.Update[]}
+		 */
+		getUpdateRequests : function() {
+			return _.filter( this.requests, function( req ) { return req.getAction() === 'update'; } );
+		},
+		
+		
+		/**
+		 * Retrieves all of the {@link data.persistence.request.Destroy Destroy} requests in the Batch.
+		 * 
+		 * @return {data.persistence.request.Destroy[]}
+		 */
+		getDestroyRequests : function() {
+			return _.filter( this.requests, function( req ) { return req.getAction() === 'destroy'; } );
+		},
+		
+		
+		// -----------------------------------
+		
+		// Completion Methods
+		
+		
+		/**
+		 * Determines if the Batch of {@link #requests} completed successfully. All {@link #requests}
+		 * must have completed successfully for the Batch to be considered successful.
+		 * 
+		 * @return {Boolean}
+		 */
+		wasSuccessful : function() {
+			return _.all( this.requests, function( req ) { return req.wasSuccessful(); } );
+		},
+		
+		
+		/**
+		 * Determines if the Batch failed to complete successfully. If any of the {@link #requests}
+		 * has errored, this method returns true.
+		 * 
+		 * @return {Boolean}
+		 */
+		hasErrored : function() {
+			return !this.wasSuccessful();
+		},
+		
+		
+		/**
+		 * Retrieves each {@link data.persistence.request.Request Request} object that has completed
+		 * successfully.
+		 * 
+		 * @return {data.persistence.request.Request[]} An array of the Requests which have completed
+		 *   successfully.
+		 */
+		getSuccessfulRequests : function() {
+			return _.filter( this.requests, function( req ) { return req.wasSuccessful(); } );
+		},
+		
+		
+		/**
+		 * Retrieves each {@link data.persistence.request.Request Request} object that has errored.
+		 * 
+		 * @return {data.persistence.request.Request[]} An array of the Requests which have errored.
+		 */
+		getErroredRequests : function() {
+			return _.filter( this.requests, function( req ) { return req.hasErrored(); } );
+		},
+		
+		
+		/**
+		 * Determines if all {@link data.persistence.request.Request Requests} in the batch are complete.
+		 * 
+		 * @return {Boolean} `true` if all Requests are complete, `false` if any are not yet complete.
+		 */
+		isComplete : function() {
+			return _.all( this.requests, function( req ) { return req.isComplete(); } );
+		}
 		
 	} );
 	
-	return SaveOperation;
-	
-} );
-/*global define */
-define('data/persistence/operation/Destroy', [
-	'data/persistence/operation/Operation'
-], function( Operation ) {
-	
-	/**
-	 * @class data.persistence.operation.Destroy
-	 * @extends data.persistence.operation.Operation
-	 *
-	 * Represents a high level Destroy operation performed on a {@link data.Model Model}, or part of a
-	 * sync operation on a {@link data.Collection Collection}. See the superclass for details.
-	 */
-	var DestroyOperation = Operation.extend( {
-		
-	} );
-	
-	return DestroyOperation;
+	return RequestBatch;
 	
 } );
 /*global define */
 define('data/persistence/request/Request', [
+	'jquery',
 	'lodash',
 	'Class'
-], function( _, Class ) {
+], function( jQuery, _, Class ) {
 	
 	/**
 	 * @abstract
@@ -2313,10 +2987,14 @@ define('data/persistence/request/Request', [
 	 * 
 	 * Represents a request for a {@link data.persistence.proxy.Proxy} to carry out. This class represents any CRUD request 
 	 * to be performed, passes along any options needed for that request, and accepts any data/state as a result of the 
-	 * request from the proxy. 
+	 * request from the proxy.
+	 * 
+	 * Besides this class being a container for a Request's data, it is also a Deferred object, which is how 
+	 * {@link data.persistence.proxy.Proxy proxies} interact with it. The {@link #resolve} method should be called when a 
+	 * Proxy has completed a Request, or the {@link #reject} method should be called if an error has occurred.
 	 * 
 	 * Note: This class does not (necessarily) represent an HTTP request. It represents a request to a 
-	 * {@link data.persistence.proxy.Proxy Proxy}, which will in turn create/read/update/destroy the data wherever the 
+	 * {@link data.persistence.proxy.Proxy Proxy}, which will in turn create/read/update/destroy the model(s) wherever the 
 	 * Proxy is written/configured to do so. This may be a server, local storage, etc.
 	 * 
 	 * ## Subclasses
@@ -2367,40 +3045,31 @@ define('data/persistence/request/Request', [
 		 * 
 		 * A ResultSet object which contains any data read by the Request. This object contains any 
 		 * returned data, as well as any metadata (such as the total number of records in a paged data set).
-		 * This object is set by a {@link data.persistence.proxy.Proxy} when it finishes its routine, and can be 
-		 * retrieved via {@link #getResultSet}. Some notes:
+		 * This object is provided to the {@link #resolve} method by a {@link data.persistence.proxy.Proxy} when it 
+		 * finishes its persistence operation, and can be retrieved via {@link #getResultSet}. Some notes:
 		 * 
 		 * - For cases of read requests, this object will contain the data that is read by the request.
 		 * - For cases of write requests, this object will contain any "update" data that is returned to the
-		 *   Proxy when it completes its routine. For example, if a REST server returns the updated
+		 *   Proxy when it completes its operation. For example, if a REST server returns the updated
 		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
-		 *   id attribute), then the ResultSet will contain that data.
+		 *   id attribute), then the ResultSet will contain this data.
 		 */
 		
 		/**
-		 * @private
-		 * @property {Boolean} success
-		 * 
-		 * Property which is set to true upon successful completion of the Request. Read
-		 * this value with {@link #wasSuccessful}.
-		 */
-		success : false,
-		
-		/**
-		 * @private
-		 * @property {Boolean} errored
-		 * 
-		 * Property which is set to true upon failure to complete the Request. Read this value
-		 * with {@link #hasErrored}.
-		 */
-		errored : false,
-		
-		/**
-		 * @private
+		 * @protected
 		 * @property {String/Object} error
 		 * 
-		 * An object or string describing the error that occurred. Set when {@link #setError}
+		 * An object or string describing the error that occurred. Set when {@link #reject}
 		 * is called.
+		 */
+		
+		
+		/**
+		 * @protected
+		 * @property {jQuery.Deferred} deferred
+		 * 
+		 * The Deferred object for this Request. This is resolved from the {@link #resolve} method, or rejected
+		 * from the {@link #reject} method. 
 		 */
 		
 		
@@ -2410,6 +3079,8 @@ define('data/persistence/request/Request', [
 		 */
 		constructor : function( cfg ) {
 			_.assign( this, cfg );
+			
+			this.deferred = new jQuery.Deferred();
 		},
 		
 		
@@ -2445,14 +3116,42 @@ define('data/persistence/request/Request', [
 		
 		
 		/**
-		 * Accessor for a Proxy to set a ResultSet which contains the data that is has read, 
-		 * once the request completes.
+		 * Resolves the Request as successful. This should be called by the {@link data.persistence.proxy.Proxy Proxy}
+		 * that the Request is passed to when the underlying persistence operation has completed successfully.
 		 * 
-		 * @param {data.persistence.ResultSet} resultSet A ResultSet which contains the data and any metadata read by 
-		 *   the Proxy.
+		 * If there is any return data, the Request should be resolved with a {@link data.persistence.ResultSet ResultSet}
+		 * which holds it. This object is usually created by a Reader's {@link data.persistence.reader.Reader#read read}
+		 * method, which transforms any raw data and prepares it for a Model. This object may be omitted if there is no
+		 * return data.
+		 * 
+		 * @param {data.persistence.ResultSet} [resultSet] A ResultSet object which holds any return data from the Proxy.
 		 */
-		setResultSet : function( resultSet ) {
+		resolve : function( resultSet ) {
 			this.resultSet = resultSet;
+			this.deferred.resolve( resultSet );
+		},
+		
+		
+		/**
+		 * Rejects the Request as errored. This should be called by the {@link data.persistence.proxy.Proxy Proxy}
+		 * that the Request is passed to when the underlying persistence operation has failed to complete successfully.
+		 * 
+		 * If there is an error message or object, it can be provided as the first argument to this method, and will be 
+		 * available to clients of the Request.
+		 * 
+		 * @param {String/Object} [error] An object or string describing the error that occurred.
+		 */
+		reject : function( error ) {
+			this.error = error;
+			this.deferred.reject( error );
+		},
+		
+		
+		/**
+		 * Calls {@link #progress} handlers of the Request.
+		 */
+		notify : function() {
+			this.deferred.notify();
 		},
 		
 		
@@ -2466,56 +3165,17 @@ define('data/persistence/request/Request', [
 		 *   attributes of a model after it is saved (say, with some computed attributes, or a generated 
 		 *   id attribute), then the ResultSet will contain that data.
 		 * 
-		 * @return {data.persistence.ResultSet} The ResultSet read by the Proxy, or null if one has not been set.
+		 * @return {data.persistence.ResultSet} The ResultSet read by the Proxy, or `undefined` if one has not 
+		 *   been set.
 		 */
 		getResultSet : function() {
-			return this.resultSet || null;
-		},
-		
-		
-		/**
-		 * Marks the Request as successful.
-		 */
-		setSuccess : function() {
-			this.success = true;
-		},
-		
-		
-		/**
-		 * Determines if the Request completed successfully.
-		 * 
-		 * @return {Boolean}
-		 */
-		wasSuccessful : function() {
-			return this.success;
-		},
-		
-		
-		/**
-		 * Marks the Request as having errored, and optionally sets an `error` object that describes the 
-		 * error that has occurred.
-		 * 
-		 * @param {String/Object} [error] An object or string describing the error that occurred.
-		 */
-		setError : function( error ) {
-			this.errored = true;
-			this.error = error;
-		},
-		
-		
-		/**
-		 * Determines if the Request failed to complete successfully.
-		 * 
-		 * @return {Boolean}
-		 */
-		hasErrored : function() {
-			return this.errored;
+			return this.resultSet;
 		},
 		
 		
 		/**
 		 * Retrieves any {@link #error} object attached for an errored Request (via 
-		 * {@link #setError}).
+		 * {@link #reject}).
 		 * 
 		 * @return {String/Object} The {@link #error} object or string which describes
 		 *   the error that occurred for an errored Request. Returns `undefined` if no error
@@ -2527,12 +3187,187 @@ define('data/persistence/request/Request', [
 		
 		
 		/**
+		 * Determines if the Request completed successfully.
+		 * 
+		 * @return {Boolean}
+		 */
+		wasSuccessful : function() {
+			return ( this.deferred.state() === 'resolved' );
+		},
+		
+		
+		/**
+		 * Determines if the Request failed to complete successfully.
+		 * 
+		 * @return {Boolean}
+		 */
+		hasErrored : function() {
+			return ( this.deferred.state() === 'rejected' );
+		},
+		
+		
+		/**
 		 * Determines if the Request is complete.
 		 * 
 		 * @return {Boolean}
 		 */
 		isComplete : function() {
-			return this.success || this.errored;
+			return ( this.deferred.state() !== 'pending' );
+		},
+		
+		
+		// -----------------------------------
+		
+		// Promise interface
+
+		/**
+		 * Returns the Operation itself (this object). 
+		 * 
+		 * This method is purely for compatibility with jQuery's Promise API, and is also for methods like 
+		 * `jQuery.when()`, which uses the existence of this method as a duck-type check in order to 
+		 * determine if a Deferred or Promise object has been passed to it.  
+		 * 
+		 * @return {data.persistence.operation.Operation} This Operation object.
+		 */
+		promise : function() {
+			return this;
+		},
+		
+		
+		/**
+		 * Determines the state of the Operation's {@link #deferred} object. This method is here for compatibility with 
+		 * jQuery's Deferred/Promise interface.
+		 * 
+		 * This method will return one of the following values:
+		 * - **"pending"**: The OperationDeferred object is not yet in a completed state (neither "rejected", "resolved", nor 
+		 *   "aborted").
+		 * - **"resolved"**: The OperationDeferred object is in its 'resolved' state, when the Operation has completed
+		 *   {@link #wasSuccessful successfully}.
+		 * - **"rejected"**: The OperationDeferred object is in its 'rejected' state, when the Operation has 
+		 *   {@link #hasErrored errored}.
+		 * - **"aborted"**: The OperationDeferred object is in its 'aborted' state, when the Operation has been aborted.
+		 * 
+		 * @return {String} See return values, above.
+		 */
+		state : function() {
+			return this.deferred.state();
+		},
+		
+		
+		/**
+		 * Adds a handler for when the Operation has made progress. Progress is defined as one of the Operation's
+		 * {@link data.persistence.operation.Operation#requests} having been completed successfully. 
+		 * 
+		 * Note that the Operation shouldn't necessarily be considered "complete" if all of its requests have completed 
+		 * successfully. The Operation may still be in an "in progress" state if its {@link data.persistence.operation.Operation#dataComponent} 
+		 * (i.e. a {@link data.Model Model} or {@link data.Collection Collection}) has not yet processed the Operation's results. 
+		 * (For instance, the dataComponent may be waiting for other Operations to complete alongside this one, before it will process the 
+		 * result.) Therefore, do not rely on the completion of all requests in order to consider the Operation "complete."
+		 * 
+		 * 
+		 * Handlers are called with the following arguments when the Operation has been notified of progress (i.e. one
+		 * of its requests has been completed):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		progress : function( handlerFn ) {
+			this.deferred.progress( handlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds a handler for when the Operation has completed successfully.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation completes successfully:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		done : function( handlerFn ) {
+			this.deferred.done( handlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds a handler for if the Operation fails to complete successfully.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation fails to complete successfully:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		fail : function( handlerFn ) {
+			this.deferred.fail( handlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds a handler for if the Operation has been {@link data.persistence.operation.Operation#abort aborted}.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has been aborted (canceled):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		cancel : function( handlerFn ) {
+			this.deferred.cancel( handlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds handler functions for if the Operation completes successfully, fails to complete successfully, and when notified
+		 * that progress has been made.
+		 * 
+		 * Note: This method does *not* support jQuery's "filtering" functionality.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has completed successfully or has failed:
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} successHandlerFn
+		 * @param {Function} [failureHandlerFn]
+		 * @param {Function} [progressHandlerFn]
+		 * @chainable
+		 */
+		then : function( successHandlerFn, failureHandlerFn, progressHandlerFn ) {
+			this.deferred.then( successHandlerFn, failureHandlerFn, progressHandlerFn );
+			return this;
+		},
+		
+		
+		/**
+		 * Adds a handler for when the Operation completes, regardless of success or failure.
+		 * 
+		 * Handlers are called with the following two arguments when the Operation has completed successfully, has failed,
+		 * or has been aborted (canceled):
+		 * 
+		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the Operation is operating on.
+		 * - **operation** (Operation): This Operation object.
+		 * 
+		 * @param {Function} handlerFn
+		 * @chainable
+		 */
+		always : function( handlerFn ) {
+			this.deferred.always( handlerFn );
+			return this;
 		}
 		
 	} );
@@ -2792,6 +3627,2047 @@ define('data/persistence/request/Destroy', [
 	} );
 	
 	return DestroyRequest;
+	
+} );
+/*global define */
+define('data/Collection', [
+	'jquery',
+	'lodash',
+	
+	'data/Data',
+	'data/DataComponent',
+	'data/NativeObjectConverter',
+	
+	'data/persistence/Util',
+	'data/persistence/operation/Batch',
+	'data/persistence/operation/Load',
+	
+	'data/persistence/request/Batch',
+	'data/persistence/request/Create',
+	'data/persistence/request/Read',
+	'data/persistence/request/Update',
+	'data/persistence/request/Destroy',
+	
+	'data/persistence/proxy/Proxy'
+], function(
+	jQuery,
+	_,
+	
+	Data,
+	DataComponent,
+	NativeObjectConverter,
+	
+	PersistenceUtil,
+	OperationBatch,
+	LoadOperation,
+	
+	RequestBatch,
+	CreateRequest,
+	ReadRequest,
+	UpdateRequest,
+	DestroyRequest,
+	
+	Proxy
+) {
+
+	/**
+	 * @class data.Collection
+	 * @extends data.DataComponent
+	 * 
+	 * Manages an ordered set of {@link data.Model Models}. This class itself is not meant to be used directly, 
+	 * but rather extended and configured for the different collections in your application. 
+	 * 
+	 * Note that the configuration options for this class are most often best set on a Collection subclass on its 
+	 * prototype. See examples below.
+	 * 
+	 * 
+	 * ## Creating a Collection
+	 * 
+	 * Since a Collection is a collection of {@link data.Model Models}, one must first define a Model:
+	 *     
+	 *     // Task.js
+	 *     define( [
+	 *         'data/Model'         
+	 *     ], function( Model ) {
+	 *         
+	 *         var Task = Model.extend( {
+	 *             attributes : [
+	 *                 { name: 'id',          type: 'int' },
+	 *                 { name: 'name',        type: 'string' },
+	 *                 { name: 'description', type: 'string' }
+	 *             ]
+	 *         } );
+	 *         
+	 *         return Task;
+	 *         
+	 *     } );
+	 * 
+	 * 
+	 * Now the Collection may be defined, and set up to use the Model type just created:
+	 *     
+	 *     // Tasks.js
+	 *     define( [
+	 *         'data/Collection',
+	 *         'Task'
+	 *     ], function( Collection, Task ) {
+	 *         
+	 *         var Tasks = Collection.extend( {
+	 *             model: Task  // tell the Collection which Model type it uses
+	 *         } );
+	 *         
+	 *         return Tasks;
+	 *         
+	 *     } );
+	 * 
+	 * 
+	 * ## Adding Models
+	 * 
+	 * Models may be added to a Collection at instantiation time, or later using the {@link #method-add} method. Following on our 
+	 * example Collection above:
+	 * 
+	 *     require( [
+	 *         'Tasks',  // Collection
+	 *         'Task'    // Model
+	 *     ], function( Tasks, Task ) {
+	 *         
+	 *         var task1 = new Task( { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." } );
+	 *         var task2 = new Task( { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." } );
+	 *         
+	 *         var tasks = new Tasks( [ task1, task2 ] );
+	 *         tasks.getCount();  // 2
+	 *         tasks.getAt( 0 ).get( 'name' );  // "To-Do #1"
+	 *         tasks.getAt( 1 ).get( 'name' );  // "To-Do #2"
+	 *         
+	 *         
+	 *         // Add another Task
+	 *         var task3 = new Task( { id: 3, name: "To-Do #3", description: "This is the third task that I need to do." } );
+	 *         tasks.add( task3 );
+	 *         
+	 *         tasks.getCount();  // 3
+	 *         tasks.getAt( 2 ).get( 'name' );  // "To-Do #3"
+	 *     } );
+	 * 
+	 * 
+	 * Anonymous objects provided to the Collection will be instantiated into the Model type provided by the {@link #model} config.
+	 * This can provide a short hand to instantiating the Models of the Collection:
+	 * 
+	 *     require( [
+	 *         'Tasks'
+	 *     ], function( Tasks ) {
+	 *         
+	 *         var tasks = new Tasks( [
+	 *             { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." },
+	 *             { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." },
+	 *         ] );
+	 *         
+	 *         tasks.getCount();  // 2
+	 *         tasks.getAt( 0 ).get( 'name' );  // "To-Do #1"
+	 *         tasks.getAt( 1 ).get( 'name' );  // "To-Do #2"
+	 *         
+	 *         
+	 *         // Add another Task
+	 *         tasks.add( { id: 3, name: "To-Do #3", description: "This is the third task that I need to do." } );
+	 *         
+	 *         tasks.getCount();  // 3
+	 *         tasks.getAt( 2 ).get( 'name' );  // "To-Do #3"
+	 *     } );
+	 * 
+	 * 
+	 * ## Retrieving all Models
+	 * 
+	 * It is often useful to retrieve an array of all Models in a Collection, in order to loop over them:
+	 * 
+	 *     require( [
+	 *         'Tasks'
+	 *     ], function( Tasks ) {
+	 *     
+	 *         var tasks = new Tasks( [
+	 *             { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." },
+	 *             { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." },
+	 *         ] );
+	 *         
+	 *         var models = tasks.getModels();
+	 *         for( var i = 0, len = models.length; i < len; i++ ) {
+	 *             var taskName = tasks[ i ].get( 'name' ); 
+	 *             console.log( taskName );
+	 *         }
+	 *         
+	 *     } );
+	 * 
+	 * 
+	 * ## Listening to Collection Events
+	 * 
+	 * Events are fired when changes occur to the Collection. See the 'Events' section of this documentation for a list of all
+	 * available events, but as a simple example:
+	 * 
+	 *     require( [
+	 *         'Tasks'
+	 *     ], function( Tasks ) {
+	 *     
+	 *         var tasks = new Tasks();
+	 *         
+	 *         // Subscribe a listener
+	 *         tasks.on( 'add', function( collection, model ) {
+	 *             console.log( "A model with the ID '" + model.get( 'id' ) + "' was added." );
+	 *         } );
+	 *         
+	 *         
+	 *         // Add some models
+	 *         tasks.add( { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." } );
+	 *             // console logs: "A model with the ID '1' was added."
+	 *             
+	 *         tasks.add( { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." } );
+	 *             // console.logs: "A model with the ID '2' was added."
+	 *         
+	 *     } );
+	 * 
+	 * See {@link #on} for details.
+	 * 
+	 * 
+	 * ## Child Model Events
+	 * 
+	 * Collections automatically relay all of their {@link data.Model Models'} events as if the Collection fired it, with the only
+	 * difference being that Collection instance provides itself as the first argument, followed by all of the Model's arguments for
+	 * the event. For example, Models' {@link data.Model#event-change change} events:
+	 *     
+	 *     require( [
+	 *         'Tasks',  // Collection from above examples
+	 *         'Task'    // Model from above examples
+	 *     ], function( Tasks, Task ) {
+	 *         
+	 *         var task1 = new Task( { id: 1, name: "To-Do #1" } ),
+	 *             task2 = new Task( { id: 2, name: "To-Do #2" } );
+	 *             
+	 *         var collection = new Tasks[ task1, task2 ] );
+	 *         collection.on( 'change', function( collection, model, attributeName, newValue, oldValue ) {
+	 *             console.log( "A task changed its '" + attributeName + "' from '" + oldValue + "' to '" + newValue + "'" );
+	 *         } );
+	 *     
+	 *         // Set a new value
+	 *         task1.set( 'name', "Go to the store" );
+	 *             // console logs: "A task changed its 'name' attribute from 'To-Do #1' to 'Go to the store'"
+	 *           
+	 *     } ); 
+	 */
+	var Collection = DataComponent.extend( {
+		
+		inheritedStatics : {
+			
+			/**
+			 * @static
+			 * @inheritable
+			 * @property {Boolean} isCollectionClass (readonly)
+			 * 
+			 * A property simply to identify Collection classes (constructor functions) as such. This is so that we don't need circular dependencies 
+			 * in some of the other Data.js files, which only bring in the Collection class in order to determine if a function is in fact a Collection
+			 * constructor function.
+			 * 
+			 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+			 * no circular dependencies exist.
+			 */
+			isCollectionClass : true
+			
+		},
+		
+		
+		/**
+		 * @cfg {Function} model
+		 * 
+		 * The data.Model (sub)class which will be used to convert any anonymous data objects into
+		 * its appropriate Model instance for the Collection. 
+		 * 
+		 * Note that if a factory method is required for the creation of models, where custom processing may be needed,
+		 * override the {@link #createModel} method in a subclass.
+		 * 
+		 * It is recommended that you subclass data.Collection, and add this configuration as part of the definition of the 
+		 * subclass. Ex:
+		 * 
+		 *     myApp.MyCollection = Collection.extend( {
+		 *         model : myApp.MyModel
+		 *     } );
+		 */
+		
+		/**
+		 * @cfg {data.persistence.proxy.Proxy} proxy
+		 * 
+		 * The persistence proxy to use (if any) to load or persist the Collection's data to/from persistent
+		 * storage. If this is not configured, the proxy configured on the {@link #model} that this collection uses
+		 * will be used instead. If neither are specified, the Collection may not {@link #method-load} or {@link #sync} its models. 
+		 * 
+		 * Note that this may be specified as part of a Collection subclass (so that all instances of the Collection inherit
+		 * the proxy), or on a particular collection instance as a configuration option, or by using {@link #setProxy}.
+		 */
+		
+		/**
+		 * @cfg {Boolean} autoLoad
+		 * 
+		 * If no initial {@link #data} config is specified (specifying an initial set of data/models), and this config is 
+		 * `true`, the Collection's {@link #method-load} method will be called immediately upon instantiation to load the 
+		 * Collection.
+		 * 
+		 * If the {@link #pageSize} config is set, setting this to `true` will just cause the first page of
+		 * data to be loaded. 
+		 */
+		autoLoad : false,
+		
+		/**
+		 * @cfg {Number} pageSize
+		 * 
+		 * The number of models to load in a page when loading paged data (via {@link #loadPage}). This config
+		 * must be set when loading paged data with {@link #loadPage}.
+		 */
+		
+		/**
+		 * @cfg {Boolean} clearOnPageLoad
+		 * 
+		 * `true` to remove all existing {@link data.Model Models} from the Collection when loading a new page of data 
+		 * via {@link #loadPage}. This has the effect of only loading the requested page's models in the Collection. 
+		 * Set to `false` to have the loaded models be added to the Collection, instead of replacing the existing ones.
+		 */
+		clearOnPageLoad : true,
+		
+		/**
+		 * @cfg {Boolean} ignoreUnknownAttrsOnLoad
+		 * 
+		 * `true` to ignore any unknown attributes that come from an external data source (server, local storage, etc)
+		 * when {@link #method-load loading} the Collection. This defaults to true in case say, a web service adds additional
+		 * properties to a response object, which would otherwise trigger an error for an unknown attribute when the 
+		 * Models are created for the Collection.
+		 * 
+		 * This may be useful to set to `false` for development purposes however, to make sure that your server or other
+		 * persistent storage mechanism is providing all of the correct data, and that there are no mistyped property 
+		 * names, spelling errors, or anything of that nature. One way to do this on a global level for development purposes
+		 * is:
+		 * 
+		 *     require( [
+		 *         'data/Collection'
+		 *     ], function( Collection ) {
+		 *         
+		 *         // Check all attributes from external data sources when in "development" mode
+		 *         Collection.prototype.ignoreUnknownAttrsOnLoad = false;
+		 *         
+		 *     } );
+		 */
+		ignoreUnknownAttrsOnLoad : true,
+		
+		/**
+		 * @cfg {Function} sortBy
+		 * A function that is used to keep the Collection in a sorted ordering. Without one, the Collection will
+		 * simply keep models in insertion order.
+		 * 
+		 * This function takes two arguments: each a {@link data.Model Model}, and should return `-1` if the 
+		 * first model should be placed before the second, `0` if the models are equal, and `1` if the 
+		 * first model should come after the second.
+		 * 
+		 * Ex:
+		 *     
+		 *     sortBy : function( model1, model2 ) { 
+		 *         var name1 = model1.get( 'name' ),
+		 *             name2 = model2.get( 'name' );
+		 *         
+		 *         return ( name1 < name2 ) ? -1 : ( name1 > name2 ) ? 1 : 0;
+		 *     }
+		 * 
+		 * It is recommended that you subclass data.Collection, and add the sortBy function in the definition of the subclass. Ex:
+		 * 
+		 *     myApp.MyCollection = Collection.extend( {
+		 *         sortBy : function( model1, model2 ) {
+		 *             // ...
+		 *         }
+		 *     } );
+		 *     
+		 *     
+		 *     // And instantiating:
+		 *     var myCollection = new myApp.MyCollection();
+		 */
+		
+		/**
+		 * @cfg {Object/Object[]/data.Model/data.Model[]} data
+		 * 
+		 * Any initial data/models to load the Collection with. This is used when providing a configuration object to the 
+		 * Collection constructor, instead of an array of initial data/models. Can be a single model, an array of models,
+		 * or an object / array of objects that will be converted to models based on the {@link #model} config (or 
+		 * overridden implementation of {@link #createModel}).
+		 * 
+		 * Ex:
+		 * 
+		 *     // Assuming you have created a myApp.MyModel subclass of {@link data.Model},
+		 *     // and a myApp.MyCollection subclass of data.Collection
+		 *     var model1 = new myApp.MyModel(),
+		 *         model2 = new myApp.MyModel();
+		 *     
+		 *     var collection = new myApp.MyCollection( {
+		 *         data: [ model1, model2 ]
+		 *     } );
+		 * 
+		 * Ex 2:    
+		 *     var MyModel = Model.extend( {
+		 *         attributes : [ 'id', 'name' ]
+		 *     } );
+		 *     
+		 *     var collection = new myApp.MyCollection( {
+		 *         model : MyModel,
+		 *         data: [
+		 *             { id: 1, name: "John" },
+		 *             { id: 2, name: "Jane" }
+		 *         ]
+		 *     } );
+		 */
+		
+
+		/**
+		 * @property {Boolean} isCollection (readonly)
+		 * 
+		 * A property simply to identify Collection instances as such. This is so that we don't need circular dependencies in some of the
+		 * other Data.js files, which only bring in the Collection class for an `instanceof` check to determine if a given value is a Collection.
+		 * 
+		 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+		 * no circular dependencies exist.
+		 */
+		isCollection : true,
+		
+		/**
+		 * @protected
+		 * @property {data.Model[]} models
+		 * 
+		 * The array that holds the Models, in order.
+		 */
+		
+		/**
+		 * @protected
+		 * @property {Object} modelsByClientId
+		 * 
+		 * An Object (map) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#clientId clientId}.
+		 */
+		
+		/**
+		 * @protected
+		 * @property {Object} modelsById
+		 * 
+		 * An Object (map) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#id id}, if the model has one.
+		 */
+		
+		/**
+		 * @protected
+		 * @property {data.Model[]} removedModels
+		 * 
+		 * An array that holds Models removed from the Collection, which haven't yet been {@link #sync synchronized} to the server yet (by 
+		 * {@link data.Model#method-destroy destroying} them).
+		 */
+		
+		/**
+		 * @protected
+		 * @property {Boolean} modified
+		 * 
+		 * Flag that is set to true whenever there is an addition, insertion, or removal of a model in the Collection.
+		 */
+		modified : false,
+		
+		/**
+		 * @protected
+		 * @property {Number[]} loadedPages
+		 * 
+		 * An array that stores the currently-loaded pages in the Collection. This is only used when a {@link #pageSize}
+		 * is set, and the user loads pages using the {@link #loadPage} or {@link #loadPageRange} methods.
+		 */
+		
+		/**
+		 * @protected
+		 * @property {Number} totalCount
+		 * 
+		 * This property is used to keep track of total number of models in a windowed (paged) data 
+		 * set. It will be set as the result of a {@link #method-load} operation that reads the total count
+		 * from a property provided by the backing data store. If no such property existed in the data,
+		 * this will be set to 0.
+		 */
+		
+		/**
+		 * @protected
+		 * @property {data.persistence.operation.Load[]} activeLoadOperations
+		 * 
+		 * This array stores any {@link data.persistence.operation.Load LoadOperation} objects that are 
+		 * currently in the process of loading data. When an Operation completes, it is removed from this 
+		 * array.
+		 * 
+		 * This array is used to manage concurrency in asynchronous load operations. If concurrency is not
+		 * managed, it is possible that an older, longer running request may "overtake" a newer, shorter
+		 * running request, and load the Collection with old data. Ex:
+		 * 
+		 *           Time:  >>>>>>>>>>>>>>>>>>>>>
+		 *           
+		 *     Request #1:  |-------------------|   // This request ends up loading the Collection!
+		 *     Request #2:      |----------|
+		 * 
+		 * This array is used to make sure that a newer load request ("Request #2") ends up loading the 
+		 * Collection instead of an older one ("Request #1").
+		 */
+		
+		
+		
+		/**
+		 * Creates a new Collection instance.
+		 * 
+		 * @constructor
+		 * @param {Object/Object[]/data.Model[]} config This can either be a configuration object (in which the options listed
+		 *   under "configuration options" can be provided), or an initial set of Models to provide to the Collection. If providing
+		 *   an initial set of data/models, they must be wrapped in an array. Note that an initial set of data/models can be provided 
+		 *   when using a configuration object with the {@link #data} config.
+		 */
+		constructor : function( config ) {
+			this.addEvents(
+				/**
+				 * Fires when one or more models have been added to the Collection. This event is fired once for each
+				 * model that is added. To respond to a set of model adds all at once, use the {@link #event-addset} 
+				 * event instead. 
+				 * 
+				 * @event add
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model} model The model instance that was added. 
+				 */
+				'add',
+				
+				/**
+				 * Responds to a set of model additions by firing after one or more models have been added to the Collection. 
+				 * This event fires with an array of the added model(s), so that the additions may be processed all at 
+				 * once. To respond to each addition individually, use the {@link #event-add} event instead. 
+				 * 
+				 * @event addset
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model[]} models The array of model instances that were added. This will be an
+				 *   array of the added models, even in the case that a single model is added.
+				 */
+				'addset',
+				
+				/**
+				 * Fires when a model is reordered within the Collection. A reorder can be performed
+				 * by calling the {@link #method-add} method with a given index of where to re-insert one or
+				 * more models. If the model did not yet exist in the Collection, it will *not* fire a 
+				 * reorder event, but will be provided with an {@link #event-add add} event instead. 
+				 * 
+				 * This event is fired once for each model that is reordered.
+				 * 
+				 * @event reorder
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model} model The model that was reordered.
+				 * @param {Number} newIndex The new index for the model.
+				 * @param {Number} oldIndex The old index for the model.
+				 */
+				'reorder',
+				
+				/**
+				 * Fires when one or more models have been removed from the Collection. This event is fired once for each
+				 * model that is removed. To respond to a set of model removals all at once, use the {@link #event-removeset} 
+				 * event instead.
+				 * 
+				 * @event remove
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model} model The model instances that was removed.
+				 * @param {Number} index The index that the model was removed from.
+				 */
+				'remove',
+				
+				/**
+				 * Responds to a set of model removals by firing after one or more models have been removed from the Collection. 
+				 * This event fires with an array of the removed model(s), so that the removals may be processed all at once. 
+				 * To respond to each removal individually, use the {@link #event-remove} event instead.
+				 * 
+				 * @event removeset
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.Model[]} models The array of model instances that were removed. This will be an
+				 *   array of the removed models, even in the case that a single model is removed.
+				 */
+				'removeset',
+				
+				/**
+				 * Fires when the Collection begins a load request, through its {@link #proxy}. The {@link #event-load} event
+				 * will fire when the load is complete.
+				 * 
+				 * @event loadbegin
+				 * @param {data.Collection} This Collection instance.
+				 */
+				'loadbegin',
+				
+				/**
+				 * Fires when the Collection is {@link #method-load loaded} from its external data store (such as a web server), 
+				 * through its {@link #proxy}. This is a catch-all event for "load completion".
+				 * 
+				 * This event fires for all three of successful, failed, and aborted "load" requests. Success/failure/cancellation
+				 * of the load request may be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful},
+				 * {@link data.persistence.operation.Operation#hasErrored hasErrored}, or 
+				 * {@link data.persistence.operation.Operation#wasAborted wasAborted} methods.
+				 * 
+				 * Note that some Requests of the Operation may not be {@link data.persistence.request.Request#isComplete complete}
+				 * when this event fires, if one or more Requests in the Operation have errored.
+				 * 
+				 * @event load
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and 
+				 *   the {@link data.persistence.request.Request Request(s)} that were required to execute the load operation.
+				 */
+				'load',
+				
+				/**
+				 * Fires when an active LoadOperation has made progress. This is fired when an individual request has 
+				 * completed, or when the {@link #proxy} reports progress otherwise.
+				 * 
+				 * @event loadprogress
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which has made progress.
+				 */
+				'loadprogress',
+				
+				/**
+				 * Fires when the Collection has successfully loaded data from one of its "load" methods ({@link #method-load},
+				 * {@link #loadPage}, {@link #loadRange}, {@link #loadPageRange}).
+				 * 
+				 * @event loadsuccess
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which was successful.
+				 */
+				'loadsuccess',
+				
+				/**
+				 * Fires when the Collection has failed to load data from one of its "load" methods ({@link #method-load},
+				 * {@link #loadPage}, {@link #loadRange}, {@link #loadPageRange}).
+				 * 
+				 * @event loaderror
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation which has errored.
+				 */
+				'loaderror',
+				
+				/**
+				 * Fires when one of the Collection's {@link data.persistence.operation.Load LoadOperation's} has been canceled 
+				 * by client code.
+				 * 
+				 * @event loadcancel
+				 * @param {data.Collection} collection This Collection instance.
+				 * @param {data.persistence.operation.Load} operation The LoadOperation object which was canceled (aborted).
+				 */
+				'loadcancel'
+			);
+			
+			
+			var initialModels;
+			
+			// If the "config" is an array, it must be an array of initial models
+			if( _.isArray( config ) ) {
+				initialModels = config;
+				
+			} else if( typeof config === 'object' ) {
+				_.assign( this, config );
+				
+				initialModels = this.data;  // grab any initial data/models in the config
+			}
+
+			// Call Observable constructor
+			this._super( arguments );
+			
+			
+			// If a 'sortBy' exists, and it is a function, create a bound function to bind it to this Collection instance
+			// for when it is passed into Array.prototype.sort()
+			if( typeof this.sortBy === 'function' ) {
+				this.sortBy = _.bind( this.sortBy, this );
+			}
+			
+			
+			this.models = [];
+			this.modelsByClientId = {};
+			this.modelsById = {};
+			this.removedModels = [];
+			this.loadedPages = [];
+			this.activeLoadOperations = [];
+			
+			if( initialModels ) {
+				this.add( initialModels );
+				this.modified = false;  // initial models should not make the collection "modified". Note: NOT calling commit() here, because we may not want to commit changed model data. Need to figure that out.
+			} else {
+				if( this.autoLoad ) {
+					this.load();
+				}
+			}
+			
+			// Call hook method for subclasses
+			this.initialize();
+		},
+		
+		
+		/**
+		 * Hook method for subclasses to initialize themselves. This method should be overridden in subclasses to 
+		 * provide any model-specific initialization.
+		 * 
+		 * Note that it is good practice to always call the superclass `initialize` method from within yours (even if
+		 * your class simply extends data.Collection, which has no `initialize` implementation itself). This is to future proof it
+		 * from being moved under another superclass, or if there is ever an implementation made in this class.
+		 * 
+		 * Ex:
+		 * 
+		 *     MyCollection = Collection.extend( {
+		 *         initialize : function() {
+		 *             MyCollection.superclass.initialize.apply( this, arguments );   // or could be MyCollection.__super__.initialize.apply( this, arguments );
+		 *             
+		 *             // my initialization logic goes here
+		 *         }
+		 *     }
+		 * 
+		 * @protected
+		 * @method initialize
+		 */
+		initialize : Data.emptyFn,
+		
+		
+		
+		// -----------------------------
+		
+		
+		/**
+		 * If a model is provided as an anonymous data object, this method will be called to transform the data into 
+		 * the appropriate {@link data.Model model} class, using the {@link #model} config.
+		 * 
+		 * This may be overridden in subclasses to allow for custom processing, or to create a factory method for the
+		 * appropriate Model creation.
+		 * 
+		 * @protected
+		 * @param {Object} modelData The anonymous data object which will be passed to the {@link data.Model} constructor to
+		 *   populate its initial data.
+		 * @param {Object} modelOptions An object of options to pass to the {@link data.Model} constructor. This will be an
+		 *   empty object if no options are being passed.
+		 * @return {data.Model} The instantiated model.
+		 */
+		createModel : function( modelData, modelOptions ) {
+			if( !this.model ) {
+				throw new Error( "Cannot instantiate model from anonymous data, `model` config not provided to Collection." );
+			}
+			
+			return new this.model( modelData, modelOptions );
+		},
+		
+		
+		/**
+		 * Adds one or more models to the Collection. The default behavior is to append the models, but the `at` option may be
+		 * passed to insert them at a specific position. 
+		 * 
+		 * Models which already exist in the Collection will not be re-added (effectively making the addition of an existing model
+		 * a no-op). However, if the `at` option is specified, it will be moved to that index.
+		 * 
+		 * This method fires the {@link #event-add add} event for models that are newly added, and the {@link #reorder} event for 
+		 * models that are simply moved within the Collection. The latter event will only be fired if the `at` option is specified.
+		 * 
+		 * @param {data.Model/data.Model[]/Object/Object[]} models One or more models to add to the Collection. This may also
+		 *   be one or more anonymous objects, which will be converted into models based on the {@link #model} config, or an
+		 *   overridden {@link #createModel} method.
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Number} [options.at] The 0-based index for where to insert the model(s). This can be used to splice new models 
+		 *   in at a certain position, or move existing models in the Collection to this position.
+		 */
+		add : function( models, options ) {
+			options = options || {};
+			var index = options.at,
+			    indexSpecified = ( typeof index !== 'undefined' ),
+			    collectionModels = this.models,
+			    model,
+			    modelId,
+			    addedModels = [];
+			
+			// First, normalize the `index` if it is out of the bounds of the models array
+			if( typeof index !== 'number' ) {
+				index = collectionModels.length;  // append by default
+			} else if( index < 0 ) {
+				index = 0;
+			} else if( index > collectionModels.length ) {
+				index = collectionModels.length;
+			}
+			
+			// Normalize the argument to an array
+			if( !_.isArray( models ) ) {
+				models = [ models ];
+			}
+			
+			// No models to insert, return
+			if( models.length === 0 ) {
+				return;
+			}
+			
+			for( var i = 0, len = models.length; i < len; i++ ) {
+				model = models[ i ];
+				if( !model.isModel ) {  // if the `model` is not yet a data.Model instance (i.e. it's an anonymous object), create the Model instance now.
+					model = this.createModel( model, {} );
+				}
+				
+				// Only add if the model does not already exist in the collection
+				if( !this.has( model ) ) {
+					this.modified = true;  // model is being added, then the Collection has been modified
+					
+					addedModels.push( model );
+					this.modelsByClientId[ model.getClientId() ] = model;
+					
+					// Insert the model into the models array at the correct position
+					collectionModels.splice( index, 0, model );  // 0 elements to remove
+					index++;  // increment the index for the next model to insert / reorder
+					
+					if( model.hasIdAttribute() ) {  // make sure the model actually has a valid idAttribute first, before trying to call getId()
+						modelId = model.getId();
+						if( modelId !== undefined && modelId !== null ) {
+							this.modelsById[ modelId ] = model;
+						}
+						
+						// Respond to any changes on the idAttribute
+						model.on( 'change:' + model.getIdAttribute().getName(), this.onModelIdChange, this );
+					}
+					
+					// Subscribe to the special 'all' event on the model, so that the Collection can relay all of the model's events
+					model.on( 'all', this.onModelEvent, this );
+					
+					this.fireEvent( 'add', this, model );
+					
+				} else {
+					// Handle a reorder, but only actually move the model if a new index was specified.
+					// In the case that add() is called, no index will be specified, and we don't want to
+					// "re-add" models
+					if( indexSpecified ) {
+						this.modified = true;  // model is being reordered, then the Collection has been modified
+						
+						var oldIndex = this.indexOf( model );
+						
+						// Move the model to the new index
+						collectionModels.splice( oldIndex, 1 );
+						collectionModels.splice( index, 0, model );
+						
+						this.fireEvent( 'reorder', this, model, index, oldIndex );
+						index++; // increment the index for the next model to insert / reorder
+					}
+				}
+			}
+			
+			// If there is a 'sortBy' config, use that now
+			if( this.sortBy ) {
+				collectionModels.sort( this.sortBy );  // note: the sortBy function has already been bound to the correct scope
+			}
+			
+			// Fire the 'add' event for models that were actually inserted into the Collection (meaning that they didn't already
+			// exist in the collection). Don't fire the event though if none were actually inserted (there could have been models
+			// that were simply reordered).
+			if( addedModels.length > 0 ) {
+				this.fireEvent( 'addset', this, addedModels );
+			}
+		},
+		
+		
+		
+		/**
+		 * Removes one or more models from the Collection. Fires the {@link #event-remove} event with the
+		 * models that were actually removed.
+		 * 
+		 * @param {data.Model/data.Model[]} models One or more models to remove from the Collection.
+		 */
+		remove : function( models ) {
+			var collectionModels = this.models,
+			    removedModels = [],
+			    i, len, model, modelIndex;
+			
+			// Normalize the argument to an array
+			if( !_.isArray( models ) ) {
+				models = [ models ];
+			}
+			
+			for( i = 0, len = models.length; i < len; i++ ) {
+				model = models[ i ];
+				modelIndex = this.indexOf( model );
+				
+				// Don't bother doing anything to remove the model if we know it doesn't exist in the Collection
+				if( modelIndex > -1 ) {
+					this.modified = true;  // model is being removed, then the Collection has been modified
+					
+					delete this.modelsByClientId[ model.getClientId() ];
+					
+					if( model.hasIdAttribute() ) {   // make sure the model actually has a valid idAttribute first, before trying to call getId()
+						delete this.modelsById[ model.getId() ];
+						
+						// Remove the listener for changes on the idAttribute
+						model.un( 'change:' + model.getIdAttribute().getName(), this.onModelIdChange, this );
+					}
+					
+					// Unsubscribe the special 'all' event listener from the model
+					model.un( 'all', this.onModelEvent, this );
+					
+					// Remove the model from the models array
+					collectionModels.splice( modelIndex, 1 );
+					this.fireEvent( 'remove', this, model, modelIndex );
+					
+					removedModels.push( model );
+					this.removedModels.push( model );  // Add reference to the model just removed, for when synchronizing the collection (using sync()). This is an array of all non-destroyed models that have been removed from the Collection, and is reset when those models are destroyed.
+				}
+			}
+			
+			if( removedModels.length > 0 ) {
+				this.fireEvent( 'removeset', this, removedModels );
+			}
+		},
+		
+		
+		/**
+		 * Removes all models from the Collection. Fires the {@link #event-remove} event with the models
+		 * that were removed.
+		 */
+		removeAll : function() {
+			this.remove( _.clone( this.models ) );  // make a shallow copy of the array to send to this.remove()
+		},
+		
+		
+		/**
+		 * Handles a change to a model's {@link data.Model#idAttribute}, so that the Collection's 
+		 * {@link #modelsById} map can be updated.
+		 * 
+		 * Note that {@link #onModelEvent} is still called even when this method executes.
+		 * 
+		 * @protected
+		 * @param {data.Model} model The model that fired the change event.
+		 * @param {Mixed} newValue The new value.
+		 * @param {Mixed} oldValue The old value. 
+		 */
+		onModelIdChange : function( model, newValue, oldValue ) {
+			delete this.modelsById[ oldValue ];
+			
+			if( newValue !== undefined && newValue !== null ) {
+				this.modelsById[ newValue ] = model;
+			}
+		},
+		
+		
+		/**
+		 * Handles an event fired by a Model in the Collection by relaying it from the Collection
+		 * (as if the Collection had fired it).
+		 * 
+		 * @protected
+		 * @param {String} eventName
+		 * @param {Mixed...} args The original arguments passed to the event.
+		 */
+		onModelEvent : function( eventName ) {
+			// If the model was destroyed, we need to remove it from the collection
+			if( eventName === 'destroy' ) {
+				var model = arguments[ 1 ];  // arguments[ 1 ] is the model for the 'destroy' event
+				this.onModelDestroy( model );
+			}
+			
+			// Relay the event from the collection, passing the collection itself, and the original arguments
+			this.fireEvent.apply( this, [ eventName, this ].concat( Array.prototype.slice.call( arguments, 1 ) ) );
+		},
+		
+		
+		// ----------------------------
+		
+		
+		/**
+		 * Retrieves the Model at a given index.
+		 * 
+		 * @param {Number} index The index to to retrieve the model at.
+		 * @return {data.Model} The Model at the given index, or null if the index was out of range.
+		 */
+		getAt : function( index ) {
+			return this.models[ index ] || null;
+		},
+		
+		
+		/**
+		 * Convenience method for retrieving the first {@link data.Model model} in the Collection.
+		 * If the Collection does not have any models, returns null.
+		 * 
+		 * @return {data.Model} The first model in the Collection, or null if the Collection does not have
+		 *   any models.
+		 */
+		getFirst : function() {
+			return this.models[ 0 ] || null;
+		},
+		
+		
+		/**
+		 * Convenience method for retrieving the last {@link data.Model model} in the Collection.
+		 * If the Collection does not have any models, returns null.
+		 * 
+		 * @return {data.Model} The last model in the Collection, or null if the Collection does not have
+		 *   any models.
+		 */
+		getLast : function() {
+			return this.models[ this.models.length - 1 ] || null;
+		},
+		
+		
+		/**
+		 * Retrieves a range of {@link data.Model Models}, specified by the `startIndex` and `endIndex`. These values are inclusive.
+		 * For example, if the Collection has 4 Models, and `getRange( 1, 3 )` is called, the 2nd, 3rd, and 4th models will be returned.
+		 * 
+		 * @param {Number} [startIndex=0] The starting index.
+		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
+		 * @return {data.Model[]} The array of models from the `startIndex` to the `endIndex`, inclusively.
+		 */
+		getRange : function( startIndex, endIndex ) {
+			var models = this.models,
+			    numModels = models.length,
+			    range = [],
+			    i;
+			
+			if( numModels === 0 ) {
+				return range;
+			}
+			
+			startIndex = Math.max( startIndex || 0, 0 ); // don't allow negative indexes
+			endIndex = Math.min( typeof endIndex === 'undefined' ? numModels - 1 : endIndex, numModels - 1 );
+			
+			for( i = startIndex; i <= endIndex; i++ ) {
+				range.push( models[ i ] );
+			}
+			return range; 
+		},
+		
+		
+		/**
+		 * Determines if the Collection holds the range of {@link data.Model Models} specified by the `startIndex` and
+		 * `endIndex`. If one or more {@link data.Model Models} are missing from the given range, this method returns
+		 * `false`.
+		 * 
+		 * @param {Number} startIndex The starting index.
+		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
+		 * @return {Boolean} `true` if the Collection has {@link data.Model Models} in all indexes specified by
+		 *   the range of `startIndex` to `endIndex`, or `false` if one or more {@link data.Model Models} are missing.
+		 */
+		hasRange : function( startIndex, endIndex ) {
+			// A bit of a naive implementation for now. In the future, this method will cover when say, pages
+			// are loaded out of order, and will ensure that the entire range is present.
+			return endIndex < this.models.length;
+		},
+		
+		
+		/**
+		 * Determines if the Collection has the given page number loaded. This is only valid when a {@link #pageSize} is set,
+		 * and using the paging methods {@link #loadPage} or {@link #loadPageRange}.
+		 * 
+		 * @param {Number} pageNum The page number to check.
+		 * @return {Boolean} `true` if the Collection has the given `pageNum` currently loaded, `false` otherwise.
+		 */
+		hasPage : function( pageNum ) {
+			return _.contains( this.loadedPages, pageNum );
+		},
+		
+		
+		/**
+		 * Retrieves all of the models that the Collection has, in order.
+		 * 
+		 * @return {data.Model[]} An array of the models that this Collection holds.
+		 */
+		getModels : function() {
+			return this.getRange();  // gets all models
+		},
+		
+		
+		/**
+		 * Retrieves the Array representation of the Collection, where all models are converted into native JavaScript Objects.  The attribute values
+		 * for each of the models are retrieved via the {@link data.Model#get} method, to pre-process the data before they are returned in the final 
+		 * array of objects, unless the `raw` option is set to true, in which case the Model attributes are retrieved via {@link data.Model#raw}. 
+		 * 
+		 * @override
+		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
+		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
+		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
+		 * @return {Object[]} An array of the Object representation of each of the Models in the Collection.
+		 */
+		getData : function( options ) {
+			return NativeObjectConverter.convert( this, options );
+		},
+
+		
+		/**
+		 * Retrieves the number of models that the Collection currently holds.
+		 * 
+		 * @return {Number} The number of models that the Collection currently holds.
+		 */
+		getCount : function() {
+			return this.models.length;
+		},
+		
+		
+		/**
+		 * Retrieves the *total* number of models that the {@link #proxy} indicates exists on a backing
+		 * data store. This is used when loading windowed (paged) data sets, and differs from 
+		 * {@link #getCount} in that it loads the number of models that *could* be loaded into the
+		 * Collection if the Collection contained all of the data on the backing store.
+		 * 
+		 * If looking to determine how many models are loaded at the current moment, use {@link #getCount}
+		 * instead.
+		 * 
+		 * @return {Number} The number of models that the {@link #proxy} has indicated exist on the a
+		 *   backing data store. If the {@link #proxy proxy's} {@link data.persistence.reader.Reader Reader}
+		 *   did not read any metadata about the total number of models, this method returns `undefined`.
+		 */
+		getTotalCount : function() {
+			return this.totalCount;
+		},
+		
+		
+		/**
+		 * Retrieves a Model by its {@link data.Model#clientId clientId}.
+		 * 
+		 * @param {String} clientId
+		 * @return {data.Model} The Model with the given {@link data.Model#clientId clientId}, or null if there is 
+		 *   no Model in the Collection with that {@link data.Model#clientId clientId}.
+		 */
+		getByClientId : function( clientId ) {
+			return this.modelsByClientId[ clientId ] || null;
+		},
+		
+		
+		/**
+		 * Retrieves a Model by its {@link data.Model#id id}. Note: if the Model does not yet have an id, it will not
+		 * be able to be retrieved by this method.
+		 * 
+		 * @param {Mixed} id The id value for the {@link data.Model Model}.
+		 * @return {data.Model} The Model with the given {@link data.Model#id id}, or `null` if no Model was found 
+		 *   with that {@link data.Model#id id}.
+		 */
+		getById : function( id ) {
+			return this.modelsById[ id ] || null;
+		},
+		
+		
+		/**
+		 * Determines if the Collection has a given {@link data.Model model}.
+		 * 
+		 * @param {data.Model} model
+		 * @return {Boolean} True if the Collection has the given `model`, false otherwise.
+		 */
+		has : function( model ) {
+			return !!this.getByClientId( model.getClientId() );
+		},
+		
+		
+		/**
+		 * Retrieves the index of the given {@link data.Model model} within the Collection. 
+		 * Returns -1 if the `model` is not found.
+		 * 
+		 * @param {data.Model} model
+		 * @return {Number} The index of the provided `model`, or of -1 if the `model` was not found.
+		 */
+		indexOf : function( model ) {
+			var models = this.models,
+			    i, len;
+			
+			if( !this.has( model ) ) {
+				// If the model isn't in the Collection, return -1 immediately
+				return -1;
+				
+			} else {
+				for( i = 0, len = models.length; i < len; i++ ) {
+					if( models[ i ] === model ) {
+						return i;
+					}
+				}
+			}
+		},
+		
+		
+		/**
+		 * Retrieves the index of a given {@link data.Model model} within the Collection by its
+		 * {@link data.Model#idAttribute id}. Returns -1 if the `model` is not found.
+		 * 
+		 * @param {Mixed} id The id value for the model.
+		 * @return {Number} The index of the model with the provided `id`, or of -1 if the model was not found.
+		 */
+		indexOfId : function( id ) {
+			var model = this.getById( id );
+			if( model ) {
+				return this.indexOf( model );
+			}
+			return -1;
+		},
+		
+		
+		/**
+		 * Determines if the Collection has been added to, removed from, reordered, or 
+		 * has any {@link data.Model models} which are modified.
+		 * 
+		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This may be provided as the first argument to the
+		 *   method if no `attributeName` is to be provided. Options may include:
+		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true only if a Model exists within it that has a 
+		 *   {@link data.attribute.Attribute#persist persisted} attribute which is modified. However, if the Collection itself has been modified
+		 *   (by adding/reordering/removing a Model), this method will still return true.
+		 * @param {Boolean} [options.shallow=false] True to only check if the Collection itself has been added to, remove from, or has had its Models
+		 *   reordered. The method will not check child models if they are modified.
+		 * 
+		 * @return {Boolean} True if the Collection has any modified models, false otherwise.
+		 */
+		isModified : function( options ) {
+			options = options || {};
+			
+			// First, if the collection itself has been added to / removed from / reordered, then it is modified
+			if( this.modified ) {
+				return true;
+				
+			} else if( !options.shallow ) {
+				// Otherwise, check to see if any of its child models are modified.
+				var models = this.models,
+				    i, len;
+				
+				for( i = 0, len = models.length; i < len; i++ ) {
+					if( models[ i ].isModified( options ) ) {
+						return true;
+					}
+				}
+				return false;
+			}
+		},
+		
+		
+		// ----------------------------
+		
+		// Searching methods
+		
+		/**
+		 * Finds the first {@link data.Model Model} in the Collection by {@link data.attribute.Attribute Attribute} name, and a given value.
+		 * Uses `===` to compare the value. If a more custom find is required, use {@link #findBy} instead.
+		 * 
+		 * Note that this method is more efficient than using {@link #findBy}, so if it can be used, it should.
+		 * 
+		 * @param {String} attributeName The name of the attribute to test the value against.
+		 * @param {Mixed} value The value to look for.
+		 * @param {Object} [options] Optional arguments for this method, provided in an Object (map). Accepts the following:
+		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
+		 * @return {data.Model} The model where the attribute name === the value, or `null` if no matching model was not found.
+		 */
+		find : function( attributeName, value, options ) {
+			options = options || {};
+			
+			var models = this.models,
+			    startIndex = options.startIndex || 0;
+			for( var i = startIndex, len = models.length; i < len; i++ ) {
+				if( models[ i ].get( attributeName ) === value ) {
+					return models[ i ];
+				}
+			}
+			return null;
+		},
+		
+		
+		/**
+		 * Finds the first {@link data.Model Model} in the Collection, using a custom function. When the function returns true,
+		 * the model is returned. If the function does not return true for any models, `null` is returned.
+		 * 
+		 * @param {Function} fn The function used to find the Model. Should return an explicit boolean `true` when there is a match. 
+		 *   This function is passed the following arguments:
+		 * @param {data.Model} fn.model The current Model that is being processed in the Collection.
+		 * @param {Number} fn.index The index of the Model in the Collection.
+		 * 
+		 * @param {Object} [options]
+		 * @param {Object} [options.scope] The scope to run the function in. Defaults to the Collection.
+		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
+		 * 
+		 * @return {data.Model} The model that the function returned `true` for, or `null` if no match was found.
+		 */
+		findBy : function( fn, options ) {
+			options = options || {};
+			
+			var models = this.models,
+			    scope = options.scope || this,
+			    startIndex = options.startIndex || 0;
+			    
+			for( var i = startIndex, len = models.length; i < len; i++ ) {
+				if( fn.call( scope, models[ i ], i ) === true ) {
+					return models[ i ];
+				}
+			}
+			return null;
+		},
+		
+		
+		// ----------------------------
+		
+		// Persistence-related methods
+		
+		/**
+		 * Retrieves the {@link #models} within the Collection that are {@link data.Model#isNew "new"}. These are
+		 * models that do not yet have an ID associated with them, and will be 'created' if the Collection's
+		 * {@link #sync} method is called.
+		 * 
+		 * Note: This does not mean the "added" models since the last {@link #sync}. These are just models that
+		 * have not yet been persisted.
+		 * 
+		 * @return {data.Model[]} The "new" models.
+		 */
+		getNewModels : function() {
+			return _.filter( this.models, function( model ) { return model.isNew(); } );
+		},
+		
+		
+		/**
+		 * Retrieves the {@link #models} within the Collection that have been updated (i.e. models that have been
+		 * {@link data.Model#isModified modified}, but are not {@link data.Model#isNew "new"}).
+		 *  
+		 * These are models within the Collection that have been previously persisted (they have an ID associated 
+		 * with them), and will be 'updated' if the Collection's {@link #sync} method is called.
+		 * 
+		 * @param {Object} [options] An Object (map) of options to change the behavior of this method, which may include:
+		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return the models that have
+		 *   {@link data.attribute.Attribute#persist persisted} attributes modified. The method will not return a model
+		 *   if only an unpersisted attribute has been modified. 
+		 * @return {data.Model[]} The updated models.
+		 */
+		getUpdatedModels : function( options ) {
+			return _.filter( this.models, function( model ) { return !model.isNew() && model.isModified( options ); } );
+		},
+		
+		
+		/**
+		 * Retrieves the {@link #models} that have been removed from the Collection since the last {@link #sync}
+		 * operation.
+		 * 
+		 * @return {data.Model[]} The removed models.
+		 */
+		getRemovedModels : function() {
+			return _.clone( this.removedModels );  // shallow copy
+		},
+		
+		
+		/**
+		 * Commits any changes in the Collection, so that it is no longer considered "modified".
+		 * 
+		 * @override
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Boolean} [options.shallow=false] True to only commit only the additions/removals/reorders
+		 *   of the Collection itself, but not its child Models.
+		 */
+		commit : function( options ) {
+			options = options || {};
+			
+			this.modified = false;  // reset flag
+			
+			if( !options.shallow ) {
+				_.forEach( this.models, function( model ) { model.commit(); } );
+			}
+		},
+		
+		
+		/**
+		 * Rolls any changes to the Collection back to its state when it was last {@link #commit committed}
+		 * or rolled back.
+		 */
+		rollback : function() {
+			this.modified = false;  // reset flag
+			
+			// TODO: Implement rolling back the collection's state to the array of models that it had before any
+			// changes were made
+			
+			
+			// TODO: Determine if child models should also be rolled back. Possibly a flag argument for this?
+			// But for now, maintain consistency with isModified()
+			_.forEach( this.models, function( model ) { model.rollback(); } );
+		},
+		
+		
+		/**
+		 * Retrieves the {@link data.persistence.proxy.Proxy Proxy} that should be used for all persistence methods of 
+		 * the Collection. This is either a {@link #proxy} that exists directly on the Collection itself, or the 
+		 * {@link #model model's} proxy. If neither entity has a proxy configured, returns `null`.
+		 * 
+		 * @protected
+		 * @return {data.persistence.proxy.Proxy} The Proxy on the Collection, the Collection's {@link #model}, or `null`.
+		 */
+		getEffectiveProxy : function() {
+			return this.getProxy() || ( this.model ? this.model.getProxy() : null );
+		},
+		
+		
+		/**
+		 * Determines if the Collection is currently loading data from its {@link #proxy}, via any of the "load" methods
+		 * ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}).
+		 * 
+		 * @return {Boolean} `true` if the Collection is currently loading a set of data, `false` otherwise.
+		 */
+		isLoading : function() {
+			return this.activeLoadOperations.length > 0;
+		},
+		
+		
+		/**
+		 * Loads the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
+		 * {@link #model model's} proxy will be used instead.
+		 * 
+		 * This method makes a call to the {@link #proxy proxy's} {@link data.persistence.proxy.Proxy#read read} method to
+		 * perform the load operation. Normally, the entire backend collection is read by the proxy when this method is called.
+		 * However, if the Collection is configured with a {@link #pageSize}, then only page 1 of the data will be requested
+		 * instead. You may load other pages of the data using {@link #loadPage} in this case.
+		 * 
+		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
+		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
+		 * the loading is complete.
+		 * 
+		 * All of the callbacks, and the Operation's promise handlers are called with the following arguments:
+		 * 
+		 * - `collection` : {@link data.Collection} This Collection instance.
+		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
+		 *   information about the operation and the request(s) that took place.
+		 * 
+		 * 
+		 * ## Aborting a Load Operation
+		 * 
+		 * It is possible to abort a 'load' operation using the returned Operation's {@link data.persistence.operation.Operation#abort abort}
+		 * method. The `cancel` and `complete` callbacks are called, as well as `cancel` and `always` handlers on the Promise.
+		 * 
+		 * Note that the load request to the {@link #proxy} may or may not be aborted (canceled) itself, but even if it returns at a later
+		 * time, the data will not populate the Collection in this case.
+		 * 
+		 * 
+		 * ## Examples
+		 * 
+		 * Simple collection loading:
+		 * 
+		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
+		 *     
+		 *     // Load the collection, and attach handlers to determine when the collection has finished loading
+		 *     var operation = collection.load();
+		 *     operation.done( function() { alert( "Collection Loaded" ); } );
+		 *     operation.fail( function() { alert( "Collection Failed To Load" ); } );
+		 * 
+		 * 
+		 * Passing options:
+		 *     
+		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
+		 *     
+		 *     var operation = collection.load( {
+		 *         params : {
+		 *             paramA : 1,
+		 *             paramB : 2
+		 *         },
+		 *         addModels : true
+		 *     } );
+		 *     
+		 * 
+		 * Aborting an in-progress 'load' operation:
+		 * 
+		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
+		 *     
+		 *     var operation = collection.load();
+		 *     
+		 *     // ...
+		 *     
+		 *     operation.abort();
+		 *     
+		 * 
+		 * Responding to all of the Operation's Promise events:
+		 * 
+		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
+		 *     
+		 *     // Load the collection, and attach handlers to determine when the collection has finished loading
+		 *     var operation = collection.load()
+		 *         .done( function() { alert( "Collection Loaded Successfully" ); } )
+		 *         .fail( function() { alert( "Collection Load Error" ); } )
+		 *         .cancel( function() { alert( "Collection Load Aborted" ); } )
+		 *         .always( function() { alert( "Collection Load Complete (success, error, or aborted)" ); } )
+		 * 
+		 * 
+		 * Passing callbacks instead of using the Operation's Promise interface (not recommended as it may result in "callback soup"
+		 * for complex asynchonous operations, but supported):
+		 * 
+		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
+		 *     
+		 *     var operation = collection.load( {
+		 *         success : function() { alert( "Collection Loaded Successfully" ); },
+		 *         error   : function() { alert( "Collection Load Error" ); },
+		 *         cancel  : function() { alert( "Collection Load Aborted" ); },
+		 *         always  : function() { alert( "Collection Load Complete (success, error, or aborted)" ); }
+		 *     } );
+		 *     
+		 * 
+		 * Determining when multiple collections have loaded, taking advantage of jQuery's ability to combine multiple Promise
+		 * objects into a master Promise:
+		 * 
+		 *     var collection1 = new UsersCollection(),
+		 *         collection2 = new UsersCollection(),
+		 *         collection3 = new UsersCollection();
+		 *     
+		 *     jQuery.when( collection1.load(), collection2.load(), collection3.load() ).then( function() {
+		 *         alert( "All 3 collections have loaded" );
+		 *     } );
+		 * 
+		 * 
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
+		 * @param {Boolean} [options.addModels=false] `true` to add the loaded models to the Collection instead of 
+		 *   replacing the existing ones.
+		 * @param {Function} [options.success] Function to call if the loading is successful.
+		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
+		 *   of success or failure.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
+		 *   This may also be provided as the property `context`, if you prefer. 
+		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object.
+		 */
+		load : function( options ) {
+			// If loading paged data (there is a `pageSize` config on the Collection), then automatically just load page 1
+			if( this.pageSize ) {
+				return this.loadPage( 1, options );
+				
+			} else {
+				options = PersistenceUtil.normalizePersistenceOptions( options );
+				var proxy = this.getEffectiveProxy();
+				
+				// <debug>
+				// No persistence proxy, cannot load. Throw an error
+				if( !proxy ) {
+					throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+				}
+				// </debug>
+				
+				var request = new ReadRequest( { params: options.params } ),
+				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
+				
+				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
+				operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
+				
+				// Add the Operation to the list of active load operations (which fires the 
+				// 'loadbegin' event if it begins overall Collection loading)
+				this.addActiveLoadOperation( operation );
+				
+				operation.executeRequests().always( _.bind( this.handleLoadRequestsComplete, this ) );
+				operation.progress( _.bind( this.onLoadProgress, this, operation ) );
+				operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
+				
+				return operation;
+			}
+		},
+		
+		
+		
+		/**
+		 * Loads a specific range of models in the Collection using its configured {@link #proxy}. If there is no configured 
+		 * {@link #proxy}, the {@link #model model's} proxy will be used instead.
+		 * 
+		 * If paging is used to load the Collection (i.e. a {@link #pageSize} config is specified), then the Collection will
+		 * make the requests necessary to load all of the pages that will satisfy the desired range specified by the `startIdx`
+		 * and `endIdx` arguments. If paging is not used, then the Collection will simply make a single start/limit request of the 
+		 * {@link #proxy} for the desired range.
+		 * 
+		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
+		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
+		 * the loading is complete.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `collection` : {@link data.Collection} This Collection instance.
+		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
+		 *   information about the operation and the request(s) that took place.
+		 * 
+		 * @param {Number} startIdx The starting index of the range of models to load.
+		 * @param {Number} endIdx The ending index of the range of models to load.
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the request(s). See {@link data.persistence.request.Request#params} for details.
+		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
+		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config
+		 *   if page-based loading is being used (i.e. there is a {@link #pageSize} config), or defaults to false otherwise.
+		 * @param {Function} [options.success] Function to call if the loading is successful.
+		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
+		 *   of success or failure.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
+		 *   This may also be provided as the property `context`, if you prefer. 
+		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object.
+		 */
+		loadRange : function( startIdx, endIdx, options ) {
+			var pageSize = this.pageSize;
+			if( pageSize ) {
+				// If paging is used to load records in the Collection, load the range of pages that satisfies
+				// the range of record indexes required.
+				var startPage = Math.floor( startIdx / pageSize ) + 1,
+				    endPage = Math.floor( endIdx / pageSize ) + 1;
+				
+				return this.loadPageRange( startPage, endPage, options );
+				
+			} else {
+				options = PersistenceUtil.normalizePersistenceOptions( options );
+				var proxy = this.getEffectiveProxy();
+				
+				// <debug>
+				// No persistence proxy, cannot load. Throw an error
+				if( !proxy ) {
+					throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+				}
+				// </debug>
+				
+				var request = new ReadRequest( { params: options.params, start: startIdx, limit : endIdx - startIdx } ),
+				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
+				
+				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
+				operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
+				
+				// Add the Operation to the list of active load operations (which fires the 
+				// 'loadbegin' event if it begins overall Collection loading)
+				this.addActiveLoadOperation( operation );
+				
+				operation.executeRequests().always( _.bind( this.handleLoadRequestsComplete, this ) );
+				operation.progress( _.bind( this.onLoadProgress, this, operation ) );
+				operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
+				
+				return operation;
+			}
+		},
+		
+		
+		/**
+		 * Loads a page of the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
+		 * {@link #model model's} proxy will be used instead. The {@link #pageSize} must be configured on the Collection
+		 * for this method to work.
+		 * 
+		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
+		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
+		 * the loading is complete.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `collection` : {@link data.Collection} This Collection instance.
+		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
+		 *   information about the operation and the request(s) that took place.
+		 * 
+		 * @param {Number} page The 1-based page number of data to load. Page `1` is the first page.
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the request. See {@link data.persistence.request.Request#params} for details.
+		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
+		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
+		 * @param {Function} [options.success] Function to call if the loading is successful.
+		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
+		 *   of success or failure.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
+		 *   This may also be provided as the property `context`, if you prefer. 
+		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object.
+		 */
+		loadPage : function( page, options ) {
+			// <debug>
+			if( !page ) {
+				throw new Error( "'page' argument required for loadPage() method, and must be > 0" );
+			}
+			// </debug>
+			
+			return this.loadPageRange( page, page, options );  // startPage and endPage are the same
+		},
+		
+		
+		/**
+		 * Loads a range of pages of the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
+		 * {@link #model model's} proxy will be used instead. The {@link #pageSize} must be configured on the Collection
+		 * for this method to work.
+		 * 
+		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
+		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
+		 * the loading is complete.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `collection` : {@link data.Collection} This Collection instance.
+		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
+		 *   information about the operation and the request(s) that took place.
+		 * 
+		 * @param {Number} startPage The 1-based page number of the first page of data to load. Page `1` is the first page.
+		 * @param {Number} endPage The 1-based page number of the last page of data to load. Page `1` is the first page.
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+		 *   for the request(s). See {@link data.persistence.request.Request#params} for details.
+		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
+		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
+		 * @param {Function} [options.success] Function to call if the loading is successful.
+		 * @param {Function} [options.error] Function to call if the loading fails.
+		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
+		 *   of success or failure.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
+		 *   This may also be provided as the property `context`, if you prefer. 
+		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object.
+		 */
+		loadPageRange : function( startPage, endPage, options ) {
+			var pageSize = this.pageSize;
+			
+			// <debug>
+			if( !startPage || !endPage ) {
+				throw new Error( "`startPage` and `endPage` arguments required for loadPageRange() method, and must be > 0" );
+			}
+			if( !pageSize ) {
+				throw new Error( "The `pageSize` config must be set on the Collection to load paged data." );
+			}
+			// </debug>
+			
+			options = PersistenceUtil.normalizePersistenceOptions( options );
+			var me = this,  // for closures
+			    proxy = this.getEffectiveProxy(),
+			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad;
+			
+			// <debug>
+			if( !proxy ) throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
+			// </debug>
+			
+			var operation = new LoadOperation( { dataComponent: this, proxy: proxy, addModels: addModels } );
+			for( var page = startPage; page <= endPage; page++ ) {
+				var request = new ReadRequest( {
+					params   : options.params,
+					
+					page     : page,
+					pageSize : pageSize,
+					start    : ( page - 1 ) * pageSize,
+					limit    : pageSize   // in this case, the `limit` is the pageSize
+				} );
+				
+				operation.addRequest( request );
+			}
+			
+			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
+			operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
+			
+			// Add the Operation to the list of active load operations (which fires the 
+			// 'loadbegin' event if it begins overall Collection loading)
+			this.addActiveLoadOperation( operation );
+			
+			operation.executeRequests()
+				.done( function( operation ) {
+					var loadedPages = _.range( startPage, endPage + 1 );  // second arg needs +1 because it is "up to but not included"
+					me.loadedPages = ( addModels ) ? me.loadedPages.concat( loadedPages ) : loadedPages;
+				} )
+				.always( _.bind( this.handleLoadRequestsComplete, this ) );
+			
+			operation.progress( _.bind( this.onLoadProgress, this, operation ) );
+			operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
+			
+			return operation;
+		},
+		
+		
+		/**
+		 * Handles the request(s) of an {@link data.persistence.operation.Load LoadOperation} completing.
+		 * 
+		 * As a temporary implementation before implementing concurrency management, this method simply calls 
+		 * {@link #onLoadSuccess} or {@link #onLoadError}, as appropriate.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} loadOperation The LoadOperation object which hold metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
+		 */
+		handleLoadRequestsComplete : function( loadOperation ) {
+			// If this LoadOperation has been removed from the queue previously, such as from the Operation being
+			// manually canceled (aborted), then simply return out. The LoadOperation got here from its requests completing,
+			// but we shouldn't take any further action.
+			if( !_.contains( this.activeLoadOperations, loadOperation ) )
+				return;
+			
+			if( loadOperation.requestsWereSuccessful() ) {
+				this.onLoadSuccess( loadOperation );
+			} else {
+				this.onLoadError( loadOperation );
+			}
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} making progress on an active 'load' operation (from {@link #method-load}, {@link #loadRange}, 
+		 * {@link #loadPage}, or {@link #loadPageRange}).
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which are required to complete the load operation.
+		 */
+		onLoadProgress : function( operation ) {
+			this.fireEvent( 'loadprogress', this, operation );
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} successfully loading a set of data as a result of any of the "load"
+		 * methods being called ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}).
+		 * 
+		 * Resolves the `operation` object created by {@link #method-load}.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
+		 */
+		onLoadSuccess : function( operation ) {
+			var me = this,  // for closures
+			    requests = operation.getRequests();
+			
+			// Sample the first load Request for a totalCount
+			var totalCount = requests[ 0 ].getResultSet().getTotalCount();
+			if( totalCount !== undefined ) {
+				this.totalCount = totalCount;
+			}
+			
+			// If we're not adding (appending) the models, clear the Collection first
+			if( !operation.isAddModels() ) {
+				this.removeAll();
+			}
+			
+			// Create a single array of all of the loaded records from all requests, put them together in the order of 
+			// the requests, and then add them to the Collection.
+			var records = _.flatten(
+				_.map( requests, function( req ) { return req.getResultSet().getRecords(); } )  // create an array of the arrays of result sets (to be flattened after)
+			);
+			
+			// And now create models from the records
+			var ignoreUnknownAttrs = this.ignoreUnknownAttrsOnLoad;
+			var models = _.map( records, function( record ) { return me.createModel( record, { ignoreUnknownAttrs: ignoreUnknownAttrs } ); } );
+			this.add( models );
+			
+			// Remove the Operation from the `activeLoadOperations`. Note: If removing the last one,
+			// the Collection will no longer be considered 'loading'.
+			this.removeActiveLoadOperation( operation );
+			
+			operation.resolve();
+			this.fireEvent( 'loadsuccess', this, operation );
+			this.fireEvent( 'load', this, operation );
+		},
+		
+		
+		/**
+		 * Handles the {@link #proxy} failing to load a set of data as a result of any of the "load"
+		 * methods being called ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}.
+		 * 
+		 * Rejects the `operation` object created by {@link #method-load}.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
+		 */
+		onLoadError : function( operation ) {
+			// Remove the Operation from the `activeLoadOperations`. Note: If removing the last one,
+			// the Collection will no longer be considered 'loading'.
+			this.removeActiveLoadOperation( operation );
+			
+			operation.reject();
+			this.fireEvent( 'loaderror', this, operation );
+			this.fireEvent( 'load', this, operation );
+		},
+		
+		
+		/**
+		 * Handles a {@link data.persistence.operation.Load LoadOperation} being canceled (aborted) by a client of 
+		 * the Collection.
+		 * 
+		 * Removes the LoadOperation from the {@link #activeLoadOperations} queue, which causes any future requests'
+		 * completion to be ignored.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
+		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
+		 */
+		onLoadCancel : function( operation ) {
+			// Request was canceled (aborted), simply remove it from the activeLoadOperations and ignore its results
+			this.removeActiveLoadOperation( operation );
+			
+			// Note: the operation was already aborted. No need to call operation.abort() here.
+			this.fireEvent( 'loadcancel', this, operation );
+			this.fireEvent( 'load', this, operation );
+		},
+		
+		
+		/**
+		 * Utility method used to add a LoadOperation to the {@link #activeLoadOperations} array.
+		 * 
+		 * If the `operation` provided to this method is the first to be placed into the array, this method
+		 * fires the {@link #loadbegin} event, as the Collection is now in a "loading" state.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation A LoadOperation which is currently active.
+		 *   If the Operation is not currently active, the call to this method will have no effect.
+		 */
+		addActiveLoadOperation : function( operation ) {
+			this.activeLoadOperations.push( operation );
+			
+			// if this Operation began the Collection's "loading" state, fire 'loadbegin'
+			if( this.activeLoadOperations.length === 1 )
+				this.fireEvent( 'loadbegin', this );
+		},
+		
+		
+		/**
+		 * Utility method used to remove a LoadOperation from the {@link #activeLoadOperations} array.
+		 * 
+		 * @protected
+		 * @param {data.persistence.operation.Load} operation A LoadOperation which is currently active.
+		 *   If the Operation is not currently active, the call to this method will have no effect.
+		 */
+		removeActiveLoadOperation : function( operation ) {
+			var idx = _.indexOf( this.activeLoadOperations, operation );
+			if( idx !== -1 ) {
+				this.activeLoadOperations.splice( idx, 1 );
+			}
+		},
+		
+		
+		
+		/**
+		 * Synchronizes the Collection by persisting each of the {@link data.Model Models} that have changes. New Models are created,
+		 * existing Models are modified, and removed Models are destroyed (deleted).
+		 * 
+		 * Synchronizing a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
+		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
+		 * the synchronization is complete.
+		 * 
+		 * All of the callbacks, and the promise handlers are called with the following arguments:
+		 * 
+		 * - `collection` : {@link data.Collection} This Collection instance.
+		 * - `operationBatch` : {@link data.persistence.operation.Batch} The OperationBatch that was executed, which provides
+		 *   information about the operation(s) and request(s) that took place to complete the synchronization.
+		 * 
+		 * @param {Object} [options] An object which may contain the following properties:
+		 * @param {Function} [options.success] Function to call if the synchronization is successful.
+		 * @param {Function} [options.error] Function to call if the synchronization fails. The sychronization will be considered
+		 *   failed if one or more Models does not persist successfully.
+		 * @param {Function} [options.cancel] Function to call if the sync has been canceled, by the returned
+		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}. See note in the description of the
+		 *   return of this method for a caveat on aborting (canceling) "sync" operations.
+		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
+		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
+		 *   be provided as the property `context`, if you prefer. Defaults to the Collection.
+		 * @return {data.persistence.operation.Batch} An OperationBatch object which represents the 'sync' operation. This
+		 *   object acts as a Promise object as well, which may have handlers attached for when the sync completes. The 
+		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+		 *   
+		 *   The 'sync' operation may be aborted (canceled) by calling the {@link data.persistence.operation.Operation#abort abort}
+		 *   method on this object. However, note that when aborting a 'sync' operation, it is possible that one or more requests still 
+		 *   completed, and Models were persisted to their external data store (such as a web server). This may cause an inconsistency 
+		 *   between the state of the model on the client-side, and the state of the model on the server-side. Therefore, it is not 
+		 *   recommended that the 'sync' operation be canceled, unless it is going to be attempted again after sufficient time where the 
+		 *   data store (server) has finished the original operation, or the page is going to be refreshed.
+		 */
+		sync : function( options ) {
+			options = PersistenceUtil.normalizePersistenceOptions( options );
+			var newModels = this.getNewModels(),
+			    updatedModels = this.getUpdatedModels( { persistedOnly: true } ),  // only models which have 'persisted' attributes modified
+			    removedModels = this.getRemovedModels(),
+			    requests = [],
+			    createRequest, updateRequest, destroyRequest;
+			
+			if( newModels.length > 0 ) 
+				requests.push( createRequest = new CreateRequest( { models: newModels } ) );
+			if( updatedModels.length > 0 ) 
+				requests.push( updateRequest = new UpdateRequest( { models: updatedModels } ) );
+			if( removedModels.length > 0 ) 
+				requests.push( destroyRequest = new DestroyRequest( { models: removedModels } ) );
+			
+			var requestBatch = new RequestBatch( { requests: requests } );
+			var promise = this.getEffectiveProxy().batch( requestBatch );
+			
+			/*
+			var models = this.getModels(),
+			    removedModels = this.removedModels.slice( 0 ),  // make shallow copy - we don't want synchronous destroy() requests to end up removing Models from this array (due to the `onModelDestroy()` method) while we loop over it
+			    i, len;
+			
+			// Now synchronize the models
+			var me = this,  // for closure
+			    modelsToSave = _.filter( models, function( model ) { return model.isNew() || model.isModified( { persistedOnly: true } ); } );  // retrieve new models, or modified models which have persisted attributes modified 
+			
+			var saveOperations = _.map( modelsToSave, function( model ) { return model.save(); } );
+			var destroyOperations = _.map( removedModels, function( model ) { 
+				return model.destroy().done( function() { me.onModelDestroy( model ); } ); // Upon successful destruction of each model being destroyed, we want to remove that model from the `removedModels` array, so that we don't try to destroy it again in another sync() operation
+			} );
+			
+			var operations = [].concat( saveOperations, destroyOperations ),
+			    operationBatch = new OperationBatch( { dataComponent: this, operations: operations } );
+			
+			// Attach the callbacks provided to the method
+			operationBatch.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
+			//operationBatch.done( function() { me.modified = false; } );
+			
+			return operationBatch;*/
+		},
+		
+		
+		/**
+		 * Handles when a Model that existed within the Collection has been {@link data.Model#method-destroy destroyed}.
+		 * 
+		 * @protected
+		 * @param {data.Model} model The Model that has been destroyed.
+		 */
+		onModelDestroy : function( model ) {
+			// If the model is destroyed on its own, remove it from the collection. If it has been destroyed from the 
+			// collection's sync() method, then this will simply have no effect.
+			this.remove( model );
+			
+			// Remove the model from the removedModels array, so that we don't try to destroy it again from another 
+			// call to sync()
+			_.pull( this.removedModels, model );
+		}
+	
+	} );
+	
+	return Collection;
+	
+} );
+
+/*global define */
+define('data/persistence/operation/Save', [
+	'data/persistence/operation/Operation'
+], function( Operation ) {
+	
+	/**
+	 * @class data.persistence.operation.Save
+	 * @extends data.persistence.operation.Operation
+	 *
+	 * Represents a high level Save operation performed on a {@link data.Model Model}, or part of a
+	 * sync operation on a {@link data.Collection Collection}. See the superclass for details.
+	 */
+	var SaveOperation = Operation.extend( {
+		
+	} );
+	
+	return SaveOperation;
+	
+} );
+/*global define */
+define('data/persistence/operation/Destroy', [
+	'data/persistence/operation/Operation'
+], function( Operation ) {
+	
+	/**
+	 * @class data.persistence.operation.Destroy
+	 * @extends data.persistence.operation.Operation
+	 *
+	 * Represents a high level Destroy operation performed on a {@link data.Model Model}, or part of a
+	 * sync operation on a {@link data.Collection Collection}. See the superclass for details.
+	 */
+	var DestroyOperation = Operation.extend( {
+		
+	} );
+	
+	return DestroyOperation;
 	
 } );
 /*global define */
@@ -3443,13 +6319,11 @@ define('data/attribute/DataComponent', [
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new collectionClass( ... );
 define('data/attribute/Collection', [
-	'require',
 	'lodash',
-	'Class',
+	
 	'data/attribute/Attribute',
-	'data/attribute/DataComponent',
-	'data/Collection'  // circular dependency, not included in args list
-], function( require, _, Class, Attribute, DataComponentAttribute ) {
+	'data/attribute/DataComponent'
+], function( _, Attribute, DataComponentAttribute ) {
 	
 	/**
 	 * @class data.attribute.Collection
@@ -3467,7 +6341,7 @@ define('data/attribute/Collection', [
 	 * take place, then you must either provide a {@link data.Collection} subclass as the value for the Attribute, or use a custom 
 	 * {@link #cfg-set} function to convert any anonymous array into a Collection in the appropriate way. 
 	 */
-	var CollectionAttribute = Class.extend( DataComponentAttribute, {
+	var CollectionAttribute = DataComponentAttribute.extend( {
 			
 		/**
 		 * @cfg {Array/data.Collection} defaultValue
@@ -3591,10 +6465,8 @@ define('data/attribute/Collection', [
 		 * @inheritdoc
 		 */
 		afterSet : function( model, value ) {
-			var Collection = require( 'data/Collection' );
-			
 			// Enforce that the value is either null, or a data.Collection
-			if( value !== null && !( value instanceof Collection ) ) {
+			if( value !== null && !value.isCollection ) {
 				throw new Error( "A value set to the attribute '" + this.getName() + "' was not a data.Collection subclass" );
 			}
 			
@@ -3619,8 +6491,7 @@ define('data/attribute/Collection', [
 		 *   config.
 		 */
 		resolveCollectionClass : function() {
-			var collectionClass = this.collection,
-			    Collection = require( 'data/Collection' );  // the Collection constructor function
+			var collectionClass = this.collection;
 			
 			// Normalize the collectionClass
 			if( typeof collectionClass === 'string' ) {
@@ -3631,7 +6502,7 @@ define('data/attribute/Collection', [
 					throw new Error( "The string value `collection` config did not resolve to a Collection subclass for attribute '" + this.getName() + "'" );
 				}
 				// </debug>
-			} else if( typeof collectionClass === 'function' && !Class.isSubclassOf( collectionClass, Collection ) ) {  // it's not a data.Collection subclass, so it must be an anonymous function. Run it, so it returns the Collection reference we need
+			} else if( typeof collectionClass === 'function' && !collectionClass.isCollectionClass ) {  // if it's not a data.Collection constructor function (which would have an isCollectionClass property), then it must be an anonymous function. Execute it, so it returns the Model reference we need.
 				this.collection = collectionClass = collectionClass();
 				
 				// <debug>
@@ -3656,13 +6527,11 @@ define('data/attribute/Collection', [
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new modelClass( ... );
 define('data/attribute/Model', [
-	'require',
 	'lodash',
-	'Class',
+	
 	'data/attribute/Attribute',
-	'data/attribute/DataComponent',
-	'data/Model'  // circular dependency, not included in args list
-], function( require, _, Class, Attribute, DataComponentAttribute ) {
+	'data/attribute/DataComponent'
+], function( _, Attribute, DataComponentAttribute ) {
 	
 	/**
 	 * @class data.attribute.Model
@@ -3677,7 +6546,7 @@ define('data/attribute/Model', [
 	 * Otherwise, you must either provide a {@link data.Model} subclass as the value, or use a custom {@link #cfg-set} 
 	 * function to convert any anonymous object to a Model in the appropriate way. 
 	 */
-	var ModelAttribute = Class.extend( DataComponentAttribute, {
+	var ModelAttribute = DataComponentAttribute.extend( {
 		
 		/**
 		 * @cfg {data.Model/String/Function} model
@@ -3786,15 +6655,13 @@ define('data/attribute/Model', [
 		
 		
 		/**
-		 * Overridden `afterSet` method used to subscribe to change events on a set child {@link data.Model Model}.
+		 * Overridden `afterSet` method used to make sure the value that was set was either `null`, or a {@link data.Model} instance.
 		 * 
 		 * @inheritdoc
 		 */
 		afterSet : function( model, value ) {
-			var Model = require( 'data/Model' );
-			
 			// Enforce that the value is either null, or a data.Model
-			if( value !== null && !( value instanceof Model ) ) {
+			if( value !== null && !value.isModel ) {
 				throw new Error( "A value set to the attribute '" + this.getName() + "' was not a data.Model subclass" );
 			}
 			
@@ -3819,8 +6686,7 @@ define('data/attribute/Model', [
 		 *   config.
 		 */
 		resolveModelClass : function() {
-			var modelClass = this.model,
-			    Model = require( 'data/Model' );  // the Model constructor function
+			var modelClass = this.model;
 			
 			if( typeof modelClass === 'string' ) {
 				this.model = modelClass = this.resolveGlobalPath( modelClass );  // changes the string "a.b.c" into the value at `window.a.b.c`
@@ -3830,7 +6696,7 @@ define('data/attribute/Model', [
 					throw new Error( "The string value `model` config did not resolve to a Model subclass for attribute '" + this.getName() + "'" );
 				}
 				// </debug>
-			} else if( typeof modelClass === 'function' && !Class.isSubclassOf( modelClass, Model ) ) {  // it's not a data.Model subclass, so it must be an anonymous function. Run it, so it returns the Model reference we need
+			} else if( typeof modelClass === 'function' && !modelClass.isModelClass ) {  // if it's not a data.Model constructor function (which would have an isModelClass property), then it must be an anonymous function. Execute it, so it returns the Model reference we need.
 				this.model = modelClass = modelClass();
 				
 				// <debug>
@@ -4252,10 +7118,8 @@ define('data/attribute/String', [
 /*global define */
 /*jshint forin:true, eqnull:true */
 define('data/Model', [
-	'require',
 	'jquery',
 	'lodash',
-	'Class',
 	'data/Data',
 	'data/DataComponent',
 	
@@ -4273,6 +7137,8 @@ define('data/Model', [
 	'data/attribute/DataComponent',
 	'data/attribute/Collection',
 	'data/attribute/Model',
+
+	'data/NativeObjectConverter',
 	
 	// All attribute types included so developers don't have to specify these when they declare attributes in their models.
 	// These are not included in the arguments list though, as they are not needed specifically by the Model implementation.
@@ -4285,14 +7151,10 @@ define('data/Model', [
 	'data/attribute/Number',
 	'data/attribute/Object',
 	'data/attribute/Primitive',
-	'data/attribute/String',
-
-	'data/NativeObjectConverter' // circular dependency, not included in args list
-], function( 
-	require,
+	'data/attribute/String'
+], function(
 	jQuery,
 	_,
-	Class,
 	Data,
 	DataComponent,
 	
@@ -4309,7 +7171,9 @@ define('data/Model', [
 	Attribute,
 	DataComponentAttribute,
 	CollectionAttribute,
-	ModelAttribute
+	ModelAttribute,
+	
+	NativeObjectConverter
 ) {
 	
 	/**
@@ -4337,7 +7201,7 @@ define('data/Model', [
 	 *                 { name: 'id',        type: 'int' },
 	 *                 { name: 'firstName', type: 'string' },
 	 *                 { name: 'lastName',  type: 'string' },
-	 *                 { name: 'isAdmin',   type: 'boolean' }
+	 *                 { name: 'isAdmin',   type: 'boolean', defaultValue: false }
 	 *             ]
 	 *         } );
 	 *     
@@ -4356,8 +7220,10 @@ define('data/Model', [
 	 *   is most often preferable that nested objects be either of the `model` or `collection` types.
 	 * - {@link data.attribute.Date date}: A JavaScript Date object. String dates provided to this type will be parsed into a JS 
 	 *   Date object.
-	 * - {@link data.attribute.Model model}: A nested child Model, or related Model in a relational setup.
+	 * - {@link data.attribute.Model model}: A nested child Model, or related Model in a relational setup. Defaults to `null`.
+	 *   An empty model may be initialized by setting the `defaultValue` to an empty object (`{}`).
 	 * - {@link data.attribute.Collection collection}: A nested child Collection, or related Collected in a relational setup.
+	 *   Defaults to `null`. An empty collection may be initialized by setting the `defaultValue` to an empty array (`[]`).
 	 * 
 	 * Each Attribute type is implemented as a class in the `data.attribute` package. See each particular Attribute subclass for
 	 * additional configuration options that are available to that particular type. 
@@ -4367,9 +7233,16 @@ define('data/Model', [
 	 * 
 	 * ### Default Values
 	 * 
-	 * All primitive types (int, float, string, boolean) default to a valid value of the type. This is `0` for `int`/`float` types,
-	 * an empty string for the `string` type, and `false` for the `boolean` type. This is the case unless the
-	 * {@link data.attribute.Primitive#useNull useNull} config is set to true, in which case the attribute will default to `null`.
+	 * A {@link data.attribute.Attribute#defaultValue defaultValue} may be provided to initialize the attribute upon Model 
+	 * construction.
+	 * 
+	 * If no {@link data.attribute.Attribute#defaultValue defaultValue} is provided, then attributes are defaulted as follows:
+	 * 
+	 * - All primitive types (int, float, string, boolean) default to a valid value of the type. This is the value `0` for 
+	 *   `int`/`float` types, an empty string ("") for the `string` type, and `false` for the `boolean` type. This is the case 
+	 *   unless the {@link data.attribute.Primitive#useNull useNull} config is set to `true`, in which case the attribute will 
+	 *   default to `null`.
+	 * - All object types (object, date, model, collection, etc.) default to `null`.
 	 * 
 	 * ### Creating new Attribute types
 	 * 
@@ -4547,9 +7420,23 @@ define('data/Model', [
 	 * 
 	 * See {@link #on} for details.
 	 */
-	var Model = Class.extend( DataComponent, {
+	var Model = DataComponent.extend( {
 		
 		inheritedStatics : {
+			
+			/**
+			 * @static
+			 * @inheritable
+			 * @property {Boolean} isModelClass (readonly)
+			 * 
+			 * A property simply to identify Model classes (constructor functions) as such. This is so that we don't need circular dependencies 
+			 * in some of the other Data.js files, which only bring in the Model class in order to determine if a function is in fact a Model
+			 * constructor function.
+			 * 
+			 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+			 * no circular dependencies exist.
+			 */
+			isModelClass : true,
 			
 			/**
 			 * @private
@@ -4617,6 +7504,72 @@ define('data/Model', [
 			getAttributes : function() {
 				// Note: `this` refers to the class (constructor function) that the static method was called on
 				return this.prototype.attributes;
+			},
+			
+			
+			/**
+			 * Loads a new instance of the Model by `id`.
+			 * 
+			 * All of the callbacks, and the promise handlers are called with the following arguments:
+			 * 
+			 * - `model` : {@link data.Model} The new Model instance.
+			 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
+			 *   information about the operation and the request(s) that took place.
+			 * 
+			 * 
+			 * ## Example
+			 * 
+			 *     require( [
+			 *         'data/Model',
+			 *         'data/persistence/proxy/Ajax'
+			 *     ], function( Model, AjaxProxy ) {
+			 *     
+			 *         var User = Model.extend( {
+			 *             attributes : [ 'id', 'username' ],
+			 *             proxy : new AjaxProxy( { url: '/path/to/users' } )
+			 *         } );
+			 *     
+			 *         
+			 *         // Load user by ID - requests '/path/to/users?id=100'
+			 *         User.load( 100 )
+			 *             .done( function( model ) { alert( "Retrieved user: ", model.get( 'username' ) ); } )
+			 *             .fail( function() { alert( "Failed to load user" ); } );
+			 *     } );
+			 * 
+			 * 
+			 * For more information and examples, see the non-static {@link #method-load} method, which is called internally by
+			 * this method.
+			 * 
+			 * @inheritable
+			 * @static
+			 * @param {Number/String} id The ID of the model to load. This may be `null` if other parameters dictate which model 
+			 *   is loaded (specified under `options`).
+			 * @param {Object} [options] An object which may contain the following properties:
+			 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
+			 *   for the request. See {@link data.persistence.request.Request#params} for details.
+			 * @param {Function} [options.success] Function to call if the save is successful.
+			 * @param {Function} [options.failure] Function to call if the save fails.
+			 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
+			 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
+			 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
+			 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
+			 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of a success or fail state.
+			 * @param {Object} [options.scope] The object to call the `success`, `failure`, and `complete` callbacks in. This may also
+			 *   be provided as `context` if you prefer.
+			 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
+			 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
+			 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
+			 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
+			 *   method on this object.
+			 */
+			load : function( id, options ) {
+				var model = new this();
+				
+				if( model.hasIdAttribute() ) {
+					model.set( model.getIdAttributeName(), id );
+				}
+				
+				return model.load( options );
 			}
 			
 		},
@@ -4707,11 +7660,23 @@ define('data/Model', [
 		 */
 		ignoreUnknownAttrsOnLoad : true,
 		
+		
+		/**
+		 * @property {Boolean} isModel (readonly)
+		 * 
+		 * A property simply to identify Model instances as such. This is so that we don't need circular dependencies in some of the
+		 * other Data.js files, which only bring in the Model class for an `instanceof` check to determine if a given value is a Model.
+		 * 
+		 * Although RequireJS supports circular dependencies, compiling in advanced mode with the Google Closure Compiler requires that
+		 * no circular dependencies exist.
+		 */
+		isModel : true,
+		
 		/**
 		 * @private
 		 * @property {Object} attributes
 		 * 
-		 * A hash of the combined Attributes, which have been put together from the current Model subclass, and all of
+		 * An Object map of the combined Attributes, which have been put together from the current Model subclass, and all of
 		 * its superclasses.
 		 */
 		
@@ -4719,14 +7684,14 @@ define('data/Model', [
 		 * @private
 		 * @property {Object} data
 		 * 
-		 * A hash that holds the current data for the {@link data.attribute.Attribute Attributes}. The property names in this object match 
-		 * the attribute names.  This hash holds the current data as it is modified by {@link #set}.
+		 * An Object (map) that holds the current data for the {@link data.attribute.Attribute Attributes}. The property names in this object match 
+		 * the attribute names.  This map holds the current data as it is modified by {@link #set}.
 		 */
 		
 		/**
 		 * @private 
 		 * @property {Object} modifiedData
-		 * A hash that serves two functions:
+		 * A map that serves two functions:
 		 * 
 		 * 1) Properties are set to it when an attribute is modified. The property name is the attribute {@link data.attribute.Attribute#name}. 
 		 *    This allows it to be used to determine which attributes have been modified. 
@@ -4817,7 +7782,7 @@ define('data/Model', [
 		 * Creates a new Model instance.
 		 * 
 		 * @constructor 
-		 * @param {Object} [data] Any initial data for the {@link #cfg-attributes attributes}, specified in an object (hash map). See {@link #set}.
+		 * @param {Object} [data] Any initial data for the {@link #cfg-attributes attributes}, specified in an Object (map). See {@link #set}.
 		 *   If not passing any initial data, but want to pass the second argument (`options`), provide `null`.
 		 * @param {Object} [options] Any options for Model construction/initialization. This may be an object with the following properties:
 		 * @param {Boolean} [options.ignoreUnknownAttrs=false] Set to `true` if unknown attributes should be ignored in the data object provided
@@ -5102,7 +8067,7 @@ define('data/Model', [
 			
 			
 			// Set the default values for attributes that don't have an initial value.
-			var attributes = this.attributes,  // this.attributes is a hash of the Attribute objects, keyed by their name
+			var attributes = this.attributes,  // this.attributes is a map of the Attribute objects, keyed by their name
 			    attributeDefaultValue;
 			for( var name in attributes ) {
 				if( data[ name ] === undefined && ( attributeDefaultValue = attributes[ name ].getDefaultValue() ) !== undefined ) {
@@ -5113,7 +8078,7 @@ define('data/Model', [
 			// Initialize the underlying data object, which stores all attribute values
 			this.data = {};
 			
-			// Initialize the data hash for storing attribute names of modified data, and their original values (see property description)
+			// Initialize the data map for storing attribute names of modified data, and their original values (see property description)
 			this.modifiedData = {};
 			
 			// Set the initial data / defaults, if we have any
@@ -5234,12 +8199,12 @@ define('data/Model', [
 		 * 
 		 *     model.set( { key1: 'value1', key2: 'value2' } );
 		 * 
-		 * Note that in this form, the method will ignore any property in the object (hash) that don't have associated Attributes.
+		 * Note that in this form, the method will ignore any property in the Object (map) that don't have associated Attributes.
 		 * 
 		 * When attributes are set, their {@link data.attribute.Attribute#cfg-set} method is run, if they have one defined.
 		 * 
-		 * @param {String/Object} attributeName The attribute name for the Attribute to set, or an object (hash) of name/value pairs.
-		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a hash).
+		 * @param {String/Object} attributeName The attribute name for the Attribute to set, or an Object (map) of name/value pairs.
+		 * @param {Mixed} [newValue] The value to set to the attribute. Required if the `attributeName` argument is a string (i.e. not a map).
 		 * @param {Object} [options] Any options to pass to the method. This should be the second argument if providing an Object to the 
 		 *   first parameter. This should be an object which may contain the following properties:
 		 * @param {Boolean} [options.ignoreUnknownAttrs=false] Set to `true` if unknown attributes should be ignored in the data object provided
@@ -5348,7 +8313,7 @@ define('data/Model', [
 			if( attribute.hasUserDefinedSetter() && newValue === undefined ) {  // the attribute will only have a 'set' property of its own if the 'set' config was provided
 				// This is to make the following block below think that there is already data in for the attribute, and
 				// that it has the same value. If we don't have this, the change event will fire twice, the
-				// the model will be considered modified, and the old value will be put into the `modifiedData` hash.
+				// the model will be considered modified, and the old value will be put into the `modifiedData` map.
 				if( !modelData.hasOwnProperty( attributeName ) ) {
 					modelData[ attributeName ] = undefined;
 				}
@@ -5373,7 +8338,7 @@ define('data/Model', [
 			
 			// Only change the underlying data if there is no current value for the attribute, or if newValue is different from the current
 			if( !modelData.hasOwnProperty( attributeName ) || !attribute.valuesAreEqual( oldValue, newValue ) ) {   // let the Attribute itself determine if two values of its datatype are equal
-				// Store the attribute's *current* value (not the newValue) into the "modifiedData" attributes hash.
+				// Store the attribute's *current* value (not the newValue) into the "modifiedData" attributes map.
 				// This should only happen the first time the attribute is set, so that the attribute can be rolled back even if there are multiple
 				// set() calls to change it.
 				if( !modelModifiedData.hasOwnProperty( attributeName ) ) {
@@ -5382,7 +8347,7 @@ define('data/Model', [
 				modelData[ attributeName ] = newValue;
 				
 				
-				// Now that we have set the new raw value to the internal `data` hash, we want to fire the events with the value
+				// Now that we have set the new raw value to the internal `data` map, we want to fire the events with the value
 				// of the Attribute after it has been processed by any Attribute-specific `get()` function.
 				newValue = this.get( attributeName );
 				
@@ -5506,7 +8471,7 @@ define('data/Model', [
 		 * @param {String} [attributeName] Provide this argument to test if a particular attribute has been modified. If this is not 
 		 *   provided, the model itself will be checked to see if there are any modified attributes. 
 		 * 
-		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This may be provided as the first argument to the
+		 * @param {Object} [options] An Object (map) of options to change the behavior of this method. This may be provided as the first argument to the
 		 *   method if no `attributeName` is to be provided. Options may include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true if a {@link data.attribute.Attribute#persist persisted} 
 		 *   attribute is modified. 
@@ -5564,18 +8529,18 @@ define('data/Model', [
 		
 		/**
 		 * Retrieves the values for all of the attributes in the Model. The Model attributes are retrieved via the {@link #get} method,
-		 * to pre-process the data before it is returned in the final hash, unless the `raw` option is set to true,
+		 * to pre-process the data before it is returned in the final Object (map), unless the `raw` option is set to true,
 		 * in which case the Model attributes are retrieved via {@link #raw}. 
 		 * 
 		 * @override
 		 * 
-		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
+		 * @param {Object} [options] An Object (map) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
-		 * @return {Object} A hash of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
+		 * @return {Object} An Object (map) of the data, where the property names are the keys, and the values are the {@link data.attribute.Attribute Attribute} values.
 		 */
 		getData : function( options ) {
-			return require( 'data/NativeObjectConverter' ).convert( this, options );
+			return NativeObjectConverter.convert( this, options );
 		},
 		
 		
@@ -5583,19 +8548,19 @@ define('data/Model', [
 		 * Retrieves the values for all of the {@link data.attribute.Attribute attributes} in the Model whose values have been changed since
 		 * the last {@link #method-commit} or {@link #method-rollback}. 
 		 * 
-		 * The Model attributes are retrieved via the {@link #get} method, to pre-process the data before it is returned in the final hash, 
+		 * The Model attributes are retrieved via the {@link #get} method, to pre-process the data before it is returned in the final Object (map), 
 		 * unless the `raw` option is set to true, in which case the Model attributes are retrieved via {@link #raw}.
 		 * 
 		 * 
-		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
+		 * @param {Object} [options] An Object (map) of options to change the behavior of this method. This object is sent to
 		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
 		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details. Options specific to this method include:
 		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return only changed attributes that are 
 		 *   {@link data.attribute.Attribute#persist persisted}. In the case of nested models, a nested model will only be returned in the resulting
 		 *   map if one if its {@link data.attribute.Attribute#persist persisted} attributes are modified. 
 		 * 
-		 * @return {Object} A hash of the attributes that have been changed since the last {@link #method-commit} or {@link #method-rollback}.
-		 *   The hash's property names are the attribute names, and the hash's values are the new values.
+		 * @return {Object} A map of the attributes that have been changed since the last {@link #method-commit} or {@link #method-rollback}.
+		 *   The map's property names are the attribute names, and the map's values are the new values.
 		 */
 		getChanges : function( options ) {
 			options = options || {};
@@ -5630,7 +8595,7 @@ define('data/Model', [
 				}
 			}
 			
-			return require( 'data/NativeObjectConverter' ).convert( this, options );
+			return NativeObjectConverter.convert( this, options );
 		},
 		
 		
@@ -5642,7 +8607,7 @@ define('data/Model', [
 		 * @override
 		 */
 		commit : function() {
-			this.modifiedData = {};  // reset the modifiedData hash. There is no modified data.
+			this.modifiedData = {};  // reset the modifiedData map. There is no modified data.
 			
 			// Go through all embedded models/collections, and "commit" those as well
 			var embeddedDataComponentAttrs = this.getEmbeddedDataComponentAttributes(),
@@ -5679,7 +8644,7 @@ define('data/Model', [
 		 * @override
 		 */
 		rollback : function() {
-			// Loop through the modifiedData hash, which holds the *original* values, and set them back to the data hash.
+			// Loop through the modifiedData map, which holds the *original* values, and set them back to the data map.
 			var modifiedData = this.modifiedData;
 			for( var attributeName in modifiedData ) {
 				if( modifiedData.hasOwnProperty( attributeName ) ) {
@@ -6451,2448 +9416,7 @@ define('data/Model', [
 } );
 
 /*global define */
-define('data/NativeObjectConverter', [
-	'require',
-	'lodash',
-	'data/DataComponent',
-	'data/Collection',  // circular dependency, not included in args list
-	'data/Model'        // circular dependency, not included in args list
-], function( require, _, DataComponent ) {
-	
-	/**
-	 * @private
-	 * @class data.NativeObjectConverter
-	 * @singleton
-	 * 
-	 * NativeObjectConverter allows for the conversion of {@link data.Collection Collection} / {@link data.Model Models}
-	 * to their native Array / Object representations, while dealing with circular dependencies.
-	 */
-	var NativeObjectConverter = {
-		
-		/**
-		 * Converts a {@link data.Collection Collection} or {@link data.Model} to its native Array/Object representation,
-		 * while dealing with circular dependencies.
-		 *  
-		 * @param {data.Collection/data.Model} A Collection or Model to convert to its native Array/Object representation.
-		 * @param {Object} [options] An object (hashmap) of options to change the behavior of this method. This may include:
-		 * @param {String[]} [options.attributeNames] In the case that a {@link data.Model Model} is provided to this method, this
-		 *   may be an array of the attribute names that should be returned in the output object.  Other attributes will not be processed.
-		 *   (Note: only affects the Model passed to this method, and not nested models.)
-		 * @param {Boolean} [options.persistedOnly] True to have the method only return data for the persisted attributes on
-		 *   Models (i.e. attributes with the {@link data.attribute.Attribute#persist persist} config set to true, which is the default).
-		 * @param {Boolean} [options.raw] True to have the method only return the raw data for the attributes, by way of the {@link data.Model#raw} method. 
-		 *   This is used for persistence, where the raw data values go to the server rather than higher-level objects, or where some kind of serialization
-		 *   to a string must take place before persistence (such as for Date objects). 
-		 *   
-		 *   As a hack (unfortunately, due to limited time), if passing the 'raw' option as true, and a nested {@link data.Collection Collection} is in a 
-		 *   {@link data.attribute.Collection} that is *not* {@link data.attribute.Collection#embedded}, then only an array of the 
-		 *   {@link data.Model#idAttribute ID attribute} values is returned for that collection. The final data for a related (i.e. non-embedded) nested
-		 *   Collection may look something like this:
-		 *     
-		 *     myRelatedCollection : [
-		 *         { id: 1 },
-		 *         { id: 2 }
-		 *     ]
-		 * 
-		 * 
-		 * @return {Object[]/Object} An array of objects (for the case of a Collection}, or an Object (for the case of a Model)
-		 *   with the internal attributes converted to their native equivalent.
-		 */
-		convert : function( dataComponent, options ) {
-			options = options || {};
-			var Model = require( 'data/Model' ),
-			    Collection = require( 'data/Collection' ),
-			    cache = {},  // keyed by models' clientId, and used for handling circular dependencies
-			    persistedOnly = !!options.persistedOnly,
-			    raw = !!options.raw,
-			    data = ( dataComponent instanceof Collection ) ? [] : {};  // Collection is an Array, Model is an Object
-			
-			// Prime the cache with the Model/Collection provided to this method, so that if a circular reference points back to this
-			// model, the data object is not duplicated as an internal object (i.e. it should refer right back to the converted
-			// Model's/Collection's data object)
-			cache[ dataComponent.getClientId() ] = data;
-			
-			// Recursively goes through the data structure, and convert models to objects, and collections to arrays
-			_.assign( data, (function convert( dataComponent, attribute ) {  // attribute is only used when processing models, and a nested collection is come across, where the data.attribute.Attribute is passed along for processing when 'raw' is provided as true. See doc for 'raw' option about this hack..
-				var clientId, 
-				    cachedDataComponent,
-				    data,
-				    i, len;
-				
-				if( dataComponent instanceof Model ) {
-					// Handle Models
-					var attributes = dataComponent.getAttributes(),
-					    attributeNames = options.attributeNames || _.keys( attributes ),
-					    attributeName, currentValue;
-					
-					data = {};  // data is an object for a Model
-					
-					// Slight hack, but delete options.attributeNames now, so that it is not used again for inner Models (should only affect the first 
-					// Model that gets converted, i.e. the Model provided to this method)
-					delete options.attributeNames;
-					
-					for( i = 0, len = attributeNames.length; i < len; i++ ) {
-						attributeName = attributeNames[ i ];
-						if( !persistedOnly || attributes[ attributeName ].isPersisted() === true ) {
-							currentValue = data[ attributeName ] = ( raw ) ? dataComponent.raw( attributeName ) : dataComponent.get( attributeName );
-							
-							// Process Nested DataComponents
-							if( currentValue instanceof DataComponent ) {
-								clientId = currentValue.getClientId();
-								
-								if( ( cachedDataComponent = cache[ clientId ] ) ) {
-									data[ attributeName ] = cachedDataComponent;
-								} else {
-									// first, set up an array/object for the cache (so it exists when checking for it in the next call to convert()), 
-									// and set that array/object to the return data as well
-									cache[ clientId ] = data[ attributeName ] = ( currentValue instanceof Collection ) ? [] : {};  // Collection is an Array, Model is an Object
-									
-									// now, populate that object with the properties of the inner object
-									_.assign( cache[ clientId ], convert( currentValue, attributes[ attributeName ] ) );
-								}
-							}
-						}
-					}
-					
-				} else if( dataComponent instanceof Collection ) {
-					// Handle Collections
-					var models = dataComponent.getModels(),
-					    model, idAttributeName;
-					
-					data = [];  // data is an array for a Container
-					
-					// If the 'attribute' argument to the inner function was provided (coming from a Model that is being converted), and the 'raw' option is true,
-					// AND the collection is *not* an embedded collection (i.e. it is a "related" collection), then we only want the ID's of the models for the conversion.
-					// See note about this hack in the doc comment for the method for the 'raw' option.
-					if( options.raw && attribute && !attribute.isEmbedded() ) {
-						for( i = 0, len = models.length; i < len; i++ ) {
-							model = models[ i ];
-							idAttributeName = model.getIdAttributeName();
-							
-							data[ i ] = {};
-							data[ i ][ idAttributeName ] = model.get( idAttributeName );
-						}
-						
-					} else { 
-						// Otherwise, provide the models themselves
-						for( i = 0, len = models.length; i < len; i++ ) {
-							model = models[ i ];
-							clientId = model.getClientId();
-							
-							data[ i ] = cache[ clientId ] || convert( model );
-						}
-					}
-				}
-				
-				return data;
-			})( dataComponent ) );
-			
-			return data;
-		}
-		
-	};
-	
-	
-	return NativeObjectConverter;
-	
-} );
-/*global define */
-define('data/persistence/operation/Batch', [
-	'jquery',
-	'lodash',
-	'Class',
-	
-	'data/persistence/operation/Deferred'
-], function( jQuery, _, Class, OperationDeferred ) {
-	
-	/**
-	 * @class data.persistence.operation.Batch
-	 * 
-	 * Represents one or more persistence {@link data.persistence.operation.Operation Operations} as a whole.
-	 * 
-	 * The OperationBatch is a Deferred object. It {@link #resolve resolves} itself when all of the
-	 * {@link #operations} that it has been configured with resolve themselves. See {@link data.persistence.operation.Operation}
-	 * for more details on Deferred objects, the states that it may be in, and which handler functions are called
-	 * when the Deferred changes state.
-	 * 
-	 * Note that OperationBatch is also an immutable object, which must be configured with the Operations that it is
-	 * to keep track of. When all Operations are complete, the OperationBatch {@link #resolve resolves} itself.
-	 */
-	var OperationBatch = Class.create( {
-		
-		/**
-		 * @cfg {data.DataComponent} dataComponent (required)
-		 * 
-		 * The DataComponent ({@link data.Model Model) or {@link data.Collection Collection} that the OperationBatch is
-		 * operating on.
-		 */
-		
-		/**
-		 * @cfg {data.persistence.operation.Operation[]} operations (required)
-		 * 
-		 * The Operations to keep track of.
-		 */
-		
-		
-		/**
-		 * @protected
-		 * @property {data.persistence.operation.Deferred} deferred
-		 * 
-		 * The OperationDeferred instance for the OperationBatch. This Deferred is resolved when all
-		 * {@link #operations} have completed.
-		 */
-		
-		
-		/**
-		 * @constructor
-		 * @param {Object} cfg The configuration options for this class, provided in an Object (map).
-		 */
-		constructor : function( cfg ) {
-			_.assign( this, cfg );
-			
-			// <debug>
-			if( !this.dataComponent ) throw new Error( "`dataComponent` cfg required" );
-			if( !this.operations ) throw new Error( "`operations` cfg required" );
-			// </debug>
-			
-			this.deferred = new OperationDeferred();
-			
-			this.subscribeOperationHandlers( this.operations );
-		},
-		
-		
-		/**
-		 * Subscribes promise handlers to the individual {@link #operations}, which subsequently interact with
-		 * this OperationBatch's {@link #deferred}.
-		 * 
-		 * @protected
-		 * @param {data.persistence.operation.Operation[]} operations
-		 */
-		subscribeOperationHandlers : function( operations ) {
-			// Set up handlers to call `progress` handlers of the OperationBatch when each operation completes or 
-			// reports progress themselves
-			var notify = _.bind( this.notify, this );
-			_.forEach( operations, function( operation ) { operation.progress( notify ).done( notify ); } );
-			
-			// Resolve the internal Deferred when all operations have completed, or reject it if one has errored.
-			jQuery.when.apply( jQuery, operations )
-				.done( _.bind( this.resolve, this ) )
-				.fail( _.bind( this.reject, this ) );
-		},
-		
-		
-		/**
-		 * Retrieves the {@link #operations} in the OperationBatch.
-		 * 
-		 * @return {data.persistence.operation.Operation[]}
-		 */
-		getOperations : function() {
-			return this.operations;
-		},
-		
-		
-		// -----------------------------------
-		
-		// OperationBatch's Deferred/State interface
-		
-		
-		/**
-		 * Marks the OperationBatch as successful, and calls all {@link #done} handlers of the OperationBatch's deferred.
-		 * This includes `done` handlers set using the {@link #then} method.
-		 * 
-		 * {@link #done} handlers are called with two arguments:
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this OperationBatch is operating on.
-		 * - **operationBatch** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @protected
-		 */
-		resolve : function() {
-			this.deferred.resolve( this.dataComponent, this );
-		},
-		
-		
-		/**
-		 * Marks the OperationBatch as having errored, and calls all {@link #fail} handlers of the OperationBatch's deferred.
-		 * This includes `fail` handlers set using the {@link #then} method.
-		 * 
-		 * {@link #fail} handlers are called with two arguments:
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this OperationBatch is operating on.
-		 * - **operationBatch** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @protected
-		 */
-		reject : function() {
-			this.deferred.reject( this.dataComponent, this );
-		},
-		
-		
-		/**
-		 * Calls {@link #progress} handlers of the OperationBatch.
-		 * 
-		 * {@link #progress} handlers are called with two arguments:
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this OperationBatch is operating on.
-		 * - **operationBatch** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @protected
-		 */
-		notify : function() {
-			this.deferred.notify( this.dataComponent, this );
-		},
-		
-		
-		/**
-		 * Aborts (cancels) the OperationBatch, if it is still in progress. The {@link data.DataComponent DataComponent}
-		 * ({@link data.Model} or {@link data.Collection}) will ignore the result of the Operations, even if they
-		 * ends up completing at a later time. 
-		 * 
-		 * This method calls each of the incomplete operations' {@link data.persistence.operation.Operation#abort abort}
-		 * method. See {@link data.persistence.operation.Operation#abort} for more details.
-		 *  
-		 * This method may only be useful for {@link data.persistence.operation.Load LoadOperations}, as it may cause 
-		 * {@link data.persistence.operation.Save Save} and {@link data.persistence.operation.Destroy Destroy}
-		 * operations to leave the backing persistence medium in an inconsistent state. However, it is provided
-		 * if say, a retry is going to be performed and the previous operation should be aborted on the client-side.
-		 * 
-		 * {@link #cancel} handlers are called with two arguments:
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
-		 * - **operationBatch** (OperationBatch): This OperationBatch object.
-		 */
-		abort : function() {
-			if( !this.isComplete() ) {
-				this.deferred.abort( this.dataComponent, this );
-				
-				_.forEach( this.operations, function( operation ) { operation.abort(); } );
-			}
-		},
-		
-		
-		/**
-		 * Determines if the OperationBatch itself was successful. In order to be considered successful, all of the OperationBatch's 
-		 * {@link #operations} must have completed successfully.
-		 * 
-		 * @return {Boolean}
-		 */
-		wasSuccessful : function() {
-			return ( this.state() === 'resolved' );
-		},
-		
-		
-		/**
-		 * Determines if the OperationBatch failed to complete successfully. If any of the {@link #operations}
-		 * have errored, this method returns `true`.
-		 * 
-		 * @return {Boolean}
-		 */
-		hasErrored : function() {
-			return ( this.state() === 'rejected' );
-		},
-		
-		
-		/**
-		 * Determines if the OperationBatch was aborted (via the {@link #abort} method).
-		 * 
-		 * @return {Boolean}
-		 */
-		wasAborted : function() {
-			return ( this.state() === 'aborted' );
-		},
-		
-		
-		/**
-		 * Determines if the OperationBatch has been completed. This means that all {@link #operations} have been completed,
-		 * and the {@link #dataComponent} has processed their results.
-		 * 
-		 * @return {Boolean} `true` if all {@link #operations} are complete, `false` if any are not yet complete.
-		 */
-		isComplete : function() {
-			return ( this.state() !== 'pending' );
-		},
-		
-		
-		
-		// -----------------------------------
-		
-		// Promise interface
-
-		/**
-		 * Returns the OperationBatch itself (this object). 
-		 * 
-		 * This method is purely for compatibility with jQuery's Promise API, and is also for methods like 
-		 * `jQuery.when()`, which uses the existence of this method as a duck-type check in order to 
-		 * determine if a Deferred or Promise object has been passed to it.  
-		 * 
-		 * @return {data.persistence.operation.Batch} This OperationBatch object.
-		 */
-		promise : function() {
-			return this;
-		},
-		
-		
-		/**
-		 * Determines the state of the OperationBatch's {@link #deferred} object. This method is here for compatibility with 
-		 * jQuery's Deferred/Promise interface.
-		 * 
-		 * This method will return one of the following values:
-		 * - **"pending"**: The OperationDeferred object is not yet in a completed state (neither "rejected", "resolved", nor 
-		 *   "aborted").
-		 * - **"resolved"**: The OperationDeferred object is in its 'resolved' state, when the OperationBatch has completed
-		 *   {@link #wasSuccessful successfully}.
-		 * - **"rejected"**: The OperationDeferred object is in its 'rejected' state, when the OperationBatch has 
-		 *   {@link #hasErrored errored}.
-		 * - **"aborted"**: The OperationDeferred object is in its 'aborted' state, when the OperationBatch has been
-		 *   {@link #wasAborted aborted}.
-		 * 
-		 * @return {String} See return values, above.
-		 */
-		state : function() {
-			return this.deferred.state();
-		},
-		
-		
-		/**
-		 * Adds a handler for when the OperationBatch has made progress. Progress is defined as one of the OperationBatch's
-		 * {@link #operations} having been completed successfully. 
-		 * 
-		 * Note that the OperationBatch shouldn't necessarily be considered "complete" if all of its {@link #operations} have completed 
-		 * successfully. The OperationBatch may still be in an "in progress" state if its {@link #dataComponent} ({@link data.Model Model} 
-		 * or {@link data.Collection Collection}) has not yet processed the OperationBatch's results. (For instance, the 
-		 * {@link #dataComponent} may be waiting for other Operations to complete alongside this one, before it will process the 
-		 * result.) Therefore, do not rely on the completion of all {@link #operations} in order to consider the OperationBatch "complete."
-		 * 
-		 * 
-		 * Handlers are called with the following arguments when the OperationBatch has been notified of progress (i.e. one
-		 * of its requests has been completed):
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that this OperationBatch is operating on.
-		 * - **operation** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @param {Function} handlerFn
-		 * @chainable
-		 */
-		progress : function( handlerFn ) {
-			this.deferred.progress( handlerFn );
-			return this;
-		},
-		
-		
-		/**
-		 * Adds a handler for when the OperationBatch has completed successfully.
-		 * 
-		 * Handlers are called with the following two arguments when the OperationBatch completes successfully:
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
-		 * - **operation** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @param {Function} handlerFn
-		 * @chainable
-		 */
-		done : function( handlerFn ) {
-			this.deferred.done( handlerFn );
-			return this;
-		},
-		
-		
-		/**
-		 * Adds a handler for if the OperationBatch fails to complete successfully.
-		 * 
-		 * Handlers are called with the following two arguments when the OperationBatch fails to complete successfully:
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
-		 * - **operation** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @param {Function} handlerFn
-		 * @chainable
-		 */
-		fail : function( handlerFn ) {
-			this.deferred.fail( handlerFn );
-			return this;
-		},
-		
-		
-		/**
-		 * Adds a handler for if the OperationBatch has been {@link #abort aborted}.
-		 * 
-		 * Handlers are called with the following two arguments when the OperationBatch has been aborted (canceled):
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
-		 * - **operation** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @param {Function} handlerFn
-		 * @chainable
-		 */
-		cancel : function( handlerFn ) {
-			this.deferred.cancel( handlerFn );
-			return this;
-		},
-		
-		
-		/**
-		 * Adds handler functions for if the OperationBatch completes successfully, fails to complete successfully, and when notified
-		 * that progress has been made.
-		 * 
-		 * Note: This method does *not* support jQuery's "filtering" functionality.
-		 * 
-		 * Handlers are called with the following two arguments when the OperationBatch has completed successfully or has failed:
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
-		 * - **operation** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @param {Function} successHandlerFn
-		 * @param {Function} [failureHandlerFn]
-		 * @param {Function} [progressHandlerFn]
-		 * @chainable
-		 */
-		then : function( successHandlerFn, failureHandlerFn, progressHandlerFn ) {
-			this.deferred.then( successHandlerFn, failureHandlerFn, progressHandlerFn );
-			return this;
-		},
-		
-		
-		/**
-		 * Adds a handler for when the OperationBatch completes, regardless of success or failure.
-		 * 
-		 * Handlers are called with the following two arguments when the OperationBatch has completed successfully, has failed,
-		 * or has been aborted (canceled):
-		 * 
-		 * - **dataComponent** ({@link data.DataComponent}): The Model or Collection that the OperationBatch is operating on.
-		 * - **operation** (OperationBatch): This OperationBatch object.
-		 * 
-		 * @param {Function} handlerFn
-		 * @chainable
-		 */
-		always : function( handlerFn ) {
-			this.deferred.always( handlerFn );
-			return this;
-		}
-		
-	} );
-	
-	return OperationBatch;
-		
-} );
-	
-/*global define */
-define('data/Collection', [
-	'require',
-	'jquery',
-	'lodash',
-	'Class',
-	
-	'data/Data',
-	'data/DataComponent',
-	'data/NativeObjectConverter',
-	
-	'data/persistence/Util',
-	'data/persistence/operation/Batch',
-	'data/persistence/operation/Load',
-	'data/persistence/request/Read',
-	'data/persistence/proxy/Proxy',
-	'data/Model'   // may be circular dependency, depending on load order. require( 'data/Model' ) is used internally
-], function(
-	require,
-	jQuery,
-	_,
-	Class,
-	
-	Data,
-	DataComponent,
-	NativeObjectConverter,
-	
-	PersistenceUtil,
-	OperationBatch,
-	LoadOperation,
-	ReadRequest,
-	Proxy
-) {
-
-	/**
-	 * @class data.Collection
-	 * @extends data.DataComponent
-	 * 
-	 * Manages an ordered set of {@link data.Model Models}. This class itself is not meant to be used directly, 
-	 * but rather extended and configured for the different collections in your application. 
-	 * 
-	 * Note that the configuration options for this class are most often best set on a Collection subclass on its 
-	 * prototype. See examples below.
-	 * 
-	 * 
-	 * ## Creating a Collection
-	 * 
-	 * Since a Collection is a collection of {@link data.Model Models}, one must first define a Model:
-	 *     
-	 *     // Task.js
-	 *     define( [
-	 *         'data/Model'         
-	 *     ], function( Model ) {
-	 *         
-	 *         var Task = Model.extend( {
-	 *             attributes : [
-	 *                 { name: 'id',          type: 'int' },
-	 *                 { name: 'name',        type: 'string' },
-	 *                 { name: 'description', type: 'string' }
-	 *             ]
-	 *         } );
-	 *         
-	 *         return Task;
-	 *         
-	 *     } );
-	 * 
-	 * 
-	 * Now the Collection may be defined, and set up to use the Model type just created:
-	 *     
-	 *     // Tasks.js
-	 *     define( [
-	 *         'data/Collection',
-	 *         'Task'
-	 *     ], function( Collection, Task ) {
-	 *         
-	 *         var Tasks = Collection.extend( {
-	 *             model: Task  // tell the Collection which Model type it uses
-	 *         } );
-	 *         
-	 *         return Tasks;
-	 *         
-	 *     } );
-	 * 
-	 * 
-	 * ## Adding Models
-	 * 
-	 * Models may be added to a Collection at instantiation time, or later using the {@link #method-add} method. Following on our 
-	 * example Collection above:
-	 * 
-	 *     require( [
-	 *         'Tasks',  // Collection
-	 *         'Task'    // Model
-	 *     ], function( Tasks, Task ) {
-	 *         
-	 *         var task1 = new Task( { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." } );
-	 *         var task2 = new Task( { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." } );
-	 *         
-	 *         var tasks = new Tasks( [ task1, task2 ] );
-	 *         tasks.getCount();  // 2
-	 *         tasks.getAt( 0 ).get( 'name' );  // "To-Do #1"
-	 *         tasks.getAt( 1 ).get( 'name' );  // "To-Do #2"
-	 *         
-	 *         
-	 *         // Add another Task
-	 *         var task3 = new Task( { id: 3, name: "To-Do #3", description: "This is the third task that I need to do." } );
-	 *         tasks.add( task3 );
-	 *         
-	 *         tasks.getCount();  // 3
-	 *         tasks.getAt( 2 ).get( 'name' );  // "To-Do #3"
-	 *     } );
-	 * 
-	 * 
-	 * Anonymous objects provided to the Collection will be instantiated into the Model type provided by the {@link #model} config.
-	 * This can provide a short hand to instantiating the Models of the Collection:
-	 * 
-	 *     require( [
-	 *         'Tasks'
-	 *     ], function( Tasks ) {
-	 *         
-	 *         var tasks = new Tasks( [
-	 *             { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." },
-	 *             { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." },
-	 *         ] );
-	 *         
-	 *         tasks.getCount();  // 2
-	 *         tasks.getAt( 0 ).get( 'name' );  // "To-Do #1"
-	 *         tasks.getAt( 1 ).get( 'name' );  // "To-Do #2"
-	 *         
-	 *         
-	 *         // Add another Task
-	 *         tasks.add( { id: 3, name: "To-Do #3", description: "This is the third task that I need to do." } );
-	 *         
-	 *         tasks.getCount();  // 3
-	 *         tasks.getAt( 2 ).get( 'name' );  // "To-Do #3"
-	 *     } );
-	 * 
-	 * 
-	 * ## Retrieving all Models
-	 * 
-	 * It is often useful to retrieve an array of all Models in a Collection, in order to loop over them:
-	 * 
-	 *     require( [
-	 *         'Tasks'
-	 *     ], function( Tasks ) {
-	 *     
-	 *         var tasks = new Tasks( [
-	 *             { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." },
-	 *             { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." },
-	 *         ] );
-	 *         
-	 *         var models = tasks.getModels();
-	 *         for( var i = 0, len = models.length; i < len; i++ ) {
-	 *             var taskName = tasks[ i ].get( 'name' ); 
-	 *             console.log( taskName );
-	 *         }
-	 *         
-	 *     } );
-	 * 
-	 * 
-	 * ## Listening to Collection Events
-	 * 
-	 * Events are fired when changes occur to the Collection. See the 'Events' section of this documentation for a list of all
-	 * available events, but as a simple example:
-	 * 
-	 *     require( [
-	 *         'Tasks'
-	 *     ], function( Tasks ) {
-	 *     
-	 *         var tasks = new Tasks();
-	 *         
-	 *         // Subscribe a listener
-	 *         tasks.on( 'add', function( collection, model ) {
-	 *             console.log( "A model with the ID '" + model.get( 'id' ) + "' was added." );
-	 *         } );
-	 *         
-	 *         
-	 *         // Add some models
-	 *         tasks.add( { id: 1, name: "To-Do #1", description: "This is the first task that I need to do." } );
-	 *             // console logs: "A model with the ID '1' was added."
-	 *             
-	 *         tasks.add( { id: 2, name: "To-Do #2", description: "This is the second task that I need to do." } );
-	 *             // console.logs: "A model with the ID '2' was added."
-	 *         
-	 *     } );
-	 * 
-	 * See {@link #on} for details.
-	 * 
-	 * 
-	 * ## Child Model Events
-	 * 
-	 * Collections automatically relay all of their {@link data.Model Models'} events as if the Collection fired it, with the only
-	 * difference being that Collection instance provides itself as the first argument, followed by all of the Model's arguments for
-	 * the event. For example, Models' {@link data.Model#event-change change} events:
-	 *     
-	 *     require( [
-	 *         'Tasks',  // Collection from above examples
-	 *         'Task'    // Model from above examples
-	 *     ], function( Tasks, Task ) {
-	 *         
-	 *         var task1 = new Task( { id: 1, name: "To-Do #1" } ),
-	 *             task2 = new Task( { id: 2, name: "To-Do #2" } );
-	 *             
-	 *         var collection = new Tasks[ task1, task2 ] );
-	 *         collection.on( 'change', function( collection, model, attributeName, newValue, oldValue ) {
-	 *             console.log( "A task changed its '" + attributeName + "' from '" + oldValue + "' to '" + newValue + "'" );
-	 *         } );
-	 *     
-	 *         // Set a new value
-	 *         task1.set( 'name', "Go to the store" );
-	 *             // console logs: "A task changed its 'name' attribute from 'To-Do #1' to 'Go to the store'"
-	 *           
-	 *     } ); 
-	 */
-	var Collection = Class.extend( DataComponent, {
-		
-		/**
-		 * @cfg {Function} model
-		 * 
-		 * The data.Model (sub)class which will be used to convert any anonymous data objects into
-		 * its appropriate Model instance for the Collection. 
-		 * 
-		 * Note that if a factory method is required for the creation of models, where custom processing may be needed,
-		 * override the {@link #createModel} method in a subclass.
-		 * 
-		 * It is recommended that you subclass data.Collection, and add this configuration as part of the definition of the 
-		 * subclass. Ex:
-		 * 
-		 *     myApp.MyCollection = Collection.extend( {
-		 *         model : myApp.MyModel
-		 *     } );
-		 */
-		
-		/**
-		 * @cfg {data.persistence.proxy.Proxy} proxy
-		 * 
-		 * The persistence proxy to use (if any) to load or persist the Collection's data to/from persistent
-		 * storage. If this is not configured, the proxy configured on the {@link #model} that this collection uses
-		 * will be used instead. If neither are specified, the Collection may not {@link #method-load} or {@link #sync} its models. 
-		 * 
-		 * Note that this may be specified as part of a Collection subclass (so that all instances of the Collection inherit
-		 * the proxy), or on a particular collection instance as a configuration option, or by using {@link #setProxy}.
-		 */
-		
-		/**
-		 * @cfg {Boolean} autoLoad
-		 * 
-		 * If no initial {@link #data} config is specified (specifying an initial set of data/models), and this config is 
-		 * `true`, the Collection's {@link #method-load} method will be called immediately upon instantiation to load the 
-		 * Collection.
-		 * 
-		 * If the {@link #pageSize} config is set, setting this to `true` will just cause the first page of
-		 * data to be loaded. 
-		 */
-		autoLoad : false,
-		
-		/**
-		 * @cfg {Number} pageSize
-		 * 
-		 * The number of models to load in a page when loading paged data (via {@link #loadPage}). This config
-		 * must be set when loading paged data with {@link #loadPage}.
-		 */
-		
-		/**
-		 * @cfg {Boolean} clearOnPageLoad
-		 * 
-		 * `true` to remove all existing {@link data.Model Models} from the Collection when loading a new page of data 
-		 * via {@link #loadPage}. This has the effect of only loading the requested page's models in the Collection. 
-		 * Set to `false` to have the loaded models be added to the Collection, instead of replacing the existing ones.
-		 */
-		clearOnPageLoad : true,
-		
-		/**
-		 * @cfg {Boolean} ignoreUnknownAttrsOnLoad
-		 * 
-		 * `true` to ignore any unknown attributes that come from an external data source (server, local storage, etc)
-		 * when {@link #method-load loading} the Collection. This defaults to true in case say, a web service adds additional
-		 * properties to a response object, which would otherwise trigger an error for an unknown attribute when the 
-		 * Models are created for the Collection.
-		 * 
-		 * This may be useful to set to `false` for development purposes however, to make sure that your server or other
-		 * persistent storage mechanism is providing all of the correct data, and that there are no mistyped property 
-		 * names, spelling errors, or anything of that nature. One way to do this on a global level for development purposes
-		 * is:
-		 * 
-		 *     require( [
-		 *         'data/Collection'
-		 *     ], function( Collection ) {
-		 *         
-		 *         // Check all attributes from external data sources when in "development" mode
-		 *         Collection.prototype.ignoreUnknownAttrsOnLoad = false;
-		 *         
-		 *     } );
-		 */
-		ignoreUnknownAttrsOnLoad : true,
-		
-		/**
-		 * @cfg {Function} sortBy
-		 * A function that is used to keep the Collection in a sorted ordering. Without one, the Collection will
-		 * simply keep models in insertion order.
-		 * 
-		 * This function takes two arguments: each a {@link data.Model Model}, and should return `-1` if the 
-		 * first model should be placed before the second, `0` if the models are equal, and `1` if the 
-		 * first model should come after the second.
-		 * 
-		 * Ex:
-		 *     
-		 *     sortBy : function( model1, model2 ) { 
-		 *         var name1 = model1.get( 'name' ),
-		 *             name2 = model2.get( 'name' );
-		 *         
-		 *         return ( name1 < name2 ) ? -1 : ( name1 > name2 ) ? 1 : 0;
-		 *     }
-		 * 
-		 * It is recommended that you subclass data.Collection, and add the sortBy function in the definition of the subclass. Ex:
-		 * 
-		 *     myApp.MyCollection = Collection.extend( {
-		 *         sortBy : function( model1, model2 ) {
-		 *             // ...
-		 *         }
-		 *     } );
-		 *     
-		 *     
-		 *     // And instantiating:
-		 *     var myCollection = new myApp.MyCollection();
-		 */
-		
-		/**
-		 * @cfg {Object/Object[]/data.Model/data.Model[]} data
-		 * 
-		 * Any initial data/models to load the Collection with. This is used when providing a configuration object to the 
-		 * Collection constructor, instead of an array of initial data/models. Can be a single model, an array of models,
-		 * or an object / array of objects that will be converted to models based on the {@link #model} config (or 
-		 * overridden implementation of {@link #createModel}).
-		 * 
-		 * Ex:
-		 * 
-		 *     // Assuming you have created a myApp.MyModel subclass of {@link data.Model},
-		 *     // and a myApp.MyCollection subclass of data.Collection
-		 *     var model1 = new myApp.MyModel(),
-		 *         model2 = new myApp.MyModel();
-		 *     
-		 *     var collection = new myApp.MyCollection( {
-		 *         data: [ model1, model2 ]
-		 *     } );
-		 * 
-		 * Ex 2:    
-		 *     var MyModel = Model.extend( {
-		 *         attributes : [ 'id', 'name' ]
-		 *     } );
-		 *     
-		 *     var collection = new myApp.MyCollection( {
-		 *         model : MyModel,
-		 *         data: [
-		 *             { id: 1, name: "John" },
-		 *             { id: 2, name: "Jane" }
-		 *         ]
-		 *     } );
-		 */
-		
-		
-		
-		/**
-		 * @protected
-		 * @property {data.Model[]} models
-		 * 
-		 * The array that holds the Models, in order.
-		 */
-		
-		/**
-		 * @protected
-		 * @property {Object} modelsByClientId
-		 * 
-		 * An object (hashmap) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#clientId clientId}.
-		 */
-		
-		/**
-		 * @protected
-		 * @property {Object} modelsById
-		 * 
-		 * An object (hashmap) of the models that the Collection is currently holding, keyed by the models' {@link data.Model#id id}, if the model has one.
-		 */
-		
-		/**
-		 * @protected
-		 * @property {data.Model[]} removedModels
-		 * 
-		 * An array that holds Models removed from the Collection, which haven't yet been {@link #sync synchronized} to the server yet (by 
-		 * {@link data.Model#method-destroy destroying} them).
-		 */
-		
-		/**
-		 * @protected
-		 * @property {Boolean} modified
-		 * 
-		 * Flag that is set to true whenever there is an addition, insertion, or removal of a model in the Collection.
-		 */
-		modified : false,
-		
-		/**
-		 * @protected
-		 * @property {Number[]} loadedPages
-		 * 
-		 * An array that stores the currently-loaded pages in the Collection. This is only used when a {@link #pageSize}
-		 * is set, and the user loads pages using the {@link #loadPage} or {@link #loadPageRange} methods.
-		 */
-		
-		/**
-		 * @protected
-		 * @property {Number} totalCount
-		 * 
-		 * This property is used to keep track of total number of models in a windowed (paged) data 
-		 * set. It will be set as the result of a {@link #method-load} operation that reads the total count
-		 * from a property provided by the backing data store. If no such property existed in the data,
-		 * this will be set to 0.
-		 */
-		
-		/**
-		 * @protected
-		 * @property {data.persistence.operation.Load[]} activeLoadOperations
-		 * 
-		 * This array stores any {@link data.persistence.operation.Load LoadOperation} objects that are 
-		 * currently in the process of loading data. When an Operation completes, it is removed from this 
-		 * array.
-		 * 
-		 * This array is used to manage concurrency in asynchronous load operations. If concurrency is not
-		 * managed, it is possible that an older, longer running request may "overtake" a newer, shorter
-		 * running request, and load the Collection with old data. Ex:
-		 * 
-		 *           Time:  >>>>>>>>>>>>>>>>>>>>>
-		 *           
-		 *     Request #1:  |-------------------|   // This request ends up loading the Collection!
-		 *     Request #2:      |----------|
-		 * 
-		 * This array is used to make sure that a newer load request ("Request #2") ends up loading the 
-		 * Collection instead of an older one ("Request #1").
-		 */
-		
-		
-		
-		/**
-		 * Creates a new Collection instance.
-		 * 
-		 * @constructor
-		 * @param {Object/Object[]/data.Model[]} config This can either be a configuration object (in which the options listed
-		 *   under "configuration options" can be provided), or an initial set of Models to provide to the Collection. If providing
-		 *   an initial set of data/models, they must be wrapped in an array. Note that an initial set of data/models can be provided 
-		 *   when using a configuration object with the {@link #data} config.
-		 */
-		constructor : function( config ) {
-			this.addEvents(
-				/**
-				 * Fires when one or more models have been added to the Collection. This event is fired once for each
-				 * model that is added. To respond to a set of model adds all at once, use the {@link #event-addset} 
-				 * event instead. 
-				 * 
-				 * @event add
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.Model} model The model instance that was added. 
-				 */
-				'add',
-				
-				/**
-				 * Responds to a set of model additions by firing after one or more models have been added to the Collection. 
-				 * This event fires with an array of the added model(s), so that the additions may be processed all at 
-				 * once. To respond to each addition individually, use the {@link #event-add} event instead. 
-				 * 
-				 * @event addset
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.Model[]} models The array of model instances that were added. This will be an
-				 *   array of the added models, even in the case that a single model is added.
-				 */
-				'addset',
-				
-				/**
-				 * Fires when a model is reordered within the Collection. A reorder can be performed
-				 * by calling the {@link #method-add} method with a given index of where to re-insert one or
-				 * more models. If the model did not yet exist in the Collection, it will *not* fire a 
-				 * reorder event, but will be provided with an {@link #event-add add} event instead. 
-				 * 
-				 * This event is fired once for each model that is reordered.
-				 * 
-				 * @event reorder
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.Model} model The model that was reordered.
-				 * @param {Number} newIndex The new index for the model.
-				 * @param {Number} oldIndex The old index for the model.
-				 */
-				'reorder',
-				
-				/**
-				 * Fires when one or more models have been removed from the Collection. This event is fired once for each
-				 * model that is removed. To respond to a set of model removals all at once, use the {@link #event-removeset} 
-				 * event instead.
-				 * 
-				 * @event remove
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.Model} model The model instances that was removed.
-				 * @param {Number} index The index that the model was removed from.
-				 */
-				'remove',
-				
-				/**
-				 * Responds to a set of model removals by firing after one or more models have been removed from the Collection. 
-				 * This event fires with an array of the removed model(s), so that the removals may be processed all at once. 
-				 * To respond to each removal individually, use the {@link #event-remove} event instead.
-				 * 
-				 * @event removeset
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.Model[]} models The array of model instances that were removed. This will be an
-				 *   array of the removed models, even in the case that a single model is removed.
-				 */
-				'removeset',
-				
-				/**
-				 * Fires when the Collection begins a load request, through its {@link #proxy}. The {@link #event-load} event
-				 * will fire when the load is complete.
-				 * 
-				 * @event loadbegin
-				 * @param {data.Collection} This Collection instance.
-				 */
-				'loadbegin',
-				
-				/**
-				 * Fires when the Collection is {@link #method-load loaded} from its external data store (such as a web server), 
-				 * through its {@link #proxy}. This is a catch-all event for "load completion".
-				 * 
-				 * This event fires for all three of successful, failed, and aborted "load" requests. Success/failure/cancellation
-				 * of the load request may be determined using the `operation`'s {@link data.persistence.operation.Operation#wasSuccessful wasSuccessful},
-				 * {@link data.persistence.operation.Operation#hasErrored hasErrored}, or 
-				 * {@link data.persistence.operation.Operation#wasAborted wasAborted} methods.
-				 * 
-				 * Note that some Requests of the Operation may not be {@link data.persistence.request.Request#isComplete complete}
-				 * when this event fires, if one or more Requests in the Operation have errored.
-				 * 
-				 * @event load
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and 
-				 *   the {@link data.persistence.request.Request Request(s)} that were required to execute the load operation.
-				 */
-				'load',
-				
-				/**
-				 * Fires when an active LoadOperation has made progress. This is fired when an individual request has 
-				 * completed, or when the {@link #proxy} reports progress otherwise.
-				 * 
-				 * @event loadprogress
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.persistence.operation.Load} operation The LoadOperation which has made progress.
-				 */
-				'loadprogress',
-				
-				/**
-				 * Fires when the Collection has successfully loaded data from one of its "load" methods ({@link #method-load},
-				 * {@link #loadPage}, {@link #loadRange}, {@link #loadPageRange}).
-				 * 
-				 * @event loadsuccess
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.persistence.operation.Load} operation The LoadOperation which was successful.
-				 */
-				'loadsuccess',
-				
-				/**
-				 * Fires when the Collection has failed to load data from one of its "load" methods ({@link #method-load},
-				 * {@link #loadPage}, {@link #loadRange}, {@link #loadPageRange}).
-				 * 
-				 * @event loaderror
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.persistence.operation.Load} operation The LoadOperation which has errored.
-				 */
-				'loaderror',
-				
-				/**
-				 * Fires when one of the Collection's {@link data.persistence.operation.Load LoadOperation's} has been canceled 
-				 * by client code.
-				 * 
-				 * @event loadcancel
-				 * @param {data.Collection} collection This Collection instance.
-				 * @param {data.persistence.operation.Load} operation The LoadOperation object which was canceled (aborted).
-				 */
-				'loadcancel'
-			);
-			
-			
-			var initialModels;
-			
-			// If the "config" is an array, it must be an array of initial models
-			if( _.isArray( config ) ) {
-				initialModels = config;
-				
-			} else if( typeof config === 'object' ) {
-				_.assign( this, config );
-				
-				initialModels = this.data;  // grab any initial data/models in the config
-			}
-
-			// Call Observable constructor
-			this._super( arguments );
-			
-			
-			// If a 'sortBy' exists, and it is a function, create a bound function to bind it to this Collection instance
-			// for when it is passed into Array.prototype.sort()
-			if( typeof this.sortBy === 'function' ) {
-				this.sortBy = _.bind( this.sortBy, this );
-			}
-			
-			
-			this.models = [];
-			this.modelsByClientId = {};
-			this.modelsById = {};
-			this.removedModels = [];
-			this.loadedPages = [];
-			this.activeLoadOperations = [];
-			
-			if( initialModels ) {
-				this.add( initialModels );
-				this.modified = false;  // initial models should not make the collection "modified". Note: NOT calling commit() here, because we may not want to commit changed model data. Need to figure that out.
-			} else {
-				if( this.autoLoad ) {
-					this.load();
-				}
-			}
-			
-			// Call hook method for subclasses
-			this.initialize();
-		},
-		
-		
-		/**
-		 * Hook method for subclasses to initialize themselves. This method should be overridden in subclasses to 
-		 * provide any model-specific initialization.
-		 * 
-		 * Note that it is good practice to always call the superclass `initialize` method from within yours (even if
-		 * your class simply extends data.Collection, which has no `initialize` implementation itself). This is to future proof it
-		 * from being moved under another superclass, or if there is ever an implementation made in this class.
-		 * 
-		 * Ex:
-		 * 
-		 *     MyCollection = Collection.extend( {
-		 *         initialize : function() {
-		 *             MyCollection.superclass.initialize.apply( this, arguments );   // or could be MyCollection.__super__.initialize.apply( this, arguments );
-		 *             
-		 *             // my initialization logic goes here
-		 *         }
-		 *     }
-		 * 
-		 * @protected
-		 * @method initialize
-		 */
-		initialize : Data.emptyFn,
-		
-		
-		
-		// -----------------------------
-		
-		
-		/**
-		 * If a model is provided as an anonymous data object, this method will be called to transform the data into 
-		 * the appropriate {@link data.Model model} class, using the {@link #model} config.
-		 * 
-		 * This may be overridden in subclasses to allow for custom processing, or to create a factory method for the
-		 * appropriate Model creation.
-		 * 
-		 * @protected
-		 * @param {Object} modelData The anonymous data object which will be passed to the {@link data.Model} constructor to
-		 *   populate its initial data.
-		 * @param {Object} modelOptions An object of options to pass to the {@link data.Model} constructor. This will be an
-		 *   empty object if no options are being passed.
-		 * @return {data.Model} The instantiated model.
-		 */
-		createModel : function( modelData, modelOptions ) {
-			if( !this.model ) {
-				throw new Error( "Cannot instantiate model from anonymous data, `model` config not provided to Collection." );
-			}
-			
-			return new this.model( modelData, modelOptions );
-		},
-		
-		
-		/**
-		 * Adds one or more models to the Collection. The default behavior is to append the models, but the `at` option may be
-		 * passed to insert them at a specific position. 
-		 * 
-		 * Models which already exist in the Collection will not be re-added (effectively making the addition of an existing model
-		 * a no-op). However, if the `at` option is specified, it will be moved to that index.
-		 * 
-		 * This method fires the {@link #event-add add} event for models that are newly added, and the {@link #reorder} event for 
-		 * models that are simply moved within the Collection. The latter event will only be fired if the `at` option is specified.
-		 * 
-		 * @param {data.Model/data.Model[]/Object/Object[]} models One or more models to add to the Collection. This may also
-		 *   be one or more anonymous objects, which will be converted into models based on the {@link #model} config, or an
-		 *   overridden {@link #createModel} method.
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Number} [options.at] The 0-based index for where to insert the model(s). This can be used to splice new models 
-		 *   in at a certain position, or move existing models in the Collection to this position.
-		 */
-		add : function( models, options ) {
-			options = options || {};
-			var index = options.at,
-			    indexSpecified = ( typeof index !== 'undefined' ),
-			    collectionModels = this.models,
-			    model,
-			    modelId,
-			    addedModels = [],
-			    Model = require( 'data/Model' );  // reference to constructor function for instanceof check
-			
-			// First, normalize the `index` if it is out of the bounds of the models array
-			if( typeof index !== 'number' ) {
-				index = collectionModels.length;  // append by default
-			} else if( index < 0 ) {
-				index = 0;
-			} else if( index > collectionModels.length ) {
-				index = collectionModels.length;
-			}
-			
-			// Normalize the argument to an array
-			if( !_.isArray( models ) ) {
-				models = [ models ];
-			}
-			
-			// No models to insert, return
-			if( models.length === 0 ) {
-				return;
-			}
-			
-			for( var i = 0, len = models.length; i < len; i++ ) {
-				model = models[ i ];
-				if( !( model instanceof Model ) ) {
-					model = this.createModel( model, {} );
-				}
-				
-				// Only add if the model does not already exist in the collection
-				if( !this.has( model ) ) {
-					this.modified = true;  // model is being added, then the Collection has been modified
-					
-					addedModels.push( model );
-					this.modelsByClientId[ model.getClientId() ] = model;
-					
-					// Insert the model into the models array at the correct position
-					collectionModels.splice( index, 0, model );  // 0 elements to remove
-					index++;  // increment the index for the next model to insert / reorder
-					
-					if( model.hasIdAttribute() ) {  // make sure the model actually has a valid idAttribute first, before trying to call getId()
-						modelId = model.getId();
-						if( modelId !== undefined && modelId !== null ) {
-							this.modelsById[ modelId ] = model;
-						}
-						
-						// Respond to any changes on the idAttribute
-						model.on( 'change:' + model.getIdAttribute().getName(), this.onModelIdChange, this );
-					}
-					
-					// Subscribe to the special 'all' event on the model, so that the Collection can relay all of the model's events
-					model.on( 'all', this.onModelEvent, this );
-					
-					this.fireEvent( 'add', this, model );
-					
-				} else {
-					// Handle a reorder, but only actually move the model if a new index was specified.
-					// In the case that add() is called, no index will be specified, and we don't want to
-					// "re-add" models
-					if( indexSpecified ) {
-						this.modified = true;  // model is being reordered, then the Collection has been modified
-						
-						var oldIndex = this.indexOf( model );
-						
-						// Move the model to the new index
-						collectionModels.splice( oldIndex, 1 );
-						collectionModels.splice( index, 0, model );
-						
-						this.fireEvent( 'reorder', this, model, index, oldIndex );
-						index++; // increment the index for the next model to insert / reorder
-					}
-				}
-			}
-			
-			// If there is a 'sortBy' config, use that now
-			if( this.sortBy ) {
-				collectionModels.sort( this.sortBy );  // note: the sortBy function has already been bound to the correct scope
-			}
-			
-			// Fire the 'add' event for models that were actually inserted into the Collection (meaning that they didn't already
-			// exist in the collection). Don't fire the event though if none were actually inserted (there could have been models
-			// that were simply reordered).
-			if( addedModels.length > 0 ) {
-				this.fireEvent( 'addset', this, addedModels );
-			}
-		},
-		
-		
-		
-		/**
-		 * Removes one or more models from the Collection. Fires the {@link #event-remove} event with the
-		 * models that were actually removed.
-		 * 
-		 * @param {data.Model/data.Model[]} models One or more models to remove from the Collection.
-		 */
-		remove : function( models ) {
-			var collectionModels = this.models,
-			    removedModels = [],
-			    i, len, model, modelIndex;
-			
-			// Normalize the argument to an array
-			if( !_.isArray( models ) ) {
-				models = [ models ];
-			}
-			
-			for( i = 0, len = models.length; i < len; i++ ) {
-				model = models[ i ];
-				modelIndex = this.indexOf( model );
-				
-				// Don't bother doing anything to remove the model if we know it doesn't exist in the Collection
-				if( modelIndex > -1 ) {
-					this.modified = true;  // model is being removed, then the Collection has been modified
-					
-					delete this.modelsByClientId[ model.getClientId() ];
-					
-					if( model.hasIdAttribute() ) {   // make sure the model actually has a valid idAttribute first, before trying to call getId()
-						delete this.modelsById[ model.getId() ];
-						
-						// Remove the listener for changes on the idAttribute
-						model.un( 'change:' + model.getIdAttribute().getName(), this.onModelIdChange, this );
-					}
-					
-					// Unsubscribe the special 'all' event listener from the model
-					model.un( 'all', this.onModelEvent, this );
-					
-					// Remove the model from the models array
-					collectionModels.splice( modelIndex, 1 );
-					this.fireEvent( 'remove', this, model, modelIndex );
-					
-					removedModels.push( model );
-					this.removedModels.push( model );  // Add reference to the model just removed, for when synchronizing the collection (using sync()). This is an array of all non-destroyed models that have been removed from the Collection, and is reset when those models are destroyed.
-				}
-			}
-			
-			if( removedModels.length > 0 ) {
-				this.fireEvent( 'removeset', this, removedModels );
-			}
-		},
-		
-		
-		/**
-		 * Removes all models from the Collection. Fires the {@link #event-remove} event with the models
-		 * that were removed.
-		 */
-		removeAll : function() {
-			this.remove( _.clone( this.models ) );  // make a shallow copy of the array to send to this.remove()
-		},
-		
-		
-		/**
-		 * Handles a change to a model's {@link data.Model#idAttribute}, so that the Collection's 
-		 * {@link #modelsById} hashmap can be updated.
-		 * 
-		 * Note that {@link #onModelEvent} is still called even when this method executes.
-		 * 
-		 * @protected
-		 * @param {data.Model} model The model that fired the change event.
-		 * @param {Mixed} newValue The new value.
-		 * @param {Mixed} oldValue The old value. 
-		 */
-		onModelIdChange : function( model, newValue, oldValue ) {
-			delete this.modelsById[ oldValue ];
-			
-			if( newValue !== undefined && newValue !== null ) {
-				this.modelsById[ newValue ] = model;
-			}
-		},
-		
-		
-		/**
-		 * Handles an event fired by a Model in the Collection by relaying it from the Collection
-		 * (as if the Collection had fired it).
-		 * 
-		 * @protected
-		 * @param {String} eventName
-		 * @param {Mixed...} args The original arguments passed to the event.
-		 */
-		onModelEvent : function( eventName ) {
-			// If the model was destroyed, we need to remove it from the collection
-			if( eventName === 'destroy' ) {
-				var model = arguments[ 1 ];  // arguments[ 1 ] is the model for the 'destroy' event
-				this.onModelDestroy( model );
-			}
-			
-			// Relay the event from the collection, passing the collection itself, and the original arguments
-			this.fireEvent.apply( this, [ eventName, this ].concat( Array.prototype.slice.call( arguments, 1 ) ) );
-		},
-		
-		
-		// ----------------------------
-		
-		
-		/**
-		 * Retrieves the Model at a given index.
-		 * 
-		 * @param {Number} index The index to to retrieve the model at.
-		 * @return {data.Model} The Model at the given index, or null if the index was out of range.
-		 */
-		getAt : function( index ) {
-			return this.models[ index ] || null;
-		},
-		
-		
-		/**
-		 * Convenience method for retrieving the first {@link data.Model model} in the Collection.
-		 * If the Collection does not have any models, returns null.
-		 * 
-		 * @return {data.Model} The first model in the Collection, or null if the Collection does not have
-		 *   any models.
-		 */
-		getFirst : function() {
-			return this.models[ 0 ] || null;
-		},
-		
-		
-		/**
-		 * Convenience method for retrieving the last {@link data.Model model} in the Collection.
-		 * If the Collection does not have any models, returns null.
-		 * 
-		 * @return {data.Model} The last model in the Collection, or null if the Collection does not have
-		 *   any models.
-		 */
-		getLast : function() {
-			return this.models[ this.models.length - 1 ] || null;
-		},
-		
-		
-		/**
-		 * Retrieves a range of {@link data.Model Models}, specified by the `startIndex` and `endIndex`. These values are inclusive.
-		 * For example, if the Collection has 4 Models, and `getRange( 1, 3 )` is called, the 2nd, 3rd, and 4th models will be returned.
-		 * 
-		 * @param {Number} [startIndex=0] The starting index.
-		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
-		 * @return {data.Model[]} The array of models from the `startIndex` to the `endIndex`, inclusively.
-		 */
-		getRange : function( startIndex, endIndex ) {
-			var models = this.models,
-			    numModels = models.length,
-			    range = [],
-			    i;
-			
-			if( numModels === 0 ) {
-				return range;
-			}
-			
-			startIndex = Math.max( startIndex || 0, 0 ); // don't allow negative indexes
-			endIndex = Math.min( typeof endIndex === 'undefined' ? numModels - 1 : endIndex, numModels - 1 );
-			
-			for( i = startIndex; i <= endIndex; i++ ) {
-				range.push( models[ i ] );
-			}
-			return range; 
-		},
-		
-		
-		/**
-		 * Determines if the Collection holds the range of {@link data.Model Models} specified by the `startIndex` and
-		 * `endIndex`. If one or more {@link data.Model Models} are missing from the given range, this method returns
-		 * `false`.
-		 * 
-		 * @param {Number} startIndex The starting index.
-		 * @param {Number} [endIndex] The ending index. Defaults to the last Model in the Collection.
-		 * @return {Boolean} `true` if the Collection has {@link data.Model Models} in all indexes specified by
-		 *   the range of `startIndex` to `endIndex`, or `false` if one or more {@link data.Model Models} are missing.
-		 */
-		hasRange : function( startIndex, endIndex ) {
-			// A bit of a naive implementation for now. In the future, this method will cover when say, pages
-			// are loaded out of order, and will ensure that the entire range is present.
-			return endIndex < this.models.length;
-		},
-		
-		
-		/**
-		 * Determines if the Collection has the given page number loaded. This is only valid when a {@link #pageSize} is set,
-		 * and using the paging methods {@link #loadPage} or {@link #loadPageRange}.
-		 * 
-		 * @param {Number} pageNum The page number to check.
-		 * @return {Boolean} `true` if the Collection has the given `pageNum` currently loaded, `false` otherwise.
-		 */
-		hasPage : function( pageNum ) {
-			return _.contains( this.loadedPages, pageNum );
-		},
-		
-		
-		/**
-		 * Retrieves all of the models that the Collection has, in order.
-		 * 
-		 * @return {data.Model[]} An array of the models that this Collection holds.
-		 */
-		getModels : function() {
-			return this.getRange();  // gets all models
-		},
-		
-		
-		/**
-		 * Retrieves the Array representation of the Collection, where all models are converted into native JavaScript Objects.  The attribute values
-		 * for each of the models are retrieved via the {@link data.Model#get} method, to pre-process the data before they are returned in the final 
-		 * array of objects, unless the `raw` option is set to true, in which case the Model attributes are retrieved via {@link data.Model#raw}. 
-		 * 
-		 * @override
-		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This object is sent to
-		 *   the {@link data.NativeObjectConverter#convert NativeObjectConverter's convert method}, and accepts all of the options
-		 *   that the {@link data.NativeObjectConverter#convert} method does. See that method for details.
-		 * @return {Object[]} An array of the Object representation of each of the Models in the Collection.
-		 */
-		getData : function( options ) {
-			return NativeObjectConverter.convert( this, options );
-		},
-
-		
-		
-		/**
-		 * Retrieves the number of models that the Collection currently holds.
-		 * 
-		 * @return {Number} The number of models that the Collection currently holds.
-		 */
-		getCount : function() {
-			return this.models.length;
-		},
-		
-		
-		/**
-		 * Retrieves the *total* number of models that the {@link #proxy} indicates exists on a backing
-		 * data store. This is used when loading windowed (paged) data sets, and differs from 
-		 * {@link #getCount} in that it loads the number of models that *could* be loaded into the
-		 * Collection if the Collection contained all of the data on the backing store.
-		 * 
-		 * If looking to determine how many models are loaded at the current moment, use {@link #getCount}
-		 * instead.
-		 * 
-		 * @return {Number} The number of models that the {@link #proxy} has indicated exist on the a
-		 *   backing data store. If the {@link #proxy proxy's} {@link data.persistence.reader.Reader Reader}
-		 *   did not read any metadata about the total number of models, this method returns `undefined`.
-		 */
-		getTotalCount : function() {
-			return this.totalCount;
-		},
-		
-		
-		/**
-		 * Retrieves a Model by its {@link data.Model#clientId clientId}.
-		 * 
-		 * @param {String} clientId
-		 * @return {data.Model} The Model with the given {@link data.Model#clientId clientId}, or null if there is 
-		 *   no Model in the Collection with that {@link data.Model#clientId clientId}.
-		 */
-		getByClientId : function( clientId ) {
-			return this.modelsByClientId[ clientId ] || null;
-		},
-		
-		
-		/**
-		 * Retrieves a Model by its {@link data.Model#id id}. Note: if the Model does not yet have an id, it will not
-		 * be able to be retrieved by this method.
-		 * 
-		 * @param {Mixed} id The id value for the {@link data.Model Model}.
-		 * @return {data.Model} The Model with the given {@link data.Model#id id}, or `null` if no Model was found 
-		 *   with that {@link data.Model#id id}.
-		 */
-		getById : function( id ) {
-			return this.modelsById[ id ] || null;
-		},
-		
-		
-		/**
-		 * Determines if the Collection has a given {@link data.Model model}.
-		 * 
-		 * @param {data.Model} model
-		 * @return {Boolean} True if the Collection has the given `model`, false otherwise.
-		 */
-		has : function( model ) {
-			return !!this.getByClientId( model.getClientId() );
-		},
-		
-		
-		/**
-		 * Retrieves the index of the given {@link data.Model model} within the Collection. 
-		 * Returns -1 if the `model` is not found.
-		 * 
-		 * @param {data.Model} model
-		 * @return {Number} The index of the provided `model`, or of -1 if the `model` was not found.
-		 */
-		indexOf : function( model ) {
-			var models = this.models,
-			    i, len;
-			
-			if( !this.has( model ) ) {
-				// If the model isn't in the Collection, return -1 immediately
-				return -1;
-				
-			} else {
-				for( i = 0, len = models.length; i < len; i++ ) {
-					if( models[ i ] === model ) {
-						return i;
-					}
-				}
-			}
-		},
-		
-		
-		/**
-		 * Retrieves the index of a given {@link data.Model model} within the Collection by its
-		 * {@link data.Model#idAttribute id}. Returns -1 if the `model` is not found.
-		 * 
-		 * @param {Mixed} id The id value for the model.
-		 * @return {Number} The index of the model with the provided `id`, or of -1 if the model was not found.
-		 */
-		indexOfId : function( id ) {
-			var model = this.getById( id );
-			if( model ) {
-				return this.indexOf( model );
-			}
-			return -1;
-		},
-		
-		
-		// ----------------------------
-		
-		
-		/**
-		 * Commits any changes in the Collection, so that it is no longer considered "modified".
-		 * 
-		 * @override
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Boolean} [options.shallow=false] True to only commit only the additions/removals/reorders
-		 *   of the Collection itself, but not its child Models.
-		 */
-		commit : function( options ) {
-			options = options || {};
-			
-			this.modified = false;  // reset flag
-			
-			if( !options.shallow ) {
-				var models = this.models;
-				for( var i = 0, len = models.length; i < len; i++ ) {
-					models[ i ].commit();
-				}
-			}
-		},
-		
-		
-		
-		/**
-		 * Rolls any changes to the Collection back to its state when it was last {@link #commit committed}
-		 * or rolled back.
-		 */
-		rollback : function() {
-			this.modified = false;  // reset flag
-			
-			// TODO: Implement rolling back the collection's state to the array of models that it had before any
-			// changes were made
-			
-			
-			// TODO: Determine if child models should also be rolled back. Possibly a flag argument for this?
-			// But for now, maintain consistency with isModified()
-			var models = this.models;
-			for( var i = 0, len = models.length; i < len; i++ ) {
-				models[ i ].rollback();
-			}
-		},
-		
-		
-		/**
-		 * Determines if the Collection has been added to, removed from, reordered, or 
-		 * has any {@link data.Model models} which are modified.
-		 * 
-		 * @param {Object} [options] An object (hash) of options to change the behavior of this method. This may be provided as the first argument to the
-		 *   method if no `attributeName` is to be provided. Options may include:
-		 * @param {Boolean} [options.persistedOnly=false] True to have the method only return true only if a Model exists within it that has a 
-		 *   {@link data.attribute.Attribute#persist persisted} attribute which is modified. However, if the Collection itself has been modified
-		 *   (by adding/reordering/removing a Model), this method will still return true.
-		 * @param {Boolean} [options.shallow=false] True to only check if the Collection itself has been added to, remove from, or has had its Models
-		 *   reordered. The method will not check child models if they are modified.
-		 * 
-		 * @return {Boolean} True if the Collection has any modified models, false otherwise.
-		 */
-		isModified : function( options ) {
-			options = options || {};
-			
-			// First, if the collection itself has been added to / removed from / reordered, then it is modified
-			if( this.modified ) {
-				return true;
-				
-			} else if( !options.shallow ) {
-				// Otherwise, check to see if any of its child models are modified.
-				var models = this.models,
-				    i, len;
-				
-				for( i = 0, len = models.length; i < len; i++ ) {
-					if( models[ i ].isModified( options ) ) {
-						return true;
-					}
-				}
-				return false;
-			}
-		},
-		
-		
-		// ----------------------------
-		
-		// Searching methods
-		
-		/**
-		 * Finds the first {@link data.Model Model} in the Collection by {@link data.attribute.Attribute Attribute} name, and a given value.
-		 * Uses `===` to compare the value. If a more custom find is required, use {@link #findBy} instead.
-		 * 
-		 * Note that this method is more efficient than using {@link #findBy}, so if it can be used, it should.
-		 * 
-		 * @param {String} attributeName The name of the attribute to test the value against.
-		 * @param {Mixed} value The value to look for.
-		 * @param {Object} [options] Optional arguments for this method, provided in an object (hashmap). Accepts the following:
-		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
-		 * @return {data.Model} The model where the attribute name === the value, or `null` if no matching model was not found.
-		 */
-		find : function( attributeName, value, options ) {
-			options = options || {};
-			
-			var models = this.models,
-			    startIndex = options.startIndex || 0;
-			for( var i = startIndex, len = models.length; i < len; i++ ) {
-				if( models[ i ].get( attributeName ) === value ) {
-					return models[ i ];
-				}
-			}
-			return null;
-		},
-		
-		
-		/**
-		 * Finds the first {@link data.Model Model} in the Collection, using a custom function. When the function returns true,
-		 * the model is returned. If the function does not return true for any models, `null` is returned.
-		 * 
-		 * @param {Function} fn The function used to find the Model. Should return an explicit boolean `true` when there is a match. 
-		 *   This function is passed the following arguments:
-		 * @param {data.Model} fn.model The current Model that is being processed in the Collection.
-		 * @param {Number} fn.index The index of the Model in the Collection.
-		 * 
-		 * @param {Object} [options]
-		 * @param {Object} [options.scope] The scope to run the function in. Defaults to the Collection.
-		 * @param {Number} [options.startIndex] The index in the Collection to start searching from.
-		 * 
-		 * @return {data.Model} The model that the function returned `true` for, or `null` if no match was found.
-		 */
-		findBy : function( fn, options ) {
-			options = options || {};
-			
-			var models = this.models,
-			    scope = options.scope || this,
-			    startIndex = options.startIndex || 0;
-			    
-			for( var i = startIndex, len = models.length; i < len; i++ ) {
-				if( fn.call( scope, models[ i ], i ) === true ) {
-					return models[ i ];
-				}
-			}
-			return null;
-		},
-		
-		
-		// ----------------------------
-		
-		// Persistence functionality
-		
-		
-		/**
-		 * Retrieves the {@link data.persistence.proxy.Proxy Proxy} that should be used for all persistence methods of 
-		 * the Collection. This is either a {@link #proxy} that exists directly on the Collection itself, or the 
-		 * {@link #model model's} proxy. If neither entity has a proxy configured, returns `null`.
-		 * 
-		 * @protected
-		 * @return {data.persistence.proxy.Proxy} The Proxy on the Collection, the Collection's {@link #model}, or `null`.
-		 */
-		getEffectiveProxy : function() {
-			return this.getProxy() || ( this.model ? this.model.getProxy() : null );
-		},
-		
-		
-		/**
-		 * Determines if the Collection is currently loading data from its {@link #proxy}, via any of the "load" methods
-		 * ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}).
-		 * 
-		 * @return {Boolean} `true` if the Collection is currently loading a set of data, `false` otherwise.
-		 */
-		isLoading : function() {
-			return this.activeLoadOperations.length > 0;
-		},
-		
-		
-		/**
-		 * Loads the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
-		 * {@link #model model's} proxy will be used instead.
-		 * 
-		 * This method makes a call to the {@link #proxy proxy's} {@link data.persistence.proxy.Proxy#read read} method to
-		 * perform the load operation. Normally, the entire backend collection is read by the proxy when this method is called.
-		 * However, if the Collection is configured with a {@link #pageSize}, then only page 1 of the data will be requested
-		 * instead. You may load other pages of the data using {@link #loadPage} in this case.
-		 * 
-		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
-		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
-		 * the loading is complete.
-		 * 
-		 * All of the callbacks, and the Operation's promise handlers are called with the following arguments:
-		 * 
-		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
-		 *   information about the operation and the request(s) that took place.
-		 * 
-		 * 
-		 * ## Aborting a Load Operation
-		 * 
-		 * It is possible to abort a 'load' operation using the returned Operation's {@link data.persistence.operation.Operation#abort abort}
-		 * method. The `cancel` and `complete` callbacks are called, as well as `cancel` and `always` handlers on the Promise.
-		 * 
-		 * Note that the load request to the {@link #proxy} may or may not be aborted (canceled) itself, but even if it returns at a later
-		 * time, the data will not populate the Collection in this case.
-		 * 
-		 * 
-		 * ## Examples
-		 * 
-		 * Simple collection loading:
-		 * 
-		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
-		 *     
-		 *     // Load the collection, and attach handlers to determine when the collection has finished loading
-		 *     var operation = collection.load();
-		 *     operation.done( function() { alert( "Collection Loaded" ); } );
-		 *     operation.fail( function() { alert( "Collection Failed To Load" ); } );
-		 * 
-		 * 
-		 * Passing options:
-		 *     
-		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
-		 *     
-		 *     var operation = collection.load( {
-		 *         params : {
-		 *             paramA : 1,
-		 *             paramB : 2
-		 *         },
-		 *         addModels : true
-		 *     } );
-		 *     
-		 * 
-		 * Aborting an in-progress 'load' operation:
-		 * 
-		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
-		 *     
-		 *     var operation = collection.load();
-		 *     
-		 *     // ...
-		 *     
-		 *     operation.abort();
-		 *     
-		 * 
-		 * Responding to all of the Operation's Promise events:
-		 * 
-		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
-		 *     
-		 *     // Load the collection, and attach handlers to determine when the collection has finished loading
-		 *     var operation = collection.load()
-		 *         .done( function() { alert( "Collection Loaded Successfully" ); } )
-		 *         .fail( function() { alert( "Collection Load Error" ); } )
-		 *         .cancel( function() { alert( "Collection Load Aborted" ); } )
-		 *         .always( function() { alert( "Collection Load Complete (success, error, or aborted)" ); } )
-		 * 
-		 * 
-		 * Passing callbacks instead of using the Operation's Promise interface (not recommended as it may result in "callback soup"
-		 * for complex asynchonous operations, but supported):
-		 * 
-		 *     var collection = new UsersCollection();  // assume `UsersCollection` is pre-configured with an Ajax proxy
-		 *     
-		 *     var operation = collection.load( {
-		 *         success : function() { alert( "Collection Loaded Successfully" ); },
-		 *         error   : function() { alert( "Collection Load Error" ); },
-		 *         cancel  : function() { alert( "Collection Load Aborted" ); },
-		 *         always  : function() { alert( "Collection Load Complete (success, error, or aborted)" ); }
-		 *     } );
-		 *     
-		 * 
-		 * Determining when multiple collections have loaded, taking advantage of jQuery's ability to combine multiple Promise
-		 * objects into a master Promise:
-		 * 
-		 *     var collection1 = new UsersCollection(),
-		 *         collection2 = new UsersCollection(),
-		 *         collection3 = new UsersCollection();
-		 *     
-		 *     jQuery.when( collection1.load(), collection2.load(), collection3.load() ).then( function() {
-		 *         alert( "All 3 collections have loaded" );
-		 *     } );
-		 * 
-		 * 
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the request. See {@link data.persistence.request.Request#params} for details.
-		 * @param {Boolean} [options.addModels=false] `true` to add the loaded models to the Collection instead of 
-		 *   replacing the existing ones.
-		 * @param {Function} [options.success] Function to call if the loading is successful.
-		 * @param {Function} [options.error] Function to call if the loading fails.
-		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
-		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
-		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
-		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
-		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
-		 *   of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`, if you prefer. 
-		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
-		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
-		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
-		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
-		 *   method on this object.
-		 */
-		load : function( options ) {
-			// If loading paged data (there is a `pageSize` config on the Collection), then automatically just load page 1
-			if( this.pageSize ) {
-				return this.loadPage( 1, options );
-				
-			} else {
-				options = PersistenceUtil.normalizePersistenceOptions( options );
-				var proxy = this.getEffectiveProxy();
-				
-				// <debug>
-				// No persistence proxy, cannot load. Throw an error
-				if( !proxy ) {
-					throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
-				}
-				// </debug>
-				
-				var request = new ReadRequest( { params: options.params } ),
-				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
-				
-				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
-				operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
-				
-				// Add the Operation to the list of active load operations (which fires the 
-				// 'loadbegin' event if it begins overall Collection loading)
-				this.addActiveLoadOperation( operation );
-				
-				operation.executeRequests().always( _.bind( this.handleLoadRequestsComplete, this ) );
-				operation.progress( _.bind( this.onLoadProgress, this, operation ) );
-				operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
-				
-				return operation;
-			}
-		},
-		
-		
-		
-		/**
-		 * Loads a specific range of models in the Collection using its configured {@link #proxy}. If there is no configured 
-		 * {@link #proxy}, the {@link #model model's} proxy will be used instead.
-		 * 
-		 * If paging is used to load the Collection (i.e. a {@link #pageSize} config is specified), then the Collection will
-		 * make the requests necessary to load all of the pages that will satisfy the desired range specified by the `startIdx`
-		 * and `endIdx` arguments. If paging is not used, then the Collection will simply make a single start/limit request of the 
-		 * {@link #proxy} for the desired range.
-		 * 
-		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
-		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
-		 * the loading is complete.
-		 * 
-		 * All of the callbacks, and the promise handlers are called with the following arguments:
-		 * 
-		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
-		 *   information about the operation and the request(s) that took place.
-		 * 
-		 * @param {Number} startIdx The starting index of the range of models to load.
-		 * @param {Number} endIdx The ending index of the range of models to load.
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the request(s). See {@link data.persistence.request.Request#params} for details.
-		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
-		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config
-		 *   if page-based loading is being used (i.e. there is a {@link #pageSize} config), or defaults to false otherwise.
-		 * @param {Function} [options.success] Function to call if the loading is successful.
-		 * @param {Function} [options.error] Function to call if the loading fails.
-		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
-		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
-		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
-		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
-		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
-		 *   of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`, if you prefer. 
-		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
-		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
-		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
-		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
-		 *   method on this object.
-		 */
-		loadRange : function( startIdx, endIdx, options ) {
-			var pageSize = this.pageSize;
-			if( pageSize ) {
-				// If paging is used to load records in the Collection, load the range of pages that satisfies
-				// the range of record indexes required.
-				var startPage = Math.floor( startIdx / pageSize ) + 1,
-				    endPage = Math.floor( endIdx / pageSize ) + 1;
-				
-				return this.loadPageRange( startPage, endPage, options );
-				
-			} else {
-				options = PersistenceUtil.normalizePersistenceOptions( options );
-				var proxy = this.getEffectiveProxy();
-				
-				// <debug>
-				// No persistence proxy, cannot load. Throw an error
-				if( !proxy ) {
-					throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
-				}
-				// </debug>
-				
-				var request = new ReadRequest( { params: options.params, start: startIdx, limit : endIdx - startIdx } ),
-				    operation = new LoadOperation( { dataComponent: this, proxy: proxy, requests: request, addModels: !!options.addModels } );
-				
-				// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
-				operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
-				
-				// Add the Operation to the list of active load operations (which fires the 
-				// 'loadbegin' event if it begins overall Collection loading)
-				this.addActiveLoadOperation( operation );
-				
-				operation.executeRequests().always( _.bind( this.handleLoadRequestsComplete, this ) );
-				operation.progress( _.bind( this.onLoadProgress, this, operation ) );
-				operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
-				
-				return operation;
-			}
-		},
-		
-		
-		/**
-		 * Loads a page of the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
-		 * {@link #model model's} proxy will be used instead. The {@link #pageSize} must be configured on the Collection
-		 * for this method to work.
-		 * 
-		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
-		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
-		 * the loading is complete.
-		 * 
-		 * All of the callbacks, and the promise handlers are called with the following arguments:
-		 * 
-		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
-		 *   information about the operation and the request(s) that took place.
-		 * 
-		 * @param {Number} page The 1-based page number of data to load. Page `1` is the first page.
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the request. See {@link data.persistence.request.Request#params} for details.
-		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
-		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
-		 * @param {Function} [options.success] Function to call if the loading is successful.
-		 * @param {Function} [options.error] Function to call if the loading fails.
-		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
-		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
-		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
-		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
-		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
-		 *   of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`, if you prefer. 
-		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
-		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
-		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
-		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
-		 *   method on this object.
-		 */
-		loadPage : function( page, options ) {
-			// <debug>
-			if( !page ) {
-				throw new Error( "'page' argument required for loadPage() method, and must be > 0" );
-			}
-			// </debug>
-			
-			return this.loadPageRange( page, page, options );  // startPage and endPage are the same
-		},
-		
-		
-		/**
-		 * Loads a range of pages of the Collection using its configured {@link #proxy}. If there is no configured {@link #proxy}, the
-		 * {@link #model model's} proxy will be used instead. The {@link #pageSize} must be configured on the Collection
-		 * for this method to work.
-		 * 
-		 * Loading a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
-		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
-		 * the loading is complete.
-		 * 
-		 * All of the callbacks, and the promise handlers are called with the following arguments:
-		 * 
-		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `operation` : {@link data.persistence.operation.Load} The LoadOperation that was executed, which provides
-		 *   information about the operation and the request(s) that took place.
-		 * 
-		 * @param {Number} startPage The 1-based page number of the first page of data to load. Page `1` is the first page.
-		 * @param {Number} endPage The 1-based page number of the last page of data to load. Page `1` is the first page.
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Object} [options.params] Any additional parameters to pass along to the configured {@link #proxy}
-		 *   for the request(s). See {@link data.persistence.request.Request#params} for details.
-		 * @param {Boolean} [options.addModels] `true` to add the loaded models to the Collection instead of replacing
-		 *   the existing ones. If not provided, the method follows the behavior of the {@link #clearOnPageLoad} config.
-		 * @param {Function} [options.success] Function to call if the loading is successful.
-		 * @param {Function} [options.error] Function to call if the loading fails.
-		 * @param {Function} [options.cancel] Function to call if the loading has been canceled, by the returned
-		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}.
-		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
-		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
-		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless
-		 *   of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, `cancel`, and `complete` callbacks in.
-		 *   This may also be provided as the property `context`, if you prefer. 
-		 * @return {data.persistence.operation.Operation} An Operation object which represents the 'load' operation. This
-		 *   object acts as a Promise object as well, which may have handlers attached for when the load completes. The 
-		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
-		 *   The 'load' operation may be aborted by calling the {@link data.persistence.operation.Operation#abort abort}
-		 *   method on this object.
-		 */
-		loadPageRange : function( startPage, endPage, options ) {
-			var pageSize = this.pageSize;
-			
-			// <debug>
-			if( !startPage || !endPage ) {
-				throw new Error( "`startPage` and `endPage` arguments required for loadPageRange() method, and must be > 0" );
-			}
-			if( !pageSize ) {
-				throw new Error( "The `pageSize` config must be set on the Collection to load paged data." );
-			}
-			// </debug>
-			
-			options = PersistenceUtil.normalizePersistenceOptions( options );
-			var me = this,  // for closures
-			    proxy = this.getEffectiveProxy(),
-			    addModels = options.hasOwnProperty( 'addModels' ) ? options.addModels : !this.clearOnPageLoad;
-			
-			// <debug>
-			if( !proxy ) throw new Error( "data.Collection::doLoad() error: Cannot load. No `proxy` configured on the Collection or the Collection's `model`." );
-			// </debug>
-			
-			var operation = new LoadOperation( { dataComponent: this, proxy: proxy, addModels: addModels } );
-			for( var page = startPage; page <= endPage; page++ ) {
-				var request = new ReadRequest( {
-					params   : options.params,
-					
-					page     : page,
-					pageSize : pageSize,
-					start    : ( page - 1 ) * pageSize,
-					limit    : pageSize   // in this case, the `limit` is the pageSize
-				} );
-				
-				operation.addRequest( request );
-			}
-			
-			// Attach user-provided callbacks to the deferred. The `scope` was attached to each of these in normalizePersistenceOptions()
-			operation.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
-			
-			// Add the Operation to the list of active load operations (which fires the 
-			// 'loadbegin' event if it begins overall Collection loading)
-			this.addActiveLoadOperation( operation );
-			
-			operation.executeRequests()
-				.done( function( operation ) {
-					var loadedPages = _.range( startPage, endPage + 1 );  // second arg needs +1 because it is "up to but not included"
-					me.loadedPages = ( addModels ) ? me.loadedPages.concat( loadedPages ) : loadedPages;
-				} )
-				.always( _.bind( this.handleLoadRequestsComplete, this ) );
-			
-			operation.progress( _.bind( this.onLoadProgress, this, operation ) );
-			operation.cancel( _.bind( this.onLoadCancel, this, operation ) );  // handle if the Operation is canceled (aborted) by the user
-			
-			return operation;
-		},
-		
-		
-		/**
-		 * Handles the request(s) of an {@link data.persistence.operation.Load LoadOperation} completing.
-		 * 
-		 * As a temporary implementation before implementing concurrency management, this method simply calls 
-		 * {@link #onLoadSuccess} or {@link #onLoadError}, as appropriate.
-		 * 
-		 * @protected
-		 * @param {data.persistence.operation.Load} loadOperation The LoadOperation object which hold metadata, and all of the 
-		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
-		 */
-		handleLoadRequestsComplete : function( loadOperation ) {
-			// If this LoadOperation has been removed from the queue previously, such as from the Operation being
-			// manually canceled (aborted), then simply return out. The LoadOperation got here from its requests completing,
-			// but we shouldn't take any further action.
-			if( !_.contains( this.activeLoadOperations, loadOperation ) )
-				return;
-			
-			if( loadOperation.requestsWereSuccessful() ) {
-				this.onLoadSuccess( loadOperation );
-			} else {
-				this.onLoadError( loadOperation );
-			}
-		},
-		
-		
-		/**
-		 * Handles the {@link #proxy} making progress on an active 'load' operation (from {@link #method-load}, {@link #loadRange}, 
-		 * {@link #loadPage}, or {@link #loadPageRange}).
-		 * 
-		 * @protected
-		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
-		 *   {@link data.persistence.request.Request Request(s)} which are required to complete the load operation.
-		 */
-		onLoadProgress : function( operation ) {
-			this.fireEvent( 'loadprogress', this, operation );
-		},
-		
-		
-		/**
-		 * Handles the {@link #proxy} successfully loading a set of data as a result of any of the "load"
-		 * methods being called ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}).
-		 * 
-		 * Resolves the `operation` object created by {@link #method-load}.
-		 * 
-		 * @protected
-		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
-		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
-		 */
-		onLoadSuccess : function( operation ) {
-			var me = this,  // for closures
-			    requests = operation.getRequests();
-			
-			// Sample the first load Request for a totalCount
-			var totalCount = requests[ 0 ].getResultSet().getTotalCount();
-			if( totalCount !== undefined ) {
-				this.totalCount = totalCount;
-			}
-			
-			// If we're not adding (appending) the models, clear the Collection first
-			if( !operation.isAddModels() ) {
-				this.removeAll();
-			}
-			
-			// Create a single array of all of the loaded records from all requests, put them together in the order of 
-			// the requests, and then add them to the Collection.
-			var records = _.flatten(
-				_.map( requests, function( req ) { return req.getResultSet().getRecords(); } )  // create an array of the arrays of result sets (to be flattened after)
-			);
-			
-			// And now create models from the records
-			var ignoreUnknownAttrs = this.ignoreUnknownAttrsOnLoad;
-			var models = _.map( records, function( record ) { return me.createModel( record, { ignoreUnknownAttrs: ignoreUnknownAttrs } ); } );
-			this.add( models );
-			
-			// Remove the Operation from the `activeLoadOperations`. Note: If removing the last one,
-			// the Collection will no longer be considered 'loading'.
-			this.removeActiveLoadOperation( operation );
-			
-			operation.resolve();
-			this.fireEvent( 'loadsuccess', this, operation );
-			this.fireEvent( 'load', this, operation );
-		},
-		
-		
-		/**
-		 * Handles the {@link #proxy} failing to load a set of data as a result of any of the "load"
-		 * methods being called ({@link #method-load}, {@link #loadRange}, {@link #loadPage}, or {@link #loadPageRange}.
-		 * 
-		 * Rejects the `operation` object created by {@link #method-load}.
-		 * 
-		 * @protected
-		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
-		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
-		 */
-		onLoadError : function( operation ) {
-			// Remove the Operation from the `activeLoadOperations`. Note: If removing the last one,
-			// the Collection will no longer be considered 'loading'.
-			this.removeActiveLoadOperation( operation );
-			
-			operation.reject();
-			this.fireEvent( 'loaderror', this, operation );
-			this.fireEvent( 'load', this, operation );
-		},
-		
-		
-		/**
-		 * Handles a {@link data.persistence.operation.Load LoadOperation} being canceled (aborted) by a client of 
-		 * the Collection.
-		 * 
-		 * Removes the LoadOperation from the {@link #activeLoadOperations} queue, which causes any future requests'
-		 * completion to be ignored.
-		 * 
-		 * @protected
-		 * @param {data.persistence.operation.Load} operation The LoadOperation object which holds metadata, and all of the 
-		 *   {@link data.persistence.request.Request Request(s)} which were required to complete the load operation.
-		 */
-		onLoadCancel : function( operation ) {
-			// Request was canceled (aborted), simply remove it from the activeLoadOperations and ignore its results
-			this.removeActiveLoadOperation( operation );
-			
-			// Note: the operation was already aborted. No need to call operation.abort() here.
-			this.fireEvent( 'loadcancel', this, operation );
-			this.fireEvent( 'load', this, operation );
-		},
-		
-		
-		/**
-		 * Utility method used to add a LoadOperation to the {@link #activeLoadOperations} array.
-		 * 
-		 * If the `operation` provided to this method is the first to be placed into the array, this method
-		 * fires the {@link #loadbegin} event, as the Collection is now in a "loading" state.
-		 * 
-		 * @protected
-		 * @param {data.persistence.operation.Load} operation A LoadOperation which is currently active.
-		 *   If the Operation is not currently active, the call to this method will have no effect.
-		 */
-		addActiveLoadOperation : function( operation ) {
-			this.activeLoadOperations.push( operation );
-			
-			// if this Operation began the Collection's "loading" state, fire 'loadbegin'
-			if( this.activeLoadOperations.length === 1 )
-				this.fireEvent( 'loadbegin', this );
-		},
-		
-		
-		/**
-		 * Utility method used to remove a LoadOperation from the {@link #activeLoadOperations} array.
-		 * 
-		 * @protected
-		 * @param {data.persistence.operation.Load} operation A LoadOperation which is currently active.
-		 *   If the Operation is not currently active, the call to this method will have no effect.
-		 */
-		removeActiveLoadOperation : function( operation ) {
-			var idx = _.indexOf( this.activeLoadOperations, operation );
-			if( idx !== -1 ) {
-				this.activeLoadOperations.splice( idx, 1 );
-			}
-		},
-		
-		
-		
-		/**
-		 * Synchronizes the Collection by persisting each of the {@link data.Model Models} that have changes. New Models are created,
-		 * existing Models are modified, and removed Models are destroyed (deleted).
-		 * 
-		 * Synchronizing a Collection is asynchronous, and either callbacks must be provided to the method, or handlers must be
-		 * attached to the returned {@link data.persistence.operation.Operation Operation} object to determine when 
-		 * the synchronization is complete.
-		 * 
-		 * All of the callbacks, and the promise handlers are called with the following arguments:
-		 * 
-		 * - `collection` : {@link data.Collection} This Collection instance.
-		 * - `operationBatch` : {@link data.persistence.operation.Batch} The OperationBatch that was executed, which provides
-		 *   information about the operation(s) and request(s) that took place to complete the synchronization.
-		 * 
-		 * @param {Object} [options] An object which may contain the following properties:
-		 * @param {Function} [options.success] Function to call if the synchronization is successful.
-		 * @param {Function} [options.error] Function to call if the synchronization fails. The sychronization will be considered
-		 *   failed if one or more Models does not persist successfully.
-		 * @param {Function} [options.cancel] Function to call if the sync has been canceled, by the returned
-		 *   Operation being {@link data.persistence.operation.Operation#abort aborted}. See note in the description of the
-		 *   return of this method for a caveat on aborting (canceling) "sync" operations.
-		 * @param {Function} [options.progress] Function to call when progress has been made on the Operation. This is
-		 *   called when an individual request has completed, or when the {@link #proxy} reports progress otherwise.
-		 * @param {Function} [options.complete] Function to call when the operation is complete, regardless of success or failure.
-		 * @param {Object} [options.scope] The object to call the `success`, `error`, and `complete` callbacks in. This may also
-		 *   be provided as the property `context`, if you prefer. Defaults to the Collection.
-		 * @return {data.persistence.operation.Batch} An OperationBatch object which represents the 'sync' operation. This
-		 *   object acts as a Promise object as well, which may have handlers attached for when the sync completes. The 
-		 *   Operation's Promise is both resolved or rejected with the arguments listed above in the method description.
-		 *   
-		 *   The 'sync' operation may be aborted (canceled) by calling the {@link data.persistence.operation.Operation#abort abort}
-		 *   method on this object. However, note that when aborting a 'sync' operation, it is possible that one or more requests still 
-		 *   completed, and Models were persisted to their external data store (such as a web server). This may cause an inconsistency 
-		 *   between the state of the model on the client-side, and the state of the model on the server-side. Therefore, it is not 
-		 *   recommended that the 'sync' operation be canceled, unless it is going to be attempted again after sufficient time where the 
-		 *   data store (server) has finished the original operation, or the page is going to be refreshed.
-		 */
-		sync : function( options ) {
-			options = PersistenceUtil.normalizePersistenceOptions( options );
-			var models = this.getModels(),
-			    removedModels = this.removedModels.slice( 0 ),  // make shallow copy - we don't want synchronous destroy() requests to end up removing Models from this array (due to the `onModelDestroy()` method) while we loop over it
-			    i, len;
-			
-			// Now synchronize the models
-			var me = this,  // for closure
-			    modelsToSave = _.filter( models, function( model ) { return model.isNew() || model.isModified( { persistedOnly: true } ); } );  // retrieve new models, or modified models which have persisted attributes modified 
-			
-			var saveOperations = _.map( modelsToSave, function( model ) { return model.save(); } );
-			var destroyOperations = _.map( removedModels, function( model ) { 
-				return model.destroy().done( function() { me.onModelDestroy( model ); } ); // Upon successful destruction of each model being destroyed, we want to remove that model from the `removedModels` array, so that we don't try to destroy it again in another sync() operation
-			} );
-			
-			var operations = [].concat( saveOperations, destroyOperations ),
-			    operationBatch = new OperationBatch( { dataComponent: this, operations: operations } );
-			
-			// Attach the callbacks provided to the method
-			operationBatch.progress( options.progress ).done( options.success ).fail( options.error ).cancel( options.cancel ).always( options.complete );
-			
-			return operationBatch;
-		},
-		
-		
-		/**
-		 * Handles when a Model that existed within the Collection has been {@link data.Model#method-destroy destroyed}.
-		 * 
-		 * @protected
-		 * @param {data.Model} model The Model that has been destroyed.
-		 */
-		onModelDestroy : function( model ) {
-			// If the model is destroyed on its own, remove it from the collection. If it has been destroyed from the 
-			// collection's sync() method, then this will simply have no effect.
-			this.remove( model );
-			
-			// Remove the model from the removedModels array, so that we don't try to destroy it again from another 
-			// call to sync()
-			_.pull( this.removedModels, model );
-		}
-	
-	} );
-	
-	return Collection;
-	
-} );
-/*global define */
+/*jshint eqnull:true */
 define('data/persistence/proxy/Ajax', [
 	'jquery',
 	'lodash',
@@ -8962,7 +9486,8 @@ define('data/persistence/proxy/Ajax', [
 		 *     }
 		 *     
 		 * Note that the values of these parameters will be URL encoded, if the default behavior of serializing the
-		 * parameters as a query string is not overridden by a new {@link #serializeParams} implementation.
+		 * parameters as a query string is not overridden by use of the {@link #paramsAsJson} config or a new 
+		 * {@link #serializeParams} implementation.
 		 */
 		
 		/**
@@ -9027,6 +9552,18 @@ define('data/persistence/proxy/Ajax', [
 		 * a request may be generated as: `/posts/load?pageSize=50`
 		 */
 		
+		/**
+		 * @cfg {Boolean} paramsAsJson
+		 * 
+		 * `true` to have any parameters sent as JSON data in the request body, rather than the default of URL query string 
+		 * or form data parameters. When `true`, the request's content type will be set to "application/json" instead of the 
+		 * default of "application/x-www-form-urlencoded".
+		 * 
+		 * Note: This only applies to non-GET requests (i.e. POST, PUT, etc.). You must set the {@link #createMethod}, 
+		 * {@link #readMethod}, {@link #updateMethod}, and {@link #destroyMethod} appropriately for this config to apply.
+		 */
+		paramsAsJson : false,
+		
 		
 		/**
 		 * @protected
@@ -9069,9 +9606,6 @@ define('data/persistence/proxy/Ajax', [
 		 * 
 		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		create : function( request ) {
 			throw new Error( "create() not yet implemented" );
@@ -9083,24 +9617,31 @@ define('data/persistence/proxy/Ajax', [
 		 * 
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that describes the 
 		 *   model(s) to be read from the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		read : function( request ) {
 			var me = this,  // for closures
 			    paramsObj = this.buildParams( request ),
-			    deferred = new jQuery.Deferred(),
 			    xhrObjs = this.xhrObjs,
-			    requestUuid = request.getUuid();
+			    requestUuid = request.getUuid(),
+			    requestType = this.getHttpMethod( 'read' );  // "GET", "POST", etc.
+			
+			var ajaxOpts = {
+				url      : this.buildUrl( request ),
+				type     : requestType,
+				dataType : 'text'
+			};
+			
+			// Assign parameters
+			if( this.paramsAsJson && requestType !== "GET" ) {  // can't post JSON into the request body for GET requests
+				ajaxOpts.data = JSON.stringify( paramsObj );
+				ajaxOpts.contentType = 'application/json';    // so that "&'s" aren't treated as form parameter delimiters
+			} else {
+				ajaxOpts.data = this.serializeParams( paramsObj, request );  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
+			}
+			
 			
 			// Make the AJAX request
-			var jqXhr = this.ajax( {
-				url      : this.buildUrl( request ),
-				type     : this.getHttpMethod( 'read' ),
-				data     : this.serializeParams( paramsObj, 'read', request ),  // params will be appended to URL on 'GET' requests, or put into the request body on 'POST' requests (dependent on `readMethod` config)
-				dataType : 'text'
-			} );
+			var jqXhr = this.ajax( ajaxOpts );
 			
 			// Store the jqXHR object in the map before attaching any promise handlers. If the jqXHR completes 
 			// synchronously for some reason, we want to make sure we clean up the reference in this map.
@@ -9110,16 +9651,14 @@ define('data/persistence/proxy/Ajax', [
 			jqXhr
 				.done( function( data, textStatus, jqXHR ) {
 					var resultSet = me.reader.read( data );
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				} )
 				.fail( function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				} )
 				.always( function() {
 					delete xhrObjs[ requestUuid ];  // remove the reference to the jqXHR object
 				} );
-		
-			return deferred.promise();
 		},
 		
 		
@@ -9129,9 +9668,6 @@ define('data/persistence/proxy/Ajax', [
 		 * 
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		update : function( request ) {
 			throw new Error( "update() not yet implemented" );
@@ -9145,9 +9681,6 @@ define('data/persistence/proxy/Ajax', [
 		 * 
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed on the server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
 			throw new Error( "destroy() not yet implemented" );
@@ -9209,7 +9742,7 @@ define('data/persistence/proxy/Ajax', [
 			if( action !== 'read' ) {
 				var params = this.buildParams( request );
 				
-				url = this.urlAppend( url, this.serializeParams( params, action, request ) );
+				url = this.urlAppend( url, this.serializeParams( params, request ) );
 			}
 			return url;
 		},
@@ -9240,7 +9773,7 @@ define('data/persistence/proxy/Ajax', [
 				    pageParam = this.pageParam,
 				    pageSizeParam = this.pageSizeParam;
 				
-				if( modelId !== undefined && idParam ) 
+				if( modelId != null && idParam )
 					params[ idParam ] = modelId;
 				
 				if( page > 0 && pageParam ) {   // an actual page was requested, and there is a pageParam config defined
@@ -9262,11 +9795,10 @@ define('data/persistence/proxy/Ajax', [
 		 * @protected
 		 * @param {Object} params The Object (map) of parameters to serialize. The keys of this map are the parameter names,
 		 *   and the values are the parameter values.
-		 * @param {String} action The action that is being taken. One of: 'create', 'read', 'update', or 'destroy'.
 		 * @param {data.persistence.request.Read/data.persistence.request.Write} request
 		 * @return {String} The serialized string of parameters.
 		 */
-		serializeParams : function( params, action, request ) {
+		serializeParams : function( params, request ) {
 			return this.objToQueryString( params );
 		},
 		
@@ -9467,15 +9999,11 @@ define('data/persistence/proxy/WebStorage', [
 		 * 
 		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		create : function( request ) {
 			var models = request.getModels(),
 			    returnRecords = [],
-			    recordIds = this.getRecordIds(),
-			    deferred = new jQuery.Deferred();
+			    recordIds = this.getRecordIds();
 			
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				var model = models[ i ],
@@ -9492,7 +10020,7 @@ define('data/persistence/proxy/WebStorage', [
 			this.setRecordIds( recordIds );
 			
 			var resultSet = new ResultSet( { records: returnRecords } );
-			return deferred.resolve( resultSet ).promise();
+			request.resolve( resultSet );
 		},
 		
 		
@@ -9501,16 +10029,12 @@ define('data/persistence/proxy/WebStorage', [
 		 * 
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that describes the 
 		 *   model(s) to be read.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		read : function( request ) {
 			var records = [],
 			    recordIds = this.getRecordIds(),
 			    totalNumRecords = recordIds.length,
-			    modelId = request.getModelId(),
-			    deferred = new jQuery.Deferred();
+			    modelId = request.getModelId();
 			
 			if( modelId !== undefined ) {
 				modelId = String( modelId );  // modelIds are stored in the proxy as strings (for consistency with any string IDs), so convert any number to a string
@@ -9530,7 +10054,7 @@ define('data/persistence/proxy/WebStorage', [
 				records : records,
 				totalCount : totalNumRecords
 			} );
-			return deferred.resolve( resultSet ).promise();
+			request.resolve( resultSet );
 		},
 		
 		
@@ -9542,9 +10066,6 @@ define('data/persistence/proxy/WebStorage', [
 		 * 
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		update : function( request ) {
 			var models = request.getModels(),
@@ -9562,7 +10083,7 @@ define('data/persistence/proxy/WebStorage', [
 			}
 			this.setRecordIds( recordIds );
 			
-			return deferred.resolve().promise();
+			request.resolve();
 		},
 		
 		
@@ -9573,14 +10094,10 @@ define('data/persistence/proxy/WebStorage', [
 		 * 
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
 			var models = request.getModels(),
-			    recordIds = this.getRecordIds(),
-			    deferred = new jQuery.Deferred();
+			    recordIds = this.getRecordIds();
 			
 			for( var i = 0, len = models.length; i < len; i++ ) {
 				var model = models[ i ],
@@ -9594,7 +10111,7 @@ define('data/persistence/proxy/WebStorage', [
 			}
 			this.setRecordIds( recordIds );
 			
-			return deferred.resolve().promise();
+			request.resolve();
 		},
 		
 		
@@ -10061,10 +10578,8 @@ define('data/persistence/proxy/Memory', [
 		read : function( request ) {
 			if( this.data === undefined ) throw new Error( "No `data` set on MemoryProxy" );
 			
-			var deferred = new jQuery.Deferred(),
-			    resultSet = this.reader.read( this.data );
-			
-			return deferred.resolve( resultSet ).promise();
+			var resultSet = this.reader.read( this.data );
+			request.resolve( resultSet );
 		},
 		
 		
@@ -10204,13 +10719,9 @@ define('data/persistence/proxy/Rest', [
 		 * 
 		 * @param {data.persistence.request.Create} request The CreateRequest instance that holds the model(s) 
 		 *   to be created on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		create : function( request ) {
 			var me = this,  // for closures
-			    deferred = new jQuery.Deferred(),
 			    model = request.getModels()[ 0 ],
 			    dataToPersist = model.getData( { persistedOnly: true, raw: true } );
 			
@@ -10234,14 +10745,12 @@ define('data/persistence/proxy/Rest', [
 						resultSet = me.reader.read( data );
 					}
 					
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
-			
-			return deferred.promise();
 		},
 		
 		
@@ -10250,13 +10759,9 @@ define('data/persistence/proxy/Rest', [
 		 * 
 		 * @param {data.persistence.request.Read} request The ReadRequest instance that holds the model(s) 
 		 *   to be read from the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		read : function( request ) {
-			var me = this,  // for closures
-			    deferred = new jQuery.Deferred();
+			var me = this;  // for closures
 			
 			this.ajax( {
 				url      : this.buildUrl( 'read', request.getModelId() ),
@@ -10265,14 +10770,12 @@ define('data/persistence/proxy/Rest', [
 			} ).then(
 				function( data, textStatus, jqXHR ) {
 					var resultSet = me.reader.read( data );
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
-			
-			return deferred.promise();
 		},
 		
 		
@@ -10282,21 +10785,16 @@ define('data/persistence/proxy/Rest', [
 		 * 
 		 * @param {data.persistence.request.Update} request The UpdateRequest instance that holds the model(s) 
 		 *   to be updated on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		update : function( request ) {
 			var me = this,  // for closures
 			    model = request.getModels()[ 0 ],
-			    changedData = model.getChanges( { persistedOnly: true, raw: true } ),
-			    deferred = new jQuery.Deferred();
+			    changedData = model.getChanges( { persistedOnly: true, raw: true } );
 			
 			// Short Circuit: If there is no changed data in any of the attributes that are to be persisted, there is no need to make a 
 			// request. Resolves the deferred and return out.
 			if( _.isEmpty( changedData ) ) {
-				deferred.resolve( request );
-				return deferred.promise();
+				request.resolve();
 			}
 			
 			
@@ -10330,14 +10828,12 @@ define('data/persistence/proxy/Rest', [
 					if( data ) {  // data may or may not be returned by a server on an 'update' request
 						resultSet = me.reader.read( data );
 					}
-					deferred.resolve( resultSet );
+					request.resolve( resultSet );
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
-			
-			return deferred.promise();
 		},
 		
 		
@@ -10348,13 +10844,9 @@ define('data/persistence/proxy/Rest', [
 		 * 
 		 * @param {data.persistence.request.Destroy} request The DestroyRequest instance that holds the model(s) 
 		 *   to be destroyed on the REST server.
-		 * @return {jQuery.Promise} A Promise object which is resolved when the request is complete.
-		 *   `done`, `fail`, and `always` callbacks are called with the `request` object provided to 
-		 *   this method as the first argument.
 		 */
 		destroy : function( request ) {
-			var deferred = new jQuery.Deferred(),
-			    model = request.getModels()[ 0 ];
+			var model = request.getModels()[ 0 ];
 			
 			this.ajax( {
 				url      : this.buildUrl( 'destroy', model.getId() ),
@@ -10362,14 +10854,12 @@ define('data/persistence/proxy/Rest', [
 				dataType : 'text'  // in case the server returns nothing. Otherwise, jQuery might make a guess as to the wrong data type (such as JSON), and try to parse it, causing the `error` callback to be executed instead of `success`
 			} ).then(
 				function( data, textStatus, jqXHR ) {
-					deferred.resolve();
+					request.resolve();
 				},
 				function( jqXHR, textStatus, errorThrown ) {
-					deferred.reject( { textStatus: textStatus, errorThrown: errorThrown } );
+					request.reject( { textStatus: textStatus, errorThrown: errorThrown } );
 				}
 			);
-			
-			return deferred.promise();
 		},
 		
 		
@@ -10473,4 +10963,4 @@ define('data/persistence/proxy/SessionStorage', [
 	return SessionStorageProxy;
 	
 } );
-require(["data/Collection", "data/Data", "data/DataComponent", "data/Model", "data/NativeObjectConverter", "data/attribute/Attribute", "data/attribute/Boolean", "data/attribute/Collection", "data/attribute/DataComponent", "data/attribute/Date", "data/attribute/Float", "data/attribute/Integer", "data/attribute/Mixed", "data/attribute/Model", "data/attribute/Number", "data/attribute/Object", "data/attribute/Primitive", "data/attribute/String", "data/persistence/ResultSet", "data/persistence/Util", "data/persistence/operation/Batch", "data/persistence/operation/Deferred", "data/persistence/operation/Destroy", "data/persistence/operation/Load", "data/persistence/operation/Operation", "data/persistence/operation/Save", "data/persistence/proxy/Ajax", "data/persistence/proxy/LocalStorage", "data/persistence/proxy/Memory", "data/persistence/proxy/Proxy", "data/persistence/proxy/Rest", "data/persistence/proxy/SessionStorage", "data/persistence/proxy/WebStorage", "data/persistence/reader/Json", "data/persistence/reader/Reader", "data/persistence/request/Create", "data/persistence/request/Destroy", "data/persistence/request/Read", "data/persistence/request/Request", "data/persistence/request/Update", "data/persistence/request/Write"]);
+require(["data/Collection", "data/Data", "data/DataComponent", "data/Model", "data/NativeObjectConverter", "data/attribute/Attribute", "data/attribute/Boolean", "data/attribute/Collection", "data/attribute/DataComponent", "data/attribute/Date", "data/attribute/Float", "data/attribute/Integer", "data/attribute/Mixed", "data/attribute/Model", "data/attribute/Number", "data/attribute/Object", "data/attribute/Primitive", "data/attribute/String", "data/persistence/ResultSet", "data/persistence/Util", "data/persistence/operation/Batch", "data/persistence/operation/Deferred", "data/persistence/operation/Destroy", "data/persistence/operation/Load", "data/persistence/operation/Operation", "data/persistence/operation/Save", "data/persistence/proxy/Ajax", "data/persistence/proxy/LocalStorage", "data/persistence/proxy/Memory", "data/persistence/proxy/Proxy", "data/persistence/proxy/Rest", "data/persistence/proxy/SessionStorage", "data/persistence/proxy/WebStorage", "data/persistence/reader/Json", "data/persistence/reader/Reader", "data/persistence/request/Batch", "data/persistence/request/Create", "data/persistence/request/Destroy", "data/persistence/request/Read", "data/persistence/request/Request", "data/persistence/request/Update", "data/persistence/request/Write"]);

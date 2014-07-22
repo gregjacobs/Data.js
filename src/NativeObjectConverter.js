@@ -1,11 +1,7 @@
 /*global define */
 define( [
-	'require',
-	'lodash',
-	'data/DataComponent',
-	'data/Collection',  // circular dependency, not included in args list
-	'data/Model'        // circular dependency, not included in args list
-], function( require, _, DataComponent ) {
+	'lodash'
+], function( _ ) {
 	
 	/**
 	 * @private
@@ -13,13 +9,13 @@ define( [
 	 * @singleton
 	 * 
 	 * NativeObjectConverter allows for the conversion of {@link data.Collection Collection} / {@link data.Model Models}
-	 * to their native Array / Object representations, while dealing with circular dependencies.
+	 * to their native Array / Object representations, while dealing with circular references.
 	 */
 	var NativeObjectConverter = {
 		
 		/**
 		 * Converts a {@link data.Collection Collection} or {@link data.Model} to its native Array/Object representation,
-		 * while dealing with circular dependencies.
+		 * while dealing with circular references.
 		 *  
 		 * @param {data.Collection/data.Model} A Collection or Model to convert to its native Array/Object representation.
 		 * @param {Object} [options] An object (hashmap) of options to change the behavior of this method. This may include:
@@ -48,12 +44,10 @@ define( [
 		 */
 		convert : function( dataComponent, options ) {
 			options = options || {};
-			var Model = require( 'data/Model' ),
-			    Collection = require( 'data/Collection' ),
-			    cache = {},  // keyed by models' clientId, and used for handling circular dependencies
+			var cache = {},  // keyed by models' clientId, and used for handling circular references
 			    persistedOnly = !!options.persistedOnly,
 			    raw = !!options.raw,
-			    data = ( dataComponent instanceof Collection ) ? [] : {};  // Collection is an Array, Model is an Object
+			    data = ( dataComponent.isCollection ) ? [] : {};  // Collection is an Array, Model is an Object
 			
 			// Prime the cache with the Model/Collection provided to this method, so that if a circular reference points back to this
 			// model, the data object is not duplicated as an internal object (i.e. it should refer right back to the converted
@@ -67,7 +61,7 @@ define( [
 				    data,
 				    i, len;
 				
-				if( dataComponent instanceof Model ) {
+				if( dataComponent.isModel ) {
 					// Handle Models
 					var attributes = dataComponent.getAttributes(),
 					    attributeNames = options.attributeNames || _.keys( attributes ),
@@ -85,7 +79,7 @@ define( [
 							currentValue = data[ attributeName ] = ( raw ) ? dataComponent.raw( attributeName ) : dataComponent.get( attributeName );
 							
 							// Process Nested DataComponents
-							if( currentValue instanceof DataComponent ) {
+							if( currentValue && currentValue.isDataComponent ) {
 								clientId = currentValue.getClientId();
 								
 								if( ( cachedDataComponent = cache[ clientId ] ) ) {
@@ -93,7 +87,7 @@ define( [
 								} else {
 									// first, set up an array/object for the cache (so it exists when checking for it in the next call to convert()), 
 									// and set that array/object to the return data as well
-									cache[ clientId ] = data[ attributeName ] = ( currentValue instanceof Collection ) ? [] : {};  // Collection is an Array, Model is an Object
+									cache[ clientId ] = data[ attributeName ] = ( currentValue.isCollection ) ? [] : {};  // Collection is an Array, Model is an Object
 									
 									// now, populate that object with the properties of the inner object
 									_.assign( cache[ clientId ], convert( currentValue, attributes[ attributeName ] ) );
@@ -102,7 +96,7 @@ define( [
 						}
 					}
 					
-				} else if( dataComponent instanceof Collection ) {
+				} else if( dataComponent.isCollection ) {
 					// Handle Collections
 					var models = dataComponent.getModels(),
 					    model, idAttributeName;

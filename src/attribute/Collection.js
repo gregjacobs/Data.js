@@ -1,13 +1,11 @@
 /*global define */
 /*jshint newcap:false */  // For the dynamic constructor: new collectionClass( ... );
 define( [
-	'require',
 	'lodash',
-	'Class',
+	
 	'data/attribute/Attribute',
-	'data/attribute/DataComponent',
-	'data/Collection'  // circular dependency, not included in args list
-], function( require, _, Class, Attribute, DataComponentAttribute ) {
+	'data/attribute/DataComponent'
+], function( _, Attribute, DataComponentAttribute ) {
 	
 	/**
 	 * @class data.attribute.Collection
@@ -25,7 +23,7 @@ define( [
 	 * take place, then you must either provide a {@link data.Collection} subclass as the value for the Attribute, or use a custom 
 	 * {@link #cfg-set} function to convert any anonymous array into a Collection in the appropriate way. 
 	 */
-	var CollectionAttribute = Class.extend( DataComponentAttribute, {
+	var CollectionAttribute = DataComponentAttribute.extend( {
 			
 		/**
 		 * @cfg {Array/data.Collection} defaultValue
@@ -149,10 +147,8 @@ define( [
 		 * @inheritdoc
 		 */
 		afterSet : function( model, value ) {
-			var Collection = require( 'data/Collection' );
-			
 			// Enforce that the value is either null, or a data.Collection
-			if( value !== null && !( value instanceof Collection ) ) {
+			if( value !== null && !value.isCollection ) {
 				throw new Error( "A value set to the attribute '" + this.getName() + "' was not a data.Collection subclass" );
 			}
 			
@@ -177,8 +173,7 @@ define( [
 		 *   config.
 		 */
 		resolveCollectionClass : function() {
-			var collectionClass = this.collection,
-			    Collection = require( 'data/Collection' );  // the Collection constructor function
+			var collectionClass = this.collection;
 			
 			// Normalize the collectionClass
 			if( typeof collectionClass === 'string' ) {
@@ -189,7 +184,7 @@ define( [
 					throw new Error( "The string value `collection` config did not resolve to a Collection subclass for attribute '" + this.getName() + "'" );
 				}
 				// </debug>
-			} else if( typeof collectionClass === 'function' && !Class.isSubclassOf( collectionClass, Collection ) ) {  // it's not a data.Collection subclass, so it must be an anonymous function. Run it, so it returns the Collection reference we need
+			} else if( typeof collectionClass === 'function' && !collectionClass.isCollectionClass ) {  // if it's not a data.Collection constructor function (which would have an isCollectionClass property), then it must be an anonymous function. Execute it, so it returns the Model reference we need.
 				this.collection = collectionClass = collectionClass();
 				
 				// <debug>
